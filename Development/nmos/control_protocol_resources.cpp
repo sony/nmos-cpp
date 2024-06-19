@@ -98,4 +98,16 @@ namespace nmos
 
         return{ is12_versions::v1_0, types::nc_ident_beacon, std::move(data), true };
     }
+
+    // Device Configuration feature set control classes
+    //
+    // TODO: add link
+    control_protocol_resource make_bulk_properties_manager(nc_oid oid)
+    {
+        using web::json::value;
+
+        auto data = details::make_nc_bulk_properties_manager(oid, root_block_oid, value::string(U("Bulk properties manager")), U("The bulk properties manager offers a central model for getting and setting properties of multiple role paths"), value::null(), value::null());
+
+        return{ is12_versions::v1_0, types::nc_bulk_properties_manager, std::move(data), true };
+    }
 }

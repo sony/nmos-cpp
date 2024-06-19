@@ -18,9 +18,9 @@
 
 namespace nmos
 {
-    inline web::http::experimental::listener::api_router make_unmounted_configuration_api(node_model& model, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor_handler get_control_protocol_datatype_descriptor, get_control_protocol_method_descriptor_handler get_control_protocol_method_descriptor, control_protocol_property_changed_handler property_changed, slog::base_gate& gate);
+    inline web::http::experimental::listener::api_router make_unmounted_configuration_api(node_model& model, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor_handler get_control_protocol_datatype_descriptor, get_control_protocol_method_descriptor_handler get_control_protocol_method_descriptor, get_properties_by_path_handler get_properties_by_path, validate_set_properties_by_path_handler validate_set_properties_by_path, set_properties_by_path_handler set_properties_by_path, control_protocol_property_changed_handler property_changed, slog::base_gate& gate);
 
-    web::http::experimental::listener::api_router make_configuration_api(node_model& model, web::http::experimental::listener::route_handler validate_authorization, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor_handler get_control_protocol_datatype_descriptor, get_control_protocol_method_descriptor_handler get_control_protocol_method_descriptor, control_protocol_property_changed_handler property_changed, slog::base_gate& gate)
+    web::http::experimental::listener::api_router make_configuration_api(node_model& model, web::http::experimental::listener::route_handler validate_authorization, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor_handler get_control_protocol_datatype_descriptor, get_control_protocol_method_descriptor_handler get_control_protocol_method_descriptor, get_properties_by_path_handler get_properties_by_path, validate_set_properties_by_path_handler validate_set_properties_by_path, set_properties_by_path_handler set_properties_by_path, control_protocol_property_changed_handler property_changed, slog::base_gate& gate)
     {
         using namespace web::http::experimental::listener::api_router_using_declarations;
 
@@ -51,7 +51,7 @@ namespace nmos
             return pplx::task_from_result(true);
         });
 
-        configuration_api.mount(U("/x-nmos/") + nmos::patterns::configuration_api.pattern + U("/") + nmos::patterns::version.pattern, make_unmounted_configuration_api(model, get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor, get_control_protocol_method_descriptor, property_changed, gate));
+        configuration_api.mount(U("/x-nmos/") + nmos::patterns::configuration_api.pattern + U("/") + nmos::patterns::version.pattern, make_unmounted_configuration_api(model, get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor, get_control_protocol_method_descriptor, get_properties_by_path, validate_set_properties_by_path, set_properties_by_path, property_changed, gate));
 
         return configuration_api;
     }
@@ -205,16 +205,29 @@ namespace nmos
             static const web::json::experimental::json_validator validator
             {
                 nmos::experimental::load_json_schema,
-                boost::copy_range<std::vector<web::uri>>(boost::range::join(
-                    is14_versions::all | boost::adaptors::transformed(experimental::make_configrationapi_method_patch_request_schema_uri),
-                    is14_versions::all | boost::adaptors::transformed(experimental::make_configrationapi_property_value_put_request_schema_uri)
-                ))
+                boost::copy_range<std::vector<web::uri>>(boost::range::join(boost::range::join(boost::range::join(
+                    is14_versions::all | boost::adaptors::transformed(experimental::make_configurationapi_method_patch_request_schema_uri),
+                    is14_versions::all | boost::adaptors::transformed(experimental::make_configurationapi_property_value_put_request_schema_uri)),
+                    is14_versions::all | boost::adaptors::transformed(experimental::make_configurationapi_bulkProperties_validate_request_schema_uri)),
+                    is14_versions::all | boost::adaptors::transformed(experimental::make_configurationapi_bulkProperties_set_request_schema_uri)))
             };
             return validator;
         }
+
+        bool parse_recurse_query_parameter(const utility::string_t& query)
+        {
+            web::json::value arguments = web::json::value_from_query(query);
+
+            if (arguments.has_boolean_field(fields::nc::recurse))
+            {
+               return fields::nc::recurse(arguments);
+            }
+
+            return true;
+        }
     }
 
-    inline web::http::experimental::listener::api_router make_unmounted_configuration_api(node_model& model, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor_handler get_control_protocol_datatype_descriptor, get_control_protocol_method_descriptor_handler get_control_protocol_method_descriptor, control_protocol_property_changed_handler property_changed, slog::base_gate& gate_)
+    inline web::http::experimental::listener::api_router make_unmounted_configuration_api(node_model& model, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor_handler get_control_protocol_datatype_descriptor, get_control_protocol_method_descriptor_handler get_control_protocol_method_descriptor, get_properties_by_path_handler get_properties_by_path, validate_set_properties_by_path_handler validate_set_properties_by_path, set_properties_by_path_handler set_properties_by_path, control_protocol_property_changed_handler property_changed, slog::base_gate& gate_)
     {
         using namespace web::http::experimental::listener::api_router_using_declarations;
 
@@ -519,7 +532,7 @@ namespace nmos
                 const nmos::api_version version = nmos::parse_api_version(parameters.at(nmos::patterns::version.name));
 
                 // Validate JSON syntax according to the schema
-                details::configurationapi_validator().validate(body, experimental::make_configrationapi_method_patch_request_schema_uri(version));
+                details::configurationapi_validator().validate(body, experimental::make_configurationapi_method_patch_request_schema_uri(version));
 
                 const auto role_path = parameters.at(nmos::patterns::rolePath.name);
                 const auto method_id = parameters.at(nmos::patterns::methodId.name);
@@ -594,7 +607,7 @@ namespace nmos
                 const nmos::api_version version = nmos::parse_api_version(parameters.at(nmos::patterns::version.name));
 
                 // Validate JSON syntax according to the schema
-                details::configurationapi_validator().validate(body, experimental::make_configrationapi_property_value_put_request_schema_uri(version));
+                details::configurationapi_validator().validate(body, experimental::make_configurationapi_property_value_put_request_schema_uri(version));
 
                 const auto role_path = parameters.at(nmos::patterns::rolePath.name);
                 const auto property_id = parameters.at(nmos::patterns::propertyId.name);
@@ -632,6 +645,127 @@ namespace nmos
 
                 return true;
             });
+        });
+
+        configuration_api.support(U("/rolePaths/") + nmos::patterns::rolePath.pattern + U("/bulkProperties/?"), methods::GET, [&model, get_properties_by_path, &gate_](http_request req, http_response res, const string_t&, const route_parameters& parameters)
+        {
+            const auto role_path = parameters.at(nmos::patterns::rolePath.name);
+
+            auto lock = model.read_lock();
+
+            auto& resources = model.control_protocol_resources;
+
+            const auto& resource = details::find_resource(resources, role_path);
+            if (resources.end() != resource)
+            {
+                bool recurse = details::parse_recurse_query_parameter(req.request_uri().query());
+
+                auto result = details::make_nc_method_result_error({ nc_method_status::method_not_implemented }, U("get_properties_by_path not provided"));
+                if (get_properties_by_path)
+                {
+                    result = get_properties_by_path(*resource, recurse);
+                }
+
+                auto status = nmos::fields::nc::status(result);
+                auto code = (nc_method_status::ok == status || nc_method_status::property_deprecated == status) ? status_codes::OK : status_codes::InternalError;
+                set_reply(res, code, result);
+            }
+            else
+            {
+                // resource not found for the role path
+                set_error_reply(res, status_codes::NotFound, U("Not Found; ") + role_path);
+            }
+
+            return pplx::task_from_result(true);
+        });
+
+        configuration_api.support(U("/rolePaths/") + nmos::patterns::rolePath.pattern + U("/bulkProperties/?"), methods::PATCH, [&model, validate_set_properties_by_path, &gate_](http_request req, http_response res, const string_t&, const route_parameters& parameters)
+        {
+            const auto role_path = parameters.at(nmos::patterns::rolePath.name);
+
+            auto lock = model.read_lock();
+            const nmos::api_version version = nmos::parse_api_version(parameters.at(nmos::patterns::version.name));
+            auto& resources = model.control_protocol_resources;
+
+            const auto& resource = details::find_resource(resources, role_path);
+            if (resources.end() != resource)
+            {
+                return details::extract_json(req, gate_).then([res, resources, resource, validate_set_properties_by_path, version, &gate_](value body) mutable
+                {
+                    // Validate JSON syntax according to the schema
+                    details::configurationapi_validator().validate(body, experimental::make_configurationapi_bulkProperties_validate_request_schema_uri(version));
+
+                    bool recurse = nmos::fields::nc::recurse(body);
+                    const auto& data_set = nmos::fields::nc::data_set(body);
+                    if (!data_set.is_null())
+                    {
+                        auto result = details::make_nc_method_result_error({ nc_method_status::method_not_implemented }, U("validate_set_properties_by_path not provided"));
+                        if (validate_set_properties_by_path)
+                        {
+                            result = validate_set_properties_by_path(*resource, data_set, recurse);
+                        }
+
+                        auto status = nmos::fields::nc::status(result);
+                        auto code = (nc_method_status::ok == status || nc_method_status::property_deprecated == status) ? status_codes::OK : status_codes::InternalError;
+                        set_reply(res, code, result);
+                    }
+                    else
+                    {
+                        set_reply(res, status_codes::BadRequest, nmos::details::make_nc_method_result_error({ nc_method_status::parameter_error }, U("Null dataSet parameter")));
+                    }
+                    return true;
+                });
+            }
+            else
+            {
+                // resource not found for the role path
+                set_error_reply(res, status_codes::NotFound, U("Not Found; ") + role_path);
+            }
+
+            return pplx::task_from_result(true);
+        });
+
+        configuration_api.support(U("/rolePaths/") + nmos::patterns::rolePath.pattern + U("/bulkProperties/?"), methods::PUT, [&model, set_properties_by_path, &gate_](http_request req, http_response res, const string_t&, const route_parameters& parameters)
+        {
+            const auto role_path = parameters.at(nmos::patterns::rolePath.name);
+
+            auto lock = model.read_lock();
+            const nmos::api_version version = nmos::parse_api_version(parameters.at(nmos::patterns::version.name));
+            auto& resources = model.control_protocol_resources;
+
+            const auto& resource = details::find_resource(resources, role_path);
+            if (resources.end() != resource)
+            {
+                return details::extract_json(req, gate_).then([res, resources, resource, set_properties_by_path, version, &gate_](value body) mutable
+                {
+                    // Validate JSON syntax according to the schema
+                    details::configurationapi_validator().validate(body, experimental::make_configurationapi_bulkProperties_set_request_schema_uri(version));
+
+                    const auto& arguments = nmos::fields::nc::arguments(body);
+                    bool recurse = nmos::fields::nc::recurse(arguments);
+                    bool allow_incomplete = nmos::fields::nc::allow_incomplete(arguments);
+                    const auto& data_set = nmos::fields::nc::data_set(arguments);
+
+                    auto result = details::make_nc_method_result_error({ nc_method_status::method_not_implemented }, U("set_properties_by_path not provided"));
+                    if (set_properties_by_path)
+                    {
+                        result = set_properties_by_path(*resource, data_set, recurse, allow_incomplete);
+                    }
+
+                    auto status = nmos::fields::nc::status(result);
+                    auto code = (nc_method_status::ok == status || nc_method_status::property_deprecated == status) ? status_codes::OK : status_codes::InternalError;
+                    set_reply(res, code, result);
+
+                    return true;
+                });
+            }
+            else
+            {
+                // resource not found for the role path
+                set_error_reply(res, status_codes::NotFound, U("Not Found; ") + role_path);
+            }
+
+            return pplx::task_from_result(true);
         });
 
         return configuration_api;

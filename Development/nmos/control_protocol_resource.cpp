@@ -817,6 +817,16 @@ namespace nmos
             return data;
         }
 
+        // TODO: add link
+        web::json::value make_nc_bulk_properties_manager(nc_oid oid, nc_oid owner, const web::json::value &user_label, const utility::string_t& description, const web::json::value& touchpoints, const web::json::value& runtime_property_constraints)
+        {
+            using web::json::value;
+
+            auto data = make_nc_manager(nc_bulk_properties_manager_class_id, oid, true, owner, U("BulkPropertiesManager"), user_label, description, touchpoints, runtime_property_constraints);
+
+            return data;
+        }
+
         // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncpropertychangedeventdata
         web::json::value make_nc_property_changed_event_data(const nc_property_changed_event_data& property_changed_event_data)
         {
@@ -1227,6 +1237,51 @@ namespace nmos
         return value::array();
     }
 
+    // Device configuration classes
+    // NcBulkPropertiesManager
+    // TODO: add link
+    web::json::value make_nc_bulk_properties_manager_properties()
+    {
+        using web::json::value;
+
+        return value::array();
+    }
+    web::json::value make_nc_bulk_properties_manager_methods()
+    {
+        using web::json::value;
+
+        auto methods = value::array();
+        {
+            auto parameters = value::array();
+            web::json::push_back(parameters, details::make_nc_parameter_descriptor(U("The target role path"), nmos::fields::nc::path, U("NcRolePath"), false, false, value::null()));
+            web::json::push_back(parameters, details::make_nc_parameter_descriptor(U("If true will return properties on specified path and all the nested paths"), nmos::fields::nc::recurse, U("NcBoolean"), false, false, value::null()));
+            web::json::push_back(methods, details::make_nc_method_descriptor(U("Get bulk object properties by given path"), nc_bulk_properties_manager_get_properties_by_path_method_id, U("GetPropertiesByPath"), U("NcMethodResultBulkValuesHolder"), parameters, false));
+        }
+        {
+            auto parameters = value::array();
+            web::json::push_back(parameters, details::make_nc_parameter_descriptor(U("The values offered (this may include read-only values and also paths which are not the target role path)"), nmos::fields::nc::data_set, U("NcBulkValuesHolder"), false, false, value::null()));
+            web::json::push_back(parameters, details::make_nc_parameter_descriptor(U("If set the descriptor would contain all inherited elements"), nmos::fields::nc::path, U("NcRolePath"), false, false, value::null()));
+            web::json::push_back(parameters, details::make_nc_parameter_descriptor(U("If true will validate properties on target path and all the nested paths"), nmos::fields::nc::recurse, U("NcBoolean"), false, false, value::null()));
+            web::json::push_back(methods, details::make_nc_method_descriptor(U("Validate bulk properties for setting by given paths"), nc_bulk_properties_manager_validate_set_properties_by_path_method_id, U("ValidateSetPropertiesByPath"), U("NcMethodResultObjectPropertiesSetValidation"), parameters, false));
+        }
+        {
+            auto parameters = value::array();
+            web::json::push_back(parameters, details::make_nc_parameter_descriptor(U("The values offered (this may include read-only values and also paths which are not the target role path)"), nmos::fields::nc::data_set, U("NcBulkValuesHolder"), false, false, value::null()));
+            web::json::push_back(parameters, details::make_nc_parameter_descriptor(U("If set the descriptor would contain all inherited elements"), nmos::fields::nc::path, U("NcRolePath"), false, false, value::null()));
+            web::json::push_back(parameters, details::make_nc_parameter_descriptor(U("If true will validate properties on target path and all the nested paths"), nmos::fields::nc::recurse, U("NcBoolean"), false, false, value::null()));
+            web::json::push_back(parameters, details::make_nc_parameter_descriptor(U("If true will allow the device to restore only the role paths which pass validation(perform an incomplete restore)"), nmos::fields::nc::allow_incomplete, U("NcBoolean"), false, false, value::null()));
+            web::json::push_back(methods, details::make_nc_method_descriptor(U("Set bulk properties for setting by given paths"), nc_bulk_properties_manager_set_properties_by_path_method_id, U("SetPropertiesByPath"), U("NcMethodResultObjectPropertiesSetValidation"), parameters, false));
+        }
+
+        return methods;
+    }
+    web::json::value make_nc_bulk_properties_manager_events()
+    {
+        using web::json::value;
+
+        return value::array();
+    }
+
     // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/models/classes/1.html
     web::json::value make_nc_object_class()
     {
@@ -1299,6 +1354,15 @@ namespace nmos
         using web::json::value;
 
         return details::make_nc_class_descriptor(U("NcReceiverMonitorProtected class descriptor"), nc_receiver_monitor_protected_class_id, U("NcReceiverMonitorProtected"), make_nc_receiver_monitor_protected_properties(), make_nc_receiver_monitor_protected_methods(), make_nc_receiver_monitor_protected_events());
+    }
+
+    // Device configuration feature set control classes
+    // TODO: add link
+    web::json::value make_nc_bulk_properties_manager_class()
+    {
+        using web::json::value;
+
+        return details::make_nc_class_descriptor(U("NcBulkPropertiesManager class descriptor"), nc_bulk_properties_manager_class_id, U("NcBulkPropertiesManager"), U("BulkPropertiesManager"), make_nc_bulk_properties_manager_properties(), make_nc_bulk_properties_manager_methods(), make_nc_bulk_properties_manager_events());
     }
 
     // Primitive datatypes

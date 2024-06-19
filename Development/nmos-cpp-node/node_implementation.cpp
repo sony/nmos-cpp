@@ -1206,6 +1206,9 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
         // example class manager
         auto class_manager = nmos::make_class_manager(++oid, control_protocol_state);
 
+        // example bulk properties manager
+        auto bulk_properties_manager = nmos::make_bulk_properties_manager(++oid);
+
         // example stereo gain
         const auto stereo_gain_oid = ++oid;
         auto stereo_gain = nmos::make_block(stereo_gain_oid, nmos::root_block_oid, U("stereo-gain"), U("Stereo gain"), U("Stereo gain block"));
@@ -1714,6 +1717,42 @@ nmos::control_protocol_property_changed_handler make_node_implementation_control
     };
 }
 
+// Example Device Configuration callback for creating a back-up dataset
+nmos::get_properties_by_path_handler make_node_implementation_get_properties_by_path_handler(const nmos::resources& resources, slog::base_gate& gate)
+{
+    return [&resources, &gate](const nmos::resource& resource, bool recurse)
+    {
+        slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::stash_category(impl::categories::node_implementation) << "Do get_properties_by_path";
+
+        // Implement backup of device model here
+        return nmos::details::make_nc_method_result({ nmos::nc_method_status::ok });
+    };
+}
+
+// Example Device Configuration callback for validating a back-up dataset
+nmos::validate_set_properties_by_path_handler make_node_implementation_validate_set_properties_by_path_handler(const nmos::resources& resources, slog::base_gate& gate)
+{
+    return [&resources, &gate](const nmos::resource& resource, const web::json::value& backup_data_set, bool recurse)
+    {
+        slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::stash_category(impl::categories::node_implementation) << "Do validate_set_properties_by_path";
+
+        // Can this backup be restored?
+        return nmos::details::make_nc_method_result({ nmos::nc_method_status::ok });
+    };
+}
+
+// Example Device Configuration callback for restoring a back-up dataset
+nmos::set_properties_by_path_handler make_node_implementation_set_properties_by_path_handler(nmos::resources& resources, slog::base_gate& gate)
+{
+    return [&resources, &gate](const nmos::resource& resource, const web::json::value& data_set, bool recurse, bool allow_incomplete)
+    {
+        slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::stash_category(impl::categories::node_implementation) << "Do set_properties_by_path";
+
+        // Implement restore of device model here
+        return nmos::details::make_nc_method_result({ nmos::nc_method_status::ok });
+    };
+}
+
 namespace impl
 {
     nmos::interlace_mode get_interlace_mode(const nmos::settings& settings)
@@ -1868,5 +1907,8 @@ nmos::experimental::node_implementation make_node_implementation(nmos::node_mode
         .on_connection_activated(make_node_implementation_connection_activation_handler(model, gate))
         .on_validate_channelmapping_output_map(make_node_implementation_map_validator()) // may be omitted if not required
         .on_channelmapping_activated(make_node_implementation_channelmapping_activation_handler(gate))
-        .on_control_protocol_property_changed(make_node_implementation_control_protocol_property_changed_handler(gate)); // may be omitted if IS-12 not required
+        .on_control_protocol_property_changed(make_node_implementation_control_protocol_property_changed_handler(gate)) // may be omitted if IS-12 not required
+        .on_get_properties_by_path(make_node_implementation_get_properties_by_path_handler(model.control_protocol_resources, gate)) // may be omitted if IS-14 not required
+        .on_validate_set_properties_by_path(make_node_implementation_validate_set_properties_by_path_handler(model.control_protocol_resources, gate)) // may be omitted if IS-14 not required
+        .on_set_properties_by_path(make_node_implementation_set_properties_by_path_handler(model.control_protocol_resources, gate)); // may be omitted if IS-14 not required
 }

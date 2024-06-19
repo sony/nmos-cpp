@@ -191,6 +191,9 @@ namespace nmos
 
         // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncclassmanager
         web::json::value make_nc_class_manager(nc_oid oid, nc_oid owner, const web::json::value& user_label, const utility::string_t& description, const web::json::value& touchpoints, const web::json::value& runtime_property_constraints, const nmos::experimental::control_protocol_state& control_protocol_state);
+
+        // TODO: add link
+        web::json::value make_nc_bulk_properties_manager(nc_oid oid, nc_oid owner, const web::json::value& user_label, const utility::string_t& description, const web::json::value& touchpoints, const web::json::value& runtime_property_constraints);
     }
 
     // command message response
@@ -280,6 +283,12 @@ namespace nmos
     web::json::value make_nc_ident_beacon_properties();
     web::json::value make_nc_ident_beacon_methods();
     web::json::value make_nc_ident_beacon_events();
+
+    // Device configuration classes
+    // TODO: add link
+    web::json::value make_nc_bulk_properties_manager_properties();
+    web::json::value make_nc_bulk_properties_manager_methods();
+    web::json::value make_nc_bulk_properties_manager_events();
 
     // Datatype models
     // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/models/datatypes/#datatype-models-for-branch-v10-dev

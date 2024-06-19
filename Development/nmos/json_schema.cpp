@@ -186,10 +186,10 @@ namespace nmos
             using namespace nmos::is14_schemas::v1_0_x;
             const utility::string_t tag(_XPLATSTR("v1.0.x"));
 
-            const web::uri configrationapi_bulkProperties_set_request_schema_uri = make_schema_uri(tag, _XPLATSTR("bulkProperties-set-request.json"));
-            const web::uri configrationapi_bulkProperties_validate_request_schema_uri = make_schema_uri(tag, _XPLATSTR("bulkProperties-validate-request.json"));
-            const web::uri configrationapi_method_patch_request_schema_uri = make_schema_uri(tag, _XPLATSTR("method-patch-request.json"));
-            const web::uri configrationapi_property_value_put_request_schema_uri = make_schema_uri(tag, _XPLATSTR("property-value-put-request.json"));
+            const web::uri configurationapi_bulkProperties_set_request_schema_uri = make_schema_uri(tag, _XPLATSTR("bulkProperties-set-request.json"));
+            const web::uri configurationapi_bulkProperties_validate_request_schema_uri = make_schema_uri(tag, _XPLATSTR("bulkProperties-validate-request.json"));
+            const web::uri configurationapi_method_patch_request_schema_uri = make_schema_uri(tag, _XPLATSTR("method-patch-request.json"));
+            const web::uri configurationapi_property_value_put_request_schema_uri = make_schema_uri(tag, _XPLATSTR("property-value-put-request.json"));
         }
     }
 }
@@ -547,24 +547,24 @@ namespace nmos
             return is12_schemas::v1_0::controlprotocolapi_subscription_message_schema_uri;
         }
 
-        web::uri make_configrationapi_bulkProperties_set_request_schema_uri(const nmos::api_version& version)
+        web::uri make_configurationapi_bulkProperties_set_request_schema_uri(const nmos::api_version& version)
         {
-            return is14_schemas::v1_0::configrationapi_bulkProperties_set_request_schema_uri;
+            return is14_schemas::v1_0::configurationapi_bulkProperties_set_request_schema_uri;
         }
 
-        web::uri make_configrationapi_bulkProperties_validate_request_schema_uri(const nmos::api_version& version)
+        web::uri make_configurationapi_bulkProperties_validate_request_schema_uri(const nmos::api_version& version)
         {
-            return is14_schemas::v1_0::configrationapi_bulkProperties_validate_request_schema_uri;
+            return is14_schemas::v1_0::configurationapi_bulkProperties_validate_request_schema_uri;
         }
 
-        web::uri make_configrationapi_method_patch_request_schema_uri(const nmos::api_version& version)
+        web::uri make_configurationapi_method_patch_request_schema_uri(const nmos::api_version& version)
         {
-            return is14_schemas::v1_0::configrationapi_method_patch_request_schema_uri;
+            return is14_schemas::v1_0::configurationapi_method_patch_request_schema_uri;
         }
 
-        web::uri make_configrationapi_property_value_put_request_schema_uri(const nmos::api_version& version)
+        web::uri make_configurationapi_property_value_put_request_schema_uri(const nmos::api_version& version)
         {
-            return is14_schemas::v1_0::configrationapi_property_value_put_request_schema_uri;
+            return is14_schemas::v1_0::configurationapi_property_value_put_request_schema_uri;
         }
 
         // load the json schema for the specified base URI

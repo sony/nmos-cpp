@@ -339,6 +339,8 @@ namespace nmos
             const web::json::field_as_array values{ U("values") };
             const web::json::field_as_string validation_fingerprint{ U("validationFingerprint") };
             const web::json::field_as_string status_message{ U("statusMessage") };
+            const web::json::field_as_value data_set{ U("dataSet") }; // NcBulkValuesHolder
+            const web::json::field_as_bool allow_incomplete{ U("allowIncomplete") };
         }
 
         // NMOS Parameter Registers
