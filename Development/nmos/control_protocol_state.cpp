@@ -400,7 +400,7 @@ namespace nmos
                         { nc_bulk_properties_manager_validate_set_properties_by_path_method_id, details::make_nc_validate_set_properties_by_path_handler(validate_set_properties_by_path_handler) },
                         { nc_bulk_properties_manager_set_properties_by_path_method_id, details::make_nc_set_properties_by_path_handler(set_properties_by_path_handler) }
                     }),
-                    to_vector(make_nc_receiver_monitor_protected_events())) }
+                    to_vector(make_nc_bulk_properties_manager_events())) }
             };
 
             // setup the standard datatypes
