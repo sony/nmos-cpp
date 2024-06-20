@@ -258,8 +258,6 @@ namespace nmos
 
         control_protocol_state::control_protocol_state(control_protocol_property_changed_handler property_changed, get_properties_by_path_handler get_properties_by_path, validate_set_properties_by_path_handler validate_set_properties_by_path, set_properties_by_path_handler set_properties_by_path)
         {
-            using web::json::value;
-
             auto to_vector = [](const web::json::value& data)
             {
                 if (!data.is_null())
