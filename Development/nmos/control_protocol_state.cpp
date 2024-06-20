@@ -256,7 +256,7 @@ namespace nmos
             }
         }
 
-        control_protocol_state::control_protocol_state(control_protocol_property_changed_handler property_changed, get_properties_by_path_handler get_properties_by_path_handler, validate_set_properties_by_path_handler validate_set_properties_by_path_handler, set_properties_by_path_handler set_properties_by_path_handler)
+        control_protocol_state::control_protocol_state(control_protocol_property_changed_handler property_changed, get_properties_by_path_handler get_properties_by_path, validate_set_properties_by_path_handler validate_set_properties_by_path, set_properties_by_path_handler set_properties_by_path)
         {
             using web::json::value;
 
@@ -396,9 +396,9 @@ namespace nmos
                     to_vector(make_nc_bulk_properties_manager_properties()),
                     to_methods_vector(make_nc_bulk_properties_manager_methods(),
                     {
-                        { nc_bulk_properties_manager_get_properties_by_path_method_id, details::make_nc_get_properties_by_path_handler(get_properties_by_path_handler) },
-                        { nc_bulk_properties_manager_validate_set_properties_by_path_method_id, details::make_nc_validate_set_properties_by_path_handler(validate_set_properties_by_path_handler) },
-                        { nc_bulk_properties_manager_set_properties_by_path_method_id, details::make_nc_set_properties_by_path_handler(set_properties_by_path_handler) }
+                        { nc_bulk_properties_manager_get_properties_by_path_method_id, details::make_nc_get_properties_by_path_handler(get_properties_by_path) },
+                        { nc_bulk_properties_manager_validate_set_properties_by_path_method_id, details::make_nc_validate_set_properties_by_path_handler(validate_set_properties_by_path) },
+                        { nc_bulk_properties_manager_set_properties_by_path_method_id, details::make_nc_set_properties_by_path_handler(set_properties_by_path) }
                     }),
                     to_vector(make_nc_bulk_properties_manager_events())) }
             };
