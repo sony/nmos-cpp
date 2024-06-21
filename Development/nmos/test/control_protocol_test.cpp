@@ -676,7 +676,7 @@ BST_TEST_CASE(testFindProperty)
     const auto invalid_property_id = nmos::nc_property_id(1000, 1000);
     const auto invalid_class_id = nmos::nc_class_id({ 1000, 1000 });
 
-    nmos::experimental::control_protocol_state control_protocol_state(nullptr);
+    nmos::experimental::control_protocol_state control_protocol_state;
     auto get_control_protocol_class_descriptor = nmos::make_get_control_protocol_class_descriptor_handler(control_protocol_state);
 
     {
@@ -773,7 +773,7 @@ BST_TEST_CASE(testConstraints)
     const auto struct_datatype = nmos::details::make_nc_datatype_descriptor_struct(U("struct datatype"), U("structDatatype"), fields, value::null()); // no datatype constraints for struct datatype
 
     // setup datatypes in control_protocol_state
-    nmos::experimental::control_protocol_state control_protocol_state(nullptr);
+    nmos::experimental::control_protocol_state control_protocol_state;
     control_protocol_state.insert(nmos::experimental::datatype_descriptor{ no_constraints_int16_datatype });
     control_protocol_state.insert(nmos::experimental::datatype_descriptor{ no_constraints_int32_datatype });
     control_protocol_state.insert(nmos::experimental::datatype_descriptor{ no_constraints_int64_datatype });

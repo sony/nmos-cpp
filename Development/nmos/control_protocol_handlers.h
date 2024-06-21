@@ -36,6 +36,12 @@ namespace nmos
     // this callback should not throw exceptions, as the relevant property will already has been changed and those changes will not be rolled back
     typedef std::function<void(const nmos::resource& resource, const utility::string_t& property_name, int index)> control_protocol_property_changed_handler;
 
+    // Device Configuration handlers
+    // these callbacks should not throw exceptions
+    typedef std::function<web::json::value(const nmos::resource& resource, bool recurse)> get_properties_by_path_handler;
+    typedef std::function<web::json::value(const nmos::resource& resource, const web::json::value& backup_data_set, bool recurse)> validate_set_properties_by_path_handler;
+    typedef std::function<web::json::value(const nmos::resource& resource, const web::json::value& backup_data_set, bool recurse, bool allow_incomplete)> set_properties_by_path_handler;
+
     namespace experimental
     {
         // control method handler definition

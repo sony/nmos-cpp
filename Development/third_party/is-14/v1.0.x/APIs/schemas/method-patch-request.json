@@ -1,0 +1,15 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "description": "PATCH request body for invoking a method",
+  "title": "Invoke method body",
+  "required": [
+    "arguments"
+  ],
+  "properties": {
+    "arguments": {
+      "type": "object",
+      "description": "Method arguments. Arguments are specified as nested properties inside this object and their types are dictated by the specific MS-05-02 model for the method targeted. For methods which do not have arguments defined the object MUST be an empty object."
+    }
+  }
+}
