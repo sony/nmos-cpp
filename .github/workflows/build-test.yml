@@ -121,7 +121,7 @@ jobs:
     - name: install conan
       if: matrix.use_conan == true
       run: |
-        pip install conan~=2.0.5
+        pip install conan~=2.4.1
 
     - name: 'ubuntu-14.04: install cmake'
       if: matrix.os == 'ubuntu-14.04'
