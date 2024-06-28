@@ -336,7 +336,7 @@ namespace nmos
             const web::json::field_as_string link_status_message{ U("linkStatusMessage") };
             const web::json::field_as_integer synchronization_status{ U("synchronizationStatus") }; // NcSynchronizationStatus
             const web::json::field_as_string synchronization_status_message{ U("synchronizationStatusMessage") };
-            const web::json::field_as_string grand_master_clock_id{ U("grandMasterClockId") };
+            const web::json::field_as_string synchronization_source_id{ U("synchronizationSourceId") };
             const web::json::field_as_bool signal_protection_status{ U("signalProtectionStatus") };
             const web::json::field_as_integer stream_status{ U("streamStatus") }; // NcStreamStatus
             const web::json::field_as_string stream_status_message{ U("streamStatusMessage") };

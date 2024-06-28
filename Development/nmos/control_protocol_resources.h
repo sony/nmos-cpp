@@ -37,7 +37,7 @@ namespace nmos
         const utility::string_t& connection_status_message = U(""), 
         nc_synchronization_status::status synchronization_status = nc_synchronization_status::not_used,
         const utility::string_t& synchronization_status_message = U(""), 
-        const utility::string_t& grand_master_clock_id = U(""), 
+        const utility::string_t& synchronization_source_id = U(""),
         nc_stream_status::status stream_status = nc_stream_status::inactive,
         const utility::string_t& stream_status_message = U("")
     );

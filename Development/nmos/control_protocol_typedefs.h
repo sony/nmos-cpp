@@ -212,8 +212,8 @@ namespace nmos
     const nc_method_id nc_class_manager_get_datatype_method_id(3, 2);
     // NcMethodIds for NcReceiverMonitor
     // TODO: link
-    const nc_method_id nc_receiver_monitor_get_lost_packets_method_id(4, 1);
-    const nc_method_id nc_receiver_monitor_get_late_packets_method_id(4, 2);
+    const nc_method_id nc_receiver_monitor_get_lost_packet_counters_method_id(4, 1);
+    const nc_method_id nc_receiver_monitor_get_late_packet_counters_method_id(4, 2);
     const nc_method_id nc_receiver_monitor_reset_packet_counters_method_id(4, 3);
 
     // NcPropertyId
@@ -263,7 +263,7 @@ namespace nmos
     const nc_property_id nc_receiver_monitor_connection_status_message_property_id(4, 4);
     const nc_property_id nc_receiver_monitor_synchronization_status_property_id(4, 5);
     const nc_property_id nc_receiver_monitor_synchronization_status_message_property_id(4, 6);
-    const nc_property_id nc_receiver_monitor_synchronization_grand_master_clock_id_property_id(4, 7);
+    const nc_property_id nc_receiver_monitor_synchronization_synchronization_source_id_property_id(4, 7);
     const nc_property_id nc_receiver_monitor_stream_status_property_id(4, 8);
     const nc_property_id nc_receiver_monitor_stream_status_message_property_id(4, 9);
     const nc_property_id nc_receiver_monitor_protected_signal_protection_status_property_id(4, 1);

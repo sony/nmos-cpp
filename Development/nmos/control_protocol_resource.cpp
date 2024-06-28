@@ -751,7 +751,7 @@ namespace nmos
         }
 
         // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/monitoring/#ncreceivermonitor
-        web::json::value make_receiver_monitor(const nc_class_id& class_id, nc_oid oid, bool constant_oid, nc_oid owner, const utility::string_t& role, const utility::string_t& user_label, const utility::string_t& description, const web::json::value& touchpoints, const web::json::value& runtime_property_constraints, bool enabled, nc_overall_status::status overall_status, const utility::string_t& overall_status_message, nc_link_status::status link_status, const utility::string_t& link_status_message, nc_connection_status::status connection_status, const utility::string_t& connection_status_message, nc_synchronization_status::status synchronization_status, const utility::string_t& synchronization_status_message, const utility::string_t& grand_master_clock_id, nc_stream_status::status stream_status, const utility::string_t& stream_status_message)
+        web::json::value make_receiver_monitor(const nc_class_id& class_id, nc_oid oid, bool constant_oid, nc_oid owner, const utility::string_t& role, const utility::string_t& user_label, const utility::string_t& description, const web::json::value& touchpoints, const web::json::value& runtime_property_constraints, bool enabled, nc_overall_status::status overall_status, const utility::string_t& overall_status_message, nc_link_status::status link_status, const utility::string_t& link_status_message, nc_connection_status::status connection_status, const utility::string_t& connection_status_message, nc_synchronization_status::status synchronization_status, const utility::string_t& synchronization_status_message, const utility::string_t& synchronization_source_id, nc_stream_status::status stream_status, const utility::string_t& stream_status_message)
         {
             using web::json::value;
 
@@ -763,7 +763,7 @@ namespace nmos
             data[nmos::fields::nc::connection_status_message] = value::string(connection_status_message);
             data[nmos::fields::nc::synchronization_status] = value::number(synchronization_status);
             data[nmos::fields::nc::synchronization_status_message] = value::string(synchronization_status_message);
-            data[nmos::fields::nc::grand_master_clock_id] = value::string(grand_master_clock_id);
+            data[nmos::fields::nc::synchronization_source_id] = value::string(synchronization_source_id);
             data[nmos::fields::nc::stream_status] = value::number(stream_status);
             data[nmos::fields::nc::stream_status_message] = value::string(stream_status_message);
 
@@ -1208,7 +1208,7 @@ namespace nmos
         web::json::push_back(properties, details::make_nc_property_descriptor(U("Connection status message property"), nc_receiver_monitor_connection_status_message_property_id, nmos::fields::nc::connection_status_message, U("NcString"), true, true, false, false, value::null()));
         web::json::push_back(properties, details::make_nc_property_descriptor(U("Synchronization status property"), nc_receiver_monitor_synchronization_status_property_id, nmos::fields::nc::synchronization_status, U("NcSynchronizationStatus"), true, false, false, false, value::null()));
         web::json::push_back(properties, details::make_nc_property_descriptor(U("Synchronization status message property"), nc_receiver_monitor_synchronization_status_message_property_id, nmos::fields::nc::synchronization_status_message, U("NcString"), true, true, false, false, value::null()));
-        web::json::push_back(properties, details::make_nc_property_descriptor(U("Grand master clock id property"), nc_receiver_monitor_synchronization_grand_master_clock_id_property_id, nmos::fields::nc::grand_master_clock_id, U("NcString"), true, true, false, false, value::null()));
+        web::json::push_back(properties, details::make_nc_property_descriptor(U("Grand master clock id property"), nc_receiver_monitor_synchronization_synchronization_source_id_property_id, nmos::fields::nc::synchronization_source_id, U("NcString"), true, true, false, false, value::null()));
         web::json::push_back(properties, details::make_nc_property_descriptor(U("Stream status property"), nc_receiver_monitor_stream_status_property_id, nmos::fields::nc::stream_status, U("NcStreamStatus"), true, false, false, false, value::null()));
         web::json::push_back(properties, details::make_nc_property_descriptor(U("Stream status message property"), nc_receiver_monitor_stream_status_message_property_id, nmos::fields::nc::stream_status_message, U("NcString"), true, true, false, false, value::null()));
 
@@ -1219,8 +1219,8 @@ namespace nmos
         using web::json::value;
 
         auto methods = value::array();
-        web::json::push_back(methods, details::make_nc_method_descriptor(U("Gets the lost packets"), nc_receiver_monitor_get_lost_packets_method_id, U("GetLostPackets"), U("NcMethodResultCounter"), value::array(), false));
-        web::json::push_back(methods, details::make_nc_method_descriptor(U("Gets the late packets"), nc_receiver_monitor_get_late_packets_method_id, U("GetLatePackets"), U("NcMethodResultCounter"), value::array(), false));
+        web::json::push_back(methods, details::make_nc_method_descriptor(U("Gets the lost packet counters"), nc_receiver_monitor_get_lost_packet_counters_method_id, U("GetLostPacketCounters"), U("NcMethodResultCounters"), value::array(), false));
+        web::json::push_back(methods, details::make_nc_method_descriptor(U("Gets the late packet counters"), nc_receiver_monitor_get_late_packet_counters_method_id, U("GetLatePacketCounters"), U("NcMethodResultCounters"), value::array(), false));
         web::json::push_back(methods, details::make_nc_method_descriptor(U("Resets the packet counters"), nc_receiver_monitor_reset_packet_counters_method_id, U("ResetPacketCounters"), U("NcMethodResult"), value::array(), false));
 
         return methods;
@@ -2073,6 +2073,7 @@ namespace nmos
         using web::json::value;
 
         auto items = value::array();
+        web::json::push_back(items, details::make_nc_enum_item_descriptor(U("Inactive"), U("Inactive"), 0)); 
         web::json::push_back(items, details::make_nc_enum_item_descriptor(U("The overall status is healthy"), U("Healthy"), 1));
         web::json::push_back(items, details::make_nc_enum_item_descriptor(U("The overall status is partially healthy"), U("PartiallyHealthy"), 2));
         web::json::push_back(items, details::make_nc_enum_item_descriptor(U("The overall status is unhealthy"), U("Unhealthy"), 3));
@@ -2115,13 +2116,23 @@ namespace nmos
         web::json::push_back(items, details::make_nc_enum_item_descriptor(U("Active and unhealthy"), U("Unhealthy"), 3));
         return details::make_nc_datatype_descriptor_enum(U("Stream status enum data type"), U("NcStreamStatus"), items, value::null());
     }
-    // TOO: link
-    web::json::value make_nc_method_result_counter_datatype()
+    // TODO: link
+    web::json::value make_nc_packet_counter_datatype()
     {
         using web::json::value;
 
         auto fields = value::array();
+        web::json::push_back(fields, details::make_nc_field_descriptor(U("Counter name"), nmos::fields::nc::name, U("NcString"), false, false, value::null()));
         web::json::push_back(fields, details::make_nc_field_descriptor(U("Counter value"), nmos::fields::nc::value, U("NcUint64"), false, false, value::null()));
-        return details::make_nc_datatype_descriptor_struct(U("Counter method result"), U("NcMethodResultCounter"), fields, U("NcMethodResult"), value::null());
+        return details::make_nc_datatype_descriptor_struct(U("Packet counter data type"), U("NcPacketCounter"), fields, value::null());
+    }
+    // TOO: link
+    web::json::value make_nc_method_result_counters_datatype()
+    {
+        using web::json::value;
+
+        auto fields = value::array();
+        web::json::push_back(fields, details::make_nc_field_descriptor(U("Counters"), nmos::fields::nc::value, U("NcPacketCounter"), false, true, value::null()));
+        return details::make_nc_datatype_descriptor_struct(U("Counter method result"), U("NcMethodResultCounters"), fields, U("NcMethodResult"), value::null());
     }
 }
