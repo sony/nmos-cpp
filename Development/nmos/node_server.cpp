@@ -16,6 +16,8 @@
 #include "nmos/server_utils.h"
 #include "nmos/settings_api.h"
 #include "nmos/slog.h"
+#include "nmos/streamcompatibility_api.h"
+#include "nmos/streamcompatibility_behaviour.h"
 
 namespace nmos
 {
@@ -73,6 +75,9 @@ namespace nmos
             // Configure the Channel Mapping API
 
             node_server.api_routers[{ {}, nmos::fields::channelmapping_port(node_model.settings) }].mount({}, nmos::make_channelmapping_api(node_model, node_implementation.validate_map, validate_authorization ? validate_authorization(nmos::experimental::scopes::channelmapping) : nullptr, gate));
+
+            // Configure the Stream Compatibility API
+            node_server.api_routers[{ {}, nmos::fields::streamcompatibility_port(node_model.settings) }].mount({}, nmos::experimental::make_streamcompatibility_api(node_model, node_implementation.base_edid_changed, node_implementation.set_effective_edid, node_implementation.active_constraints_changed, validate_authorization ? validate_authorization(nmos::experimental::scopes::streamcompatibility) : nullptr, gate));
 
             const auto& events_ws_port = nmos::fields::events_ws_port(node_model.settings);
             auto& events_ws_api = node_server.ws_handlers[{ {}, nmos::fields::events_ws_port(node_model.settings) }];
@@ -142,12 +147,15 @@ namespace nmos
             auto connection_activated = node_implementation.connection_activated;
             auto channelmapping_activated = node_implementation.channelmapping_activated;
             auto get_authorization_bearer_token = node_implementation.get_authorization_bearer_token;
+            auto validate_sender_resources = node_implementation.validate_sender_resources;
+            auto validate_receiver = node_implementation.validate_receiver;
             node_server.thread_functions.assign({
                 [&, load_ca_certificates, registration_changed, get_authorization_bearer_token] { nmos::node_behaviour_thread(node_model, load_ca_certificates, registration_changed, get_authorization_bearer_token, gate); },
                 [&] { nmos::send_events_ws_messages_thread(events_ws_listener, node_model, events_ws_api.second, gate); },
                 [&] { nmos::erase_expired_events_resources_thread(node_model, gate); },
                 [&, resolve_auto, set_transportfile, connection_activated] { nmos::connection_activation_thread(node_model, resolve_auto, set_transportfile, connection_activated, gate); },
-                [&, channelmapping_activated] { nmos::channelmapping_activation_thread(node_model, channelmapping_activated, gate); }
+                [&, channelmapping_activated] { nmos::channelmapping_activation_thread(node_model, channelmapping_activated, gate); },
+                [&, validate_sender_resources, validate_receiver] { nmos::experimental::streamcompatibility_behaviour_thread(node_model, validate_sender_resources, validate_receiver, gate); }
             });
 
             auto system_changed = node_implementation.system_changed;

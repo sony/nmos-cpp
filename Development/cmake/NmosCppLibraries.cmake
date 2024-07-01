@@ -760,6 +760,95 @@ target_include_directories(nmos_is10_schemas PUBLIC
 list(APPEND NMOS_CPP_TARGETS nmos_is10_schemas)
 add_library(nmos-cpp::nmos_is10_schemas ALIAS nmos_is10_schemas)
 
+# nmos_is11_schemas library
+
+set(NMOS_IS11_SCHEMAS_HEADERS
+    nmos/is11_schemas/is11_schemas.h
+    )
+
+set(NMOS_IS11_V1_0_TAG v1.0.x)
+
+set(NMOS_IS11_V1_0_SCHEMAS_JSON
+    third_party/is-11/${NMOS_IS11_V1_0_TAG}/APIs/schemas/constraints_active.json
+    third_party/is-11/${NMOS_IS11_V1_0_TAG}/APIs/schemas/constraints-base.json
+    third_party/is-11/${NMOS_IS11_V1_0_TAG}/APIs/schemas/constraint_set.json
+    third_party/is-11/${NMOS_IS11_V1_0_TAG}/APIs/schemas/constraints_supported.json
+    third_party/is-11/${NMOS_IS11_V1_0_TAG}/APIs/schemas/empty_constraints_active.json
+    third_party/is-11/${NMOS_IS11_V1_0_TAG}/APIs/schemas/error.json
+    third_party/is-11/${NMOS_IS11_V1_0_TAG}/APIs/schemas/input-edid-base.json
+    third_party/is-11/${NMOS_IS11_V1_0_TAG}/APIs/schemas/input.json
+    third_party/is-11/${NMOS_IS11_V1_0_TAG}/APIs/schemas/input-output-base.json
+    third_party/is-11/${NMOS_IS11_V1_0_TAG}/APIs/schemas/output.json
+    third_party/is-11/${NMOS_IS11_V1_0_TAG}/APIs/schemas/param_constraint_boolean.json
+    third_party/is-11/${NMOS_IS11_V1_0_TAG}/APIs/schemas/param_constraint_integer.json
+    third_party/is-11/${NMOS_IS11_V1_0_TAG}/APIs/schemas/param_constraint.json
+    third_party/is-11/${NMOS_IS11_V1_0_TAG}/APIs/schemas/param_constraint_number.json
+    third_party/is-11/${NMOS_IS11_V1_0_TAG}/APIs/schemas/param_constraint_rational.json
+    third_party/is-11/${NMOS_IS11_V1_0_TAG}/APIs/schemas/param_constraint_string.json
+    third_party/is-11/${NMOS_IS11_V1_0_TAG}/APIs/schemas/receiver-base.json
+    third_party/is-11/${NMOS_IS11_V1_0_TAG}/APIs/schemas/receiver-status.json
+    third_party/is-11/${NMOS_IS11_V1_0_TAG}/APIs/schemas/resource_core.json
+    third_party/is-11/${NMOS_IS11_V1_0_TAG}/APIs/schemas/resource-list.json
+    third_party/is-11/${NMOS_IS11_V1_0_TAG}/APIs/schemas/sender-base.json
+    third_party/is-11/${NMOS_IS11_V1_0_TAG}/APIs/schemas/sender-status.json
+    third_party/is-11/${NMOS_IS11_V1_0_TAG}/APIs/schemas/streamcompatibility-api-base.json
+    third_party/is-11/${NMOS_IS11_V1_0_TAG}/APIs/schemas/uuid-list.json
+    )
+
+set(NMOS_IS11_SCHEMAS_JSON_MATCH "third_party/is-11/([^/]+)/APIs/schemas/([^;]+)\\.json")
+set(NMOS_IS11_SCHEMAS_SOURCE_REPLACE "${CMAKE_CURRENT_BINARY_DIR_REPLACE}/nmos/is11_schemas/\\1/\\2.cpp")
+string(REGEX REPLACE "${NMOS_IS11_SCHEMAS_JSON_MATCH}(;|$)" "${NMOS_IS11_SCHEMAS_SOURCE_REPLACE}\\3" NMOS_IS11_V1_0_SCHEMAS_SOURCES "${NMOS_IS11_V1_0_SCHEMAS_JSON}")
+
+foreach(JSON ${NMOS_IS11_V1_0_SCHEMAS_JSON})
+    string(REGEX REPLACE "${NMOS_IS11_SCHEMAS_JSON_MATCH}" "${NMOS_IS11_SCHEMAS_SOURCE_REPLACE}" SOURCE "${JSON}")
+    string(REGEX REPLACE "${NMOS_IS11_SCHEMAS_JSON_MATCH}" "\\1" NS "${JSON}")
+    string(REGEX REPLACE "${NMOS_IS11_SCHEMAS_JSON_MATCH}" "\\2" VAR "${JSON}")
+    string(MAKE_C_IDENTIFIER "${NS}" NS)
+    string(MAKE_C_IDENTIFIER "${VAR}" VAR)
+
+    file(WRITE "${SOURCE}.in" "\
+// Auto-generated from: ${JSON}\n\
+\n\
+namespace nmos\n\
+{\n\
+    namespace is11_schemas\n\
+    {\n\
+        namespace ${NS}\n\
+        {\n\
+            const char* ${VAR} = R\"-auto-generated-(")
+
+    file(READ "${JSON}" RAW)
+    file(APPEND "${SOURCE}.in" "${RAW}")
+
+    file(APPEND "${SOURCE}.in" ")-auto-generated-\";\n\
+        }\n\
+    }\n\
+}\n")
+
+    configure_file("${SOURCE}.in" "${SOURCE}" COPYONLY)
+endforeach()
+
+add_library(
+    nmos_is11_schemas STATIC
+    ${NMOS_IS11_SCHEMAS_HEADERS}
+    ${NMOS_IS11_V1_0_SCHEMAS_SOURCES}
+    )
+
+source_group("nmos\\is11_schemas\\Header Files" FILES ${NMOS_IS11_SCHEMAS_HEADERS})
+source_group("nmos\\is11_schemas\\${NMOS_IS11_V1_0_TAG}\\Source Files" FILES ${NMOS_IS11_V1_0_SCHEMAS_SOURCES})
+
+target_link_libraries(
+    nmos_is11_schemas PRIVATE
+    nmos-cpp::compile-settings
+    )
+target_include_directories(nmos_is11_schemas PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+    $<INSTALL_INTERFACE:${NMOS_CPP_INSTALL_INCLUDEDIR}>
+    )
+
+list(APPEND NMOS_CPP_TARGETS nmos_is11_schemas)
+add_library(nmos-cpp::nmos_is11_schemas ALIAS nmos_is11_schemas)
+
 # nmos_is12_schemas library
 
 set(NMOS_IS12_SCHEMAS_HEADERS
@@ -925,6 +1014,7 @@ set(NMOS_CPP_NMOS_SOURCES
     nmos/connection_api.cpp
     nmos/connection_events_activation.cpp
     nmos/connection_resources.cpp
+    nmos/constraints.cpp
     nmos/control_protocol_handlers.cpp
     nmos/control_protocol_methods.cpp
     nmos/control_protocol_resource.cpp
@@ -938,6 +1028,11 @@ set(NMOS_CPP_NMOS_SOURCES
     nmos/events_ws_api.cpp
     nmos/events_ws_client.cpp
     nmos/filesystem_route.cpp
+    nmos/streamcompatibility_api.cpp
+    nmos/streamcompatibility_behaviour.cpp
+    nmos/streamcompatibility_resources.cpp
+    nmos/streamcompatibility_utils.cpp
+    nmos/streamcompatibility_validation.cpp
     nmos/group_hint.cpp
     nmos/id.cpp
     nmos/lldp_handler.cpp
@@ -1018,6 +1113,7 @@ set(NMOS_CPP_NMOS_HEADERS
     nmos/connection_api.h
     nmos/connection_events_activation.h
     nmos/connection_resources.h
+    nmos/constraints.h
     nmos/control_protocol_handlers.h
     nmos/control_protocol_methods.h
     nmos/control_protocol_nmos_channel_mapping_resource_type.h
@@ -1036,6 +1132,11 @@ set(NMOS_CPP_NMOS_HEADERS
     nmos/events_ws_api.h
     nmos/events_ws_client.h
     nmos/filesystem_route.h
+    nmos/streamcompatibility_api.h
+    nmos/streamcompatibility_behaviour.h
+    nmos/streamcompatibility_resources.h
+    nmos/streamcompatibility_utils.h
+    nmos/streamcompatibility_validation.h
     nmos/format.h
     nmos/group_hint.h
     nmos/health.h
@@ -1096,6 +1197,7 @@ set(NMOS_CPP_NMOS_HEADERS
     nmos/scope.h
     nmos/sdp_attributes.h
     nmos/sdp_utils.h
+    nmos/streamcompatibility_state.h
     nmos/server.h
     nmos/server_utils.h
     nmos/settings.h
@@ -1197,6 +1299,7 @@ target_link_libraries(
     nmos-cpp::nmos_is08_schemas
     nmos-cpp::nmos_is09_schemas
     nmos-cpp::nmos_is10_schemas
+    nmos-cpp::nmos_is11_schemas
     nmos-cpp::nmos_is12_schemas
     nmos-cpp::mdns
     nmos-cpp::slog

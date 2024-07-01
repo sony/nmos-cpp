@@ -36,6 +36,8 @@ namespace nmos
         web::uri make_authapi_token_schema_schema_uri(const nmos::api_version& version);
         web::uri make_authapi_token_response_schema_uri(const nmos::api_version& version);
 
+        web::uri make_streamcompatibilityapi_senders_active_constraints_put_request_uri(const nmos::api_version& version);
+        
         web::uri make_controlprotocolapi_base_message_schema_uri(const nmos::api_version& version);
         web::uri make_controlprotocolapi_command_message_schema_uri(const nmos::api_version& version);
         web::uri make_controlprotocolapi_subscription_message_schema_uri(const nmos::api_version& version);

@@ -1,0 +1,24 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema",
+  "type": "object",
+  "description": "Status of Sender",
+  "required": [
+    "state"
+  ],
+  "properties": {
+    "state": {
+      "type": "string",
+      "enum": [
+        "unconstrained",
+        "constrained",
+        "active_constraints_violation",
+        "no_essence",
+        "awaiting_essence"
+      ]
+    },
+    "debug": {
+      "description": "Debug information which may give additional information on the state",
+      "type": "string"
+    }
+  }
+}

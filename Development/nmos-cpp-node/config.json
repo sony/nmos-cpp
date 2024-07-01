@@ -60,6 +60,15 @@
     // smpte2022_7: controls whether senders and receivers have one leg (false) or two legs (true, default)
     //"smpte2022_7": false,
 
+    // edid_support: controls whether inputs and output have EDID support
+    //"edid_support": false,
+
+    // streamcompatibility_index: specifies index of video/audio sender/receiver for marking as IS-11 compatible
+    //"streamcompatibility_index": 0,
+
+    // volatile_status_of_sender: specifies whether Status of Sender voluntarily changes (for demo purposes)
+    //"volatile_status_of_sender": false,
+
     // Configuration settings and defaults for logging
 
     // error_log [registry, node]: filename for the error log or an empty string to write to stderr
@@ -103,6 +112,9 @@
 
     // is10_versions [registry, node]: used to specify the enabled API versions for a version-locked configuration
     //"is10_versions": ["v1.0"],
+    
+    // is11_versions [node]: used to specify the enabled API versions for a version-locked configuration
+    //"is11_versions": ["v1.0"],
 
     // is12_versions [node]: used to specify the enabled API versions for a version-locked configuration
     //"is12_versions": ["v1.0"],
@@ -145,6 +157,7 @@
     //"events_port": 3216,
     //"events_ws_port": 3217,
     //"channelmapping_port": 3215,
+    //"streamcompatibility_port": 3218,
     // system_port [node]: used to construct request URLs for the System API (if not discovered via DNS-SD)
     //"system_port": 10641,
     // control_protocol_ws_port [node]: used to construct request URLs for the Control Protocol websocket, or negative to disable the control protocol features
