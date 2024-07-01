@@ -8,6 +8,7 @@
 #include "cpprest/http_listener.h" // for web::http::experimental::listener::http_listener_config
 #include "cpprest/regex_utils.h"
 #include "cpprest/ws_listener.h" // for web::websockets::experimental::listener::websocket_listener_config
+#include "nmos/authorization_handlers.h" // for nmos::experimental::validate_authorization_token_handler
 #include "nmos/settings.h" // just a forward declaration of nmos::settings
 
 namespace slog
@@ -19,7 +20,13 @@ namespace slog
 namespace nmos
 {
     struct api_version;
+    struct base_model;
     struct type;
+
+    namespace experimental
+    {
+        struct authorization_state;
+    }
 
     // Patterns are used to form parameterised route paths
     // (could be moved to cpprest/api_router.h or cpprest/route_pattern.h?)
@@ -46,8 +53,8 @@ namespace nmos
         const route_pattern connection_api = make_route_pattern(U("api"), U("connection"));
         // IS-07 Events API
         const route_pattern events_api = make_route_pattern(U("api"), U("events"));
-		// IS-08 Channel Mapping API
-		const route_pattern channelmapping_api = make_route_pattern(U("api"), U("channelmapping"));
+        // IS-08 Channel Mapping API
+        const route_pattern channelmapping_api = make_route_pattern(U("api"), U("channelmapping"));
         // IS-09 System API (originally specified in JT-NM TR-1001-1:2018 Annex A)
         const route_pattern system_api = make_route_pattern(U("api"), U("system"));
         // IS-13 Annotation API
@@ -194,6 +201,23 @@ namespace nmos
         // make handler to set appropriate response headers, and error response body if indicated
         web::http::experimental::listener::route_handler make_api_finally_handler(slog::base_gate& gate);
         web::http::experimental::listener::route_handler make_api_finally_handler(const bst::optional<web::http::experimental::hsts>& hsts, slog::base_gate& gate);
+    }
+
+    // experimental extension, for BCP-003-02 Authorization
+    namespace experimental
+    {
+        struct authorization_error;
+        struct scope;
+
+        namespace details
+        {
+            // JWT validation to confirm authentication credentials and an access token that allows access to the protected resource
+            // see https://tools.ietf.org/html/rfc6750#section-3
+            web::http::experimental::listener::route_handler make_validate_authorization_handler(nmos::base_model& model, nmos::experimental::authorization_state& authorization_state, const nmos::experimental::scope& scope, validate_authorization_token_handler access_token_validation, slog::base_gate& gate);
+
+            // set error response
+            void set_error_reply(web::http::http_response& res, const utility::string_t& realm, int retry_after, const nmos::experimental::authorization_error& error);
+        }
     }
 }
 

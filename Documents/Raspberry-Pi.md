@@ -217,9 +217,10 @@ cmake .. \
   -DCMAKE_BUILD_TYPE=Release \
   -DCMAKE_TOOLCHAIN_FILE=${RPI_ROOT}/Toolchain-rpi.cmake \
   -DWEBSOCKETPP_INCLUDE_DIR:PATH="~/cpprestsdk/Release/libs/websocketpp" \
+  -DNMOS_CPP_USE_SUPPLIED_JSON_SCHEMA_VALIDATOR=1 \
+  -DNMOS_CPP_USE_SUPPLIED_JWT_CPP=1 \
   -DNMOS_CPP_USE_AVAHI=1 \
-  -DAvahi_INCLUDE_DIR=${RPI_LIBS}/include/avahi-compat-libdns_sd \
-  -DNMOS_CPP_USE_CONAN=0
+  -DAvahi_INCLUDE_DIR=${RPI_LIBS}/include/avahi-compat-libdns_sd
 
 # Cross-compile the library.
 make

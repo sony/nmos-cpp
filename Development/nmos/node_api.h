@@ -10,7 +10,12 @@ namespace nmos
 {
     struct model;
 
-    web::http::experimental::listener::api_router make_node_api(const nmos::model& model, node_api_target_handler target_handler, slog::base_gate& gate);
+    web::http::experimental::listener::api_router make_node_api(const nmos::model& model, node_api_target_handler target_handler, web::http::experimental::listener::route_handler validate_authorization, slog::base_gate& gate);
+
+    inline web::http::experimental::listener::api_router make_node_api(const nmos::model& model, node_api_target_handler target_handler, slog::base_gate& gate)
+    {
+        return make_node_api(model, std::move(target_handler), {}, gate);
+    }
 }
 
 #endif

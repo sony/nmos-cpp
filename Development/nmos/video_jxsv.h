@@ -283,13 +283,13 @@ namespace nmos
 
         // additional fmtp parameters from ST 2110-21:2022
         sdp::type_parameter tp;
-        uint32_t troff; // if omitted (zero), assume default
+        bst::optional<uint32_t> troff; // if omitted, assume default
         uint32_t cmax; // if omitted (zero), assume max defined for tp
 
         // additional fmtp parameters from ST 2110-10:2022
         uint32_t maxudp; // if omitted (zero), assume the Standard UP Size Limit
         sdp::timestamp_mode tsmode; // if omitted (empty), assume sdp::timestamp_modes::NEW
-        uint32_t tsdelay;
+        bst::optional<uint32_t> tsdelay;
 
         // bandwidth
         uint64_t bit_rate; // transport bit rate
@@ -314,11 +314,11 @@ namespace nmos
             sdp::range range,
             sdp::smpte_standard_number ssn,
             sdp::type_parameter tp,
-            uint32_t troff,
+            bst::optional<uint32_t> troff,
             uint32_t cmax,
             uint32_t maxudp,
             sdp::timestamp_mode tsmode,
-            uint32_t tsdelay,
+            bst::optional<uint32_t> tsdelay,
             uint64_t bit_rate
         )
             : packetmode(packetmode)

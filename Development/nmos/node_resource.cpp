@@ -36,7 +36,8 @@ namespace nmos
             web::json::push_back(data[U("api")][U("endpoints")], value_of({
                 { U("host"), host },
                 { U("port"), uri.port() },
-                { U("protocol"), uri.scheme() }
+                { U("protocol"), uri.scheme() },
+                { U("authorization"), nmos::experimental::fields::server_authorization(settings) }
             }));
         }
 

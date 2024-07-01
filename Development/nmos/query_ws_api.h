@@ -1,7 +1,9 @@
 #ifndef NMOS_QUERY_WS_API_H
 #define NMOS_QUERY_WS_API_H
 
+#include "nmos/authorization_handlers.h"
 #include "nmos/websockets.h"
+#include "nmos/ws_api_utils.h"
 
 namespace slog
 {
@@ -14,17 +16,17 @@ namespace nmos
 {
     struct registry_model;
 
-    web::websockets::experimental::listener::validate_handler make_query_ws_validate_handler(nmos::registry_model& model, slog::base_gate& gate);
+    web::websockets::experimental::listener::validate_handler make_query_ws_validate_handler(nmos::registry_model& model, nmos::experimental::ws_validate_authorization_handler ws_validate_authorization, slog::base_gate& gate);
     // note, model mutex is assumed to also protect websockets
     web::websockets::experimental::listener::open_handler make_query_ws_open_handler(const nmos::id& source_id, nmos::registry_model& model, nmos::websockets& websockets, slog::base_gate& gate);
     // note, model mutex is assumed to also protect websockets
     web::websockets::experimental::listener::close_handler make_query_ws_close_handler(nmos::registry_model& model, nmos::websockets& websockets, slog::base_gate& gate);
 
     // note, model mutex is assumed to also protect websockets
-    inline web::websockets::experimental::listener::websocket_listener_handlers make_query_ws_api(const nmos::id& source_id, nmos::registry_model& model, nmos::websockets& websockets, slog::base_gate& gate)
+    inline web::websockets::experimental::listener::websocket_listener_handlers make_query_ws_api(const nmos::id& source_id, nmos::registry_model& model, nmos::websockets& websockets, nmos::experimental::ws_validate_authorization_handler ws_validate_authorization, slog::base_gate& gate)
     {
         return{
-            nmos::make_query_ws_validate_handler(model, gate),
+            nmos::make_query_ws_validate_handler(model, ws_validate_authorization, gate),
             nmos::make_query_ws_open_handler(source_id, model, websockets, gate),
             nmos::make_query_ws_close_handler(model, websockets, gate),
             {}

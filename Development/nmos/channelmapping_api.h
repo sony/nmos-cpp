@@ -29,7 +29,12 @@ namespace nmos
     // Channel Mapping API factory functions
 
     // callbacks from this function are called with the model locked, and may read but should not write directly to the model
-    web::http::experimental::listener::api_router make_channelmapping_api(nmos::node_model& model, details::channelmapping_output_map_validator validate_merged, slog::base_gate& gate);
+    web::http::experimental::listener::api_router make_channelmapping_api(nmos::node_model& model, details::channelmapping_output_map_validator validate_merged, web::http::experimental::listener::route_handler validate_authorization, slog::base_gate& gate);
+
+    inline web::http::experimental::listener::api_router make_channelmapping_api(nmos::node_model& model, details::channelmapping_output_map_validator validate_merged, slog::base_gate& gate)
+    {
+        return make_channelmapping_api(model, std::move(validate_merged), {}, gate);
+    }
 
     inline web::http::experimental::listener::api_router make_channelmapping_api(nmos::node_model& model, slog::base_gate& gate)
     {

@@ -12,6 +12,8 @@ C++ source code and build files for the software
   Extensions to the [C++ REST SDK](https://github.com/Microsoft/cpprestsdk)
 - [detail](detail)  
   Small general purpose utilties and header files to facilitate cross-platform development
+- [jwk](jwk)  
+  An implementation of the conversion between JSON Web Key and public key
 - [lldp](lldp)  
   A simple API for LLDP and an implementation using the PCAP *pcap.h* API
 - [mdns](mdns)  

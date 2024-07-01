@@ -341,7 +341,7 @@ namespace nmos
         // hm, TM not indicated in IS-04
         if (tm) params.tm = *tm;
 
-        params.ssn = params.tm.empty() ? sdp::smpte_standard_numbers::ST2110_40_2018 : sdp::smpte_standard_numbers::ST2110_40_2022;
+        params.ssn = params.tm.empty() ? sdp::smpte_standard_numbers::ST2110_40_2018 : sdp::smpte_standard_numbers::ST2110_40_2023;
 
         // hm, ST 2110-21 TROFF not indicated in IS-04 so omit this
         // hm, ST 2110-10 TSMODE and TSDELAY not indicated in IS-04 so omit these
@@ -793,11 +793,11 @@ namespace nmos
         // additional parameters introduced by SMPTE specs since then...
         if (!params.range.empty()) fmtp.push_back({ sdp::fields::range, params.range.name });
         if (0 != params.par) fmtp.push_back({ sdp::fields::pixel_aspect_ratio, nmos::details::make_pixel_aspect_ratio(params.par) });
-        if (0 != params.troff) fmtp.push_back({ sdp::fields::TROFF, utility::ostringstreamed(params.troff) });
+        if (params.troff) fmtp.push_back({ sdp::fields::TROFF, utility::ostringstreamed(*params.troff) });
         if (0 != params.cmax) fmtp.push_back({ sdp::fields::CMAX, utility::ostringstreamed(params.cmax) });
         if (0 != params.maxudp) fmtp.push_back({ sdp::fields::max_udp_packet_size, utility::ostringstreamed(params.maxudp) });
         if (!params.tsmode.empty()) fmtp.push_back({ sdp::fields::timestamp_mode, params.tsmode.name });
-        if (0 != params.tsdelay) fmtp.push_back({ sdp::fields::timestamp_delay, utility::ostringstreamed(params.tsdelay) });
+        if (params.tsdelay) fmtp.push_back({ sdp::fields::timestamp_delay, utility::ostringstreamed(*params.tsdelay) });
 
         return{ session_name, sdp::media_types::video, rtpmap, fmtp, {}, {}, {}, {}, media_stream_ids, ts_refclk };
     }
@@ -814,7 +814,7 @@ namespace nmos
         sdp_parameters::fmtp_t fmtp = {};
         if (!params.channel_order.empty()) fmtp.push_back({ sdp::fields::channel_order, params.channel_order });
         if (!params.tsmode.empty()) fmtp.push_back({ sdp::fields::timestamp_mode, params.tsmode.name });
-        if (0 != params.tsdelay) fmtp.push_back({ sdp::fields::timestamp_delay, utility::ostringstreamed(params.tsdelay) });
+        if (params.tsdelay) fmtp.push_back({ sdp::fields::timestamp_delay, utility::ostringstreamed(*params.tsdelay) });
 
         return{ session_name, sdp::media_types::audio, rtpmap, fmtp, {}, params.packet_time, {}, {}, media_stream_ids, ts_refclk };
     }
@@ -832,13 +832,13 @@ namespace nmos
         {
             return sdp_parameters::fmtp_t::value_type{ sdp::fields::DID_SDID, make_fmtp_did_sdid(did_sdid) };
         }));
-        if (0 != params.vpid_code) fmtp.push_back({ sdp::fields::VPID_Code, utility::ostringstreamed(params.vpid_code) });
-        if (!params.exactframerate) fmtp.push_back({ sdp::fields::exactframerate, nmos::details::make_exactframerate(params.exactframerate) });
+        if (0 != params.vpid_code) fmtp.push_back({ sdp::fields::VPID_Code, utility::ostringstreamed((uint32_t)params.vpid_code) });
+        if (0 != params.exactframerate) fmtp.push_back({ sdp::fields::exactframerate, nmos::details::make_exactframerate(params.exactframerate) });
         if (!params.tm.empty()) fmtp.push_back({ sdp::fields::TM, params.tm.name });
         if (!params.ssn.empty()) fmtp.push_back({ sdp::fields::smpte_standard_number, params.ssn.name });
-        if (0 != params.troff) fmtp.push_back({ sdp::fields::TROFF, utility::ostringstreamed(params.troff) });
+        if (params.troff) fmtp.push_back({ sdp::fields::TROFF, utility::ostringstreamed(*params.troff) });
         if (!params.tsmode.empty()) fmtp.push_back({ sdp::fields::timestamp_mode, params.tsmode.name });
-        if (0 != params.tsdelay) fmtp.push_back({ sdp::fields::timestamp_delay, utility::ostringstreamed(params.tsdelay) });
+        if (params.tsdelay) fmtp.push_back({ sdp::fields::timestamp_delay, utility::ostringstreamed(*params.tsdelay) });
 
         return{ session_name, sdp::media_types::video, rtpmap, fmtp, {}, {}, {}, {}, media_stream_ids, ts_refclk };
     }
@@ -854,7 +854,7 @@ namespace nmos
         // See https://tools.ietf.org/html/rfc4566#section-6
         sdp_parameters::fmtp_t fmtp = {};
         if (!params.tp.empty()) fmtp.push_back({ sdp::fields::type_parameter, params.tp.name });
-        if (0 != params.troff) fmtp.push_back({ sdp::fields::TROFF, utility::ostringstreamed(params.troff) });
+        if (params.troff) fmtp.push_back({ sdp::fields::TROFF, utility::ostringstreamed(*params.troff) });
 
         return{ session_name, sdp::media_types::video, rtpmap, fmtp, {}, {}, {}, {}, media_stream_ids, ts_refclk };
     }

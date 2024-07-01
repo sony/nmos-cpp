@@ -19,11 +19,24 @@
     git clone https://github.com/AMWA-TV/nmos-testing.git
     cd nmos-testing
 
-    # Configure the Testing Tool so all APIs are tested with TLS
-    printf "from . import Config as CONFIG\nCONFIG.ENABLE_HTTPS = True\n" > nmostesting/UserConfig.py
+    # Configure the Testing Tool so all APIs are tested with TLS and authorization
+    printf "from . import Config as CONFIG\nCONFIG.ENABLE_HTTPS = True\nCONFIG.MOCK_SERVICES_WARM_UP_DELAY = 30\nCONFIG.HTTP_TIMEOUT = 2\n" > nmostesting/UserConfig.py
     # Set the DNS-SD mode
     printf 'CONFIG.DNS_SD_MODE = "'${{ matrix.dns_sd_mode }}'"\n' >> nmostesting/UserConfig.py
+    # Set the client JWKS_URI for mock Authorization Server to obtain the client JSON Web Key Set (public keys) to verify the client_assertion, when the client is requesting the access token
+    if [[ "${{ matrix.dns_sd_mode }}" == "multicast" ]]; then
+      hostname=nmos-api.local
+    else
+      hostname=api.testsuite.nmos.tv
+    fi
+    printf 'CONFIG.JWKS_URI = "https://'${hostname}':1080/x-authorization/jwks"\n' >> nmostesting/UserConfig.py
 
+    if [[ "${{matrix.enable_authorization}}" == "true" ]]; then
+      printf 'CONFIG.ENABLE_AUTH = True\n' >> nmostesting/UserConfig.py
+    else
+      printf 'CONFIG.ENABLE_AUTH = False\n' >> nmostesting/UserConfig.py
+    fi
+    
     # Download testssl
     cd testssl
     curl -L https://github.com/drwetter/testssl.sh/archive/v3.0.7.tar.gz -s | tar -xvzf - --strip-components=1 > /dev/null
@@ -61,20 +74,21 @@
     pip install -r utilities/run-test-suites/gsheetsImport/requirements.txt
 
     if [[ "${{ runner.os }}" == "Windows" ]]; then
-        certutil -enterprise -addstore -user root test_data\\BCP00301\\ca\\certs\\ca.cert.pem
-        certutil -enterprise -addstore -user ca test_data\\BCP00301\\ca\\intermediate\\certs\\intermediate.cert.pem
-        certutil -importpfx -enterprise test_data\\BCP00301\\ca\\intermediate\\certs\\ecdsa.api.testsuite.nmos.tv.cert.chain.pfx
-        certutil -importpfx -enterprise test_data\\BCP00301\\ca\\intermediate\\certs\\rsa.api.testsuite.nmos.tv.cert.chain.pfx
+      # install certificates
+      certutil -enterprise -addstore -user root test_data\\BCP00301\\ca\\certs\\ca.cert.pem
+      certutil -enterprise -addstore -user ca test_data\\BCP00301\\ca\\intermediate\\certs\\intermediate.cert.pem
+      certutil -importpfx -enterprise test_data\\BCP00301\\ca\\intermediate\\certs\\ecdsa.api.testsuite.nmos.tv.cert.chain.pfx
+      certutil -importpfx -enterprise test_data\\BCP00301\\ca\\intermediate\\certs\\rsa.api.testsuite.nmos.tv.cert.chain.pfx
 
-        # RSA
-        netsh http add sslcert ipport=0.0.0.0:1080 certhash=021d50df2177c07095485184206ee2297e50b65c appid="{00000000-0000-0000-0000-000000000000}"
-        # ECDSA
-        #netsh http add sslcert ipport=0.0.0.0:1080 certhash=875eca592c49120254b32bb8bed90ac3679015a5 appid="{00000000-0000-0000-0000-000000000000}"
+      # RSA
+      netsh http add sslcert ipport=0.0.0.0:1080 certhash=021d50df2177c07095485184206ee2297e50b65c appid="{00000000-0000-0000-0000-000000000000}"
+      # ECDSA
+      #netsh http add sslcert ipport=0.0.0.0:1080 certhash=875eca592c49120254b32bb8bed90ac3679015a5 appid="{00000000-0000-0000-0000-000000000000}"
 
-        # RSA
-        netsh http add sslcert ipport=0.0.0.0:8088 certhash=021d50df2177c07095485184206ee2297e50b65c appid="{00000000-0000-0000-0000-000000000000}"
-        # ECDSA
-        #netsh http add sslcert ipport=0.0.0.0:8088 certhash=875eca592c49120254b32bb8bed90ac3679015a5 appid="{00000000-0000-0000-0000-000000000000}"
+      # RSA
+      netsh http add sslcert ipport=0.0.0.0:8088 certhash=021d50df2177c07095485184206ee2297e50b65c appid="{00000000-0000-0000-0000-000000000000}"
+      # ECDSA
+      #netsh http add sslcert ipport=0.0.0.0:8088 certhash=875eca592c49120254b32bb8bed90ac3679015a5 appid="{00000000-0000-0000-0000-000000000000}"
     fi
 
     if [[ "${{ runner.os }}" == "macOS" ]]; then

@@ -1,0 +1,24 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Token Error Response",
+  "description": "Describes the token endpoint's OAuth error response",
+  "type": "object",
+  "minItems": 1,
+  "properties": {
+    "error": {
+      "description": "Error Type",
+      "type": "string",
+      "enum": ["invalid_request", "invalid_client", "invalid_grant", "unauthorized_client", "unsupported_grant_type", "invalid_scope", "unsupported_token_type"]
+    },
+    "error_description": {
+      "description": "Human-readable ASCII text providing additional information",
+      "type": "string"
+    },
+    "error_uri": {
+      "description": "A URI identifying a human-readable web page with information about the error",
+      "type": "string",
+      "format": "uri"
+    }
+  },
+  "required": ["error"]
+}

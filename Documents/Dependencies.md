@@ -12,6 +12,7 @@ More details are given below.
   - This library incorporates some third-party material including WebSocket++, and also relies on e.g. some of the Boost C++ Libraries and [OpenSSL](https://www.openssl.org/).
 - The [WebSocket++](https://github.com/zaphoyd/websocketpp) header-only C++ websocket client/server library, to implement Query API websocket subscriptions
 - For JSON Schema validation, the [Modern C++ JSON schema validator](https://github.com/pboettch/json-schema-validator) library, which is implemented on top of [JSON for Modern C++](https://github.com/nlohmann/json)
+- For creating and validating JSON Web Tokens, the [Thalhammer/jwt-cpp](https://github.com/Thalhammer/jwt-cpp) header only library
 - For DNS Service Discovery (DNS-SD), the [Bonjour SDK](https://developer.apple.com/bonjour/) on Windows, and on Linux either [Avahi](https://www.avahi.org/) or Apple's [mDNSResponder](https://opensource.apple.com/tarballs/mDNSResponder/) (another name for Bonjour)
 - The [Catch](https://github.com/philsquared/Catch) automated test framework, for unit testing
 
@@ -33,7 +34,7 @@ Specific instructions for [cross-compiling for Raspberry Pi](Raspberry-Pi.md) ar
 
 1. Download and install a recent [CMake stable release](https://cmake.org/download/#latest) for your platform  
    Notes:
-   - Currently, CMake 3.17 or higher is required; version 3.24.2 (latest release at the time) has been tested
+   - Currently, CMake 3.24 or higher is required in order to use the Conan package manager; version 3.28.3 (latest release at the time) has been tested
    - Pre-built binary distributions are available for many platforms
    - On Linux distributions, e.g. Ubuntu 14.04 LTS (long-term support), the pre-built binary version available via ``apt-get`` may be too out-of-date  
      Fetch, build and install a suitable version:  
@@ -46,7 +47,7 @@ Specific instructions for [cross-compiling for Raspberry Pi](Raspberry-Pi.md) ar
      sudo make install
      cd ..
      ```
-   - Some CMake modules derived from third-party sources are included in the [third_party/cmake](../Development/third_party/cmake) directory
+   - Some CMake modules derived from third-party sources are supplied in the [third_party/cmake](../Development/third_party/cmake) directory
 
 ### Conan
 
@@ -54,23 +55,16 @@ By default nmos-cpp uses [Conan](https://conan.io) to download most of its depen
 
 1. Install Python 3 if necessary  
    Note: The Python scripts directory needs to be added to the `PATH`, so the Conan executable can be found
-2. Install or upgrade Conan using `pip install --upgrade conan~=1.47`
+2. Install or upgrade Conan using `pip install --upgrade conan~=2.0.5`  
    Notes:
-   - On some platforms with Python 2 and Python 3 both installed this may need to be `pip3 install --upgrade conan~=1.47`
-   - Currently, Conan 1.47 or higher (and lower than version 2.0) is required by the nmos-cpp recipe; dependencies may require a higher version; version 1.59.0 has been tested
-   - Conan evolves fairly quickly, so it's worth running `pip install --upgrade conan~=1.47` regularly
-   - By default [Conan assumes semver compatibility](https://docs.conan.io/en/1.42/creating_packages/define_abi_compatibility.html#versioning-schema).
-     Boost and other C++ libraries do not meet this expectation and break ABI compatibility between e.g. minor versions.
-     Unfortunately, the recipes in Conan Center Index do not generally customize their `package_id` method to take this into account.
-     Therefore it is strongly recommended to change Conan's default package id mode to `minor_mode` or a stricter mode such as `recipe_revision_mode`.
-     ```sh
-     conan config set general.default_package_id_mode=minor_mode
-     ```
+   - On some platforms with Python 2 and Python 3 both installed this may need to be `pip3 install --upgrade conan~=2.0.5`
+   - Conan 2.0.5 or higher is required; dependencies may require a higher version; version 2.0.17 (latest release at the time) has been tested
+   - Conan 1.X is no longer supported
 3. Install a [DNS Service Discovery](#dns-service-discovery) implementation, since this isn't currently handled by Conan
 
 Now follow the [Getting Started](Getting-Started.md) instructions directly. Conan is used to download the rest of the dependencies.
 
-If you prefer not to use Conan, you must install Boost, WebSocket++, OpenSSL and C++ REST SDK as detailed below then call CMake with `-DNMOS_CPP_USE_CONAN:BOOL="0"` when building nmos-cpp.
+If you prefer not to use Conan, you must install Boost, WebSocket++, OpenSSL and C++ REST SDK as detailed below.
 
 ### Boost C++ Libraries
 
@@ -80,9 +74,9 @@ If using Conan, this section can be skipped.
 
 1. Download a [recent release](http://www.boost.org/users/download/)  
    Notes:
-   - Several Boost releases have been tested, including Version 1.80.0 (latest release at the time) and Version 1.54.0
+   - Several Boost releases have been tested, including Version 1.83.0 (latest release at the time) and Version 1.54.0
    - On Linux distributions, a Boost libraries package may already be installed, e.g. Ubuntu 14.04 LTS has Version 1.54.0
-2. Expand the archive so that, for example, the boost\_1\_80\_0 directory is at the same level as the nmos-cpp directory
+2. Expand the archive so that, for example, the boost\_1\_83\_0 directory is at the same level as the nmos-cpp directory
 3. Build and stage (or install) the following Boost libraries for your platform/toolset:
    - atomic
    - chrono
@@ -133,11 +127,11 @@ If using Conan, this section can be skipped.
 <summary>If not using Conan...</summary>
 
 1. Get the source code
-   - Clone the [repo](https://github.com/Microsoft/cpprestsdk/) and its submodules, and check out the v2.10.18 tag  
+   - Clone the [repo](https://github.com/Microsoft/cpprestsdk/) and its submodules, and check out the v2.10.19 tag  
      The ``git clone`` command option ``--recurse-submodules`` (formerly ``--recursive``) simplifies [cloning a project with submodules](https://git-scm.com/book/en/v2/Git-Tools-Submodules#_cloning_submodules).  
      For example:
      ```
-     git clone --recurse-submodules --branch v2.10.18 https://github.com/Microsoft/cpprestsdk <home-dir>/cpprestsdk
+     git clone --recurse-submodules --branch v2.10.19 https://github.com/Microsoft/cpprestsdk <home-dir>/cpprestsdk
      ```
      Note: The downloadable archives created by GitHub cannot be used on their own since they don't include submodules.
 2. Use CMake to configure for your platform
@@ -152,8 +146,8 @@ If using Conan, this section can be skipped.
      - Set ``Boost_USE_STATIC_LIBS`` (BOOL) to ``1`` (true)
    - If CMake cannot find it automatically, set hints for [finding Boost](https://cmake.org/cmake/help/latest/module/FindBoost.html), for example:
      - *Either* set ``Boost_DIR`` (PATH) to the location of the installed BoostConfig.cmake (since Boost 1.70.0)
-     - *Or* set ``BOOST_INCLUDEDIR`` (PATH) and ``BOOST_LIBRARYDIR`` (PATH) to the appropriate full paths, e.g. *``<home-dir>``*``/boost_1_80_0``
-       and *``<home-dir>``*``/boost_1_80_0/x64/lib`` respectively to match the suggested ``b2`` command
+     - *Or* set ``BOOST_INCLUDEDIR`` (PATH) and ``BOOST_LIBRARYDIR`` (PATH) to the appropriate full paths, e.g. *``<home-dir>``*``/boost_1_83_0``
+       and *``<home-dir>``*``/boost_1_83_0/x64/lib`` respectively to match the suggested ``b2`` command
    - Due to interactions with other dependencies, it may also be necessary to explicitly set ``WERROR`` (BOOL) to ``0`` so that compiler warnings are not treated as errors
    - To speed up the build by omitting the C++ REST SDK sample apps and test suite, set ``BUILD_SAMPLES`` and ``BUILD_TESTS`` (BOOL) to ``0`` (false)
 3. Use CMake to generate build/project files, and then build *and* install  
@@ -172,8 +166,8 @@ cmake .. ^
   -DCPPREST_EXCLUDE_COMPRESSION:BOOL="1" ^
   -DCMAKE_CONFIGURATION_TYPES:STRING="Debug;Release" ^
   -DBoost_USE_STATIC_LIBS:BOOL="1" ^
-  -DBOOST_INCLUDEDIR:PATH="<home-dir>/boost_1_80_0" ^
-  -DBOOST_LIBRARYDIR:PATH="<home-dir>/boost_1_80_0/x64/lib" ^
+  -DBOOST_INCLUDEDIR:PATH="<home-dir>/boost_1_83_0" ^
+  -DBOOST_LIBRARYDIR:PATH="<home-dir>/boost_1_83_0/x64/lib" ^
   -DWERROR:BOOL="0" ^
   -DBUILD_SAMPLES:BOOL="0" ^
   -DBUILD_TESTS:BOOL="0"
@@ -234,15 +228,17 @@ If using Conan, this section can be skipped.
 <summary>If not using Conan...</summary>
 
 The C++ REST SDK depends on [OpenSSL](https://www.openssl.org/) (to implement secure HTTP and/or secure WebSockets).
-It is compatible with the OpenSSL 1.1 API, so the 1.1.1 Long Term Support (LTS) release is recommended.
-It is also possible to use OpenSSL 1.0, but the OpenSSL team announced that [users of that release are strongly advised to upgrade to OpenSSL 1.1.1](https://www.openssl.org/blog/blog/2018/09/11/release111/).
+The nmos-cpp codebase also uses OpenSSL directly to implement the specific requirements of [AMWA BCP-003-01 Secure Communication in NMOS Systems](https://specs.amwa.tv/bcp-003-01/) and [AMWA BCP-003-02 Authorization in NMOS Systems](https://specs.amwa.tv/bcp-003-02/).
 
-1. Download and install a recent release
+OpenSSL version 3 is recommended, and version 3.2.1 (latest release at the time) has been tested.
+It is currently also possible to use OpenSSL v1.1.1, although [this OpenSSL release is now end of life](https://www.openssl.org/blog/blog/2023/09/11/eol-111/index.html).
+
+1. Download and install a recent release  
    Notes:
    - On Windows, an installer can be downloaded from [Shining Light Productions - Win32 OpenSSL](https://slproweb.com/products/Win32OpenSSL.html)  
-     The Win64 OpenSSL v1.1.1s installer (latest release at the time) has been tested
+     The Win64 OpenSSL v3.2.1 installer (latest release at the time) has been tested
    - On Linux distributions, an OpenSSL package may already be available  
-     The Ubuntu team announced an [OpenSSL 1.1.1 stable release update (SRU) for Ubuntu 18.04 LTS](https://lists.ubuntu.com/archives/ubuntu-devel/2018-December/040567.html)
+     For example, Ubuntu 22.04 LTS includes OpenSSL v3.0.2
 
 </details>
 
@@ -252,8 +248,23 @@ If using Conan, this section can be skipped.
 <details>
 <summary>If not using Conan...</summary>
 
-A copy of the source code necessary to use this library is included in the [third_party/nlohmann](../Development/third_party/nlohmann) directory.
+A copy of the source code necessary to use this library is supplied in the [third_party/nlohmann](../Development/third_party/nlohmann) directory.
 No installation is necessary.
+
+(The [Getting Started](Getting-Started.md) instructions explain how to set ``NMOS_CPP_USE_SUPPLIED_JSON_SCHEMA_VALIDATOR`` in order to use the supplied version when building nmos-cpp.)
+
+</details>
+
+### jwt-cpp
+
+If using Conan, this section can be skipped.
+<details>
+<summary>If not using Conan...</summary>
+
+A copy of the source code necessary to use this library is supplied in the [third_party/jwt-cpp](../Development/third_party/jwt-cpp) directory.
+No installation is necessary.
+
+(The [Getting Started](Getting-Started.md) instructions explain how to set ``NMOS_CPP_USE_SUPPLIED_JWT_CPP`` in order to use the supplied version when building nmos-cpp.)
 
 </details>
 
@@ -306,7 +317,7 @@ Notes:
 
 ### Catch
 
-A copy of the single header version (v1.10.0) is included in the [third_party/catch](../Development/third_party/catch) directory.
+A copy of the single header version (v1.10.0) is supplied in the [third_party/catch](../Development/third_party/catch) directory.
 No installation is necessary.
 
 # What Next?

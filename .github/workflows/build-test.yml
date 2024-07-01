@@ -12,7 +12,7 @@ env:
   SECRET_RESULTS_SHEET_ID: ${{ secrets.RESULTS_SHEET_ID }}
 jobs:
   build_and_test:
-    name: '${{ matrix.os }}: build and test (install mdns: ${{ matrix.install_mdns }}, use conan: ${{ matrix.use_conan }}, force cpprest asio: ${{ matrix.force_cpprest_asio }}, dns-sd mode: ${{ matrix.dns_sd_mode}})'
+    name: '${{ matrix.os }}: build and test (install mdns: ${{ matrix.install_mdns }}, use conan: ${{ matrix.use_conan }}, force cpprest asio: ${{ matrix.force_cpprest_asio }}, dns-sd mode: ${{ matrix.dns_sd_mode}}, enable_authorization: ${{ matrix.enable_authorization }})'
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -22,8 +22,15 @@ jobs:
         use_conan: [true]
         force_cpprest_asio: [false]
         dns_sd_mode: [multicast, unicast]
+        enable_authorization: [false, true]
         exclude:
           # install_mdns is only meaningful on Linux
+          - os: macos-11
+            enable_authorization: false
+          - os: windows-2019
+            enable_authorization: false
+          - os: ubuntu-20.04
+            enable_authorization: false
           - os: macos-11
             install_mdns: true
           - os: windows-2019
@@ -38,17 +45,32 @@ jobs:
           - os: ubuntu-20.04
             install_mdns: true
             dns_sd_mode: unicast
+            enable_authorization: true
         include:
-          - os: windows-2019
+          - os: windows-2022
             install_mdns: false
             use_conan: true
             force_cpprest_asio: true
             dns_sd_mode: multicast
+            enable_authorization: true
+          - os: windows-2022
+            install_mdns: false
+            use_conan: true
+            force_cpprest_asio: true
+            dns_sd_mode: multicast
+            enable_authorization: false
           - os: ubuntu-22.04
             install_mdns: false
             use_conan: true
             force_cpprest_asio: false
             dns_sd_mode: multicast
+            enable_authorization: true
+          - os: ubuntu-22.04
+            install_mdns: false
+            use_conan: true
+            force_cpprest_asio: false
+            dns_sd_mode: multicast
+            enable_authorization: false
 
     steps:
     - uses: actions/checkout@v3
@@ -56,16 +78,22 @@ jobs:
     - name: set environment variables
       shell: bash
       run: |
+        if [[ "${{ matrix.enable_authorization }}" == "true" ]]; then
+          authorization_mode=auth
+        else
+          authorization_mode=noauth
+        fi
+
         if [[ "${{ runner.os }}"  == "Linux" ]]; then
           if [[ "${{ matrix.install_mdns }}" == "true" ]]; then
-            echo "BUILD_NAME=${{ matrix.os }}_mdns_${{ matrix.dns_sd_mode }}" >> $GITHUB_ENV
+            echo "BUILD_NAME=${{ matrix.os }}_mdns_${{ matrix.dns_sd_mode }}_$authorization_mode" >> $GITHUB_ENV
           else
-            echo "BUILD_NAME=${{ matrix.os }}_avahi_${{ matrix.dns_sd_mode }}" >> $GITHUB_ENV
+            echo "BUILD_NAME=${{ matrix.os }}_avahi_${{ matrix.dns_sd_mode }}_$authorization_mode" >> $GITHUB_ENV
           fi
         elif [[ "${{ matrix.force_cpprest_asio }}" == "true" ]]; then
-          echo "BUILD_NAME=${{ matrix.os }}_asio" >> $GITHUB_ENV
+          echo "BUILD_NAME=${{ matrix.os }}_asio_$authorization_mode" >> $GITHUB_ENV
         else
-          echo "BUILD_NAME=${{ matrix.os }}" >> $GITHUB_ENV
+          echo "BUILD_NAME=${{ matrix.os }}_$authorization_mode" >> $GITHUB_ENV
         fi
         GITHUB_COMMIT=`echo "${{ github.sha }}" | cut -c1-7`
         echo "GITHUB_COMMIT=$GITHUB_COMMIT" >> $GITHUB_ENV
@@ -93,11 +121,15 @@ jobs:
     - name: install conan
       if: matrix.use_conan == true
       run: |
-        pip install conan~=1.47
-        conan config set general.revisions_enabled=1
+        pip install conan~=2.4.1
+
+    - name: 'ubuntu-14.04: install cmake'
+      if: matrix.os == 'ubuntu-14.04'
+      uses: lukka/get-cmake@v3.24.2
 
     - name: install cmake
-      uses: lukka/get-cmake@v3.24.2
+      if: matrix.os != 'ubuntu-14.04'
+      uses: lukka/get-cmake@v3.28.3
 
     - name: setup bash path
       working-directory: ${{ env.GITHUB_WORKSPACE }}
@@ -111,7 +143,7 @@ jobs:
       if: runner.os == 'Windows'
       run: |
         # set compiler to cl.exe to avoid building with gcc.
-        echo "CMAKE_EXTRA_ARGS=${{ env.CMAKE_EXTRA_ARGS }} -DCMAKE_C_COMPILER=cl.exe -DCMAKE_CXX_COMPILER=cl.exe" >> $env:GITHUB_ENV
+        echo "CMAKE_COMPILER_ARGS=-DCMAKE_C_COMPILER=cl.exe -DCMAKE_CXX_COMPILER=cl.exe" >> $env:GITHUB_ENV
         # disable unused network interface
         netsh interface set interface name="vEthernet (nat)" admin=DISABLED
         # get host IP address
@@ -234,20 +266,18 @@ jobs:
           libssl-dev
 
         cd ${{ env.RUNNER_WORKSPACE }}
-        git clone --recurse-submodules --branch v2.10.18 https://github.com/Microsoft/cpprestsdk
+        git clone --recurse-submodules --branch v2.10.19 https://github.com/Microsoft/cpprestsdk
         cd cpprestsdk/Release
         mkdir build
         cd build
         cmake .. -DCMAKE_BUILD_TYPE:STRING="Release" -DWERROR:BOOL="0" -DBUILD_SAMPLES:BOOL="0" -DBUILD_TESTS:BOOL="0"
         make -j 2 && sudo make install
 
-        echo "CMAKE_EXTRA_ARGS=${{ env.CMAKE_EXTRA_ARGS }} -DWEBSOCKETPP_INCLUDE_DIR:PATH=\"${{ env.RUNNER_WORKSPACE }}/cpprestsdk/Release/libs/websocketpp\"" >> $GITHUB_ENV
-
-    - name: disable conan
-      if: matrix.use_conan == false
-      shell: bash
-      run: |
-        echo "CMAKE_EXTRA_ARGS=${{ env.CMAKE_EXTRA_ARGS }} -DNMOS_CPP_USE_CONAN:BOOL=\"0\"" >> $GITHUB_ENV
+        echo "CMAKE_EXTRA_ARGS=${{ env.CMAKE_EXTRA_ARGS }}" \
+          "-DWEBSOCKETPP_INCLUDE_DIR:PATH=\"${{ env.RUNNER_WORKSPACE }}/cpprestsdk/Release/libs/websocketpp\"" \
+          "-DNMOS_CPP_USE_SUPPLIED_JSON_SCHEMA_VALIDATOR:BOOL=\"1\"" \
+          "-DNMOS_CPP_USE_SUPPLIED_JWT_CPP:BOOL=\"1\"" \
+          >> $GITHUB_ENV
 
     - name: ubuntu avahi setup
       if: runner.os == 'Linux' && matrix.install_mdns == false
@@ -264,19 +294,37 @@ jobs:
         echo "CMAKE_EXTRA_ARGS=${{ env.CMAKE_EXTRA_ARGS }} -DNMOS_CPP_USE_AVAHI:BOOL=\"1\"" >> $GITHUB_ENV
 
     - name: force cpprest asio
-      if: matrix.force_cpprest_asio == true
+      if: matrix.force_cpprest_asio == true && matrix.use_conan == true
       shell: bash
       run: |
-        echo "CMAKE_EXTRA_ARGS=${{ env.CMAKE_EXTRA_ARGS }} -DNMOS_CPP_CONAN_OPTIONS:STRING=\"cpprestsdk:http_client_impl=asio;cpprestsdk:http_listener_impl=asio\"" >> $GITHUB_ENV
+        echo "CONAN_INSTALL_EXTRA_ARGS=--options\;cpprestsdk/*:http_client_impl=asio\;--options\;cpprestsdk/*:http_listener_impl=asio" >> $GITHUB_ENV
 
-    - uses: ilammy/msvc-dev-cmd@v1
+    - name: enable conan
+      if: matrix.use_conan == true
+      shell: bash
+      run: |
+        echo "CMAKE_EXTRA_ARGS=${{ env.CMAKE_EXTRA_ARGS }}" \
+          "-DCMAKE_PROJECT_TOP_LEVEL_INCLUDES:STRING=\"third_party/cmake/conan_provider.cmake\"" \
+          "-DCONAN_INSTALL_ARGS:STRING=\"--build=missing\;${{ env.CONAN_INSTALL_EXTRA_ARGS }}\;--lockfile-out=conan.lock\"" \
+          >> $GITHUB_ENV
+        cat $GITHUB_ENV
+
+    - name: setup developer command prompt for Microsoft Visual C++
+      if: runner.os == 'Windows'
+      uses: ilammy/msvc-dev-cmd@v1
+
     - name: build
       uses: lukka/run-cmake@v3.4
       with:
         cmakeListsOrSettingsJson: CMakeListsTxtAdvanced
         cmakeListsTxtPath: '${{ env.GITHUB_WORKSPACE }}/Development/CMakeLists.txt'
         buildDirectory: '${{ env.RUNNER_WORKSPACE }}/build/'
-        cmakeAppendedArgs: '-GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="${{ env.RUNNER_WORKSPACE }}/install" ${{ env.CMAKE_EXTRA_ARGS }}'
+        cmakeAppendedArgs: '-GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="${{ env.RUNNER_WORKSPACE }}/install" ${{ env.CMAKE_COMPILER_ARGS }} ${{ env.CMAKE_EXTRA_ARGS }}'
+
+    - name: dump conan lockfile
+      if: matrix.use_conan == true
+      run: |
+        cat ${{ env.RUNNER_WORKSPACE }}/build/conan.lock
 
     - name: unit test
       run: |
@@ -313,10 +361,10 @@ jobs:
         cmakeAppendedArgs: '-GNinja
             -DCMAKE_BUILD_TYPE=Release
             -DCMAKE_FIND_PACKAGE_PREFER_CONFIG="1"
-            -DCMAKE_MODULE_PATH="${{ env.CMAKE_WORKSPACE }}/build"
+            -DCMAKE_MODULE_PATH="${{ env.CMAKE_WORKSPACE }}/build/conan"
             -DCMAKE_PREFIX_PATH="${{ env.CMAKE_WORKSPACE }}/install"
-            -DCMAKE_INSTALL_PREFIX="${{ env.CMAKE_WORKSPACE }}/build"
-            ${{ env.CMAKE_EXTRA_ARGS }}'
+            -DCMAKE_INSTALL_PREFIX="${{ env.CMAKE_WORKSPACE }}/build/conan"
+            ${{ env.CMAKE_COMPILER_ARGS }}'
 
     - name: install test log
       run: |
@@ -344,10 +392,23 @@ jobs:
         git clone https://github.com/AMWA-TV/nmos-testing.git
         cd nmos-testing
 
-        # Configure the Testing Tool so all APIs are tested with TLS
-        printf "from . import Config as CONFIG\nCONFIG.ENABLE_HTTPS = True\n" > nmostesting/UserConfig.py
+        # Configure the Testing Tool so all APIs are tested with TLS and authorization
+        printf "from . import Config as CONFIG\nCONFIG.ENABLE_HTTPS = True\nCONFIG.MOCK_SERVICES_WARM_UP_DELAY = 30\nCONFIG.HTTP_TIMEOUT = 2\n" > nmostesting/UserConfig.py
         # Set the DNS-SD mode
         printf 'CONFIG.DNS_SD_MODE = "'${{ matrix.dns_sd_mode }}'"\n' >> nmostesting/UserConfig.py
+        # Set the client JWKS_URI for mock Authorization Server to obtain the client JSON Web Key Set (public keys) to verify the client_assertion, when the client is requesting the access token
+        if [[ "${{ matrix.dns_sd_mode }}" == "multicast" ]]; then
+          hostname=nmos-api.local
+        else
+          hostname=api.testsuite.nmos.tv
+        fi
+        printf 'CONFIG.JWKS_URI = "https://'${hostname}':1080/x-authorization/jwks"\n' >> nmostesting/UserConfig.py
+
+        if [[ "${{matrix.enable_authorization}}" == "true" ]]; then
+          printf 'CONFIG.ENABLE_AUTH = True\n' >> nmostesting/UserConfig.py
+        else
+          printf 'CONFIG.ENABLE_AUTH = False\n' >> nmostesting/UserConfig.py
+        fi
 
         # Download testssl
         cd testssl
@@ -386,20 +447,21 @@ jobs:
         pip install -r utilities/run-test-suites/gsheetsImport/requirements.txt
 
         if [[ "${{ runner.os }}" == "Windows" ]]; then
-            certutil -enterprise -addstore -user root test_data\\BCP00301\\ca\\certs\\ca.cert.pem
-            certutil -enterprise -addstore -user ca test_data\\BCP00301\\ca\\intermediate\\certs\\intermediate.cert.pem
-            certutil -importpfx -enterprise test_data\\BCP00301\\ca\\intermediate\\certs\\ecdsa.api.testsuite.nmos.tv.cert.chain.pfx
-            certutil -importpfx -enterprise test_data\\BCP00301\\ca\\intermediate\\certs\\rsa.api.testsuite.nmos.tv.cert.chain.pfx
+          # install certificates
+          certutil -enterprise -addstore -user root test_data\\BCP00301\\ca\\certs\\ca.cert.pem
+          certutil -enterprise -addstore -user ca test_data\\BCP00301\\ca\\intermediate\\certs\\intermediate.cert.pem
+          certutil -importpfx -enterprise test_data\\BCP00301\\ca\\intermediate\\certs\\ecdsa.api.testsuite.nmos.tv.cert.chain.pfx
+          certutil -importpfx -enterprise test_data\\BCP00301\\ca\\intermediate\\certs\\rsa.api.testsuite.nmos.tv.cert.chain.pfx
 
-            # RSA
-            netsh http add sslcert ipport=0.0.0.0:1080 certhash=021d50df2177c07095485184206ee2297e50b65c appid="{00000000-0000-0000-0000-000000000000}"
-            # ECDSA
-            #netsh http add sslcert ipport=0.0.0.0:1080 certhash=875eca592c49120254b32bb8bed90ac3679015a5 appid="{00000000-0000-0000-0000-000000000000}"
+          # RSA
+          netsh http add sslcert ipport=0.0.0.0:1080 certhash=021d50df2177c07095485184206ee2297e50b65c appid="{00000000-0000-0000-0000-000000000000}"
+          # ECDSA
+          #netsh http add sslcert ipport=0.0.0.0:1080 certhash=875eca592c49120254b32bb8bed90ac3679015a5 appid="{00000000-0000-0000-0000-000000000000}"
 
-            # RSA
-            netsh http add sslcert ipport=0.0.0.0:8088 certhash=021d50df2177c07095485184206ee2297e50b65c appid="{00000000-0000-0000-0000-000000000000}"
-            # ECDSA
-            #netsh http add sslcert ipport=0.0.0.0:8088 certhash=875eca592c49120254b32bb8bed90ac3679015a5 appid="{00000000-0000-0000-0000-000000000000}"
+          # RSA
+          netsh http add sslcert ipport=0.0.0.0:8088 certhash=021d50df2177c07095485184206ee2297e50b65c appid="{00000000-0000-0000-0000-000000000000}"
+          # ECDSA
+          #netsh http add sslcert ipport=0.0.0.0:8088 certhash=875eca592c49120254b32bb8bed90ac3679015a5 appid="{00000000-0000-0000-0000-000000000000}"
         fi
 
         if [[ "${{ runner.os }}" == "macOS" ]]; then
@@ -534,7 +596,7 @@ jobs:
 
 
   build_and_test_ubuntu_14:
-    name: '${{ matrix.os }}: build and test (install mdns: ${{ matrix.install_mdns }}, use conan: ${{ matrix.use_conan }}, force cpprest asio: ${{ matrix.force_cpprest_asio }}, dns-sd mode: ${{ matrix.dns_sd_mode}})'
+    name: '${{ matrix.os }}: build and test (install mdns: ${{ matrix.install_mdns }}, use conan: ${{ matrix.use_conan }}, force cpprest asio: ${{ matrix.force_cpprest_asio }}, dns-sd mode: ${{ matrix.dns_sd_mode}}, enable_authorization: ${{ matrix.enable_authorization }})'
     runs-on: ubuntu-20.04
     container:
       image: ubuntu:14.04
@@ -546,6 +608,7 @@ jobs:
         use_conan: [false]
         force_cpprest_asio: [false]
         dns_sd_mode: [multicast]
+        enable_authorization: [true]
 
     steps:
     - uses: actions/checkout@v3
@@ -579,13 +642,25 @@ jobs:
         apt-get --allow-unauthenticated install -y curl g++ git make patch zlib1g-dev libssl-dev bsdmainutils dnsutils unzip
         # ubuntu-14.04 ca-certificates are out of date
         git config --global http.sslVerify false
-        curl -sS https://www.python.org/ftp/python/3.6.9/Python-3.6.9.tar.xz | tar -xJ
-        cd Python-3.6.9
-        ./configure
+        # build and install openssl
+        curl -OsSk https://www.openssl.org/source/openssl-1.1.1v.tar.gz
+        tar xzf openssl-1.1.1v.tar.gz
+        cd openssl-1.1.1v
+        ./config --prefix=/usr/local/custom-openssl --libdir=lib --openssldir=/etc/ssl
+        make -j1 depend
+        make -j8
+        make install_sw
+        cd ..
+        # install ffi.h, which is required for python build
+        apt install libffi-dev
+        # build and install python
+        curl -sSk https://www.python.org/ftp/python/3.11.5/Python-3.11.5.tar.xz | tar -xJ
+        cd Python-3.11.5
+        ./configure -C --with-openssl=/usr/local/custom-openssl --with-openssl-rpath=auto
         make -j8
         make install
-        update-alternatives --install /usr/bin/python3 python3 /usr/local/bin/python3.6 3
-        ln -s /usr/local/bin/python3.6 /usr/bin/python
+        update-alternatives --install /usr/bin/python3 python3 /usr/local/bin/python3.11 3
+        ln -s /usr/local/bin/python3.11 /usr/bin/python
         curl -sS https://bootstrap.pypa.io/pip/3.6/get-pip.py | python
         curl -sS https://nodejs.org/dist/v12.16.2/node-v12.16.2-linux-x64.tar.xz | tar -xJ
         echo "`pwd`/node-v12.16.2-linux-x64/bin" >> $GITHUB_PATH
@@ -602,11 +677,15 @@ jobs:
     - name: install conan
       if: matrix.use_conan == true
       run: |
-        pip install conan~=1.47
-        conan config set general.revisions_enabled=1
+        pip install conan~=2.4.1
+
+    - name: 'ubuntu-14.04: install cmake'
+      if: matrix.os == 'ubuntu-14.04'
+      uses: lukka/get-cmake@v3.24.2
 
     - name: install cmake
-      uses: lukka/get-cmake@v3.24.2
+      if: matrix.os != 'ubuntu-14.04'
+      uses: lukka/get-cmake@v3.28.3
 
     - name: setup bash path
       working-directory: ${{ env.GITHUB_WORKSPACE }}
@@ -620,7 +699,7 @@ jobs:
       if: runner.os == 'Windows'
       run: |
         # set compiler to cl.exe to avoid building with gcc.
-        echo "CMAKE_EXTRA_ARGS=${{ env.CMAKE_EXTRA_ARGS }} -DCMAKE_C_COMPILER=cl.exe -DCMAKE_CXX_COMPILER=cl.exe" >> $env:GITHUB_ENV
+        echo "CMAKE_COMPILER_ARGS=-DCMAKE_C_COMPILER=cl.exe -DCMAKE_CXX_COMPILER=cl.exe" >> $env:GITHUB_ENV
         # disable unused network interface
         netsh interface set interface name="vEthernet (nat)" admin=DISABLED
         # get host IP address
@@ -743,20 +822,18 @@ jobs:
           libssl-dev
 
         cd ${{ env.RUNNER_WORKSPACE }}
-        git clone --recurse-submodules --branch v2.10.18 https://github.com/Microsoft/cpprestsdk
+        git clone --recurse-submodules --branch v2.10.19 https://github.com/Microsoft/cpprestsdk
         cd cpprestsdk/Release
         mkdir build
         cd build
         cmake .. -DCMAKE_BUILD_TYPE:STRING="Release" -DWERROR:BOOL="0" -DBUILD_SAMPLES:BOOL="0" -DBUILD_TESTS:BOOL="0"
         make -j 2 && sudo make install
 
-        echo "CMAKE_EXTRA_ARGS=${{ env.CMAKE_EXTRA_ARGS }} -DWEBSOCKETPP_INCLUDE_DIR:PATH=\"${{ env.RUNNER_WORKSPACE }}/cpprestsdk/Release/libs/websocketpp\"" >> $GITHUB_ENV
-
-    - name: disable conan
-      if: matrix.use_conan == false
-      shell: bash
-      run: |
-        echo "CMAKE_EXTRA_ARGS=${{ env.CMAKE_EXTRA_ARGS }} -DNMOS_CPP_USE_CONAN:BOOL=\"0\"" >> $GITHUB_ENV
+        echo "CMAKE_EXTRA_ARGS=${{ env.CMAKE_EXTRA_ARGS }}" \
+          "-DWEBSOCKETPP_INCLUDE_DIR:PATH=\"${{ env.RUNNER_WORKSPACE }}/cpprestsdk/Release/libs/websocketpp\"" \
+          "-DNMOS_CPP_USE_SUPPLIED_JSON_SCHEMA_VALIDATOR:BOOL=\"1\"" \
+          "-DNMOS_CPP_USE_SUPPLIED_JWT_CPP:BOOL=\"1\"" \
+          >> $GITHUB_ENV
 
     - name: ubuntu avahi setup
       if: runner.os == 'Linux' && matrix.install_mdns == false
@@ -773,19 +850,37 @@ jobs:
         echo "CMAKE_EXTRA_ARGS=${{ env.CMAKE_EXTRA_ARGS }} -DNMOS_CPP_USE_AVAHI:BOOL=\"1\"" >> $GITHUB_ENV
 
     - name: force cpprest asio
-      if: matrix.force_cpprest_asio == true
+      if: matrix.force_cpprest_asio == true && matrix.use_conan == true
       shell: bash
       run: |
-        echo "CMAKE_EXTRA_ARGS=${{ env.CMAKE_EXTRA_ARGS }} -DNMOS_CPP_CONAN_OPTIONS:STRING=\"cpprestsdk:http_client_impl=asio;cpprestsdk:http_listener_impl=asio\"" >> $GITHUB_ENV
+        echo "CONAN_INSTALL_EXTRA_ARGS=--options\;cpprestsdk/*:http_client_impl=asio\;--options\;cpprestsdk/*:http_listener_impl=asio" >> $GITHUB_ENV
 
-    - uses: ilammy/msvc-dev-cmd@v1
+    - name: enable conan
+      if: matrix.use_conan == true
+      shell: bash
+      run: |
+        echo "CMAKE_EXTRA_ARGS=${{ env.CMAKE_EXTRA_ARGS }}" \
+          "-DCMAKE_PROJECT_TOP_LEVEL_INCLUDES:STRING=\"third_party/cmake/conan_provider.cmake\"" \
+          "-DCONAN_INSTALL_ARGS:STRING=\"--build=missing\;${{ env.CONAN_INSTALL_EXTRA_ARGS }}\;--lockfile-out=conan.lock\"" \
+          >> $GITHUB_ENV
+        cat $GITHUB_ENV
+
+    - name: setup developer command prompt for Microsoft Visual C++
+      if: runner.os == 'Windows'
+      uses: ilammy/msvc-dev-cmd@v1
+
     - name: build
       uses: lukka/run-cmake@v3.4
       with:
         cmakeListsOrSettingsJson: CMakeListsTxtAdvanced
         cmakeListsTxtPath: '${{ env.GITHUB_WORKSPACE }}/Development/CMakeLists.txt'
         buildDirectory: '${{ env.RUNNER_WORKSPACE }}/build/'
-        cmakeAppendedArgs: '-GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="${{ env.RUNNER_WORKSPACE }}/install" ${{ env.CMAKE_EXTRA_ARGS }}'
+        cmakeAppendedArgs: '-GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="${{ env.RUNNER_WORKSPACE }}/install" ${{ env.CMAKE_COMPILER_ARGS }} ${{ env.CMAKE_EXTRA_ARGS }}'
+
+    - name: dump conan lockfile
+      if: matrix.use_conan == true
+      run: |
+        cat ${{ env.RUNNER_WORKSPACE }}/build/conan.lock
 
     - name: unit test
       run: |
@@ -822,10 +917,10 @@ jobs:
         cmakeAppendedArgs: '-GNinja
             -DCMAKE_BUILD_TYPE=Release
             -DCMAKE_FIND_PACKAGE_PREFER_CONFIG="1"
-            -DCMAKE_MODULE_PATH="${{ env.CMAKE_WORKSPACE }}/build"
+            -DCMAKE_MODULE_PATH="${{ env.CMAKE_WORKSPACE }}/build/conan"
             -DCMAKE_PREFIX_PATH="${{ env.CMAKE_WORKSPACE }}/install"
-            -DCMAKE_INSTALL_PREFIX="${{ env.CMAKE_WORKSPACE }}/build"
-            ${{ env.CMAKE_EXTRA_ARGS }}'
+            -DCMAKE_INSTALL_PREFIX="${{ env.CMAKE_WORKSPACE }}/build/conan"
+            ${{ env.CMAKE_COMPILER_ARGS }}'
 
     - name: install test log
       run: |
@@ -853,10 +948,23 @@ jobs:
         git clone https://github.com/AMWA-TV/nmos-testing.git
         cd nmos-testing
 
-        # Configure the Testing Tool so all APIs are tested with TLS
-        printf "from . import Config as CONFIG\nCONFIG.ENABLE_HTTPS = True\n" > nmostesting/UserConfig.py
+        # Configure the Testing Tool so all APIs are tested with TLS and authorization
+        printf "from . import Config as CONFIG\nCONFIG.ENABLE_HTTPS = True\nCONFIG.MOCK_SERVICES_WARM_UP_DELAY = 30\nCONFIG.HTTP_TIMEOUT = 2\n" > nmostesting/UserConfig.py
         # Set the DNS-SD mode
         printf 'CONFIG.DNS_SD_MODE = "'${{ matrix.dns_sd_mode }}'"\n' >> nmostesting/UserConfig.py
+        # Set the client JWKS_URI for mock Authorization Server to obtain the client JSON Web Key Set (public keys) to verify the client_assertion, when the client is requesting the access token
+        if [[ "${{ matrix.dns_sd_mode }}" == "multicast" ]]; then
+          hostname=nmos-api.local
+        else
+          hostname=api.testsuite.nmos.tv
+        fi
+        printf 'CONFIG.JWKS_URI = "https://'${hostname}':1080/x-authorization/jwks"\n' >> nmostesting/UserConfig.py
+
+        if [[ "${{matrix.enable_authorization}}" == "true" ]]; then
+          printf 'CONFIG.ENABLE_AUTH = True\n' >> nmostesting/UserConfig.py
+        else
+          printf 'CONFIG.ENABLE_AUTH = False\n' >> nmostesting/UserConfig.py
+        fi
 
         # Download testssl
         cd testssl
@@ -895,20 +1003,21 @@ jobs:
         pip install -r utilities/run-test-suites/gsheetsImport/requirements.txt
 
         if [[ "${{ runner.os }}" == "Windows" ]]; then
-            certutil -enterprise -addstore -user root test_data\\BCP00301\\ca\\certs\\ca.cert.pem
-            certutil -enterprise -addstore -user ca test_data\\BCP00301\\ca\\intermediate\\certs\\intermediate.cert.pem
-            certutil -importpfx -enterprise test_data\\BCP00301\\ca\\intermediate\\certs\\ecdsa.api.testsuite.nmos.tv.cert.chain.pfx
-            certutil -importpfx -enterprise test_data\\BCP00301\\ca\\intermediate\\certs\\rsa.api.testsuite.nmos.tv.cert.chain.pfx
+          # install certificates
+          certutil -enterprise -addstore -user root test_data\\BCP00301\\ca\\certs\\ca.cert.pem
+          certutil -enterprise -addstore -user ca test_data\\BCP00301\\ca\\intermediate\\certs\\intermediate.cert.pem
+          certutil -importpfx -enterprise test_data\\BCP00301\\ca\\intermediate\\certs\\ecdsa.api.testsuite.nmos.tv.cert.chain.pfx
+          certutil -importpfx -enterprise test_data\\BCP00301\\ca\\intermediate\\certs\\rsa.api.testsuite.nmos.tv.cert.chain.pfx
 
-            # RSA
-            netsh http add sslcert ipport=0.0.0.0:1080 certhash=021d50df2177c07095485184206ee2297e50b65c appid="{00000000-0000-0000-0000-000000000000}"
-            # ECDSA
-            #netsh http add sslcert ipport=0.0.0.0:1080 certhash=875eca592c49120254b32bb8bed90ac3679015a5 appid="{00000000-0000-0000-0000-000000000000}"
+          # RSA
+          netsh http add sslcert ipport=0.0.0.0:1080 certhash=021d50df2177c07095485184206ee2297e50b65c appid="{00000000-0000-0000-0000-000000000000}"
+          # ECDSA
+          #netsh http add sslcert ipport=0.0.0.0:1080 certhash=875eca592c49120254b32bb8bed90ac3679015a5 appid="{00000000-0000-0000-0000-000000000000}"
 
-            # RSA
-            netsh http add sslcert ipport=0.0.0.0:8088 certhash=021d50df2177c07095485184206ee2297e50b65c appid="{00000000-0000-0000-0000-000000000000}"
-            # ECDSA
-            #netsh http add sslcert ipport=0.0.0.0:8088 certhash=875eca592c49120254b32bb8bed90ac3679015a5 appid="{00000000-0000-0000-0000-000000000000}"
+          # RSA
+          netsh http add sslcert ipport=0.0.0.0:8088 certhash=021d50df2177c07095485184206ee2297e50b65c appid="{00000000-0000-0000-0000-000000000000}"
+          # ECDSA
+          #netsh http add sslcert ipport=0.0.0.0:8088 certhash=875eca592c49120254b32bb8bed90ac3679015a5 appid="{00000000-0000-0000-0000-000000000000}"
         fi
 
         if [[ "${{ runner.os }}" == "macOS" ]]; then
@@ -1064,7 +1173,7 @@ jobs:
     - name: make badges
       run: |
         # combine badges from all builds, exclude macos-11
-        ${{ github.workspace }}/Sandbox/make_badges.sh ${{ github.workspace }} ${{ runner.workspace }}/artifacts macos-11
+        ${{ github.workspace }}/Sandbox/make_badges.sh ${{ github.workspace }} ${{ runner.workspace }}/artifacts macos-11_auth macos-11_noauth
 
         # force push to github onto an orphan 'badges' branch
         cd ${{ github.workspace }}

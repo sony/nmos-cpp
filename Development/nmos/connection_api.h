@@ -37,11 +37,11 @@ namespace nmos
     // Connection API factory functions
 
     // callbacks from this function are called with the model locked, and may read but should not write directly to the model
-    web::http::experimental::listener::api_router make_connection_api(nmos::node_model& model, transport_file_parser parse_transport_file, details::connection_resource_patch_validator validate_merged, slog::base_gate& gate);
+    web::http::experimental::listener::api_router make_connection_api(nmos::node_model& model, transport_file_parser parse_transport_file, details::connection_resource_patch_validator validate_merged, web::http::experimental::listener::route_handler validate_authorization, slog::base_gate& gate);
 
     inline web::http::experimental::listener::api_router make_connection_api(nmos::node_model& model, transport_file_parser parse_transport_file, slog::base_gate& gate)
     {
-        return make_connection_api(model, std::move(parse_transport_file), {}, gate);
+        return make_connection_api(model, std::move(parse_transport_file), {}, {}, gate);
     }
 
     web::http::experimental::listener::api_router make_connection_api(nmos::node_model& model, slog::base_gate& gate);

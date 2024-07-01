@@ -1,0 +1,29 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Token Response",
+  "description": "OAuth2 Response for the request of a Bearer Token",
+  "type": "object",
+  "properties": {
+    "access_token": {
+      "description": "Access Token to be used in accessing protected endpoints",
+      "type": "string"
+    },
+    "expires_in": {
+      "description": "The lifetime in seconds of the Access Token",
+      "type": "integer"
+    },
+    "refresh_token": {
+      "description": "Refresh Token to be used to obtain further Access Tokens",
+      "type": "string"
+    },
+    "scope": {
+      "description": "The scope of the Access Token",
+      "type": "string"
+    },
+    "token_type": {
+      "description": "The type of the Token issued",
+      "type": "string"
+    }
+  },
+  "required": ["access_token", "expires_in", "token_type"]
+}

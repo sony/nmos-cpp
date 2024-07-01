@@ -11,8 +11,10 @@
 #include "cpprest/basic_utils.h"
 #include "cpprest/details/system_error.h"
 #include "cpprest/http_utils.h"
+#include "cpprest/response_type.h"
 #include "cpprest/ws_client.h"
 #include "nmos/certificate_settings.h"
+#include "nmos/json_fields.h"
 #include "nmos/slog.h"
 #include "nmos/ssl_context_options.h"
 
@@ -125,7 +127,7 @@ namespace nmos
         }
 
 #ifdef CPPRESTSDK_ENABLE_BIND_WEBSOCKET_CLIENT
-        // The current version of the C++ REST SDK 2.10.18 does not provide the callback to enable the custom websocket setting
+        // The current version of the C++ REST SDK 2.10.19 does not provide the callback to enable the custom websocket setting
         inline std::function<void(web::websockets::client::native_handle)> make_ws_client_nativehandle_options(bool secure, const utility::string_t& client_address, slog::base_gate& gate)
         {
             if (client_address.empty()) return {};
@@ -177,6 +179,43 @@ namespace nmos
         return make_http_client_config(nmos::experimental::fields::client_secure(settings), settings, load_ca_certificates, gate);
     }
 
+    // construct oauth2 config with the bearer token
+    web::http::oauth2::experimental::oauth2_config make_oauth2_config(const web::http::oauth2::experimental::oauth2_token& bearer_token)
+    {
+        web::http::oauth2::experimental::oauth2_config config(U(""), U(""), U(""), U(""), U(""), U(""));
+        config.set_token(bearer_token);
+
+        return config;
+    }
+
+    // construct client config including OAuth 2.0 config based on settings, e.g. using the specified proxy and OCSP config
+    // with the remaining options defaulted, e.g. authorization request timeout
+    web::http::client::http_client_config make_http_client_config(const nmos::settings& settings, load_ca_certificates_handler load_ca_certificates, const web::http::oauth2::experimental::oauth2_token& bearer_token, slog::base_gate& gate)
+    {
+        auto config = make_http_client_config(settings, load_ca_certificates, gate);
+
+        if (bearer_token.is_valid_access_token())
+        {
+            config.set_oauth2(make_oauth2_config(bearer_token));
+        }
+
+        return config;
+    }
+
+    // construct client config including OAuth 2.0 config based on settings, e.g. using the specified proxy and OCSP config
+    // with the remaining options defaulted, e.g. authorization request timeout
+    web::http::client::http_client_config make_http_client_config(const nmos::settings& settings, load_ca_certificates_handler load_ca_certificates, nmos::experimental::get_authorization_bearer_token_handler get_authorization_bearer_token, slog::base_gate& gate)
+    {
+        web::http::oauth2::experimental::oauth2_token bearer_token;
+
+        if (get_authorization_bearer_token)
+        {
+            bearer_token = get_authorization_bearer_token();
+        }
+
+        return make_http_client_config(settings, load_ca_certificates, bearer_token, gate);
+    }
+
     // construct client config based on specified secure flag and settings, e.g. using the specified proxy
     // with the remaining options defaulted
     web::websockets::client::websocket_client_config make_websocket_client_config(bool secure, const nmos::settings& settings, load_ca_certificates_handler load_ca_certificates, slog::base_gate& gate)
@@ -200,6 +239,56 @@ namespace nmos
     web::websockets::client::websocket_client_config make_websocket_client_config(const nmos::settings& settings, load_ca_certificates_handler load_ca_certificates, slog::base_gate& gate)
     {
         return make_websocket_client_config(nmos::experimental::fields::client_secure(settings), settings, load_ca_certificates, gate);
+    }
+
+    // construct client config based on settings and access token, e.g. using the specified proxy
+    // with the remaining options defaulted
+    web::websockets::client::websocket_client_config make_websocket_client_config(const nmos::settings& settings, load_ca_certificates_handler load_ca_certificates, nmos::experimental::get_authorization_bearer_token_handler get_authorization_bearer_token, slog::base_gate& gate)
+    {
+        auto config = make_websocket_client_config(settings, std::move(load_ca_certificates), gate);
+
+        if (get_authorization_bearer_token)
+        {
+            const auto bearer_token = get_authorization_bearer_token();
+            config.headers().add(web::http::header_names::authorization, U("Bearer ") + bearer_token.access_token());
+        }
+
+        return config;
+    }
+
+    namespace details
+    {
+        // make a client for the specified base_uri and config, with host name for the Host header sneakily stashed in user info
+        std::unique_ptr<web::http::client::http_client> make_http_client(const web::uri& base_uri, const web::http::client::http_client_config& client_config)
+        {
+            // unstash the host name for the Host header
+            // cf. nmos::details::resolve_service
+            // don't bother clearing user_info since http_client makes no use of it
+            // see https://github.com/microsoft/cpprestsdk/issues/3
+            std::unique_ptr<web::http::client::http_client> client(new web::http::client::http_client(base_uri, client_config));
+            if (!base_uri.user_info().empty())
+            {
+                auto host = base_uri.user_info();
+
+                // hmm, in secure mode, don't append the port to the Host header
+                // because both calc_cn_host in cpprestsdk/Release/src/http/client/http_client_asio.cpp
+                // and winhttp_client::send_request in cpprestsdk/Release/src/http/client/http_client_winhttp.cpp
+                // compare the entire Host header value with the certificate Common Name
+                // which causes an SSL handshake error
+                // see https://github.com/microsoft/cpprestsdk/issues/1790
+                if (base_uri.port() > 0 && !web::is_secure_uri_scheme(base_uri.scheme()))
+                {
+                    host.append(U(":")).append(utility::conversions::details::to_string_t(base_uri.port()));
+                }
+
+                client->add_handler([host](web::http::http_request request, std::shared_ptr<web::http::http_pipeline_stage> next_stage) -> pplx::task<web::http::http_response>
+                {
+                    request.headers().add(web::http::header_names::host, host);
+                    return next_stage->propagate(request);
+                });
+            }
+            return client;
+        }
     }
 
     // make a request with logging

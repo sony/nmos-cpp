@@ -15,7 +15,12 @@ namespace nmos
 {
     struct registry_model;
 
-    web::http::experimental::listener::api_router make_query_api(nmos::registry_model& model, slog::base_gate& gate);
+    web::http::experimental::listener::api_router make_query_api(nmos::registry_model& model, web::http::experimental::listener::route_handler validate_authorization, slog::base_gate& gate);
+
+    inline web::http::experimental::listener::api_router make_query_api(nmos::registry_model& model, slog::base_gate& gate)
+    {
+        return make_query_api(model, {}, gate);
+    }
 
     struct resource_paging;
 

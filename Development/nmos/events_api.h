@@ -14,7 +14,12 @@ namespace nmos
 {
     struct node_model;
 
-    web::http::experimental::listener::api_router make_events_api(const nmos::node_model& model, slog::base_gate& gate);
+    web::http::experimental::listener::api_router make_events_api(nmos::node_model& model, web::http::experimental::listener::route_handler validate_authorization, slog::base_gate& gate);
+
+    inline web::http::experimental::listener::api_router make_events_api(nmos::node_model& model, slog::base_gate& gate)
+    {
+        return make_events_api(model, {}, gate);
+    }
 }
 
 #endif
