@@ -1287,6 +1287,8 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
         nmos::push_back(root_block, class_manager);
         // add device-manager to root-block
         nmos::push_back(root_block, device_manager);
+        // add bulk-properties-manager to root-block
+        nmos::push_back(root_block, bulk_properties_manager);
 
         // insert control protocol resources to model
         insert_root_after(delay_millis, root_block, gate);
@@ -1720,7 +1722,7 @@ nmos::control_protocol_property_changed_handler make_node_implementation_control
 // Example Device Configuration callback for creating a back-up dataset
 nmos::get_properties_by_path_handler make_node_implementation_get_properties_by_path_handler(const nmos::resources& resources, slog::base_gate& gate)
 {
-    return [&resources, &gate](const nmos::resource& resource, bool recurse)
+    return [&resources, &gate](nmos::get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, nmos::get_control_protocol_datatype_descriptor_handler get_control_protocol_datatype_descriptor, const nmos::resource& resource, bool recurse)
     {
         slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::stash_category(impl::categories::node_implementation) << "Do get_properties_by_path";
 
@@ -1732,7 +1734,7 @@ nmos::get_properties_by_path_handler make_node_implementation_get_properties_by_
 // Example Device Configuration callback for validating a back-up dataset
 nmos::validate_set_properties_by_path_handler make_node_implementation_validate_set_properties_by_path_handler(const nmos::resources& resources, slog::base_gate& gate)
 {
-    return [&resources, &gate](const nmos::resource& resource, const web::json::value& backup_data_set, bool recurse)
+    return [&resources, &gate](nmos::get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, nmos::get_control_protocol_datatype_descriptor_handler get_control_protocol_datatype_descriptor, const nmos::resource& resource, const web::json::value& backup_data_set, bool recurse, const web::json::array& included_property_traits)
     {
         slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::stash_category(impl::categories::node_implementation) << "Do validate_set_properties_by_path";
 
@@ -1744,7 +1746,7 @@ nmos::validate_set_properties_by_path_handler make_node_implementation_validate_
 // Example Device Configuration callback for restoring a back-up dataset
 nmos::set_properties_by_path_handler make_node_implementation_set_properties_by_path_handler(nmos::resources& resources, slog::base_gate& gate)
 {
-    return [&resources, &gate](const nmos::resource& resource, const web::json::value& data_set, bool recurse, bool allow_incomplete)
+    return [&resources, &gate](nmos::get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, nmos::get_control_protocol_datatype_descriptor_handler get_control_protocol_datatype_descriptor, const nmos::resource& resource, const web::json::value& data_set, bool recurse, const web::json::array& included_property_traits)
     {
         slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::stash_category(impl::categories::node_implementation) << "Do set_properties_by_path";
 

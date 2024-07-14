@@ -441,11 +441,15 @@ namespace nmos
     // Device configuration feature set datatypes
     // TODO: add link
     //
+    web::json::value make_nc_property_trait_datatype();
+    //
     web::json::value make_nc_property_value_holder_datatype();
     //
     web::json::value make_nc_object_properties_holder_datatype();
     //
     web::json::value make_nc_bulk_values_holder_datatype();
+    //
+    web::json::value make_nc_restore_validation_status_datatype();
     //
     web::json::value make_nc_object_properties_set_validation_datatype();
     //
