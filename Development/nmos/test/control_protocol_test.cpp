@@ -885,7 +885,7 @@ BST_TEST_CASE(testConstraints)
     const nmos::details::datatype_constraints_validation_parameters no_constraints_float32_constraints_validation_params{ no_constraints_float32_datatype, nmos::make_get_control_protocol_datatype_descriptor_handler(control_protocol_state) };
     BST_REQUIRE_THROW(nmos::details::constraints_validation(std::numeric_limits<double>::lowest(), value::null(), value::null(), no_constraints_float32_constraints_validation_params), nmos::control_protocol_exception);
     BST_REQUIRE_THROW(nmos::details::constraints_validation(std::numeric_limits<double>::max(), value::null(), value::null(), no_constraints_float32_constraints_validation_params), nmos::control_protocol_exception);
-    BST_REQUIRE_NO_THROW(nmos::details::constraints_validation(std::numeric_limits<float_t>::min(), value::null(), value::null(), no_constraints_float32_constraints_validation_params));
+    BST_REQUIRE_NO_THROW(nmos::details::constraints_validation(std::numeric_limits<float_t>::lowest(), value::null(), value::null(), no_constraints_float32_constraints_validation_params));
     BST_REQUIRE_NO_THROW(nmos::details::constraints_validation(std::numeric_limits<float_t>::max(), value::null(), value::null(), no_constraints_float32_constraints_validation_params));
     BST_REQUIRE_NO_THROW(nmos::details::constraints_validation(0.0, value::null(), value::null(), no_constraints_float32_constraints_validation_params));
     BST_REQUIRE_NO_THROW(nmos::details::constraints_validation(-1000.0, value::null(), value::null(), no_constraints_float32_constraints_validation_params));
