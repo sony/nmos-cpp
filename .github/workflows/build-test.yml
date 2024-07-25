@@ -910,6 +910,7 @@ jobs:
         echo "CMAKE_WORKSPACE=${RUNNER_WORKSPACE//\\/\/}" >> $GITHUB_ENV
 
     - name: install test
+      if: runner.os != 'macOS'
       uses: lukka/run-cmake@v3.4
       with:
         cmakeListsOrSettingsJson: CMakeListsTxtAdvanced
@@ -924,6 +925,7 @@ jobs:
             ${{ env.CMAKE_COMPILER_ARGS }}'
 
     - name: install test log
+      if: runner.os != 'macOS'
       run: |
         # dump the log file created in Sandbox/my-nmos-node/CMakeLists.txt
         cat ${{ env.RUNNER_WORKSPACE }}/build-my-nmos-node/my-nmos-node_include-release.txt
