@@ -50,6 +50,7 @@ namespace nmos
     // and experimental Manifest API for Node API "manifest_href"
     namespace details
     {
+        std::pair<utility::string_t, utility::string_t> get_transport_type_data(const web::json::value& transport_file);
         void handle_connection_resource_patch(web::http::http_response res, nmos::node_model& model, const nmos::api_version& version, const std::pair<nmos::id, nmos::type>& id_type, const web::json::value& patch, transport_file_parser parse_transport_file, connection_resource_patch_validator validate_merged, slog::base_gate& gate);
         void handle_connection_resource_transportfile(web::http::http_response res, const nmos::node_model& model, const nmos::api_version& version, const std::pair<nmos::id, nmos::type>& id_type, const utility::string_t& accept, slog::base_gate& gate);
     }

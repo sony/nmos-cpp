@@ -8,6 +8,9 @@
 #include "nmos/connection_api.h"
 #include "nmos/connection_activation.h"
 #include "nmos/control_protocol_handlers.h"
+#include "nmos/streamcompatibility_api.h"
+#include "nmos/streamcompatibility_behaviour.h"
+#include "nmos/streamcompatibility_validation.h"
 #include "nmos/node_behaviour.h"
 #include "nmos/node_system_behaviour.h"
 #include "nmos/ocsp_response_handler.h"
@@ -56,6 +59,8 @@ namespace nmos
             // (by itself, the default constructor does not construct a valid instance)
             node_implementation()
                 : parse_transport_file(&nmos::parse_rtp_transport_file)
+                , validate_sender_resources(make_streamcompatibility_sender_resources_validator(&nmos::experimental::match_resource_parameters_constraint_set, make_streamcompatibility_sdp_constraint_sets_matcher(&nmos::match_sdp_parameters_constraint_sets)))
+                , validate_receiver(make_streamcompatibility_receiver_validator(&nmos::experimental::validate_rtp_transport_file))
             {}
 
             node_implementation& on_load_server_certificates(nmos::load_server_certificates_handler load_server_certificates) { this->load_server_certificates = std::move(load_server_certificates); return *this; }
@@ -78,6 +83,11 @@ namespace nmos
             node_implementation& on_load_authorization_clients(load_authorization_clients_handler load_authorization_clients) { this->load_authorization_clients = std::move(load_authorization_clients); return *this; }
             node_implementation& on_save_authorization_client(save_authorization_client_handler save_authorization_client) { this->save_authorization_client = std::move(save_authorization_client); return *this; }
             node_implementation& on_request_authorization_code(request_authorization_code_handler request_authorization_code) { this->request_authorization_code = std::move(request_authorization_code); return *this; }
+            node_implementation& on_base_edid_changed(nmos::experimental::details::streamcompatibility_base_edid_handler base_edid_changed) { this->base_edid_changed = std::move(base_edid_changed); return *this; }
+            node_implementation& on_set_effective_edid(nmos::experimental::details::streamcompatibility_effective_edid_setter set_effective_edid) { this->set_effective_edid = std::move(set_effective_edid); return *this; }
+            node_implementation& on_active_constraints_changed(nmos::experimental::details::streamcompatibility_active_constraints_handler active_constraints_changed) { this->active_constraints_changed = std::move(active_constraints_changed); return *this; }
+            node_implementation& on_validate_sender_resources_against_active_constraints(nmos::experimental::details::streamcompatibility_sender_validator validate_sender_resources) { this->validate_sender_resources = std::move(validate_sender_resources); return *this; }
+            node_implementation& on_validate_receiver_against_transport_file(nmos::experimental::details::streamcompatibility_receiver_validator validate_receiver) { this->validate_receiver = std::move(validate_receiver); return *this; }
             node_implementation& on_get_control_class_descriptor(nmos::get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor) { this->get_control_protocol_class_descriptor = std::move(get_control_protocol_class_descriptor); return *this; }
             node_implementation& on_get_control_datatype_descriptor(nmos::get_control_protocol_datatype_descriptor_handler get_control_protocol_datatype_descriptor) { this->get_control_protocol_datatype_descriptor = std::move(get_control_protocol_datatype_descriptor); return *this; }
             node_implementation& on_get_control_protocol_method_descriptor(nmos::get_control_protocol_method_descriptor_handler get_control_protocol_method_descriptor) { this->get_control_protocol_method_descriptor = std::move(get_control_protocol_method_descriptor); return *this; }
@@ -119,6 +129,12 @@ namespace nmos
             load_authorization_clients_handler load_authorization_clients;
             save_authorization_client_handler save_authorization_client;
             request_authorization_code_handler request_authorization_code;
+
+            nmos::experimental::details::streamcompatibility_base_edid_handler base_edid_changed;
+            nmos::experimental::details::streamcompatibility_effective_edid_setter set_effective_edid;
+            nmos::experimental::details::streamcompatibility_active_constraints_handler active_constraints_changed;
+            nmos::experimental::details::streamcompatibility_sender_validator validate_sender_resources;
+            nmos::experimental::details::streamcompatibility_receiver_validator validate_receiver;
 
             nmos::get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor;
             nmos::get_control_protocol_datatype_descriptor_handler get_control_protocol_datatype_descriptor;

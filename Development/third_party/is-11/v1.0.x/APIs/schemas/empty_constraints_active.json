@@ -1,0 +1,18 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema",
+  "description": "Describes empty Constraints",
+  "title": "Constraints",
+  "required": [
+    "constraint_sets"
+  ],
+  "properties": {
+    "constraint_sets": {
+      "type": "array",
+      "items": {
+        "$ref": "constraint_set.json"
+      },
+      "minItems": 0,
+      "maxItems": 0
+    }
+  }
+}
