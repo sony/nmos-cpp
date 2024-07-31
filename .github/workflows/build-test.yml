@@ -646,7 +646,7 @@ jobs:
         # ubuntu-14.04 ca-certificates are out of date
         git config --global http.sslVerify false
         # build and install openssl
-        curl -OsSk https://openssl.org/source/old/1.1.1/openssl-1.1.1v.tar.gz
+        curl -OsSkL https://openssl.org/source/old/1.1.1/openssl-1.1.1v.tar.gz
         tar xzf openssl-1.1.1v.tar.gz
         cd openssl-1.1.1v
         ./config --prefix=/usr/local/custom-openssl --libdir=lib --openssldir=/etc/ssl
