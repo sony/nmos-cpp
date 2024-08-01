@@ -18,7 +18,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-20.04, macos-11, windows-2019]
+        os: [ubuntu-20.04, macos-12, windows-2019]
         install_mdns: [false, true]
         use_conan: [true]
         force_cpprest_asio: [false]
@@ -26,18 +26,18 @@ jobs:
         enable_authorization: [false, true]
         exclude:
           # install_mdns is only meaningful on Linux
-          - os: macos-11
+          - os: macos-12
             enable_authorization: false
           - os: windows-2019
             enable_authorization: false
           - os: ubuntu-20.04
             enable_authorization: false
-          - os: macos-11
+          - os: macos-12
             install_mdns: true
           - os: windows-2019
             install_mdns: true
           # for now, unicast DNS-SD tests are only implemented on Linux
-          - os: macos-11
+          - os: macos-12
             dns_sd_mode: unicast
           - os: windows-2019
             dns_sd_mode: unicast
@@ -160,7 +160,7 @@ jobs:
         # ubuntu-14.04 ca-certificates are out of date
         git config --global http.sslVerify false
         # build and install openssl
-        curl -OsSk https://openssl.org/source/old/1.1.1/openssl-1.1.1v.tar.gz
+        curl -OsSkL https://openssl.org/source/old/1.1.1/openssl-1.1.1v.tar.gz
         tar xzf openssl-1.1.1v.tar.gz
         cd openssl-1.1.1v
         ./config --prefix=/usr/local/custom-openssl --libdir=lib --openssldir=/etc/ssl
@@ -205,8 +205,8 @@ jobs:
 
     - name: make badges
       run: |
-        # combine badges from all builds, exclude macos-11
-        ${{ github.workspace }}/Sandbox/make_badges.sh ${{ github.workspace }} ${{ runner.workspace }}/artifacts macos-11_auth macos-11_noauth
+        # combine badges from all builds, exclude macos-12
+        ${{ github.workspace }}/Sandbox/make_badges.sh ${{ github.workspace }} ${{ runner.workspace }}/artifacts macos-12_auth macos-12_noauth
 
         # force push to github onto an orphan 'badges' branch
         cd ${{ github.workspace }}
