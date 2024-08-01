@@ -185,7 +185,7 @@ namespace nmos
                         };
                         auto is_float32 = [](double value)
                         {
-                            return value >= (std::numeric_limits<float_t>::min)()
+                            return value >= (std::numeric_limits<float_t>::lowest)()
                                 && value <= (std::numeric_limits<float_t>::max)();
                         };
 
