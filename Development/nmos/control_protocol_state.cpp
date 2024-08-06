@@ -91,7 +91,7 @@ namespace nmos
             {
                 return [get_control_protocol_class_descriptor](nmos::resources& resources, const nmos::resource& resource, const web::json::value& arguments, bool is_deprecated, slog::base_gate& gate)
                 {
-                    return get(resources, resource, arguments, is_deprecated, get_control_protocol_class_descriptor, gate);
+                    return get(resource, arguments, is_deprecated, get_control_protocol_class_descriptor, gate);
                 };
             }
             nmos::experimental::control_protocol_method_handler make_nc_set_handler(get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor_handler get_control_protocol_datatype_descriptor, control_protocol_property_changed_handler property_changed)
@@ -105,7 +105,7 @@ namespace nmos
             {
                 return [get_control_protocol_class_descriptor](nmos::resources& resources, const nmos::resource& resource, const web::json::value& arguments, bool is_deprecated, slog::base_gate& gate)
                 {
-                    return get_sequence_item(resources, resource, arguments, is_deprecated, get_control_protocol_class_descriptor, gate);
+                    return get_sequence_item(resource, arguments, is_deprecated, get_control_protocol_class_descriptor, gate);
                 };
             }
             nmos::experimental::control_protocol_method_handler make_nc_set_sequence_item_handler(get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor_handler get_control_protocol_datatype_descriptor, control_protocol_property_changed_handler property_changed)
@@ -133,7 +133,7 @@ namespace nmos
             {
                 return [get_control_protocol_class_descriptor](nmos::resources& resources, const nmos::resource& resource, const web::json::value& arguments, bool is_deprecated, slog::base_gate& gate)
                 {
-                    return get_sequence_length(resources, resource, arguments, is_deprecated, get_control_protocol_class_descriptor, gate);
+                    return get_sequence_length(resource, arguments, is_deprecated, get_control_protocol_class_descriptor, gate);
                 };
             }
             nmos::experimental::control_protocol_method_handler make_nc_get_member_descriptors_handler()
