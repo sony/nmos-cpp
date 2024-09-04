@@ -624,7 +624,7 @@ namespace nmos
                 {
                     auto& resource = nmos::fields::nc::resource(touchpoint);
                     return (resource_id == nmos::fields::nc::id(resource).as_string()
-                        && nmos::ncp_nmos_resource_types::receiver.name == nmos::fields::nc::resource_type(resource));
+                        && nmos::ncp_touchpoint_resource_types::receiver.name == nmos::fields::nc::resource_type(resource));
                 });
                 return (tps.end() != found_tp);
             }

@@ -1266,7 +1266,7 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
                     utility::stringstream_t role;
                     role << U("monitor-") << ++count;
                     const auto& receiver = nmos::find_resource(model.node_resources, receiver_id);
-                    const auto receiver_monitor = nmos::make_receiver_monitor(++oid, true, nmos::root_block_oid, role.str(), nmos::fields::label(receiver->data), nmos::fields::description(receiver->data), value_of({ { nmos::details::make_nc_touchpoint_nmos({nmos::ncp_nmos_resource_types::receiver, receiver_id}) } }));
+                    const auto receiver_monitor = nmos::make_receiver_monitor(++oid, true, nmos::root_block_oid, role.str(), nmos::fields::label(receiver->data), nmos::fields::description(receiver->data), value_of({ { nmos::details::make_nc_touchpoint_nmos({nmos::ncp_touchpoint_resource_types::receiver, receiver_id}) } }));
 
                     // add receiver-monitor to root-block
                     nmos::push_back(root_block, receiver_monitor);
