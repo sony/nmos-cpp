@@ -167,16 +167,16 @@ namespace nmos
             }
             nmos::experimental::control_protocol_method_handler make_nc_get_control_class_handler(get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor)
             {
-                return [get_control_protocol_class_descriptor](nmos::resources& resources, const nmos::resource& resource, const web::json::value& arguments, bool is_deprecated, slog::base_gate& gate)
+                return [get_control_protocol_class_descriptor](nmos::resources&, const nmos::resource&, const web::json::value& arguments, bool is_deprecated, slog::base_gate& gate)
                 {
-                    return get_control_class(resources, resource, arguments, is_deprecated, get_control_protocol_class_descriptor, gate);
+                    return get_control_class(arguments, is_deprecated, get_control_protocol_class_descriptor, gate);
                 };
             }
             nmos::experimental::control_protocol_method_handler make_nc_get_datatype_handler(get_control_protocol_datatype_descriptor_handler get_control_protocol_datatype_descriptor)
             {
-                return [get_control_protocol_datatype_descriptor](nmos::resources& resources, const nmos::resource& resource, const web::json::value& arguments, bool is_deprecated, slog::base_gate& gate)
+                return [get_control_protocol_datatype_descriptor](nmos::resources&, const nmos::resource&, const web::json::value& arguments, bool is_deprecated, slog::base_gate& gate)
                 {
-                    return get_datatype(resources, resource, arguments, is_deprecated, get_control_protocol_datatype_descriptor, gate);
+                    return get_datatype(arguments, is_deprecated, get_control_protocol_datatype_descriptor, gate);
                 };
             }
             nmos::experimental::control_protocol_method_handler make_nc_get_properties_by_path_handler(get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor_handler get_control_protocol_datatype_descriptor, get_properties_by_path_handler get_properties_by_path)

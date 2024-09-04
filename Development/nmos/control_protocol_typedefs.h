@@ -385,7 +385,7 @@ namespace nmos
             , id(id)
         {}
 
-        nc_touchpoint_resource_nmos(const ncp_nmos_resource_type& resource_type, nc_uuid id)
+        nc_touchpoint_resource_nmos(const ncp_touchpoint_resource_type& resource_type, nc_uuid id)
             : nc_touchpoint_resource(resource_type.name)
             , id(id)
         {}

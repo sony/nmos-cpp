@@ -513,7 +513,7 @@ namespace nmos
 
     // NcClassManager methods implementation
     // Get a single class descriptor
-    web::json::value get_control_class(nmos::resources&, const nmos::resource&, const web::json::value& arguments, bool is_deprecated, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, slog::base_gate& gate)
+    web::json::value get_control_class(const web::json::value& arguments, bool is_deprecated, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, slog::base_gate& gate)
     {
         using web::json::value;
 
@@ -568,7 +568,7 @@ namespace nmos
     }
 
     // Get a single datatype descriptor
-    web::json::value get_datatype(nmos::resources&, const nmos::resource&, const web::json::value& arguments, bool is_deprecated, get_control_protocol_datatype_descriptor_handler get_control_protocol_datatype_descriptor, slog::base_gate& gate)
+    web::json::value get_datatype(const web::json::value& arguments, bool is_deprecated, get_control_protocol_datatype_descriptor_handler get_control_protocol_datatype_descriptor, slog::base_gate& gate)
     {
         // note, model mutex is already locked by the outer function, so access to control_protocol_resources is OK...
 
