@@ -932,7 +932,7 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
         const web::json::field_as_number gain_value{ U("gainValue") };
         {
             // Gain control class property descriptors
-            std::vector<web::json::value> gain_control_property_descriptors = { nmos::experimental::make_control_class_property_descriptor(U("Gain value"), { 3, 1 }, gain_value, U("NcFloat32")) };
+            std::vector<web::json::value> gain_control_property_descriptors = { nmos::experimental::make_control_class_property_descriptor(U("Gain value"), { 3, 1 }, gain_value, U("NcFloat32"), false, false, false, false, web::json::value::null(), web::json::value_of({ nmos::nc_property_trait::ephemeral })) };
 
             // create Gain control class descriptor
             auto gain_control_class_descriptor = nmos::experimental::make_control_class_descriptor(U("Gain control class descriptor"), gain_control_class_id, U("GainControl"), gain_control_property_descriptors);
@@ -990,8 +990,8 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
                 nmos::experimental::make_control_class_property_descriptor(U("Example string property"), { 3, 2 }, string_property, U("NcString"), false, false, false, false, make_string_example_argument_constraints()),
                 // create "Example numeric property" with level 1: property constraints, See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Constraints.html
                 // use nmos::details::make_nc_parameter_constraints_number to create property constraints
-                nmos::experimental::make_control_class_property_descriptor(U("Example numeric property"), { 3, 3 }, number_property, U("NcUint64"), false, false, false, false, make_number_example_argument_constraints()),
-                nmos::experimental::make_control_class_property_descriptor(U("Example deprecated numeric property"), { 3, 4 }, deprecated_number_property, U("NcUint64"), false, false, false, true, make_number_example_argument_constraints()),
+                nmos::experimental::make_control_class_property_descriptor(U("Example numeric property"), { 3, 3 }, number_property, U("NcUint64"), false, false, false, false, make_number_example_argument_constraints(),  web::json::value_of({ nmos::nc_property_trait::ephemeral })),
+                nmos::experimental::make_control_class_property_descriptor(U("Example deprecated numeric property"), { 3, 4 }, deprecated_number_property, U("NcUint64"), false, false, false, true, make_number_example_argument_constraints(), web::json::value_of({ nmos::nc_property_trait::ephemeral })),
                 nmos::experimental::make_control_class_property_descriptor(U("Example boolean property"), { 3, 5 }, boolean_property, U("NcBoolean")),
                 nmos::experimental::make_control_class_property_descriptor(U("Example object property"), { 3, 6 }, object_property, U("ExampleDataType")),
                 nmos::experimental::make_control_class_property_descriptor(U("Example method no args invoke counter"), { 3, 7 }, method_no_args_count, U("NcUint64"), true),
@@ -1175,8 +1175,8 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
         {
             // Temperature Sensor control class property descriptors
             std::vector<web::json::value> temperature_sensor_property_descriptors = {
-                nmos::experimental::make_control_class_property_descriptor(U("Temperature"), { 3, 1 }, temperature, U("NcFloat32"), true),
-                nmos::experimental::make_control_class_property_descriptor(U("Unit"), { 3, 2 }, unit, U("NcString"), true)
+                nmos::experimental::make_control_class_property_descriptor(U("Temperature"), { 3, 1 }, temperature, U("NcFloat32"), true, false, false, false, web::json::value::null(), web::json::value_of({ nmos::nc_property_trait::ephemeral, nmos::nc_property_trait::device_generated })),
+                nmos::experimental::make_control_class_property_descriptor(U("Unit"), { 3, 2 }, unit, U("NcString"), true, false, false, false, web::json::value::null(), web::json::value_of({ nmos::nc_property_trait::ephemeral }))
             };
 
             // create Temperature Sensor control class descriptor

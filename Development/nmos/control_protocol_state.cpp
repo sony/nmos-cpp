@@ -51,9 +51,9 @@ namespace nmos
         }
 
         // create control class property descriptor
-        web::json::value make_control_class_property_descriptor(const utility::string_t& description, const nc_property_id& id, const nc_name& name, const utility::string_t& type_name, bool is_read_only, bool is_nullable, bool is_sequence, bool is_deprecated, const web::json::value& constraints)
+        web::json::value make_control_class_property_descriptor(const utility::string_t& description, const nc_property_id& id, const nc_name& name, const utility::string_t& type_name, bool is_read_only, bool is_nullable, bool is_sequence, bool is_deprecated, const web::json::value& constraints, const web::json::value& property_traits)
         {
-            return nmos::details::make_nc_property_descriptor(description, id, name, type_name, is_read_only, is_nullable, is_sequence, is_deprecated, constraints);
+            return nmos::details::make_nc_property_descriptor(description, id, name, type_name, is_read_only, is_nullable, is_sequence, is_deprecated, constraints, property_traits);
         }
 
         // create control class method parameter descriptor

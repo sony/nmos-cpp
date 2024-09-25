@@ -377,8 +377,9 @@ namespace nmos
         // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncpropertydescriptor
         // description can be null
         // constraints can be null
+        // property_traits define backup and restore behaviour
         web::json::value make_nc_property_descriptor(const web::json::value& description, const nc_property_id& id, const nc_name& name, const web::json::value& type_name,
-            bool is_read_only, bool is_nullable, bool is_sequence, bool is_deprecated, const web::json::value& constraints)
+            bool is_read_only, bool is_nullable, bool is_sequence, bool is_deprecated, const web::json::value& constraints, const web::json::value& property_traits)
         {
             using web::json::value;
 
@@ -391,15 +392,16 @@ namespace nmos
             data[nmos::fields::nc::is_sequence] = value::boolean(is_sequence);
             data[nmos::fields::nc::is_deprecated] = value::boolean(is_deprecated);
             data[nmos::fields::nc::constraints] = constraints;
+            data[nmos::fields::nc::property_traits] = property_traits;
 
             return data;
         }
         web::json::value make_nc_property_descriptor(const utility::string_t& description, const nc_property_id& id, const nc_name& name, const utility::string_t& type_name,
-            bool is_read_only, bool is_nullable, bool is_sequence, bool is_deprecated, const web::json::value& constraints)
+            bool is_read_only, bool is_nullable, bool is_sequence, bool is_deprecated, const web::json::value& constraints, const web::json::value& property_traits)
         {
             using web::json::value;
 
-            return nmos::details::make_nc_property_descriptor(value::string(description), id, name, value::string(type_name), is_read_only, is_nullable, is_sequence, is_deprecated, constraints);
+            return nmos::details::make_nc_property_descriptor(value::string(description), id, name, value::string(type_name), is_read_only, is_nullable, is_sequence, is_deprecated, constraints, property_traits);
         }
 
         // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncdatatypedescriptor
@@ -929,16 +931,17 @@ namespace nmos
     web::json::value make_nc_object_properties()
     {
         using web::json::value;
+        using web::json::value_of;
 
         auto properties = value::array();
-        web::json::push_back(properties, details::make_nc_property_descriptor(U("Static value. All instances of the same class will have the same identity value"), nc_object_class_id_property_id, nmos::fields::nc::class_id, U("NcClassId"), true, false, false, false, value::null()));
-        web::json::push_back(properties, details::make_nc_property_descriptor(U("Object identifier"), nc_object_oid_property_id, nmos::fields::nc::oid, U("NcOid"), true, false, false, false, value::null()));
-        web::json::push_back(properties, details::make_nc_property_descriptor(U("TRUE iff OID is hardwired into device"), nc_object_constant_oid_property_id, nmos::fields::nc::constant_oid, U("NcBoolean"), true, false, false, false, value::null()));
-        web::json::push_back(properties, details::make_nc_property_descriptor(U("OID of containing block. Can only ever be null for the root block"), nc_object_owner_property_id, nmos::fields::nc::owner, U("NcOid"), true, true, false, false, value::null()));
-        web::json::push_back(properties, details::make_nc_property_descriptor(U("Role of object in the containing block"), nc_object_role_property_id, nmos::fields::nc::role, U("NcString"), true, false, false, false, value::null()));
-        web::json::push_back(properties, details::make_nc_property_descriptor(U("Scribble strip"), nc_object_user_label_property_id, nmos::fields::nc::user_label, U("NcString"), false, true, false, false, value::null()));
-        web::json::push_back(properties, details::make_nc_property_descriptor(U("Touchpoints to other contexts"), nc_object_touchpoints_property_id, nmos::fields::nc::touchpoints, U("NcTouchpoint"), true, true, true, false, value::null()));
-        web::json::push_back(properties, details::make_nc_property_descriptor(U("Runtime property constraints"), nc_object_runtime_property_constraints_property_id, nmos::fields::nc::runtime_property_constraints, U("NcPropertyConstraints"), true, true, true, false, value::null()));
+        web::json::push_back(properties, details::make_nc_property_descriptor(U("Static value. All instances of the same class will have the same identity value"), nc_object_class_id_property_id, nmos::fields::nc::class_id, U("NcClassId"), true, false, false, false, value::null(), value_of({ nc_property_trait::device_generated })));
+        web::json::push_back(properties, details::make_nc_property_descriptor(U("Object identifier"), nc_object_oid_property_id, nmos::fields::nc::oid, U("NcOid"), true, false, false, false, value::null(), value_of({ nc_property_trait::device_generated })));
+        web::json::push_back(properties, details::make_nc_property_descriptor(U("TRUE iff OID is hardwired into device"), nc_object_constant_oid_property_id, nmos::fields::nc::constant_oid, U("NcBoolean"), true, false, false, false, value::null(), value_of({ nc_property_trait::device_generated })));
+        web::json::push_back(properties, details::make_nc_property_descriptor(U("OID of containing block. Can only ever be null for the root block"), nc_object_owner_property_id, nmos::fields::nc::owner, U("NcOid"), true, true, false, false, value::null(), value_of({ nc_property_trait::device_generated })));
+        web::json::push_back(properties, details::make_nc_property_descriptor(U("Role of object in the containing block"), nc_object_role_property_id, nmos::fields::nc::role, U("NcString"), true, false, false, false, value::null(), value_of({ nc_property_trait::structural })));
+        web::json::push_back(properties, details::make_nc_property_descriptor(U("Scribble strip"), nc_object_user_label_property_id, nmos::fields::nc::user_label, U("NcString"), false, true, false, false, value::null(), value_of({ nc_property_trait::general })));
+        web::json::push_back(properties, details::make_nc_property_descriptor(U("Touchpoints to other contexts"), nc_object_touchpoints_property_id, nmos::fields::nc::touchpoints, U("NcTouchpoint"), true, true, true, false, value::null(), value_of({ nc_property_trait::device_generated})));
+        web::json::push_back(properties, details::make_nc_property_descriptor(U("Runtime property constraints"), nc_object_runtime_property_constraints_property_id, nmos::fields::nc::runtime_property_constraints, U("NcPropertyConstraints"), true, true, true, false, value::null(), value_of({ nc_property_trait::general })));
 
         return properties;
     }
@@ -1005,10 +1008,11 @@ namespace nmos
     web::json::value make_nc_block_properties()
     {
         using web::json::value;
+        using web::json::value_of;
 
         auto properties = value::array();
-        web::json::push_back(properties, details::make_nc_property_descriptor(U("TRUE if block is functional"), nc_block_enabled_property_id, nmos::fields::nc::enabled, U("NcBoolean"), true, false, false, false, value::null()));
-        web::json::push_back(properties, details::make_nc_property_descriptor(U("Descriptors of this block's members"), nc_block_members_property_id, nmos::fields::nc::members, U("NcBlockMemberDescriptor"), true, false, true, false, value::null()));
+        web::json::push_back(properties, details::make_nc_property_descriptor(U("TRUE if block is functional"), nc_block_enabled_property_id, nmos::fields::nc::enabled, U("NcBoolean"), true, false, false, false, value::null(), value_of({ nc_property_trait::general })));
+        web::json::push_back(properties, details::make_nc_property_descriptor(U("Descriptors of this block's members"), nc_block_members_property_id, nmos::fields::nc::members, U("NcBlockMemberDescriptor"), true, false, true, false, value::null(), value_of({ nc_property_trait::structural })));
 
         return properties;
     }
@@ -1056,9 +1060,10 @@ namespace nmos
     web::json::value make_nc_worker_properties()
     {
         using web::json::value;
+        using web::json::value_of;
 
         auto properties = value::array();
-        web::json::push_back(properties, details::make_nc_property_descriptor(U("TRUE iff worker is enabled"), nc_worker_enabled_property_id, nmos::fields::nc::enabled, U("NcBoolean"), false, false, false, false, value::null()));
+        web::json::push_back(properties, details::make_nc_property_descriptor(U("TRUE iff worker is enabled"), nc_worker_enabled_property_id, nmos::fields::nc::enabled, U("NcBoolean"), false, false, false, false, value::null(), value_of({ nc_property_trait::general })));
 
         return properties;
     }
@@ -1099,18 +1104,19 @@ namespace nmos
     web::json::value make_nc_device_manager_properties()
     {
         using web::json::value;
+        using web::json::value_of;
 
         auto properties = value::array();
-        web::json::push_back(properties, details::make_nc_property_descriptor(U("Version of MS-05-02 that this device uses"), nc_device_manager_nc_version_property_id, nmos::fields::nc::nc_version, U("NcVersionCode"), true, false, false, false, value::null()));
-        web::json::push_back(properties, details::make_nc_property_descriptor(U("Manufacturer descriptor"), nc_device_manager_manufacturer_property_id, nmos::fields::nc::manufacturer, U("NcManufacturer"), true, false, false, false, value::null()));
-        web::json::push_back(properties, details::make_nc_property_descriptor(U("Product descriptor"), nc_device_manager_product_property_id, nmos::fields::nc::product, U("NcProduct"), true, false, false, false, value::null()));
-        web::json::push_back(properties, details::make_nc_property_descriptor(U("Serial number"), nc_device_manager_serial_number_property_id, nmos::fields::nc::serial_number, U("NcString"), true, false, false, false, value::null()));
-        web::json::push_back(properties, details::make_nc_property_descriptor(U("Asset tracking identifier (user specified)"), nc_device_manager_user_inventory_code_property_id, nmos::fields::nc::user_inventory_code, U("NcString"), false, true, false, false, value::null()));
-        web::json::push_back(properties, details::make_nc_property_descriptor(U("Name of this device in the application. Instance name, not product name"), nc_device_manager_device_name_property_id, nmos::fields::nc::device_name, U("NcString"), false, true, false, false, value::null()));
-        web::json::push_back(properties, details::make_nc_property_descriptor(U("Role of this device in the application"), nc_device_manager_device_role_property_id, nmos::fields::nc::device_role, U("NcString"), false, true, false, false, value::null()));
-        web::json::push_back(properties, details::make_nc_property_descriptor(U("Device operational state"), nc_device_manager_operational_state_property_id, nmos::fields::nc::operational_state, U("NcDeviceOperationalState"), true, false, false, false, value::null()));
-        web::json::push_back(properties, details::make_nc_property_descriptor(U("Reason for most recent reset"), nc_device_manager_reset_cause_property_id, nmos::fields::nc::reset_cause, U("NcResetCause"), true, false, false, false, value::null()));
-        web::json::push_back(properties, details::make_nc_property_descriptor(U("Arbitrary message from dev to controller"), nc_device_manager_message_property_id, nmos::fields::nc::message, U("NcString"), true, true, false, false, value::null()));
+        web::json::push_back(properties, details::make_nc_property_descriptor(U("Version of MS-05-02 that this device uses"), nc_device_manager_nc_version_property_id, nmos::fields::nc::nc_version, U("NcVersionCode"), true, false, false, false, value::null(), value_of({nc_property_trait::structural})));
+        web::json::push_back(properties, details::make_nc_property_descriptor(U("Manufacturer descriptor"), nc_device_manager_manufacturer_property_id, nmos::fields::nc::manufacturer, U("NcManufacturer"), true, false, false, false, value::null(), value_of({ nc_property_trait::immutable })));
+        web::json::push_back(properties, details::make_nc_property_descriptor(U("Product descriptor"), nc_device_manager_product_property_id, nmos::fields::nc::product, U("NcProduct"), true, false, false, false, value::null(), value_of({ nc_property_trait::immutable })));
+        web::json::push_back(properties, details::make_nc_property_descriptor(U("Serial number"), nc_device_manager_serial_number_property_id, nmos::fields::nc::serial_number, U("NcString"), true, false, false, false, value::null(), value_of({ nc_property_trait::instance_specific, nc_property_trait::immutable })));
+        web::json::push_back(properties, details::make_nc_property_descriptor(U("Asset tracking identifier (user specified)"), nc_device_manager_user_inventory_code_property_id, nmos::fields::nc::user_inventory_code, U("NcString"), false, true, false, false, value::null(), value_of({ nc_property_trait::general })));
+        web::json::push_back(properties, details::make_nc_property_descriptor(U("Name of this device in the application. Instance name, not product name"), nc_device_manager_device_name_property_id, nmos::fields::nc::device_name, U("NcString"), false, true, false, false, value::null(), value_of({ nc_property_trait::general })));
+        web::json::push_back(properties, details::make_nc_property_descriptor(U("Role of this device in the application"), nc_device_manager_device_role_property_id, nmos::fields::nc::device_role, U("NcString"), false, true, false, false, value::null(), value_of({ nc_property_trait::general })));
+        web::json::push_back(properties, details::make_nc_property_descriptor(U("Device operational state"), nc_device_manager_operational_state_property_id, nmos::fields::nc::operational_state, U("NcDeviceOperationalState"), true, false, false, false, value::null(), value_of({ nc_property_trait::ephemeral })));
+        web::json::push_back(properties, details::make_nc_property_descriptor(U("Reason for most recent reset"), nc_device_manager_reset_cause_property_id, nmos::fields::nc::reset_cause, U("NcResetCause"), true, false, false, false, value::null(), value_of({ nc_property_trait::ephemeral })));
+        web::json::push_back(properties, details::make_nc_property_descriptor(U("Arbitrary message from dev to controller"), nc_device_manager_message_property_id, nmos::fields::nc::message, U("NcString"), true, true, false, false, value::null(), value_of({ nc_property_trait::ephemeral })));
 
         return properties;
     }
@@ -1131,10 +1137,11 @@ namespace nmos
     web::json::value make_nc_class_manager_properties()
     {
         using web::json::value;
+        using web::json::value_of;
 
         auto properties = value::array();
-        web::json::push_back(properties, details::make_nc_property_descriptor(U("Descriptions of all control classes in the device (descriptors do not contain inherited elements)"), nc_class_manager_control_classes_property_id, nmos::fields::nc::control_classes, U("NcClassDescriptor"), true, false, true, false, value::null()));
-        web::json::push_back(properties, details::make_nc_property_descriptor(U("Descriptions of all data types in the device (descriptors do not contain inherited elements)"), nc_class_manager_datatypes_property_id, nmos::fields::nc::datatypes, U("NcDatatypeDescriptor"), true, false, true, false, value::null()));
+        web::json::push_back(properties, details::make_nc_property_descriptor(U("Descriptions of all control classes in the device (descriptors do not contain inherited elements)"), nc_class_manager_control_classes_property_id, nmos::fields::nc::control_classes, U("NcClassDescriptor"), true, false, true, false, value::null(), value_of({ nc_property_trait::structural, nc_property_trait::immutable })));
+        web::json::push_back(properties, details::make_nc_property_descriptor(U("Descriptions of all data types in the device (descriptors do not contain inherited elements)"), nc_class_manager_datatypes_property_id, nmos::fields::nc::datatypes, U("NcDatatypeDescriptor"), true, false, true, false, value::null(), value_of({ nc_property_trait::structural, nc_property_trait::immutable })));
 
         return properties;
     }
@@ -1169,12 +1176,13 @@ namespace nmos
     web::json::value make_nc_receiver_monitor_properties()
     {
         using web::json::value;
+        using web::json::value_of;
 
         auto properties = value::array();
-        web::json::push_back(properties, details::make_nc_property_descriptor(U("Connection status property"), nc_receiver_monitor_connection_status_property_id, nmos::fields::nc::connection_status, U("NcConnectionStatus"), true, false, false, false, value::null()));
-        web::json::push_back(properties, details::make_nc_property_descriptor(U("Connection status message property"), nc_receiver_monitor_connection_status_message_property_id, nmos::fields::nc::connection_status_message, U("NcString"), true, true, false, false, value::null()));
-        web::json::push_back(properties, details::make_nc_property_descriptor(U("Payload status property"), nc_receiver_monitor_payload_status_property_id, nmos::fields::nc::payload_status, U("NcPayloadStatus"), true, false, false, false, value::null()));
-        web::json::push_back(properties, details::make_nc_property_descriptor(U("Payload status message property"), nc_receiver_monitor_payload_status_message_property_id, nmos::fields::nc::payload_status_message, U("NcString"), true, true, false, false, value::null()));
+        web::json::push_back(properties, details::make_nc_property_descriptor(U("Connection status property"), nc_receiver_monitor_connection_status_property_id, nmos::fields::nc::connection_status, U("NcConnectionStatus"), true, false, false, false, value::null(), value_of({ nc_property_trait::ephemeral })));
+        web::json::push_back(properties, details::make_nc_property_descriptor(U("Connection status message property"), nc_receiver_monitor_connection_status_message_property_id, nmos::fields::nc::connection_status_message, U("NcString"), true, true, false, false, value::null(), value_of({ nc_property_trait::ephemeral })));
+        web::json::push_back(properties, details::make_nc_property_descriptor(U("Payload status property"), nc_receiver_monitor_payload_status_property_id, nmos::fields::nc::payload_status, U("NcPayloadStatus"), true, false, false, false, value::null(), value_of({ nc_property_trait::ephemeral })));
+        web::json::push_back(properties, details::make_nc_property_descriptor(U("Payload status message property"), nc_receiver_monitor_payload_status_message_property_id, nmos::fields::nc::payload_status_message, U("NcString"), true, true, false, false, value::null(), value_of({ nc_property_trait::ephemeral })));
 
         return properties;
     }
@@ -1195,9 +1203,10 @@ namespace nmos
     web::json::value make_nc_receiver_monitor_protected_properties()
     {
         using web::json::value;
+        using web::json::value_of;
 
         auto properties = value::array();
-        web::json::push_back(properties, details::make_nc_property_descriptor(U("Indicates if signal protection is active"), nc_receiver_monitor_protected_signal_protection_status_property_id, nmos::fields::nc::signal_protection_status, U("NcBoolean"), true, false, false, false, value::null()));
+        web::json::push_back(properties, details::make_nc_property_descriptor(U("Indicates if signal protection is active"), nc_receiver_monitor_protected_signal_protection_status_property_id, nmos::fields::nc::signal_protection_status, U("NcBoolean"), true, false, false, false, value::null(), value_of({ nc_property_trait::ephemeral })));
 
         return properties;
     }
@@ -1218,9 +1227,10 @@ namespace nmos
     web::json::value make_nc_ident_beacon_properties()
     {
         using web::json::value;
+        using web::json::value_of;
 
         auto properties = value::array();
-        web::json::push_back(properties, details::make_nc_property_descriptor(U("Indicator active state"), nc_ident_beacon_active_property_id, nmos::fields::nc::active, U("NcBoolean"), false, false, false, false, value::null()));
+        web::json::push_back(properties, details::make_nc_property_descriptor(U("Indicator active state"), nc_ident_beacon_active_property_id, nmos::fields::nc::active, U("NcBoolean"), false, false, false, false, value::null(), value_of({ nc_property_trait::ephemeral })));
 
         return properties;
     }

@@ -113,7 +113,7 @@ namespace nmos
         // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncpropertydescriptor
         // constraints can be null
         web::json::value make_nc_property_descriptor(const utility::string_t& description, const nc_property_id& id, const nc_name& name, const utility::string_t& type_name,
-            bool is_read_only, bool is_nullable, bool is_sequence, bool is_deprecated, const web::json::value& constraints);
+            bool is_read_only, bool is_nullable, bool is_sequence, bool is_deprecated, const web::json::value& constraints, const web::json::value& property_traits = web::json::value_of({ nc_property_trait::general }));
 
         // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncdatatypedescriptorenum
         // constraints can be null

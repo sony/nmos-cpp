@@ -24,19 +24,34 @@ namespace nmos
             std::vector<method> method_descriptors; // NcMethodDescriptor method handler array
             web::json::value event_descriptors = web::json::value::array();  // NcEventDescriptor array
 
+            // Property descriptors that are decorated with additional metadata, namely property_traits.
+            // Property_traits determine how properties are backed up and restored/configured 
+            web::json::value decorated_property_descriptors = web::json::value::array(); // NcPropertyDescriptor array including property_traits
+
             control_class_descriptor()
                 : class_id({ 0 })
             {}
 
-            control_class_descriptor(utility::string_t description, nmos::nc_class_id class_id, nmos::nc_name name, web::json::value fixed_role, web::json::value property_descriptors, std::vector<method> method_descriptors, web::json::value event_descriptors)
+            control_class_descriptor(utility::string_t description, nmos::nc_class_id class_id, nmos::nc_name name, web::json::value fixed_role, web::json::value property_descriptors_, std::vector<method> method_descriptors, web::json::value event_descriptors)
                 : description(std::move(description))
                 , class_id(std::move(class_id))
                 , name(std::move(name))
                 , fixed_role(std::move(fixed_role))
-                , property_descriptors(std::move(property_descriptors))
+                , decorated_property_descriptors(std::move(property_descriptors_))
                 , method_descriptors(std::move(method_descriptors))
                 , event_descriptors(std::move(event_descriptors))
-            {}
+            {
+                // filter out the property traits
+                for (auto descriptor : decorated_property_descriptors.as_array()) {
+                    auto filtered = web::json::value::object();
+                    for (auto item : descriptor.as_object()) {
+                        if (item.first != U("property_traits")) {
+                            filtered[item.first] = item.second;
+                        }
+                    }
+                    web::json::push_back(property_descriptors, filtered);
+                }
+            }
         };
 
         struct datatype_descriptor // NcDatatypeDescriptorEnum/NcDatatypeDescriptorPrimitive/NcDatatypeDescriptorStruct/NcDatatypeDescriptorTypeDef
@@ -80,7 +95,7 @@ namespace nmos
 
         // create control class property descriptor
         web::json::value make_control_class_property_descriptor(const utility::string_t& description, const nc_property_id& id, const nc_name& name, const utility::string_t& type_name,
-            bool is_read_only = false, bool is_nullable = false, bool is_sequence = false, bool is_deprecated = false, const web::json::value& constraints = web::json::value::null());
+            bool is_read_only = false, bool is_nullable = false, bool is_sequence = false, bool is_deprecated = false, const web::json::value& constraints = web::json::value::null(), const web::json::value& property_traits = web::json::value_of({ nc_property_trait::general }));
 
         // create control class method parameter descriptor
         web::json::value make_control_class_method_parameter_descriptor(const utility::string_t& description, const nc_name& name, const utility::string_t& type_name,

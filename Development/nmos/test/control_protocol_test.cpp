@@ -27,9 +27,10 @@ BST_TEST_CASE(testNcClassDescriptor)
         { U("isNullable"), false },
         { U("isSequence"), false },
         { U("isDeprecated"), false },
-        { U("constraints"), value::null() }
+        { U("constraints"), value::null() },
+        { U("property_traits"), value_of({ nmos::nc_property_trait::device_generated })}
     });
-    const auto property_class_id_ = nmos::details::make_nc_property_descriptor(U("Static value. All instances of the same class will have the same identity value"), nmos::nc_object_class_id_property_id, nmos::fields::nc::class_id, U("NcClassId"), true, false, false, false, value::null());
+    const auto property_class_id_ = nmos::details::make_nc_property_descriptor(U("Static value. All instances of the same class will have the same identity value"), nmos::nc_object_class_id_property_id, nmos::fields::nc::class_id, U("NcClassId"), true, false, false, false, value::null(), value_of({ nmos::nc_property_trait::device_generated }));
     BST_REQUIRE_EQUAL(property_class_id, property_class_id_);
 
     const auto property_oid = value_of({
@@ -44,9 +45,10 @@ BST_TEST_CASE(testNcClassDescriptor)
         { U("isNullable"), false },
         { U("isSequence"), false },
         { U("isDeprecated"), false },
-        { U("constraints"), value::null() }
+        { U("constraints"), value::null() },
+        { U("property_traits"), value_of({ nmos::nc_property_trait::device_generated })}
     });
-    const auto property_oid_ = nmos::details::make_nc_property_descriptor(U("Object identifier"), nmos::nc_object_oid_property_id, nmos::fields::nc::oid, U("NcOid"), true, false, false, false, value::null());
+    const auto property_oid_ = nmos::details::make_nc_property_descriptor(U("Object identifier"), nmos::nc_object_oid_property_id, nmos::fields::nc::oid, U("NcOid"), true, false, false, false, value::null(), value_of({ nmos::nc_property_trait::device_generated }));
     BST_REQUIRE_EQUAL(property_oid, property_oid_);
 
     const auto property_constant_oid = value_of({
@@ -61,9 +63,10 @@ BST_TEST_CASE(testNcClassDescriptor)
         { U("isNullable"), false },
         { U("isSequence"), false },
         { U("isDeprecated"), false },
-        { U("constraints"), value::null() }
+        { U("constraints"), value::null() },
+        { U("property_traits"), value_of({ nmos::nc_property_trait::device_generated })}
     });
-    const auto property_constant_oid_ = nmos::details::make_nc_property_descriptor(U("TRUE iff OID is hardwired into device"), nmos::nc_object_constant_oid_property_id, nmos::fields::nc::constant_oid, U("NcBoolean"), true, false, false, false, value::null());
+    const auto property_constant_oid_ = nmos::details::make_nc_property_descriptor(U("TRUE iff OID is hardwired into device"), nmos::nc_object_constant_oid_property_id, nmos::fields::nc::constant_oid, U("NcBoolean"), true, false, false, false, value::null(), value_of({ nmos::nc_property_trait::device_generated }));
     BST_REQUIRE_EQUAL(property_constant_oid, property_constant_oid_);
 
     const auto property_owner = value_of({
@@ -78,9 +81,10 @@ BST_TEST_CASE(testNcClassDescriptor)
         { U("isNullable"), true },
         { U("isSequence"), false },
         { U("isDeprecated"), false },
-        { U("constraints"), value::null() }
+        { U("constraints"), value::null() },
+        { U("property_traits"), value_of({ nmos::nc_property_trait::device_generated })}
     });
-    const auto property_owner_ = nmos::details::make_nc_property_descriptor(U("OID of containing block. Can only ever be null for the root block"), nmos::nc_object_owner_property_id, nmos::fields::nc::owner, U("NcOid"), true, true, false, false, value::null());
+    const auto property_owner_ = nmos::details::make_nc_property_descriptor(U("OID of containing block. Can only ever be null for the root block"), nmos::nc_object_owner_property_id, nmos::fields::nc::owner, U("NcOid"), true, true, false, false, value::null(), value_of({ nmos::nc_property_trait::device_generated }));
     BST_REQUIRE_EQUAL(property_owner, property_owner_);
 
     const auto property_role = value_of({
@@ -95,9 +99,10 @@ BST_TEST_CASE(testNcClassDescriptor)
         { U("isNullable"), false },
         { U("isSequence"), false },
         { U("isDeprecated"), false },
-        { U("constraints"), value::null() }
+        { U("constraints"), value::null() },
+        { U("property_traits"), value_of({ nmos::nc_property_trait::structural })}
     });
-    const auto property_role_ = nmos::details::make_nc_property_descriptor(U("Role of object in the containing block"), nmos::nc_object_role_property_id, nmos::fields::nc::role, U("NcString"), true, false, false, false, value::null());
+    const auto property_role_ = nmos::details::make_nc_property_descriptor(U("Role of object in the containing block"), nmos::nc_object_role_property_id, nmos::fields::nc::role, U("NcString"), true, false, false, false, value::null(), value_of({ nmos::nc_property_trait::structural }));
     BST_REQUIRE_EQUAL(property_role, property_role_);
 
     const auto property_user_label = value_of({
@@ -112,7 +117,8 @@ BST_TEST_CASE(testNcClassDescriptor)
         { U("isNullable"), true },
         { U("isSequence"), false },
         { U("isDeprecated"), false },
-        { U("constraints"), value::null() }
+        { U("constraints"), value::null() },
+        { U("property_traits"), value_of({ nmos::nc_property_trait::general })}
     });
     const auto property_user_label_ = nmos::details::make_nc_property_descriptor(U("Scribble strip"), nmos::nc_object_user_label_property_id, nmos::fields::nc::user_label, U("NcString"), false, true, false, false, value::null());
     BST_REQUIRE_EQUAL(property_user_label, property_user_label_);
@@ -129,9 +135,10 @@ BST_TEST_CASE(testNcClassDescriptor)
         { U("isNullable"), true },
         { U("isSequence"), true },
         { U("isDeprecated"), false },
-        { U("constraints"), value::null() }
+        { U("constraints"), value::null() },
+        { U("property_traits"), value_of({ nmos::nc_property_trait::device_generated })}
     });
-    const auto property_touchpoints_ = nmos::details::make_nc_property_descriptor(U("Touchpoints to other contexts"), nmos::nc_object_touchpoints_property_id, nmos::fields::nc::touchpoints, U("NcTouchpoint"), true, true, true, false, value::null());
+    const auto property_touchpoints_ = nmos::details::make_nc_property_descriptor(U("Touchpoints to other contexts"), nmos::nc_object_touchpoints_property_id, nmos::fields::nc::touchpoints, U("NcTouchpoint"), true, true, true, false, value::null(), value_of({ nmos::nc_property_trait::device_generated }));
     BST_REQUIRE_EQUAL(property_touchpoints, property_touchpoints_);
 
     const auto property_runtime_property_constraints = value_of({
@@ -146,7 +153,8 @@ BST_TEST_CASE(testNcClassDescriptor)
         { U("isNullable"), true },
         { U("isSequence"), true },
         { U("isDeprecated"), false },
-        { U("constraints"), value::null() }
+        { U("constraints"), value::null() },
+        { U("property_traits"), value_of({ nmos::nc_property_trait::general })}
     });
     const auto property_runtime_property_constraints_ = nmos::details::make_nc_property_descriptor(U("Runtime property constraints"), nmos::nc_object_runtime_property_constraints_property_id, nmos::fields::nc::runtime_property_constraints, U("NcPropertyConstraints"), true, true, true, false, value::null());
     BST_REQUIRE_EQUAL(property_runtime_property_constraints, property_runtime_property_constraints_);

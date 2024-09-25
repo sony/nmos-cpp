@@ -291,6 +291,7 @@ namespace nmos
             const web::json::field_as_array events{ U("events") }; // sequence<NcEventDescriptor>
             const web::json::field_as_integer type{ U("type") }; // NcDatatypeType
             const web::json::field_as_value constraints{ U("constraints") }; // NcParameterConstraints
+            const web::json::field_as_array property_traits{ U("property_traits") }; // sequence<NcPropertyTrait>
             const web::json::field_as_integer organization_id{ U("organizationId") };
             const web::json::field_as_string website{ U("website") };
             const web::json::field_as_string key{ U("key") };
