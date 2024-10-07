@@ -59,6 +59,9 @@ namespace nmos
     // find control class property descriptor (NcPropertyDescriptor)
     web::json::value find_property_descriptor(const nc_property_id& property_id, const nc_class_id& class_id, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor);
 
+    // find control class property descriptor (NcPropertyDescriptor) with additional configuration API property traits
+    web::json::value find_decorated_property_descriptor(const nc_property_id& property_id, const nc_class_id& class_id_, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor);
+
     // get block memeber descriptors
     void get_member_descriptors(const resources& resources, const resource& resource, bool recurse, web::json::array& descriptors);
 
@@ -76,6 +79,12 @@ namespace nmos
 
     // find the control protocol resource which is assoicated with the given IS-04/IS-05/IS-08 resource id
     resources::const_iterator find_control_protocol_resource(resources& resources, type type, const id& id);
+
+    // find resource based on role path.
+    resources::const_iterator find_control_protocol_resource_by_role_path(const resources& resources, const web::json::value& role_path);
+
+    // find resource based on role path. Roles in role path string must be delimited with a '.'
+    resources::const_iterator find_control_protocol_resource_by_role_path(const resources& resources, const utility::string_t& role_path);
 
     // method parameters constraints validation, may throw nmos::control_protocol_exception
     void method_parameters_contraints_validation(const web::json::value& arguments, const web::json::value& nc_method_descriptor, get_control_protocol_datatype_descriptor_handler get_control_protocol_datatype_descriptor);

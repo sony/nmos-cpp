@@ -819,31 +819,6 @@ namespace nmos
             return data;
         }
 
-        // TODO: add link
-        web::json::value make_nc_bulk_properties_manager(nc_oid oid, nc_oid owner, const web::json::value &user_label, const utility::string_t& description, const web::json::value& touchpoints, const web::json::value& runtime_property_constraints)
-        {
-            using web::json::value;
-
-            auto data = make_nc_manager(nc_bulk_properties_manager_class_id, oid, true, owner, U("BulkPropertiesManager"), user_label, description, touchpoints, runtime_property_constraints);
-
-            return data;
-        }
-
-        // TODO: add link
-        web::json::value make_nc_property_value_holder(const nc_property_id& property_id, const nc_name& name, const utility::string_t& type_name, bool is_read_only, const web::json::value& property_traits, const web::json::value& property_value)
-        {
-            using web::json::value;
-
-            return web::json::value_of({
-                { nmos::fields::nc::id, make_nc_property_id(property_id)},
-                { nmos::fields::nc::name, value::string(name)},
-                { nmos::fields::nc::type_name, value::string(type_name)},
-                { nmos::fields::nc::is_read_only, value::boolean(is_read_only)},
-                { nmos::fields::nc::traits, property_traits},
-                { nmos::fields::nc::value, property_value},
-                }, true);
-        }
-
         // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncpropertychangedeventdata
         web::json::value make_nc_property_changed_event_data(const nc_property_changed_event_data& property_changed_event_data)
         {
@@ -854,7 +829,88 @@ namespace nmos
                 { nmos::fields::nc::change_type, property_changed_event_data.change_type },
                 { nmos::fields::nc::value, property_changed_event_data.value },
                 { nmos::fields::nc::sequence_item_index, property_changed_event_data.sequence_item_index }
-            });
+                }, true
+            );
+        }
+
+        // TODO: add link
+        web::json::value make_nc_bulk_properties_manager(nc_oid oid, nc_oid owner, const web::json::value &user_label, const utility::string_t& description, const web::json::value& touchpoints, const web::json::value& runtime_property_constraints)
+        {
+            using web::json::value;
+
+            auto data = make_nc_manager(nc_bulk_properties_manager_class_id, oid, true, owner, U("BulkPropertiesManager"), user_label, description, touchpoints, runtime_property_constraints);
+
+            return data;
+        }
+
+        web::json::value make_nc_bulk_values_holder(const utility::string_t& validation_fingerprint, const web::json::value& object_properties_holders)
+        {
+            using web::json::value_of;
+
+            return value_of({
+                { nmos::fields::nc::validation_fingerprint, validation_fingerprint },
+                { nmos::fields::nc::values, object_properties_holders }
+                }, true
+            );
+        }
+
+        // TODO: add link
+        web::json::value make_nc_property_value_holder(const nc_property_id& property_id, const nc_name& name, const utility::string_t& type_name, bool is_read_only, const web::json::value& property_traits, const web::json::value& property_value)
+        {
+            using web::json::value; 
+            using web::json::value_of;
+
+            return value_of({
+                { nmos::fields::nc::id, make_nc_property_id(property_id)},
+                { nmos::fields::nc::name, value::string(name)},
+                { nmos::fields::nc::type_name, value::string(type_name)},
+                { nmos::fields::nc::is_read_only, value::boolean(is_read_only)},
+                { nmos::fields::nc::traits, property_traits},
+                { nmos::fields::nc::value, property_value},
+                }, true);
+        }
+
+        // TODO: add link
+        web::json::value make_nc_object_properties_holder(const web::json::value& role_path, const web::json::value& property_value_holders)
+        {
+            using web::json::value_of;
+
+            return value_of({
+                { nmos::fields::nc::path, role_path },
+                { nmos::fields::nc::values, property_value_holders}
+                }, true
+            );
+
+        }
+
+        // TODO: add link
+        web::json::value make_nc_property_restore_notice(const nc_property_id& property_id, const nc_name& name, nc_property_restore_notice_type::type notice_type, const utility::string_t& notice_message)
+        {
+            using web::json::value;
+            using web::json::value_of;
+
+            return value_of({
+                { nmos::fields::nc::id, make_nc_property_id(property_id)},
+                { nmos::fields::nc::name, value::string(name)}, 
+                { nmos::fields::nc::notice_type, value::number(notice_type)},
+                { nmos::fields::nc::notice_message, value::string(notice_message)}
+                }, true
+            );
+        }
+
+        // TODO: add link
+        web::json::value make_nc_object_properties_set_validation(const web::json::value& role_path, nc_restore_validation_status::status status, const web::json::value& notices, const utility::string_t& status_message)
+        {
+            using web::json::value;
+            using web::json::value_of;
+
+            return value_of({ 
+                { nmos::fields::nc::path, role_path},
+                { nmos::fields::nc::status, value::number(status)},
+                { nmos::fields::nc::notices, notices },
+                { nmos::fields::nc::status_message, value::string(status_message)}
+                }, true
+            );
         }
     }
 
@@ -1287,7 +1343,7 @@ namespace nmos
             web::json::push_back(parameters, details::make_nc_parameter_descriptor(U("The values offered (this may include read-only values and also paths which are not the target role path)"), nmos::fields::nc::data_set, U("NcBulkValuesHolder"), false, false, value::null()));
             web::json::push_back(parameters, details::make_nc_parameter_descriptor(U("If set the descriptor would contain all inherited elements"), nmos::fields::nc::path, U("NcRolePath"), false, false, value::null()));
             web::json::push_back(parameters, details::make_nc_parameter_descriptor(U("If true will validate properties on target path and all the nested paths"), nmos::fields::nc::recurse, U("NcBoolean"), false, false, value::null()));
-            web::json::push_back(parameters, details::make_nc_parameter_descriptor(U("If populated (not an empty collection) will include the properties matching any of the specified traits in the restore validation. When not populated only properties without traits are validated for restore"), nmos::fields::nc::included_property_traits, U("NcPropertyTrait"), false, true, value::null()));
+            web::json::push_back(parameters, details::make_nc_parameter_descriptor(U("If populated (not an empty collection) will include the properties matching any of the specified traits in the restore validation. When not populated only properties without traits are validated for restore"), nmos::fields::nc::property_traits, U("NcPropertyTrait"), true, true, value::null()));
             web::json::push_back(methods, details::make_nc_method_descriptor(U("Validate bulk properties for setting by given paths"), nc_bulk_properties_manager_validate_set_properties_by_path_method_id, U("ValidateSetPropertiesByPath"), U("NcMethodResultObjectPropertiesSetValidation"), parameters, false));
         }
         {
@@ -1295,7 +1351,7 @@ namespace nmos
             web::json::push_back(parameters, details::make_nc_parameter_descriptor(U("The values offered (this may include read-only values and also paths which are not the target role path)"), nmos::fields::nc::data_set, U("NcBulkValuesHolder"), false, false, value::null()));
             web::json::push_back(parameters, details::make_nc_parameter_descriptor(U("If set the descriptor would contain all inherited elements"), nmos::fields::nc::path, U("NcRolePath"), false, false, value::null()));
             web::json::push_back(parameters, details::make_nc_parameter_descriptor(U("If true will validate properties on target path and all the nested paths"), nmos::fields::nc::recurse, U("NcBoolean"), false, false, value::null()));
-            web::json::push_back(parameters, details::make_nc_parameter_descriptor(U("If populated (not an empty collection) will include the properties matching any of the specified traits in the restore validation. When not populated only properties without traits are validated for restore"), nmos::fields::nc::included_property_traits, U("NcPropertyTrait"), false, true, value::null()));
+            web::json::push_back(parameters, details::make_nc_parameter_descriptor(U("If populated (not an empty collection) will include the properties matching any of the specified traits in the restore validation. When not populated only properties without traits are validated for restore"), nmos::fields::nc::property_traits, U("NcPropertyTrait"), true, true, value::null()));
             web::json::push_back(methods, details::make_nc_method_descriptor(U("Set bulk properties for setting by given paths"), nc_bulk_properties_manager_set_properties_by_path_method_id, U("SetPropertiesByPath"), U("NcMethodResultObjectPropertiesSetValidation"), parameters, false));
         }
 
@@ -2147,10 +2203,12 @@ namespace nmos
         using web::json::value;
 
         auto items = value::array();
+        web::json::push_back(items, details::make_nc_enum_item_descriptor(U("Property is general"), U("General"), 0)); 
         web::json::push_back(items, details::make_nc_enum_item_descriptor(U("Property is instance specific"), U("InstanceSpecific"), 1));
         web::json::push_back(items, details::make_nc_enum_item_descriptor(U("Property is ephemeral"), U("Ephemeral"), 2));
         web::json::push_back(items, details::make_nc_enum_item_descriptor(U("Property is immutable"), U("Immutable"), 3));
         web::json::push_back(items, details::make_nc_enum_item_descriptor(U("Property value is generated by the device"), U("DeviceGenerated"), 4));
+        web::json::push_back(items, details::make_nc_enum_item_descriptor(U("Property value is structural (affects the device model structure)"), U("Structural"), 5));
         return details::make_nc_datatype_descriptor_enum(U("Property trait enumeration"), U("NcPropertyTrait"), items, value::null());
     }
     // TODO: add link
@@ -2162,7 +2220,7 @@ namespace nmos
         web::json::push_back(fields, details::make_nc_field_descriptor(U("Property id"), nmos::fields::nc::id, U("NcPropertyId"), false, false, value::null()));
         web::json::push_back(fields, details::make_nc_field_descriptor(U("Property name"), nmos::fields::nc::name, U("NcString"), false, false, value::null()));
         web::json::push_back(fields, details::make_nc_field_descriptor(U("Property type name. If null it means the type is any"), nmos::fields::nc::type_name, U("NcName"), true, false, value::null()));
-        web::json::push_back(fields, details::make_nc_field_descriptor(U("Is the property ReadOnly?"), nmos::fields::nc::is_read_only, U("NcBoolean"), true, false, value::null()));
+        web::json::push_back(fields, details::make_nc_field_descriptor(U("Is the property ReadOnly?"), nmos::fields::nc::is_read_only, U("NcBoolean"), false, false, value::null()));
         web::json::push_back(fields, details::make_nc_field_descriptor(U("Describes the property traits as a collection of unique items"), nmos::fields::nc::traits, U("NcPropertyTrait"), false, true, value::null()));
         web::json::push_back(fields, details::make_nc_field_descriptor(U("Property value"), nmos::fields::nc::value, true, false, value::null()));
 
@@ -2196,13 +2254,35 @@ namespace nmos
         using web::json::value;
 
         auto items = value::array();
-        web::json::push_back(items, details::make_nc_enum_item_descriptor(U("Restore was successful"), U("Ok"), 200));
-        web::json::push_back(items, details::make_nc_enum_item_descriptor(U("Excluded from restore due to data provided in the request"), U("Excluded"), 204));
-        web::json::push_back(items, details::make_nc_enum_item_descriptor(U("Restore failed because relevant backup data set provided is invalid"), U("InvalidData"), 400));
-        web::json::push_back(items, details::make_nc_enum_item_descriptor(U("Restore failed because the role path is not found in the device model or the device cannot create the role path from the data set"), U("NotFound"), 404));
-        web::json::push_back(items, details::make_nc_enum_item_descriptor(U("Restore failed because of missing dependency information in the relevant backup data set"), U("MissingDependency"), 424));
-        web::json::push_back(items, details::make_nc_enum_item_descriptor(U("Restore failed due to an internal device error preventing the restore from happening"), U("DeviceError"), 500));
+        web::json::push_back(items, details::make_nc_enum_item_descriptor(U("Restore was successful"), U("Ok"), nc_restore_validation_status::ok));
+        web::json::push_back(items, details::make_nc_enum_item_descriptor(U("Excluded from restore due to data provided in the request"), U("Excluded"), nc_restore_validation_status::excluded));
+        web::json::push_back(items, details::make_nc_enum_item_descriptor(U("Restore failed"), U("Failed"), nc_restore_validation_status::failed));
+        web::json::push_back(items, details::make_nc_enum_item_descriptor(U("Restore failed because the role path is not found in the device model or the device cannot create the role path from the data set"), U("NotFound"), nc_restore_validation_status::not_found));
+        web::json::push_back(items, details::make_nc_enum_item_descriptor(U("Restore failed due to an internal device error preventing the restore from happening"), U("DeviceError"), nc_restore_validation_status::device_error));
         return details::make_nc_datatype_descriptor_enum(U("Restore validation status enumeration"), U("NcRestoreValidationStatus"), items, value::null());
+    }
+    // TODO: add link
+    web::json::value make_nc_property_restore_notice_type_datatype()
+    {
+        using web::json::value;
+
+        auto items = value::array();
+        web::json::push_back(items, details::make_nc_enum_item_descriptor(U("Warning property restore notice"), U("Warning"), nc_property_restore_notice_type::warning));
+        web::json::push_back(items, details::make_nc_enum_item_descriptor(U("Error property restore notice"), U("Error"), nc_property_restore_notice_type::error));
+        return details::make_nc_datatype_descriptor_enum(U("Property restore notice type enumeration"), U("NcPropertyRestoreNoticeType"), items, value::null());
+    }
+    // TODO: add link
+    web::json::value make_nc_property_restore_notice_datatype()
+    {
+        using web::json::value;
+
+        auto fields = value::array();
+        web::json::push_back(fields, details::make_nc_field_descriptor(U("Property id"), nmos::fields::nc::id, U("NcPropertyId"), false, false, value::null()));
+        web::json::push_back(fields, details::make_nc_field_descriptor(U("Property name"), nmos::fields::nc::name, U("NcName"), false, false, value::null()));
+        web::json::push_back(fields, details::make_nc_field_descriptor(U("Property restore notice type"), nmos::fields::nc::notice_type, U("NcPropertyRestoreNoticeType"), false, false, value::null()));
+        web::json::push_back(fields, details::make_nc_field_descriptor(U("Property restore notice message"), nmos::fields::nc::notice_message, U("NcString"), false, false, value::null()));
+
+        return details::make_nc_datatype_descriptor_struct(U("Property restore notice descriptor"), U("NcPropertyRestoreNotice"), fields, value::null());
     }
     // TODO: add link
     web::json::value make_nc_object_properties_set_validation_datatype()
@@ -2212,6 +2292,7 @@ namespace nmos
         auto fields = value::array();
         web::json::push_back(fields, details::make_nc_field_descriptor(U("Object role path"), nmos::fields::nc::path, U("NcRolePath"), false, false, value::null()));
         web::json::push_back(fields, details::make_nc_field_descriptor(U("Validation status"), nmos::fields::nc::status, U("NcRestoreValidationStatus"), false, false, value::null()));
+        web::json::push_back(fields, details::make_nc_field_descriptor(U("Validation property notices"), nmos::fields::nc::notices, U("NcPropertyRestoreNotice"), false, true, value::null()));
         web::json::push_back(fields, details::make_nc_field_descriptor(U("Validation status message"), nmos::fields::nc::status_message, U("NcString"), true, false, value::null()));
 
         return details::make_nc_datatype_descriptor_struct(U("Object properties set validation descriptor"), U("NcObjectPropertiesSetValidation"), fields, value::null());

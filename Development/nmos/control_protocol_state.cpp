@@ -206,7 +206,7 @@ namespace nmos
                 return [&control_protocol_state, get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor, validate_set_properties_by_path](nmos::resources& resources, const nmos::resource& resource, const web::json::value& arguments, bool is_deprecated, slog::base_gate& gate)
                 {
                     bool recurse = nmos::fields::nc::recurse(arguments);
-                    const auto& included_property_traits = nmos::fields::nc::included_property_traits(arguments);
+                    const auto& property_traits = nmos::fields::nc::property_traits(arguments);
                     const auto& data_set = nmos::fields::nc::data_set(arguments);
 
                     if (data_set.is_null())
@@ -217,7 +217,7 @@ namespace nmos
                     auto result = nmos::details::make_nc_method_result_error({ nmos::nc_method_status::method_not_implemented }, U("not implemented"));
                     if (validate_set_properties_by_path)
                     {
-                        result = validate_set_properties_by_path(control_protocol_state, get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor, resource, data_set, recurse, included_property_traits);
+                        result = validate_set_properties_by_path(control_protocol_state, get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor, resource, data_set, recurse, property_traits);
 
                         const auto& status = nmos::fields::nc::status(result);
                         if (!web::http::is_error_status_code((web::http::status_code)status) && is_deprecated)
@@ -233,7 +233,7 @@ namespace nmos
                 return [&control_protocol_state, get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor, set_properties_by_path](nmos::resources& resources, const nmos::resource& resource, const web::json::value& arguments, bool is_deprecated, slog::base_gate& gate)
                 {
                     bool recurse = nmos::fields::nc::recurse(arguments);
-                    const auto& included_property_traits = nmos::fields::nc::included_property_traits(arguments);
+                    const auto& property_traits = nmos::fields::nc::property_traits(arguments);
                     const auto& data_set = nmos::fields::nc::data_set(arguments);
 
                     if (data_set.is_null())
@@ -244,7 +244,7 @@ namespace nmos
                     auto result = nmos::details::make_nc_method_result_error({ nmos::nc_method_status::method_not_implemented }, U("not implemented"));
                     if (set_properties_by_path)
                     {
-                        result = set_properties_by_path(control_protocol_state, get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor, resource, data_set, recurse, included_property_traits);
+                        result = set_properties_by_path(control_protocol_state, get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor, resource, data_set, recurse, property_traits);
 
                         const auto& status = nmos::fields::nc::status(result);
                         if (!web::http::is_error_status_code((web::http::status_code)status) && is_deprecated)
@@ -486,6 +486,8 @@ namespace nmos
                 { U("NcObjectPropertiesHolder"), {make_nc_object_properties_holder_datatype()}},
                 { U("NcBulkValuesHolder"), {make_nc_bulk_values_holder_datatype()}},
                 { U("NcRestoreValidationStatus"), {make_nc_restore_validation_status_datatype()}},
+                { U("NcPropertyRestoreNoticeType"), {make_nc_property_restore_notice_type_datatype()}},
+                { U("NcPropertyRestoreNotice"), {make_nc_property_restore_notice_datatype()}},
                 { U("NcObjectPropertiesSetValidation"), {make_nc_object_properties_set_validation_datatype()}},
                 { U("NcMethodResultBulkValuesHolder"), {make_nc_method_result_bulk_values_holder_datatype()}},
                 { U("NcMethodResultObjectPropertiesSetValidation"), {make_nc_method_result_object_properties_set_validation_datatype()}}

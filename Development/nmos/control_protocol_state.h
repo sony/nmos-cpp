@@ -45,7 +45,7 @@ namespace nmos
                 for (auto descriptor : decorated_property_descriptors.as_array()) {
                     auto filtered = web::json::value::object();
                     for (auto item : descriptor.as_object()) {
-                        if (item.first != U("property_traits")) {
+                        if (item.first != nmos::fields::nc::property_traits.key) {
                             filtered[item.first] = item.second;
                         }
                     }
