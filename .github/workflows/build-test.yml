@@ -587,12 +587,12 @@ jobs:
         export SHEET=https://docs.google.com/spreadsheets/d/${{ env.SECRET_RESULTS_SHEET_ID }}
         python nmos-testing/utilities/run-test-suites/gsheetsImport/resultsImporter.py --credentials ${{ env.GDRIVE_CREDENTIALS }} --sheet "$SHEET" --insert --json nmos-testing/results/${{ env.GITHUB_COMMIT }}-*.json || echo "upload failed"
 
-    - uses: actions/upload-artifact@v1
+    - uses: actions/upload-artifact@v3.0.0
       with:
         name: ${{ env.BUILD_NAME }}_badges
         path: ${{ runner.workspace }}/nmos-testing/badges
 
-    - uses: actions/upload-artifact@v1
+    - uses: actions/upload-artifact@v3.0.0
       with:
         name: ${{ env.BUILD_NAME }}_results
         path: ${{ runner.workspace }}/nmos-testing/results
@@ -1145,12 +1145,12 @@ jobs:
         export SHEET=https://docs.google.com/spreadsheets/d/${{ env.SECRET_RESULTS_SHEET_ID }}
         python nmos-testing/utilities/run-test-suites/gsheetsImport/resultsImporter.py --credentials ${{ env.GDRIVE_CREDENTIALS }} --sheet "$SHEET" --insert --json nmos-testing/results/${{ env.GITHUB_COMMIT }}-*.json || echo "upload failed"
 
-    - uses: actions/upload-artifact@v1
+    - uses: actions/upload-artifact@v3.0.0
       with:
         name: ${{ env.BUILD_NAME }}_badges
         path: ${{ runner.workspace }}/nmos-testing/badges
 
-    - uses: actions/upload-artifact@v1
+    - uses: actions/upload-artifact@v3.0.0
       with:
         name: ${{ env.BUILD_NAME }}_results
         path: ${{ runner.workspace }}/nmos-testing/results
@@ -1171,7 +1171,7 @@ jobs:
         echo "GITHUB_WORKSPACE=${{ github.workspace }}" >> $GITHUB_ENV
         echo "RUNNER_WORKSPACE=${{ runner.workspace }}" >> $GITHUB_ENV
 
-    - uses: actions/download-artifact@v2.0
+    - uses: actions/download-artifact@v4.1.8
       with:
         path: ${{ runner.workspace }}/artifacts
 
