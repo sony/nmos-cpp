@@ -104,6 +104,9 @@ namespace nmos
         // is10_versions [registry, node]: used to specify the enabled API versions for a version-locked configuration
         const web::json::field_as_array is10_versions{ U("is10_versions") }; // when omitted, nmos::is10_versions::all is used
 
+        // is11_versions [node]: used to specify the enabled API versions for a version-locked configuration
+        const web::json::field_as_array is11_versions{ U("is11_versions") }; // when omitted, nmos::is11_versions::all is used
+
         // is12_versions [node]: used to specify the enabled API versions for a version-locked configuration
         const web::json::field_as_array is12_versions{ U("is12_versions") }; // when omitted, nmos::is12_versions::all is used
 
@@ -147,6 +150,7 @@ namespace nmos
         const web::json::field_as_integer_or events_port{ U("events_port"), 3216 };
         const web::json::field_as_integer_or events_ws_port{ U("events_ws_port"), 3217 };
         const web::json::field_as_integer_or channelmapping_port{ U("channelmapping_port"), 3215 };
+        const web::json::field_as_integer_or streamcompatibility_port{ U("streamcompatibility_port"), 3218 };
         // system_port [node]: used to construct request URLs for the System API (if not discovered via DNS-SD)
         const web::json::field_as_integer_or system_port{ U("system_port"), 10641 };
         // control_protocol_ws_port [node]: used to construct request URLs for the Control Protocol websocket, or negative to disable the control protocol features
