@@ -2,6 +2,7 @@
 
 #include <boost/algorithm/string/case_conv.hpp>
 #include <boost/algorithm/string/find.hpp>
+#include <boost/algorithm/string/split.hpp>
 #include <boost/iterator/filter_iterator.hpp>
 #include "bst/regex.h"
 #include "cpprest/json_utils.h"
@@ -159,167 +160,167 @@ namespace nmos
         // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Constraints.html
         void datatype_constraints_validation(const web::json::value& data, const datatype_constraints_validation_parameters& params)
         {
-            // no constraints validation required
-            if (params.datatype_descriptor.is_null()) { return; }
-
-            const auto& datatype_type = nmos::fields::nc::type(params.datatype_descriptor);
-
-            // do NcDatatypeDescriptorPrimitive constraints validation
-            if (nc_datatype_type::Primitive == datatype_type)
+            auto parameter_constraints_validation = [&params](const web::json::value& value_)
             {
-                // hmm, for the primitive type, it should not have datatype constraints specified via the datatype_descriptor but just in case
-                const auto& datatype_constraints = nmos::fields::nc::constraints(params.datatype_descriptor);
-                if (datatype_constraints.is_null())
+                // no constraints validation required
+                if (params.datatype_descriptor.is_null()) { return; }
+
+                const auto& datatype_type = nmos::fields::nc::type(params.datatype_descriptor);
+
+                // do NcDatatypeDescriptorPrimitive constraints validation
+                if (nc_datatype_type::Primitive == datatype_type)
                 {
-                    auto primitive_validation = [](const nc_name& name, const web::json::value& value)
+                    // hmm, for the primitive type, it should not have datatype constraints specified via the datatype_descriptor but just in case
+                    const auto& datatype_constraints = nmos::fields::nc::constraints(params.datatype_descriptor);
+                    if (datatype_constraints.is_null())
                     {
-                        auto is_int16 = [](int32_t value)
-                        {
-                            return value >= (std::numeric_limits<int16_t>::min)()
-                                && value <= (std::numeric_limits<int16_t>::max)();
-                        };
-                        auto is_uint16 = [](uint32_t value)
-                        {
-                            return value >= (std::numeric_limits<uint16_t>::min)()
-                                && value <= (std::numeric_limits<uint16_t>::max)();
-                        };
-                        auto is_float32 = [](double value)
-                        {
-                            return value >= (std::numeric_limits<float_t>::lowest)()
-                                && value <= (std::numeric_limits<float_t>::max)();
-                        };
-
-                        if (U("NcBoolean") == name) { return value.is_boolean(); }
-                        if (U("NcInt16") == name && value.is_number()) { return is_int16(value.as_number().to_int32()); }
-                        if (U("NcInt32") == name && value.is_number()) { return value.as_number().is_int32(); }
-                        if (U("NcInt64") == name && value.is_number()) { return value.as_number().is_int64(); }
-                        if (U("NcUint16") == name && value.is_number()) { return is_uint16(value.as_number().to_uint32()); }
-                        if (U("NcUint32") == name && value.is_number()) { return value.as_number().is_uint32(); }
-                        if (U("NcUint64") == name && value.is_number()) { return value.as_number().is_uint64(); }
-                        if (U("NcFloat32") == name && value.is_number()) { return is_float32(value.as_number().to_double()); }
-                        if (U("NcFloat64") == name && value.is_number()) { return !value.as_number().is_integral(); }
-                        if (U("NcString") == name) { return value.is_string(); }
-
-                        // invalid primitive type
-                        return false;
-                    };
-
-                    // do primitive type constraints validation
-                    const auto& name = nmos::fields::nc::name(params.datatype_descriptor);
-                    if (data.is_array())
-                    {
-                        for (const auto& value : data.as_array())
-                        {
-                            if (!primitive_validation(name, value))
+                        auto primitive_validation = [](const nc_name& name, const web::json::value& value)
                             {
-                                throw control_protocol_exception("value is not a " + utility::us2s(name) + " type");
-                            }
-                        }
-                    }
-                    else
-                    {
-                        if (!primitive_validation(name, data))
+                                auto is_int16 = [](int32_t value)
+                                    {
+                                        return value >= (std::numeric_limits<int16_t>::min)()
+                                            && value <= (std::numeric_limits<int16_t>::max)();
+                                    };
+                                auto is_uint16 = [](uint32_t value)
+                                    {
+                                        return value >= (std::numeric_limits<uint16_t>::min)()
+                                            && value <= (std::numeric_limits<uint16_t>::max)();
+                                    };
+                                auto is_float32 = [](double value)
+                                    {
+                                        return value >= (std::numeric_limits<float_t>::lowest)()
+                                            && value <= (std::numeric_limits<float_t>::max)();
+                                    };
+
+                                if (U("NcBoolean") == name) { return value.is_boolean(); }
+                                if (U("NcInt16") == name && value.is_number()) { return is_int16(value.as_number().to_int32()); }
+                                if (U("NcInt32") == name && value.is_number()) { return value.as_number().is_int32(); }
+                                if (U("NcInt64") == name && value.is_number()) { return value.as_number().is_int64(); }
+                                if (U("NcUint16") == name && value.is_number()) { return is_uint16(value.as_number().to_uint32()); }
+                                if (U("NcUint32") == name && value.is_number()) { return value.as_number().is_uint32(); }
+                                if (U("NcUint64") == name && value.is_number()) { return value.as_number().is_uint64(); }
+                                if (U("NcFloat32") == name && value.is_number()) { return is_float32(value.as_number().to_double()); }
+                                if (U("NcFloat64") == name && value.is_number()) { return !value.as_number().is_integral(); }
+                                if (U("NcString") == name) { return value.is_string(); }
+
+                                // invalid primitive type
+                                return false;
+                            };
+
+                        // do primitive type constraints validation
+                        const auto& name = nmos::fields::nc::name(params.datatype_descriptor);
+                        if (!primitive_validation(name, value_))
                         {
                             throw control_protocol_exception("value is not a " + utility::us2s(name) + " type");;
                         }
                     }
-                }
-                else
-                {
-                    constraints_validation(data, datatype_constraints);
-                }
-
-                return;
-            }
-
-            // do NcDatatypeDescriptorTypeDef constraints validation
-            if (nc_datatype_type::Typedef == datatype_type)
-            {
-                // do the datatype constraints specified via the datatype_descriptor if presented
-                const auto& datatype_constraints = nmos::fields::nc::constraints(params.datatype_descriptor);
-                if (datatype_constraints.is_null())
-                {
-                    // do parent typename constraints validation
-                    const auto& type_name = params.datatype_descriptor.at(nmos::fields::nc::parent_type); // parent type_name
-                    datatype_constraints_validation(data, { details::get_datatype_descriptor(type_name, params.get_control_protocol_datatype_descriptor), params.get_control_protocol_datatype_descriptor });
-                }
-                else
-                {
-                    constraints_validation(data, datatype_constraints);
-                }
-
-                return;
-            }
-
-            // do NcDatatypeDescriptorEnum constraints validation
-            if (nc_datatype_type::Enum == datatype_type)
-            {
-                const auto& items = nmos::fields::nc::items(params.datatype_descriptor);
-                if (items.end() == std::find_if(items.begin(), items.end(), [&](const web::json::value& nc_enum_item_descriptor) { return nmos::fields::nc::value(nc_enum_item_descriptor) == data; }))
-                {
-                    const auto& name = nmos::fields::nc::name(params.datatype_descriptor);
-                    throw control_protocol_exception("value is not an enum " + utility::us2s(name) + " type");
-                }
-
-                return;
-            }
-
-            // do NcDatatypeDescriptorStruct constraints validation
-            if (nc_datatype_type::Struct == datatype_type)
-            {
-                const auto& datatype_name = nmos::fields::nc::name(params.datatype_descriptor);
-                const auto& fields = nmos::fields::nc::fields(params.datatype_descriptor);
-                // NcFieldDescriptor
-                for (const web::json::value& nc_field_descriptor : fields)
-                {
-                    const auto& field_name = nmos::fields::nc::name(nc_field_descriptor);
-                    // is field in strurcture
-                    if (!data.has_field(field_name)) { throw control_protocol_exception("missing " + utility::us2s(field_name) + " in " + utility::us2s(datatype_name)); }
-
-                    // is field nullable
-                    if (nmos::fields::nc::is_nullable(nc_field_descriptor) != data.is_null()) { throw control_protocol_exception(utility::us2s(field_name) + " is not nullable"); }
-
-                    // is field sequenceable
-                    if (nmos::fields::nc::is_sequence(nc_field_descriptor) != data.is_array()) { throw control_protocol_exception(utility::us2s(field_name) + " is not sequenceable"); }
-
-                    // check against field constraints if presented
-                    const auto& constraints = nmos::fields::nc::constraints(nc_field_descriptor);
-                    if (constraints.is_null())
+                    else
                     {
-                        // no field constraints, move to check the constraints of its typeName
-                        const auto& field_type_name = nc_field_descriptor.at(nmos::fields::nc::type_name);
+                        constraints_validation(value_, datatype_constraints);
+                    }
 
-                        if (!field_type_name.is_null())
-                        {
-                            auto value = data.at(field_name);
+                    return;
+                }
 
-                            if (value.is_array())
-                            {
-                                for (const auto& val : value.as_array())
-                                {
-                                    // do typename constraints validation
-                                    datatype_constraints_validation(val, { details::get_datatype_descriptor(field_type_name, params.get_control_protocol_datatype_descriptor), params.get_control_protocol_datatype_descriptor });
-                                }
-                            }
-                            else
-                            {
-                                // do typename constraints validation
-                                datatype_constraints_validation(value, { details::get_datatype_descriptor(field_type_name, params.get_control_protocol_datatype_descriptor), params.get_control_protocol_datatype_descriptor });
-                            }
-                        }
+                // do NcDatatypeDescriptorTypeDef constraints validation
+                if (nc_datatype_type::Typedef == datatype_type)
+                {
+                    // do the datatype constraints specified via the datatype_descriptor if presented
+                    const auto& datatype_constraints = nmos::fields::nc::constraints(params.datatype_descriptor);
+                    if (datatype_constraints.is_null())
+                    {
+                        // do parent typename constraints validation
+                        const auto& type_name = params.datatype_descriptor.at(nmos::fields::nc::parent_type); // parent type_name
+                        datatype_constraints_validation(value_, { details::get_datatype_descriptor(type_name, params.get_control_protocol_datatype_descriptor), params.get_control_protocol_datatype_descriptor });
                     }
                     else
                     {
-                        // do field constraints validation
-                        const auto& value = data.at(field_name);
-                        constraints_validation(value, constraints);
+                        constraints_validation(value_, datatype_constraints);
                     }
+
+                    return;
                 }
 
-                return;
-            }
+                // do NcDatatypeDescriptorEnum constraints validation
+                if (nc_datatype_type::Enum == datatype_type)
+                {
+                    const auto& items = nmos::fields::nc::items(params.datatype_descriptor);
+                    if (items.end() == std::find_if(items.begin(), items.end(), [&](const web::json::value& nc_enum_item_descriptor) { return nmos::fields::nc::value(nc_enum_item_descriptor) == value_; }))
+                    {
+                        const auto& name = nmos::fields::nc::name(params.datatype_descriptor);
+                        throw control_protocol_exception("value is not an enum " + utility::us2s(name) + " type");
+                    }
 
-            // unsupported datatype_type, no validation is required
+                    return;
+                }
+
+                // do NcDatatypeDescriptorStruct constraints validation
+                if (nc_datatype_type::Struct == datatype_type)
+                {
+                    const auto& datatype_name = nmos::fields::nc::name(params.datatype_descriptor);
+                    const auto& fields = nmos::fields::nc::fields(params.datatype_descriptor);
+                    // NcFieldDescriptor
+                    for (const web::json::value& nc_field_descriptor : fields)
+                    {
+                        const auto& field_name = nmos::fields::nc::name(nc_field_descriptor);
+                        // is field in strurcture
+                        if (!value_.has_field(field_name)) { throw control_protocol_exception("missing " + utility::us2s(field_name) + " in " + utility::us2s(datatype_name)); }
+
+                        // is field nullable
+                        if (nmos::fields::nc::is_nullable(nc_field_descriptor) != value_.is_null()) { throw control_protocol_exception(utility::us2s(field_name) + " is not nullable"); }
+
+                        // is field sequenceable
+                        if (nmos::fields::nc::is_sequence(nc_field_descriptor) != value_.is_array()) { throw control_protocol_exception(utility::us2s(field_name) + " is not sequenceable"); }
+
+                        // check against field constraints if presented
+                        const auto& constraints = nmos::fields::nc::constraints(nc_field_descriptor);
+                        if (constraints.is_null())
+                        {
+                            // no field constraints, move to check the constraints of its typeName
+                            const auto& field_type_name = nc_field_descriptor.at(nmos::fields::nc::type_name);
+
+                            if (!field_type_name.is_null())
+                            {
+                                auto value = value_.at(field_name);
+
+                                if (value.is_array())
+                                {
+                                    for (const auto& val : value.as_array())
+                                    {
+                                        // do typename constraints validation
+                                        datatype_constraints_validation(val, { details::get_datatype_descriptor(field_type_name, params.get_control_protocol_datatype_descriptor), params.get_control_protocol_datatype_descriptor });
+                                    }
+                                }
+                                else
+                                {
+                                    // do typename constraints validation
+                                    datatype_constraints_validation(value, { details::get_datatype_descriptor(field_type_name, params.get_control_protocol_datatype_descriptor), params.get_control_protocol_datatype_descriptor });
+                                }
+                            }
+                        }
+                        else
+                        {
+                            // do field constraints validation
+                            const auto& value = value_.at(field_name);
+                            constraints_validation(value, constraints);
+                        }
+                    }
+                    // unsupported datatype_type, no validation is required
+                    return;
+                }
+            };
+
+            if (data.is_array())
+            {
+                for (const auto& value : data.as_array())
+                {
+                    parameter_constraints_validation(value);
+                }
+            }
+            else
+            {
+                parameter_constraints_validation(data);
+            }
         }
 
         // multiple levels of constraints validation, may throw nmos::control_protocol_exception
