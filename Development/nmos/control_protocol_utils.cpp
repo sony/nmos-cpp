@@ -623,8 +623,7 @@ namespace nmos
                 auto found_tp = std::find_if(tps.begin(), tps.end(), [resource_id](const web::json::value& touchpoint)
                 {
                     auto& resource = nmos::fields::nc::resource(touchpoint);
-                    return (resource_id == nmos::fields::nc::id(resource).as_string()
-                        && nmos::ncp_nmos_resource_types::receiver.name == nmos::fields::nc::resource_type(resource));
+                    return (resource_id == nmos::fields::nc::id(resource).as_string());
                 });
                 return (tps.end() != found_tp);
             }
