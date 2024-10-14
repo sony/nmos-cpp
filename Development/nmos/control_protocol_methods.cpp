@@ -278,7 +278,7 @@ namespace nmos
                 utility::stringstream_t ss;
                 ss << "Add sequence item: " << property_id.serialize() << " value: " << val.serialize() << " error: " << e.what();
                 slog::log<slog::severities::error>(gate, SLOG_FLF) << ss.str();
-                return details::make_nc_method_result({ nc_method_status::parameter_error });
+                return details::make_nc_method_result_error({ nc_method_status::parameter_error }, ss.str());
             }
         }
 
