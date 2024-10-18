@@ -266,38 +266,28 @@ namespace nmos
                         if (!value_.has_field(field_name)) { throw control_protocol_exception("missing " + utility::us2s(field_name) + " in " + utility::us2s(datatype_name)); }
 
                         // is field nullable
-                        if (nmos::fields::nc::is_nullable(nc_field_descriptor) != value_.is_null()) { throw control_protocol_exception(utility::us2s(field_name) + " is not nullable"); }
+                        if (!nmos::fields::nc::is_nullable(nc_field_descriptor) && value_.at(field_name).is_null()) { throw control_protocol_exception(utility::us2s(field_name) + " is not nullable"); }
+
+                        // if field value is null continue to next field
+                        if (value_.at(field_name).is_null()) continue;
 
                         // is field sequenceable
-                        if (nmos::fields::nc::is_sequence(nc_field_descriptor) != value_.is_array()) { throw control_protocol_exception(utility::us2s(field_name) + " is not sequenceable"); }
+                        if (nmos::fields::nc::is_sequence(nc_field_descriptor) != value_.at(field_name).is_array()) { throw control_protocol_exception(utility::us2s(field_name) + " is not sequenceable"); }
 
-                        // check against field constraints if presented
-                        const auto& constraints = nmos::fields::nc::constraints(nc_field_descriptor);
-                        if (constraints.is_null())
+                        // check constraints of its typeName
+                        const auto& field_type_name = nc_field_descriptor.at(nmos::fields::nc::type_name);
+
+                        if (!field_type_name.is_null())
                         {
-                            // no field constraints, move to check the constraints of its typeName
-                            const auto& field_type_name = nc_field_descriptor.at(nmos::fields::nc::type_name);
+                            auto value = value_.at(field_name);
 
-                            if (!field_type_name.is_null())
-                            {
-                                auto value = value_.at(field_name);
-
-                                if (value.is_array())
-                                {
-                                    for (const auto& val : value.as_array())
-                                    {
-                                        // do typename constraints validation
-                                        datatype_constraints_validation(val, { details::get_datatype_descriptor(field_type_name, params.get_control_protocol_datatype_descriptor), params.get_control_protocol_datatype_descriptor });
-                                    }
-                                }
-                                else
-                                {
-                                    // do typename constraints validation
-                                    datatype_constraints_validation(value, { details::get_datatype_descriptor(field_type_name, params.get_control_protocol_datatype_descriptor), params.get_control_protocol_datatype_descriptor });
-                                }
-                            }
+                            // do typename constraints validation
+                            datatype_constraints_validation(value, { details::get_datatype_descriptor(field_type_name, params.get_control_protocol_datatype_descriptor), params.get_control_protocol_datatype_descriptor });
                         }
-                        else
+
+                        // check against field constraints if present
+                        const auto& constraints = nmos::fields::nc::constraints(nc_field_descriptor);
+                        if (!constraints.is_null())
                         {
                             // do field constraints validation
                             const auto& value = value_.at(field_name);

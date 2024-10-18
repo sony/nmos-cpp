@@ -721,7 +721,7 @@ BST_TEST_CASE(testConstraints)
         { runtime_property_int32_constraints }
     });
 
-    // propertry constraints
+    // property constraints
     const auto property_string_constraints = nmos::details::make_nc_parameter_constraints_string(5, U("^[a-z]+$"));
     const auto property_int32_constraints = nmos::details::make_nc_parameter_constraints_number(50, 500, 5);
 
@@ -765,11 +765,21 @@ BST_TEST_CASE(testConstraints)
     web::json::push_back(fields, nmos::details::make_nc_field_descriptor(U("Number property example"), U("numberProperty"), U("NcInt32"), false, false, datatype_int32_constraints));
     web::json::push_back(fields, nmos::details::make_nc_field_descriptor(U("Boolean property example"), U("booleanProperty"), U("NcBoolean"), false, false, value::null())); // no field constraints for boolean field, as it is already described by its type
     web::json::push_back(fields, nmos::details::make_nc_field_descriptor(U("Struct property example"), U("structProperty"), U("simpleStructDatatype"), false, false, value::null())); // no datatype constraints for struct datatype
-    web::json::push_back(fields, nmos::details::make_nc_field_descriptor(U("Sequence enum property example"), U("sequenceEnumProperty"), U("enumDatatype"), false, false, value::null())); // no field constraints for enum field, as it is already described by its type
-    web::json::push_back(fields, nmos::details::make_nc_field_descriptor(U("Sequence string property example"), U("sequenceStringProperty"), U("NcString"), false, false, datatype_string_constraints));
-    web::json::push_back(fields, nmos::details::make_nc_field_descriptor(U("Sequence number property example"), U("sequenceNumberProperty"), U("NcInt32"), false, false, datatype_int32_constraints));
-    web::json::push_back(fields, nmos::details::make_nc_field_descriptor(U("Sequence boolean property example"), U("sequenceBooleanProperty"), U("NcBoolean"), false, false, value::null())); // no field constraints for boolean field, as it is already described by its type
-    web::json::push_back(fields, nmos::details::make_nc_field_descriptor(U("Sequence struct property example"), U("sequenceStructProperty"), U("simpleStructDatatype"), false, false, value::null())); // no field constraints for struct field
+    web::json::push_back(fields, nmos::details::make_nc_field_descriptor(U("Sequence enum property example"), U("sequenceEnumProperty"), U("enumDatatype"), false, true, value::null())); // no field constraints for enum field, as it is already described by its type
+    web::json::push_back(fields, nmos::details::make_nc_field_descriptor(U("Sequence string property example"), U("sequenceStringProperty"), U("NcString"), false, true, datatype_string_constraints));
+    web::json::push_back(fields, nmos::details::make_nc_field_descriptor(U("Sequence number property example"), U("sequenceNumberProperty"), U("NcInt32"), false, true, datatype_int32_constraints));
+    web::json::push_back(fields, nmos::details::make_nc_field_descriptor(U("Sequence boolean property example"), U("sequenceBooleanProperty"), U("NcBoolean"), false, true, value::null())); // no field constraints for boolean field, as it is already described by its type
+    web::json::push_back(fields, nmos::details::make_nc_field_descriptor(U("Sequence struct property example"), U("sequenceStructProperty"), U("simpleStructDatatype"), false, true, value::null())); // no field constraints for struct field
+    web::json::push_back(fields, nmos::details::make_nc_field_descriptor(U("Nullable Enum property example"), U("enumPropertyNullable"), U("enumDatatype"), true, false, value::null())); // no field constraints for enum field, as it is already described by its type
+    web::json::push_back(fields, nmos::details::make_nc_field_descriptor(U("Nullable String property example"), U("stringPropertyNullable"), U("NcString"), true, false, datatype_string_constraints));
+    web::json::push_back(fields, nmos::details::make_nc_field_descriptor(U("Nullable Number property example"), U("numberPropertyNullable"), U("NcInt32"), true, false, datatype_int32_constraints));
+    web::json::push_back(fields, nmos::details::make_nc_field_descriptor(U("Nullable Boolean property example"), U("booleanPropertyNullable"), U("NcBoolean"), true, false, value::null())); // no field constraints for boolean field, as it is already described by its type
+    web::json::push_back(fields, nmos::details::make_nc_field_descriptor(U("Nullable Struct property example"), U("structPropertyNullable"), U("simpleStructDatatype"), true, false, value::null())); // no datatype constraints for struct datatype
+    web::json::push_back(fields, nmos::details::make_nc_field_descriptor(U("Nullable Sequence enum property example"), U("sequenceEnumPropertyNullable"), U("enumDatatype"), true, true, value::null())); // no field constraints for enum field, as it is already described by its type
+    web::json::push_back(fields, nmos::details::make_nc_field_descriptor(U("Nullable Sequence string property example"), U("sequenceStringPropertyNullable"), U("NcString"), true, true, datatype_string_constraints));
+    web::json::push_back(fields, nmos::details::make_nc_field_descriptor(U("Nullable Sequence number property example"), U("sequenceNumberPropertyNullable"), U("NcInt32"), true, true, datatype_int32_constraints));
+    web::json::push_back(fields, nmos::details::make_nc_field_descriptor(U("Nullable Sequence boolean property example"), U("sequenceBooleanPropertyNullable"), U("NcBoolean"), true, true, value::null())); // no field constraints for boolean field, as it is already described by its type
+    web::json::push_back(fields, nmos::details::make_nc_field_descriptor(U("Nullable Sequence struct property example"), U("sequenceStructPropertyNullable"), U("simpleStructDatatype"), true, true, value::null())); // no field constraints for struct field
     const auto struct_datatype = nmos::details::make_nc_datatype_descriptor_struct(U("struct datatype"), U("structDatatype"), fields, value::null()); // no datatype constraints for struct datatype
 
     // setup datatypes in control_protocol_state
@@ -915,7 +925,7 @@ BST_TEST_CASE(testConstraints)
     BST_REQUIRE_THROW(nmos::details::constraints_validation(value_of({ 1, 2 }), value::null(), value::null(), with_constraints_string_constraints_validation_params), nmos::control_protocol_exception);
 
     // struct property datatype constraints validation
-    const auto good_struct = value_of({
+    const auto good_struct1 = value_of({
         { U("enumProperty"), enum_value::baz },
         { U("stringProperty"), U("xy") },
         { U("numberProperty"), 100 },
@@ -941,7 +951,71 @@ BST_TEST_CASE(testConstraints)
             { U("simpleStringProperty"), U("ab") },
             { U("simpleNumberProperty"), 200 },
             { U("simpleBooleanProperty"), false }
+        }) }) },
+        { U("enumPropertyNullable"), enum_value::baz },
+        { U("stringPropertyNullable"), U("xy") },
+        { U("numberPropertyNullable"), 100 },
+        { U("booleanPropertyNullable"), true },
+        { U("structPropertyNullable"), value_of({
+            { U("simpleEnumProperty"), enum_value::bar },
+            { U("simpleStringProperty"), U("xy") },
+            { U("simpleNumberProperty"), 100 },
+            { U("simpleBooleanProperty"), true }
+        }) },
+        { U("sequenceEnumPropertyNullable"), value_of({ enum_value::foo, enum_value::bar }) },
+        { U("sequenceStringPropertyNullable"), value_of({ U("aa"), U("bb") }) },
+        { U("sequenceNumberPropertyNullable"), value_of({ 100, 110 }) },
+        { U("sequenceBooleanPropertyNullable"), value_of({ true, false }) },
+        { U("sequenceStructPropertyNullable"), value_of({
+            value_of({
+            { U("simpleEnumProperty"), enum_value::bar },
+            { U("simpleStringProperty"), U("xy") },
+            { U("simpleNumberProperty"), 100 },
+            { U("simpleBooleanProperty"), true }
+        }), value_of({
+            { U("simpleEnumProperty"), enum_value::foo },
+            { U("simpleStringProperty"), U("ab") },
+            { U("simpleNumberProperty"), 200 },
+            { U("simpleBooleanProperty"), false }
         }) }) }
+    });
+    const auto good_struct2 = value_of({
+        { U("enumProperty"), enum_value::baz },
+        { U("stringProperty"), U("xy") },
+        { U("numberProperty"), 100 },
+        { U("booleanProperty"), true },
+        { U("structProperty"), value_of({
+            { U("simpleEnumProperty"), enum_value::bar },
+            { U("simpleStringProperty"), U("xy") },
+            { U("simpleNumberProperty"), 100 },
+            { U("simpleBooleanProperty"), true }
+        }) },
+        { U("sequenceEnumProperty"), value_of({ enum_value::foo, enum_value::bar }) },
+        { U("sequenceStringProperty"), value_of({ U("aa"), U("bb") }) },
+        { U("sequenceNumberProperty"), value_of({ 100, 110 }) },
+        { U("sequenceBooleanProperty"), value_of({ true, false }) },
+        { U("sequenceStructProperty"), value_of({
+            value_of({
+            { U("simpleEnumProperty"), enum_value::bar },
+            { U("simpleStringProperty"), U("xy") },
+            { U("simpleNumberProperty"), 100 },
+            { U("simpleBooleanProperty"), true }
+        }), value_of({
+            { U("simpleEnumProperty"), enum_value::foo },
+            { U("simpleStringProperty"), U("ab") },
+            { U("simpleNumberProperty"), 200 },
+            { U("simpleBooleanProperty"), false }
+        }) }) },
+        { U("enumPropertyNullable"), value::null() },
+        { U("stringPropertyNullable"), value::null() },
+        { U("numberPropertyNullable"), value::null() },
+        { U("booleanPropertyNullable"), value::null() },
+        { U("structPropertyNullable"), value::null() },
+        { U("sequenceEnumPropertyNullable"), value::null() },
+        { U("sequenceStringPropertyNullable"), value::null() },
+        { U("sequenceNumberPropertyNullable"), value::null() },
+        { U("sequenceBooleanPropertyNullable"), value::null() },
+        { U("sequenceStructPropertyNullable"), value::null() }
     });
     // missing field
     const auto bad_struct1 = value_of({
@@ -969,7 +1043,17 @@ BST_TEST_CASE(testConstraints)
             { U("simpleStringProperty"), U("ab") },
             { U("simpleNumberProperty"), 200 },
             { U("simpleBooleanProperty"), false }
-        }) }) }
+        }) }) },
+        { U("enumPropertyNullable"), value::null() },
+        { U("stringPropertyNullable"), value::null() },
+        { U("numberPropertyNullable"), value::null() },
+        { U("booleanPropertyNullable"), value::null() },
+        { U("structPropertyNullable"), value::null() },
+        { U("sequenceEnumPropertyNullable"), value::null() },
+        { U("sequenceStringPropertyNullable"), value::null() },
+        { U("sequenceNumberPropertyNullable"), value::null() },
+        { U("sequenceBooleanPropertyNullable"), value::null() },
+        { U("sequenceStructPropertyNullable"), value::null() }
     });
     // invalid fields
     const auto bad_struct2 = value_of({
@@ -998,7 +1082,17 @@ BST_TEST_CASE(testConstraints)
             { U("simpleStringProperty"), U("ab") },
             { U("simpleNumberProperty"), 200 },
             { U("simpleBooleanProperty"), false }
-        }) }) }
+        }) }) },
+        { U("enumPropertyNullable"), value::null() },
+        { U("stringPropertyNullable"), value::null() },
+        { U("numberPropertyNullable"), value::null() },
+        { U("booleanPropertyNullable"), value::null() },
+        { U("structPropertyNullable"), value::null() },
+        { U("sequenceEnumPropertyNullable"), value::null() },
+        { U("sequenceStringPropertyNullable"), value::null() },
+        { U("sequenceNumberPropertyNullable"), value::null() },
+        { U("sequenceBooleanPropertyNullable"), value::null() },
+        { U("sequenceStructPropertyNullable"), value::null() }
     });
     const auto bad_struct2_1 = value_of({
         { U("enumProperty"), enum_value::foo },
@@ -1026,7 +1120,17 @@ BST_TEST_CASE(testConstraints)
             { U("simpleStringProperty"), U("ab") },
             { U("simpleNumberProperty"), 200 },
             { U("simpleBooleanProperty"), false }
-        }) }) }
+        }) }) },
+        { U("enumPropertyNullable"), value::null() },
+        { U("stringPropertyNullable"), value::null() },
+        { U("numberPropertyNullable"), value::null() },
+        { U("booleanPropertyNullable"), value::null() },
+        { U("structPropertyNullable"), value::null() },
+        { U("sequenceEnumPropertyNullable"), value::null() },
+        { U("sequenceStringPropertyNullable"), value::null() },
+        { U("sequenceNumberPropertyNullable"), value::null() },
+        { U("sequenceBooleanPropertyNullable"), value::null() },
+        { U("sequenceStructPropertyNullable"), value::null() }
     });
     const auto bad_struct2_2 = value_of({
         { U("enumProperty"), enum_value::foo },
@@ -1054,7 +1158,17 @@ BST_TEST_CASE(testConstraints)
             { U("simpleStringProperty"), U("ab") },
             { U("simpleNumberProperty"), 200 },
             { U("simpleBooleanProperty"), false }
-        }) }) }
+        }) }) },
+        { U("enumPropertyNullable"), value::null() },
+        { U("stringPropertyNullable"), value::null() },
+        { U("numberPropertyNullable"), value::null() },
+        { U("booleanPropertyNullable"), value::null() },
+        { U("structPropertyNullable"), value::null() },
+        { U("sequenceEnumPropertyNullable"), value::null() },
+        { U("sequenceStringPropertyNullable"), value::null() },
+        { U("sequenceNumberPropertyNullable"), value::null() },
+        { U("sequenceBooleanPropertyNullable"), value::null() },
+        { U("sequenceStructPropertyNullable"), value::null() }
     });
     const auto bad_struct2_3 = value_of({
         { U("enumProperty"), enum_value::foo },
@@ -1076,7 +1190,17 @@ BST_TEST_CASE(testConstraints)
             { U("simpleStringProperty"), U("ab") },
             { U("simpleNumberProperty"), 200 },
             { U("simpleBooleanProperty"), false }
-        }) }) }
+        }) }) },
+        { U("enumPropertyNullable"), value::null() },
+        { U("stringPropertyNullable"), value::null() },
+        { U("numberPropertyNullable"), value::null() },
+        { U("booleanPropertyNullable"), value::null() },
+        { U("structPropertyNullable"), value::null() },
+        { U("sequenceEnumPropertyNullable"), value::null() },
+        { U("sequenceStringPropertyNullable"), value::null() },
+        { U("sequenceNumberPropertyNullable"), value::null() },
+        { U("sequenceBooleanPropertyNullable"), value::null() },
+        { U("sequenceStructPropertyNullable"), value::null() }
     });
     const auto bad_struct2_4 = value_of({
         { U("enumProperty"), enum_value::foo },
@@ -1104,7 +1228,17 @@ BST_TEST_CASE(testConstraints)
             { U("simpleStringProperty"), U("ab") },
             { U("simpleNumberProperty"), 200 },
             { U("simpleBooleanProperty"), false }
-        }) }) }
+        }) }) },
+        { U("enumPropertyNullable"), value::null() },
+        { U("stringPropertyNullable"), value::null() },
+        { U("numberPropertyNullable"), value::null() },
+        { U("booleanPropertyNullable"), value::null() },
+        { U("structPropertyNullable"), value::null() },
+        { U("sequenceEnumPropertyNullable"), value::null() },
+        { U("sequenceStringPropertyNullable"), value::null() },
+        { U("sequenceNumberPropertyNullable"), value::null() },
+        { U("sequenceBooleanPropertyNullable"), value::null() },
+        { U("sequenceStructPropertyNullable"), value::null() }
     });
     const auto bad_struct2_5 = value_of({
         { U("enumProperty"), enum_value::foo },
@@ -1160,7 +1294,17 @@ BST_TEST_CASE(testConstraints)
             { U("simpleStringProperty"), U("ab") },
             { U("simpleNumberProperty"), 200 },
             { U("simpleBooleanProperty"), false }
-        }) }) }
+        }) }) },
+        { U("enumPropertyNullable"), value::null() },
+        { U("stringPropertyNullable"), value::null() },
+        { U("numberPropertyNullable"), value::null() },
+        { U("booleanPropertyNullable"), value::null() },
+        { U("structPropertyNullable"), value::null() },
+        { U("sequenceEnumPropertyNullable"), value::null() },
+        { U("sequenceStringPropertyNullable"), value::null() },
+        { U("sequenceNumberPropertyNullable"), value::null() },
+        { U("sequenceBooleanPropertyNullable"), value::null() },
+        { U("sequenceStructPropertyNullable"), value::null() }
     });
     const auto bad_struct2_5_2 = value_of({
         { U("enumProperty"), enum_value::foo },
@@ -1188,7 +1332,17 @@ BST_TEST_CASE(testConstraints)
             { U("simpleStringProperty"), U("ab") },
             { U("simpleNumberProperty"), 200 },
             { U("simpleBooleanProperty"), false }
-        }) }) }
+        }) }) },
+        { U("enumPropertyNullable"), value::null() },
+        { U("stringPropertyNullable"), value::null() },
+        { U("numberPropertyNullable"), value::null() },
+        { U("booleanPropertyNullable"), value::null() },
+        { U("structPropertyNullable"), value::null() },
+        { U("sequenceEnumPropertyNullable"), value::null() },
+        { U("sequenceStringPropertyNullable"), value::null() },
+        { U("sequenceNumberPropertyNullable"), value::null() },
+        { U("sequenceBooleanPropertyNullable"), value::null() },
+        { U("sequenceStructPropertyNullable"), value::null() }
     });
     const auto bad_struct2_5_3 = value_of({
         { U("enumProperty"), enum_value::foo },
@@ -1216,7 +1370,17 @@ BST_TEST_CASE(testConstraints)
             { U("simpleStringProperty"), U("ab") },
             { U("simpleNumberProperty"), 200 },
             { U("simpleBooleanProperty"), false }
-        }) }) }
+        }) }) },
+        { U("enumPropertyNullable"), value::null() },
+        { U("stringPropertyNullable"), value::null() },
+        { U("numberPropertyNullable"), value::null() },
+        { U("booleanPropertyNullable"), value::null() },
+        { U("structPropertyNullable"), value::null() },
+        { U("sequenceEnumPropertyNullable"), value::null() },
+        { U("sequenceStringPropertyNullable"), value::null() },
+        { U("sequenceNumberPropertyNullable"), value::null() },
+        { U("sequenceBooleanPropertyNullable"), value::null() },
+        { U("sequenceStructPropertyNullable"), value::null() }
     });
     const auto bad_struct2_6 = value_of({
         { U("enumProperty"), enum_value::foo },
@@ -1244,7 +1408,17 @@ BST_TEST_CASE(testConstraints)
             { U("simpleStringProperty"), U("ab") },
             { U("simpleNumberProperty"), 200 },
             { U("simpleBooleanProperty"), false }
-        }) }) }
+        }) }) },
+        { U("enumPropertyNullable"), value::null() },
+        { U("stringPropertyNullable"), value::null() },
+        { U("numberPropertyNullable"), value::null() },
+        { U("booleanPropertyNullable"), value::null() },
+        { U("structPropertyNullable"), value::null() },
+        { U("sequenceEnumPropertyNullable"), value::null() },
+        { U("sequenceStringPropertyNullable"), value::null() },
+        { U("sequenceNumberPropertyNullable"), value::null() },
+        { U("sequenceBooleanPropertyNullable"), value::null() },
+        { U("sequenceStructPropertyNullable"), value::null() }
     });
     const auto bad_struct2_6_1 = value_of({
         { U("enumProperty"), enum_value::foo },
@@ -1272,7 +1446,17 @@ BST_TEST_CASE(testConstraints)
             { U("simpleStringProperty"), U("ab") },
             { U("simpleNumberProperty"), 200 },
             { U("simpleBooleanProperty"), false }
-        }) }) }
+        }) }) },
+        { U("enumPropertyNullable"), value::null() },
+        { U("stringPropertyNullable"), value::null() },
+        { U("numberPropertyNullable"), value::null() },
+        { U("booleanPropertyNullable"), value::null() },
+        { U("structPropertyNullable"), value::null() },
+        { U("sequenceEnumPropertyNullable"), value::null() },
+        { U("sequenceStringPropertyNullable"), value::null() },
+        { U("sequenceNumberPropertyNullable"), value::null() },
+        { U("sequenceBooleanPropertyNullable"), value::null() },
+        { U("sequenceStructPropertyNullable"), value::null() }
     });
     const auto bad_struct2_6_2 = value_of({
         { U("enumProperty"), enum_value::foo },
@@ -1300,7 +1484,17 @@ BST_TEST_CASE(testConstraints)
             { U("simpleStringProperty"), U("ab") },
             { U("simpleNumberProperty"), 200 },
             { U("simpleBooleanProperty"), false }
-        }) }) }
+        }) }) },
+        { U("enumPropertyNullable"), value::null() },
+        { U("stringPropertyNullable"), value::null() },
+        { U("numberPropertyNullable"), value::null() },
+        { U("booleanPropertyNullable"), value::null() },
+        { U("structPropertyNullable"), value::null() },
+        { U("sequenceEnumPropertyNullable"), value::null() },
+        { U("sequenceStringPropertyNullable"), value::null() },
+        { U("sequenceNumberPropertyNullable"), value::null() },
+        { U("sequenceBooleanPropertyNullable"), value::null() },
+        { U("sequenceStructPropertyNullable"), value::null() }
     });
     const auto bad_struct2_6_3 = value_of({
         { U("enumProperty"), enum_value::foo },
@@ -1328,7 +1522,17 @@ BST_TEST_CASE(testConstraints)
             { U("simpleStringProperty"), U("ab") },
             { U("simpleNumberProperty"), 200 },
             { U("simpleBooleanProperty"), false }
-        }) }) }
+        }) }) },
+        { U("enumPropertyNullable"), value::null() },
+        { U("stringPropertyNullable"), value::null() },
+        { U("numberPropertyNullable"), value::null() },
+        { U("booleanPropertyNullable"), value::null() },
+        { U("structPropertyNullable"), value::null() },
+        { U("sequenceEnumPropertyNullable"), value::null() },
+        { U("sequenceStringPropertyNullable"), value::null() },
+        { U("sequenceNumberPropertyNullable"), value::null() },
+        { U("sequenceBooleanPropertyNullable"), value::null() },
+        { U("sequenceStructPropertyNullable"), value::null() }
     });
     const auto bad_struct2_7 = value_of({
         { U("enumProperty"), enum_value::foo },
@@ -1356,7 +1560,17 @@ BST_TEST_CASE(testConstraints)
             { U("simpleStringProperty"), U("ab") },
             { U("simpleNumberProperty"), 200 },
             { U("simpleBooleanProperty"), false }
-        }) }) }
+        }) }) },
+        { U("enumPropertyNullable"), value::null() },
+        { U("stringPropertyNullable"), value::null() },
+        { U("numberPropertyNullable"), value::null() },
+        { U("booleanPropertyNullable"), value::null() },
+        { U("structPropertyNullable"), value::null() },
+        { U("sequenceEnumPropertyNullable"), value::null() },
+        { U("sequenceStringPropertyNullable"), value::null() },
+        { U("sequenceNumberPropertyNullable"), value::null() },
+        { U("sequenceBooleanPropertyNullable"), value::null() },
+        { U("sequenceStructPropertyNullable"), value::null() }
     });
     const auto bad_struct2_7_1 = value_of({
         { U("enumProperty"), enum_value::foo },
@@ -1384,7 +1598,17 @@ BST_TEST_CASE(testConstraints)
             { U("simpleStringProperty"), U("abc") }, // bad value
             { U("simpleNumberProperty"), 200 },
             { U("simpleBooleanProperty"), false }
-        }) }) }
+        }) }) },
+        { U("enumPropertyNullable"), value::null() },
+        { U("stringPropertyNullable"), value::null() },
+        { U("numberPropertyNullable"), value::null() },
+        { U("booleanPropertyNullable"), value::null() },
+        { U("structPropertyNullable"), value::null() },
+        { U("sequenceEnumPropertyNullable"), value::null() },
+        { U("sequenceStringPropertyNullable"), value::null() },
+        { U("sequenceNumberPropertyNullable"), value::null() },
+        { U("sequenceBooleanPropertyNullable"), value::null() },
+        { U("sequenceStructPropertyNullable"), value::null() }
     });
     const auto bad_struct2_7_2 = value_of({
         { U("enumProperty"), enum_value::foo },
@@ -1412,7 +1636,17 @@ BST_TEST_CASE(testConstraints)
             { U("simpleStringProperty"), U("ab") },
             { U("simpleNumberProperty"), 251 }, // bad value
             { U("simpleBooleanProperty"), false }
-        }) }) }
+        }) }) },
+        { U("enumPropertyNullable"), value::null() },
+        { U("stringPropertyNullable"), value::null() },
+        { U("numberPropertyNullable"), value::null() },
+        { U("booleanPropertyNullable"), value::null() },
+        { U("structPropertyNullable"), value::null() },
+        { U("sequenceEnumPropertyNullable"), value::null() },
+        { U("sequenceStringPropertyNullable"), value::null() },
+        { U("sequenceNumberPropertyNullable"), value::null() },
+        { U("sequenceBooleanPropertyNullable"), value::null() },
+        { U("sequenceStructPropertyNullable"), value::null() }
     });
     const auto bad_struct2_7_3 = value_of({
         { U("enumProperty"), enum_value::foo },
@@ -1440,11 +1674,168 @@ BST_TEST_CASE(testConstraints)
             { U("simpleStringProperty"), U("ab") },
             { U("simpleNumberProperty"), 200 },
             { U("simpleBooleanProperty"), 0 } // bad value
-        }) }) }
+        }) }) },
+        { U("enumPropertyNullable"), value::null() },
+        { U("stringPropertyNullable"), value::null() },
+        { U("numberPropertyNullable"), value::null() },
+        { U("booleanPropertyNullable"), value::null() },
+        { U("structPropertyNullable"), value::null() },
+        { U("sequenceEnumPropertyNullable"), value::null() },
+        { U("sequenceStringPropertyNullable"), value::null() },
+        { U("sequenceNumberPropertyNullable"), value::null() },
+        { U("sequenceBooleanPropertyNullable"), value::null() },
+        { U("sequenceStructPropertyNullable"), value::null() }
+    });
+    const auto bad_struct3 = value_of({
+        { U("enumProperty"), value::null() }, //bad value
+        { U("stringProperty"), U("xy") },
+        { U("numberProperty"), 100 },
+        { U("booleanProperty"), true },
+        { U("structProperty"), value_of({
+            { U("simpleEnumProperty"), enum_value::bar },
+            { U("simpleStringProperty"), U("xy") },
+            { U("simpleNumberProperty"), 100 },
+            { U("simpleBooleanProperty"), true }
+        }) },
+        { U("sequenceEnumProperty"), value_of({ enum_value::foo, enum_value::bar }) },
+        { U("sequenceStringProperty"), value_of({ U("aa"), U("bb") }) },
+        { U("sequenceNumberProperty"), value_of({ 100, 110 }) },
+        { U("sequenceBooleanProperty"), value_of({ true, false }) },
+        { U("sequenceStructProperty"), value_of({
+            value_of({
+            { U("simpleEnumProperty"), enum_value::bar },
+            { U("simpleStringProperty"), U("xy") },
+            { U("simpleNumberProperty"), 100 },
+            { U("simpleBooleanProperty"), true }
+        }), value_of({
+            { U("simpleEnumProperty"), enum_value::foo },
+            { U("simpleStringProperty"), U("ab") },
+            { U("simpleNumberProperty"), 200 },
+            { U("simpleBooleanProperty"), false }
+        }) }) },
+        { U("enumPropertyNullable"), value::null() },
+        { U("stringPropertyNullable"), value::null() },
+        { U("numberPropertyNullable"), value::null() },
+        { U("booleanPropertyNullable"), value::null() },
+        { U("structPropertyNullable"), value::null() },
+        { U("sequenceEnumPropertyNullable"), value::null() },
+        { U("sequenceStringPropertyNullable"), value::null() },
+        { U("sequenceNumberPropertyNullable"), value::null() },
+        { U("sequenceBooleanPropertyNullable"), value::null() },
+        { U("sequenceStructPropertyNullable"), value::null() }
     });
 
+    const auto bad_struct3_1 = value_of({
+        { U("enumProperty"), enum_value::baz },
+        { U("stringProperty"), U("xy") },
+        { U("numberProperty"), value::null() }, // bad value
+        { U("booleanProperty"), true },
+        { U("structProperty"), value_of({
+            { U("simpleEnumProperty"), enum_value::bar },
+            { U("simpleStringProperty"), U("xy") },
+            { U("simpleNumberProperty"), 100 },
+            { U("simpleBooleanProperty"), true }
+        }) },
+        { U("sequenceEnumProperty"), value_of({ enum_value::foo, enum_value::bar }) },
+        { U("sequenceStringProperty"), value_of({ U("aa"), U("bb") }) },
+        { U("sequenceNumberProperty"), value_of({ 100, 110 }) },
+        { U("sequenceBooleanProperty"), value_of({ true, false }) },
+        { U("sequenceStructProperty"), value_of({
+            value_of({
+            { U("simpleEnumProperty"), enum_value::bar },
+            { U("simpleStringProperty"), U("xy") },
+            { U("simpleNumberProperty"), 100 },
+            { U("simpleBooleanProperty"), true }
+        }), value_of({
+            { U("simpleEnumProperty"), enum_value::foo },
+            { U("simpleStringProperty"), U("ab") },
+            { U("simpleNumberProperty"), 200 },
+            { U("simpleBooleanProperty"), false }
+        }) }) },
+        { U("enumPropertyNullable"), value::null() },
+        { U("stringPropertyNullable"), value::null() },
+        { U("numberPropertyNullable"), value::null() },
+        { U("booleanPropertyNullable"), value::null() },
+        { U("structPropertyNullable"), value::null() },
+        { U("sequenceEnumPropertyNullable"), value::null() },
+        { U("sequenceStringPropertyNullable"), value::null() },
+        { U("sequenceNumberPropertyNullable"), value::null() },
+        { U("sequenceBooleanPropertyNullable"), value::null() },
+        { U("sequenceStructPropertyNullable"), value::null() }
+    });
+
+    const auto bad_struct3_2 = value_of({
+        { U("enumProperty"), enum_value::baz },
+        { U("stringProperty"), U("xy") },
+        { U("numberProperty"), 100 },
+        { U("booleanProperty"), true },
+        { U("structProperty"), value::null() }, // bad value
+        { U("sequenceEnumProperty"), value_of({ enum_value::foo, enum_value::bar }) },
+        { U("sequenceStringProperty"), value_of({ U("aa"), U("bb") }) },
+        { U("sequenceNumberProperty"), value_of({ 100, 110 }) },
+        { U("sequenceBooleanProperty"), value_of({ true, false }) },
+        { U("sequenceStructProperty"), value_of({
+            value_of({
+            { U("simpleEnumProperty"), enum_value::bar },
+            { U("simpleStringProperty"), U("xy") },
+            { U("simpleNumberProperty"), 100 },
+            { U("simpleBooleanProperty"), true }
+        }), value_of({
+            { U("simpleEnumProperty"), enum_value::foo },
+            { U("simpleStringProperty"), U("ab") },
+            { U("simpleNumberProperty"), 200 },
+            { U("simpleBooleanProperty"), false }
+        }) }) },
+        { U("enumPropertyNullable"), value::null() },
+        { U("stringPropertyNullable"), value::null() },
+        { U("numberPropertyNullable"), value::null() },
+        { U("booleanPropertyNullable"), value::null() },
+        { U("structPropertyNullable"), value::null() },
+        { U("sequenceEnumPropertyNullable"), value::null() },
+        { U("sequenceStringPropertyNullable"), value::null() },
+        { U("sequenceNumberPropertyNullable"), value::null() },
+        { U("sequenceBooleanPropertyNullable"), value::null() },
+        { U("sequenceStructPropertyNullable"), value::null() }
+        });
+
+    const auto bad_struct3_3 = value_of({
+        { U("enumProperty"), enum_value::baz },
+        { U("stringProperty"), U("xy") },
+        { U("numberProperty"), 100 }, // bad value
+        { U("booleanProperty"), true },
+        { U("structProperty"), value_of({
+            { U("simpleEnumProperty"), enum_value::bar },
+            { U("simpleStringProperty"), U("xy") },
+            { U("simpleNumberProperty"), 100 },
+            { U("simpleBooleanProperty"), true }
+        }) },
+        { U("sequenceEnumProperty"), value_of({ enum_value::foo, enum_value::bar }) },
+        { U("sequenceStringProperty"), value_of({ U("aa"), U("bb") }) },
+        { U("sequenceNumberProperty"), value_of({ 100, 110 }) },
+        { U("sequenceBooleanProperty"), value_of({ true, false }) },
+        { U("sequenceStructProperty"), value_of({
+            value_of({
+            { U("simpleEnumProperty"), enum_value::bar },
+            { U("simpleStringProperty"), U("xy") },
+            { U("simpleNumberProperty"), 100 },
+            { U("simpleBooleanProperty"), true }
+        }), value::null() // bad value
+            }) },
+        { U("enumPropertyNullable"), value::null() },
+        { U("stringPropertyNullable"), value::null() },
+        { U("numberPropertyNullable"), value::null() },
+        { U("booleanPropertyNullable"), value::null() },
+        { U("structPropertyNullable"), value::null() },
+        { U("sequenceEnumPropertyNullable"), value::null() },
+        { U("sequenceStringPropertyNullable"), value::null() },
+        { U("sequenceNumberPropertyNullable"), value::null() },
+        { U("sequenceBooleanPropertyNullable"), value::null() },
+        { U("sequenceStructPropertyNullable"), value::null() }
+        });
+
     const nmos::details::datatype_constraints_validation_parameters struct_constraints_validation_params{ struct_datatype, nmos::make_get_control_protocol_datatype_descriptor_handler(control_protocol_state) };
-    BST_REQUIRE_NO_THROW(nmos::details::constraints_validation(good_struct, value::null(), value::null(), struct_constraints_validation_params));
+    BST_REQUIRE_NO_THROW(nmos::details::constraints_validation(good_struct1, value::null(), value::null(), struct_constraints_validation_params));
+    BST_REQUIRE_NO_THROW(nmos::details::constraints_validation(good_struct2, value::null(), value::null(), struct_constraints_validation_params));
     BST_REQUIRE_THROW(nmos::details::constraints_validation(bad_struct1, value::null(), value::null(), struct_constraints_validation_params), nmos::control_protocol_exception);
     BST_REQUIRE_THROW(nmos::details::constraints_validation(bad_struct2, value::null(), value::null(), struct_constraints_validation_params), nmos::control_protocol_exception);
     BST_REQUIRE_THROW(nmos::details::constraints_validation(bad_struct2_1, value::null(), value::null(), struct_constraints_validation_params), nmos::control_protocol_exception);
@@ -1463,4 +1854,8 @@ BST_TEST_CASE(testConstraints)
     BST_REQUIRE_THROW(nmos::details::constraints_validation(bad_struct2_7_1, value::null(), value::null(), struct_constraints_validation_params), nmos::control_protocol_exception);
     BST_REQUIRE_THROW(nmos::details::constraints_validation(bad_struct2_7_2, value::null(), value::null(), struct_constraints_validation_params), nmos::control_protocol_exception);
     BST_REQUIRE_THROW(nmos::details::constraints_validation(bad_struct2_7_3, value::null(), value::null(), struct_constraints_validation_params), nmos::control_protocol_exception);
+    BST_REQUIRE_THROW(nmos::details::constraints_validation(bad_struct3, value::null(), value::null(), struct_constraints_validation_params), nmos::control_protocol_exception);
+    BST_REQUIRE_THROW(nmos::details::constraints_validation(bad_struct3_1, value::null(), value::null(), struct_constraints_validation_params), nmos::control_protocol_exception);
+    BST_REQUIRE_THROW(nmos::details::constraints_validation(bad_struct3_2, value::null(), value::null(), struct_constraints_validation_params), nmos::control_protocol_exception);
+    BST_REQUIRE_THROW(nmos::details::constraints_validation(bad_struct3_3, value::null(), value::null(), struct_constraints_validation_params), nmos::control_protocol_exception);
 }
