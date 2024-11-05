@@ -51,14 +51,20 @@ namespace nmos
         {
             if (nmos::fields::nc::is_read_only(property))
             {
-                return details::make_nc_method_result({ nc_method_status::read_only });
+                utility::stringstream_t ss;
+                ss << U("can not set read only property: ") << property_id.serialize();
+                slog::log<slog::severities::error>(gate, SLOG_FLF) << ss.str();
+                return details::make_nc_method_result_error({ nc_method_status::read_only }, ss.str());
             }
 
             if ((val.is_null() && !nmos::fields::nc::is_nullable(property))
                 || (!val.is_array() && nmos::fields::nc::is_sequence(property))
                 || (val.is_array() && !nmos::fields::nc::is_sequence(property)))
             {
-                return details::make_nc_method_result({ nc_method_status::parameter_error });
+                utility::stringstream_t ss;
+                ss << U("parameter error: can not set value: ") << val.serialize() << U(" on property: ") << property_id.serialize();
+                slog::log<slog::severities::error>(gate, SLOG_FLF) << ss.str();
+                return details::make_nc_method_result_error({ nc_method_status::parameter_error }, ss.str());
             }
 
             try
