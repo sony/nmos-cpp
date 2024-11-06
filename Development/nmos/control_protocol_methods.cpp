@@ -30,6 +30,7 @@ namespace nmos
         // unknown property
         utility::stringstream_t ss;
         ss << U("unknown property: ") << property_id.serialize() << U(" to do Get");
+        slog::log<slog::severities::error>(gate, SLOG_FLF) << ss.str();
         return details::make_nc_method_result_error({ nc_method_status::property_not_implemented }, ss.str());
     }
 
@@ -50,14 +51,20 @@ namespace nmos
         {
             if (nmos::fields::nc::is_read_only(property))
             {
-                return details::make_nc_method_result({ nc_method_status::read_only });
+                utility::stringstream_t ss;
+                ss << U("can not set read only property: ") << property_id.serialize();
+                slog::log<slog::severities::error>(gate, SLOG_FLF) << ss.str();
+                return details::make_nc_method_result_error({ nc_method_status::read_only }, ss.str());
             }
 
             if ((val.is_null() && !nmos::fields::nc::is_nullable(property))
                 || (!val.is_array() && nmos::fields::nc::is_sequence(property))
                 || (val.is_array() && !nmos::fields::nc::is_sequence(property)))
             {
-                return details::make_nc_method_result({ nc_method_status::parameter_error });
+                utility::stringstream_t ss;
+                ss << U("parameter error: can not set value: ") << val.serialize() << U(" on property: ") << property_id.serialize();
+                slog::log<slog::severities::error>(gate, SLOG_FLF) << ss.str();
+                return details::make_nc_method_result_error({ nc_method_status::parameter_error }, ss.str());
             }
 
             try
@@ -82,15 +89,17 @@ namespace nmos
             }
             catch (const nmos::control_protocol_exception& e)
             {
-                slog::log<slog::severities::error>(gate, SLOG_FLF) << "Set property: " << property_id.serialize() << " value: " << val.serialize() << " error: " << e.what();
-
-                return details::make_nc_method_result({ nc_method_status::parameter_error });
+                utility::stringstream_t ss;
+                ss << "Set property: " << property_id.serialize() << " value: " << val.serialize() << " error: " << e.what();
+                slog::log<slog::severities::error>(gate, SLOG_FLF) << ss.str();
+                return details::make_nc_method_result_error({ nc_method_status::parameter_error }, ss.str());
             }
         }
 
         // unknown property
         utility::stringstream_t ss;
         ss << U("unknown property: ") << property_id.serialize() << " to do Set";
+        slog::log<slog::severities::error>(gate, SLOG_FLF) << ss.str();
         return details::make_nc_method_result_error({ nc_method_status::property_not_implemented }, ss.str());
     }
 
@@ -126,12 +135,14 @@ namespace nmos
             // out of bound
             utility::stringstream_t ss;
             ss << U("property: ") << property_id.serialize() << U(" is outside the available range to do GetSequenceItem");
+            slog::log<slog::severities::error>(gate, SLOG_FLF) << ss.str();
             return details::make_nc_method_result_error({ nc_method_status::index_out_of_bounds }, ss.str());
         }
 
         // unknown property
         utility::stringstream_t ss;
         ss << U("unknown property: ") << property_id.serialize() << U(" to do GetSequenceItem");
+        slog::log<slog::severities::error>(gate, SLOG_FLF) << ss.str();
         return details::make_nc_method_result_error({ nc_method_status::property_not_implemented }, ss.str());
     }
 
@@ -163,6 +174,7 @@ namespace nmos
                 // property is not a sequence
                 utility::stringstream_t ss;
                 ss << U("property: ") << property_id.serialize() << U(" is not a sequence to do SetSequenceItem");
+                slog::log<slog::severities::error>(gate, SLOG_FLF) << ss.str();
                 return details::make_nc_method_result_error({ nc_method_status::invalid_request }, ss.str());
             }
 
@@ -190,21 +202,24 @@ namespace nmos
                 }
                 catch (const nmos::control_protocol_exception& e)
                 {
-                    slog::log<slog::severities::error>(gate, SLOG_FLF) << "Set sequence item: " << property_id.serialize() << " index: " << index << " value: " << val.serialize() << " error: " << e.what();
-
-                    return  details::make_nc_method_result({ nc_method_status::parameter_error });
+                    utility::stringstream_t ss;
+                    ss << "Set sequence item: " << property_id.serialize() << " index: " << index << " value: " << val.serialize() << " error: " << e.what();
+                    slog::log<slog::severities::error>(gate, SLOG_FLF) << ss.str();
+                    return details::make_nc_method_result_error({ nc_method_status::parameter_error }, ss.str());
                 }
             }
 
             // out of bound
             utility::stringstream_t ss;
             ss << U("property: ") << property_id.serialize() << U(" is outside the available range to do SetSequenceItem");
+            slog::log<slog::severities::error>(gate, SLOG_FLF) << ss.str();
             return details::make_nc_method_result_error({ nc_method_status::index_out_of_bounds }, ss.str());
         }
 
         // unknown property
         utility::stringstream_t ss;
         ss << U("unknown property: ") << property_id.serialize() << U(" to do SetSequenceItem");
+        slog::log<slog::severities::error>(gate, SLOG_FLF) << ss.str();
         return details::make_nc_method_result_error({ nc_method_status::property_not_implemented }, ss.str());
     }
 
@@ -266,15 +281,17 @@ namespace nmos
             }
             catch (const nmos::control_protocol_exception& e)
             {
-                slog::log<slog::severities::error>(gate, SLOG_FLF) << "Add sequence item: " << property_id.serialize() << " value: " << val.serialize() << " error: " << e.what();
-
-                return details::make_nc_method_result({ nc_method_status::parameter_error });
+                utility::stringstream_t ss;
+                ss << "Add sequence item: " << property_id.serialize() << " value: " << val.serialize() << " error: " << e.what();
+                slog::log<slog::severities::error>(gate, SLOG_FLF) << ss.str();
+                return details::make_nc_method_result_error({ nc_method_status::parameter_error }, ss.str());
             }
         }
 
         // unknown property
         utility::stringstream_t ss;
         ss << U("unknown property: ") << property_id.serialize() << U(" to do AddSequenceItem");
+        slog::log<slog::severities::error>(gate, SLOG_FLF) << ss.str();
         return details::make_nc_method_result_error({ nc_method_status::property_not_implemented }, ss.str());
     }
 
@@ -299,6 +316,7 @@ namespace nmos
                 // property is not a sequence
                 utility::stringstream_t ss;
                 ss << U("property: ") << property_id.serialize() << U(" is not a sequence to do RemoveSequenceItem");
+                slog::log<slog::severities::error>(gate, SLOG_FLF) << ss.str();
                 return details::make_nc_method_result_error({ nc_method_status::invalid_request }, ss.str());
             }
 
@@ -317,12 +335,14 @@ namespace nmos
             // out of bound
             utility::stringstream_t ss;
             ss << U("property: ") << property_id.serialize() << U(" is outside the available range to do RemoveSequenceItem");
+            slog::log<slog::severities::error>(gate, SLOG_FLF) << ss.str();
             return details::make_nc_method_result_error({ nc_method_status::index_out_of_bounds }, ss.str());
         }
 
         // unknown property
         utility::stringstream_t ss;
         ss << U("unknown property: ") << property_id.serialize() << U(" to do RemoveSequenceItem");
+        slog::log<slog::severities::error>(gate, SLOG_FLF) << ss.str();
         return details::make_nc_method_result_error({ nc_method_status::property_not_implemented }, ss.str());
     }
 
@@ -346,6 +366,7 @@ namespace nmos
                 // property is not a sequence
                 utility::stringstream_t ss;
                 ss << U("property: ") << property_id.serialize() << U(" is not a sequence to do GetSequenceLength");
+                slog::log<slog::severities::error>(gate, SLOG_FLF) << ss.str();
                 return details::make_nc_method_result_error({ nc_method_status::invalid_request }, ss.str());
             }
 
@@ -368,6 +389,7 @@ namespace nmos
                     // null
                     utility::stringstream_t ss;
                     ss << U("property: ") << property_id.serialize() << " is a null sequence to do GetSequenceLength";
+                    slog::log<slog::severities::error>(gate, SLOG_FLF) << ss.str();
                     return details::make_nc_method_result_error({ nc_method_status::invalid_request }, ss.str());
                 }
             }
@@ -377,6 +399,7 @@ namespace nmos
         // unknown property
         utility::stringstream_t ss;
         ss << U("unknown property: ") << property_id.serialize() << " to do GetSequenceLength";
+        slog::log<slog::severities::error>(gate, SLOG_FLF) << ss.str();
         return details::make_nc_method_result_error({ nc_method_status::property_not_implemented }, ss.str());
     }
 
@@ -444,13 +467,17 @@ namespace nmos
                     // no role
                     utility::stringstream_t ss;
                     ss << U("role: ") << role.as_string() << U(" not found to do FindMembersByPath");
+                    slog::log<slog::severities::error>(gate, SLOG_FLF) << ss.str();
                     return details::make_nc_method_result_error({ nc_method_status::parameter_error }, ss.str());
                 }
             }
             else
             {
                 // no members
-                return details::make_nc_method_result_error({ nc_method_status::parameter_error }, U("no members to do FindMembersByPath"));
+                utility::stringstream_t ss;
+                ss << U("role: ") << role.as_string() << U(" has no members to do FindMembersByPath");
+                slog::log<slog::severities::error>(gate, SLOG_FLF) << ss.str();
+                return details::make_nc_method_result_error({ nc_method_status::parameter_error }, ss.str());
             }
         }
 
