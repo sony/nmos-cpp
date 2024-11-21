@@ -62,6 +62,10 @@ namespace nmos
     // Validate the SDP parameters against a receiver for "video/raw", "audio/L", "video/smpte291" or "video/SMPTE2022-6"
     void validate_sdp_parameters(const web::json::value& receiver, const sdp_parameters& sdp_params);
 
+    // Check the specified SDP parameters against the specified constraint sets
+    // for "video/raw", "audio/L", "video/smpte291" or "video/SMPTE2022-6"
+    bool match_sdp_parameters_constraint_sets(const web::json::array& constraint_sets, const sdp_parameters& sdp_params);
+
     // Format-specific types
 
     struct video_raw_parameters;
