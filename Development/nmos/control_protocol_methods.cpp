@@ -124,6 +124,7 @@ namespace nmos
                 // property is not a sequence
                 utility::stringstream_t ss;
                 ss << U("property: ") << property_id.serialize() << U(" is not a sequence to do GetSequenceItem");
+                slog::log<slog::severities::error>(gate, SLOG_FLF) << utility::us2s(ss.str());
                 return details::make_nc_method_result_error({ nc_method_status::invalid_request }, ss.str());
             }
 
@@ -250,6 +251,7 @@ namespace nmos
                 // property is not a sequence
                 utility::stringstream_t ss;
                 ss << U("property: ") << property_id.serialize() << U(" is not a sequence to do AddSequenceItem");
+                slog::log<slog::severities::error>(gate, SLOG_FLF) << utility::us2s(ss.str());
                 return details::make_nc_method_result_error({ nc_method_status::invalid_request }, ss.str());
             }
 
