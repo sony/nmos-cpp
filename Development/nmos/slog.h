@@ -16,6 +16,10 @@ namespace slog
     {
         return s << utility::conversions::to_utf8string(u16s);
     }
+    inline log_statement& operator<<(log_statement&& s, const utf16string& u16s)
+    {
+        return s << u16s;
+    }
 }
 
 namespace nmos
@@ -24,6 +28,10 @@ namespace nmos
     inline slog::log_statement& operator<<(slog::log_statement& s, const std::pair<nmos::id, nmos::type>& id_type)
     {
         return s << id_type.second.name << ": " << id_type.first;
+    }
+    inline slog::log_statement& operator<<(slog::log_statement&& s, const std::pair<nmos::id, nmos::type>& id_type)
+    {
+        return s << id_type;
     }
 
     // Log message categories
