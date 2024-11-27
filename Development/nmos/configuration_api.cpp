@@ -627,8 +627,8 @@ namespace nmos
                     {
                         auto arguments = value_of({
                             { nmos::fields::nc::id, details::make_nc_property_id(details::parse_formatted_property_id(property_id))},
+                            { nmos::fields::nc::value, nmos::fields::nc::value(body)}
                         });
-                        web::json::merge_patch(arguments, body, true);
 
                         auto result = set(resources, *resource, arguments, false, get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor, property_changed, gate);
 
