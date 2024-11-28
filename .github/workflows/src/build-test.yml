@@ -10,9 +10,6 @@ on: [pull_request, push]
 env:
   SECRET_GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
   SECRET_RESULTS_SHEET_ID: ${{ secrets.RESULTS_SHEET_ID }}
-  ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
-  ACTIONS_RUNNER_FORCED_INTERNAL_NODE_VERSION: node16
-  ACTIONS_RUNNER_FORCE_ACTIONS_NODE_VERSION: node16
   
 jobs:
   build_and_test:
@@ -131,7 +128,7 @@ jobs:
         enable_authorization: [true]
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: taiki-e/checkout-action@v1
 
     - name: set environment variables
       shell: bash
