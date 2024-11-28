@@ -6,8 +6,8 @@
   "items": {
     "type": "string",
     "enum": [
-      "bulkProperties",
-      "descriptors/",
+      "bulkProperties/",
+      "descriptor/",
       "methods/",
       "properties/"
     ]

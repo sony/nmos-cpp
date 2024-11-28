@@ -4,7 +4,8 @@
   "description": "Describes the Configuration API /rolePaths/{rolePath}/methods base",
   "title": "Configuration API /rolePaths/{rolePath}/methods base",
   "items": {
-    "type": "string"
+    "type": "string",
+    "pattern": "^[0-9]+m[0-9]+"
   },
   "uniqueItems": true
 }

@@ -39,8 +39,8 @@ namespace nmos
     // Device Configuration handlers
     // these callbacks should not throw exceptions
     typedef std::function<web::json::value(nmos::get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, nmos::get_control_protocol_datatype_descriptor_handler get_control_protocol_datatype_descriptor, const nmos::resource& resource, bool recurse)> get_properties_by_path_handler;
-    typedef std::function<web::json::value(nmos::get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, nmos::get_control_protocol_datatype_descriptor_handler get_control_protocol_datatype_descriptor, const nmos::resource& resource, const web::json::value& backup_data_set, bool recurse, const web::json::array& included_property_traits)> validate_set_properties_by_path_handler;
-    typedef std::function<web::json::value(nmos::get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, nmos::get_control_protocol_datatype_descriptor_handler get_control_protocol_datatype_descriptor, const nmos::resource& resource, const web::json::value& backup_data_set, bool recurse, const web::json::array& included_property_traits)> set_properties_by_path_handler;
+    typedef std::function<web::json::value(nmos::get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, nmos::get_control_protocol_datatype_descriptor_handler get_control_protocol_datatype_descriptor, const nmos::resource& resource, const web::json::value& backup_data_set, bool recurse, const web::json::value& restore_mode)> validate_set_properties_by_path_handler;
+    typedef std::function<web::json::value(nmos::get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, nmos::get_control_protocol_datatype_descriptor_handler get_control_protocol_datatype_descriptor, const nmos::resource& resource, const web::json::value& backup_data_set, bool recurse, const web::json::value& restore_mode)> set_properties_by_path_handler;
 
     namespace experimental
     {
