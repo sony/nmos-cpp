@@ -150,6 +150,8 @@ jobs:
         echo "GITHUB_WORKSPACE=`pwd`" >> $GITHUB_ENV
         cd ..
         echo "RUNNER_WORKSPACE=`pwd`" >> $GITHUB_ENV
+        echo "ACTIONS_RUNNER_FORCED_INTERNAL_NODE_VERSION=node16" >> $GITHUB_ENV
+        echo "ACTIONS_RUNNER_FORCE_ACTIONS_NODE_VERSION=node16" >> $GITHUB_ENV
 
     - name: install build tools
       run: |
