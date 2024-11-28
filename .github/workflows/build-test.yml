@@ -11,10 +11,9 @@ env:
   SECRET_GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
   SECRET_RESULTS_SHEET_ID: ${{ secrets.RESULTS_SHEET_ID }}
   ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
-  if [[ "${{ matrix.os }}" == "ubuntu-14.04" ]]; then
-    ACTIONS_RUNNER_FORCED_INTERNAL_NODE_VERSION: node16
-    ACTIONS_RUNNER_FORCE_ACTIONS_NODE_VERSION: node16
-  fi
+  ACTIONS_RUNNER_FORCED_INTERNAL_NODE_VERSION: ${{ matrix.os == "ubuntu-14.04" && "node16" || "node20" }}
+  ACTIONS_RUNNER_FORCE_ACTIONS_NODE_VERSION: ${{ matrix.os == "ubuntu-14.04" && "node16" || "node20" }}
+  
 jobs:
   build_and_test:
     name: '${{ matrix.os }}: build and test (install mdns: ${{ matrix.install_mdns }}, use conan: ${{ matrix.use_conan }}, force cpprest asio: ${{ matrix.force_cpprest_asio }}, dns-sd mode: ${{ matrix.dns_sd_mode}}, enable_authorization: ${{ matrix.enable_authorization }})'
