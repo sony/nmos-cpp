@@ -152,6 +152,7 @@ jobs:
         echo "RUNNER_WORKSPACE=`pwd`" >> $GITHUB_ENV
 
     - name: install build tools
+      shell: bash
       run: |
         apt-get update -q
         apt-get install -y software-properties-common
