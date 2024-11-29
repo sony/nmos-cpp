@@ -5,7 +5,7 @@
 
 - name: 'ubuntu-14.04: install cmake'
   if: matrix.os == 'ubuntu-14.04'
-  uses: ssrobins/install-cmake@v1
+  uses: lukka/get-cmake@v3.24.2
 
 - name: install cmake
   if: matrix.os != 'ubuntu-14.04'
