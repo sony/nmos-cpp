@@ -126,7 +126,7 @@ jobs:
 
     - name: 'ubuntu-14.04: install cmake'
       if: matrix.os == 'ubuntu-14.04'
-      uses: jwlawson/actions-setup-cmake@v2
+      uses: ssrobins/install-cmake@v1
 
     - name: install cmake
       if: matrix.os != 'ubuntu-14.04'
@@ -684,7 +684,7 @@ jobs:
 
     - name: 'ubuntu-14.04: install cmake'
       if: matrix.os == 'ubuntu-14.04'
-      uses: jwlawson/actions-setup-cmake@v2
+      uses: ssrobins/install-cmake@v1
 
     - name: install cmake
       if: matrix.os != 'ubuntu-14.04'
