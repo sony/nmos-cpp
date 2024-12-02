@@ -29,6 +29,8 @@ namespace nmos
 
         web::uri make_channelmappingapi_map_activations_post_request_schema_uri(const nmos::api_version& version);
 
+        web::uri make_annotationapi_resource_core_patch_request_schema_uri(const nmos::api_version& version);
+
         web::uri make_authapi_auth_metadata_schema_uri(const nmos::api_version& version);
         web::uri make_authapi_jwks_response_schema_uri(const nmos::api_version& version);
         web::uri make_authapi_register_client_response_uri(const nmos::api_version& version);

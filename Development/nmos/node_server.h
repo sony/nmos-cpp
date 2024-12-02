@@ -1,6 +1,7 @@
 #ifndef NMOS_NODE_SERVER_H
 #define NMOS_NODE_SERVER_H
 
+#include "nmos/annotation_api.h"
 #include "nmos/authorization_handlers.h"
 #include "nmos/certificate_handlers.h"
 #include "nmos/channelmapping_api.h"
@@ -70,6 +71,7 @@ namespace nmos
             node_implementation& on_connection_activated(nmos::connection_activation_handler connection_activated) { this->connection_activated = std::move(connection_activated); return *this; }
             node_implementation& on_validate_channelmapping_output_map(nmos::details::channelmapping_output_map_validator validate_map) { this->validate_map = std::move(validate_map); return *this; }
             node_implementation& on_channelmapping_activated(nmos::channelmapping_activation_handler channelmapping_activated) { this->channelmapping_activated = std::move(channelmapping_activated); return *this; }
+            node_implementation& on_merge_annotation_patch(nmos::annotation_patch_merger merge_annotation_patch) { this->merge_annotation_patch = std::move(merge_annotation_patch); return *this; }
             node_implementation& on_get_ocsp_response(nmos::ocsp_response_handler get_ocsp_response) { this->get_ocsp_response = std::move(get_ocsp_response); return *this; }
             node_implementation& on_get_authorization_bearer_token(get_authorization_bearer_token_handler get_authorization_bearer_token) { this->get_authorization_bearer_token = std::move(get_authorization_bearer_token); return *this; }
             node_implementation& on_validate_authorization(validate_authorization_handler validate_authorization) { this->validate_authorization = std::move(validate_authorization); return *this; }
@@ -109,6 +111,8 @@ namespace nmos
             nmos::details::channelmapping_output_map_validator validate_map;
 
             nmos::channelmapping_activation_handler channelmapping_activated;
+
+            nmos::annotation_patch_merger merge_annotation_patch;
 
             nmos::ocsp_response_handler get_ocsp_response;
 
