@@ -1,4 +1,5 @@
 - name: install
+  if: matrix.os != 'ubuntu-14.04'
   uses: lukka/run-cmake@v3.4
   with:
     cmakeListsOrSettingsJson: CMakeListsTxtAdvanced

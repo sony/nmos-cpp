@@ -311,6 +311,7 @@ jobs:
       uses: ilammy/msvc-dev-cmd@v1
 
     - name: build
+      if: matrix.os != 'ubuntu-14.04'
       uses: lukka/run-cmake@v3.4
       with:
         cmakeListsOrSettingsJson: CMakeListsTxtAdvanced
@@ -336,6 +337,7 @@ jobs:
         ctest --output-on-failure ${{ env.CTEST_EXPECTED_FAILURES }}
 
     - name: install
+      if: matrix.os != 'ubuntu-14.04'
       uses: lukka/run-cmake@v3.4
       with:
         cmakeListsOrSettingsJson: CMakeListsTxtAdvanced
@@ -350,7 +352,7 @@ jobs:
         echo "CMAKE_WORKSPACE=${RUNNER_WORKSPACE//\\/\/}" >> $GITHUB_ENV
 
     - name: install test
-      if: runner.os != 'macOS'
+      if: runner.os != 'macOS' && matrix.os != 'ubuntu-14.04'
       uses: lukka/run-cmake@v3.4
       with:
         cmakeListsOrSettingsJson: CMakeListsTxtAdvanced
@@ -881,6 +883,7 @@ jobs:
       uses: ilammy/msvc-dev-cmd@v1
 
     - name: build
+      if: matrix.os != 'ubuntu-14.04'
       uses: lukka/run-cmake@v3.4
       with:
         cmakeListsOrSettingsJson: CMakeListsTxtAdvanced
@@ -906,6 +909,7 @@ jobs:
         ctest --output-on-failure ${{ env.CTEST_EXPECTED_FAILURES }}
 
     - name: install
+      if: matrix.os != 'ubuntu-14.04'
       uses: lukka/run-cmake@v3.4
       with:
         cmakeListsOrSettingsJson: CMakeListsTxtAdvanced
@@ -920,7 +924,7 @@ jobs:
         echo "CMAKE_WORKSPACE=${RUNNER_WORKSPACE//\\/\/}" >> $GITHUB_ENV
 
     - name: install test
-      if: runner.os != 'macOS'
+      if: runner.os != 'macOS' && matrix.os != 'ubuntu-14.04'
       uses: lukka/run-cmake@v3.4
       with:
         cmakeListsOrSettingsJson: CMakeListsTxtAdvanced
