@@ -667,15 +667,14 @@ jobs:
         echo "${{ matrix.os }}"
         if [[ "${{ matrix.os }}" == "ubuntu-14.04" ]]; then
           # Install CMake
-          wget http://www.cmake.org/files/v3.24/cmake-3.24.2.tar.gz
-          tar -xvzf cmake-3.24.2.tar.gz
+          curl -L http://www.cmake.org/files/v3.24/cmake-3.24.2.tar.gz -s | tar -xvzf
           cd cmake-3.24.2/
           ./configure
           make
           make install
           sudo update-alternatives --install /usr/bin/cmake cmake /usr/local/bin/cmake 1 --force
           # Install ninja
-          wget https://github.com/ninja-build/ninja/releases/download/v1.12.1/ninja-linux.zip
+          curl -L https://github.com/ninja-build/ninja/releases/download/v1.12.1/ninja-linux.zip -s
           sudo unzip ninja-linux.zip -d /usr/local/bin/
           sudo update-alternatives --install /usr/bin/ninja ninja /usr/local/bin/ninja 1 --force
         fi
