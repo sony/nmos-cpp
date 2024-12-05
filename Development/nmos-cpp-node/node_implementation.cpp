@@ -1263,7 +1263,7 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
                 {
                     const auto receiver_id = impl::make_id(seed_id, nmos::types::receiver, port, index);
 
-                    utility::stringstream_t role;
+                    utility::ostringstream_t role;
                     role << U("monitor-") << ++count;
                     const auto& receiver = nmos::find_resource(model.node_resources, receiver_id);
                     const auto receiver_monitor = nmos::make_receiver_monitor(++oid, true, nmos::root_block_oid, role.str(), nmos::fields::label(receiver->data), nmos::fields::description(receiver->data), value_of({ { nmos::details::make_nc_touchpoint_nmos({nmos::ncp_touchpoint_resource_types::receiver, receiver_id}) } }));
