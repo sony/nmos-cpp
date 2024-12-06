@@ -1,15 +1,24 @@
 {
   "$schema": "http://json-schema.org/draft-04/schema#",
   "type": "object",
-  "description": "PATCH request body for validating NcBulkValuesHolder object.",
-  "title": "ValidateSetPropertiesByPaths",
+  "description": "OPTIONS request body for invoking ValidateSetPropertiesByPath method on NcBulkPropertiesManager",
+  "title": "Bulk properties Validate request",
   "required": [
     "arguments"
   ],
   "properties": {
     "arguments": {
       "type": "object",
-      "description": "Method arguments. Arguments are specified as nested properties inside this object and their types are dictated by the specific MS-05-02 model for the method targeted. Arguments only need to be included for methods which have arguments and MUST be omitted if the method does not require any arguments."
+      "description": "Method arguments. The rolePath is offered in the URL and is not part of these arguments",
+      "properties": {
+        "dataSet": {
+          "type": "object",
+          "description": "NcBulkValuesHolder datatype"
+        },
+        "recurse": {
+          "type": "boolean"
+        }
+      }
     }
   }
 }

@@ -340,8 +340,11 @@ namespace nmos
             const web::json::field_as_string validation_fingerprint{ U("validationFingerprint") };
             const web::json::field_as_string status_message{ U("statusMessage") };
             const web::json::field_as_value data_set{ U("dataSet") }; // NcBulkValuesHolder
-            const web::json::field_as_value traits{ U("traits") };
-            const web::json::field_as_array included_property_traits{ U("includedPropertyTraits") };
+            const web::json::field_as_bool is_rebuildable{ U("isRebuildable") };
+            const web::json::field_as_integer notice_type{ U("noticeType") };
+            const web::json::field_as_string notice_message{ U("noticeMessage") };
+            const web::json::field_as_array notices{ U("notices") };
+            const web::json::field_as_integer restore_mode{ U("restoreMode") };
         }
 
         // NMOS Parameter Registers
