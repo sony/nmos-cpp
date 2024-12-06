@@ -486,8 +486,8 @@ namespace nmos
                 { U("NcObjectPropertiesHolder"), {make_nc_object_properties_holder_datatype()}},
                 { U("NcBulkValuesHolder"), {make_nc_bulk_values_holder_datatype()}},
                 { U("NcRestoreValidationStatus"), {make_nc_restore_validation_status_datatype()}},
-                { U("NcPropertyRestoreNoticeType"), {make_nc_property_restore_notice_type()}},
-                { U("NcPropertyRestoreNotice"), {make_nc_property_restore_notice()}},
+                { U("NcPropertyRestoreNoticeType"), {make_nc_property_restore_notice_type_datatype()}},
+                { U("NcPropertyRestoreNotice"), {make_nc_property_restore_notice_datatype()}},
                 { U("NcObjectPropertiesSetValidation"), {make_nc_object_properties_set_validation_datatype()}},
                 { U("NcMethodResultBulkValuesHolder"), {make_nc_method_result_bulk_values_holder_datatype()}},
                 { U("NcMethodResultObjectPropertiesSetValidation"), {make_nc_method_result_object_properties_set_validation_datatype()}}

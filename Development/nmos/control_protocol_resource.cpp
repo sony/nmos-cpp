@@ -2177,7 +2177,7 @@ namespace nmos
         return details::make_nc_datatype_descriptor_enum(U("Restore validation status enumeration"), U("NcRestoreValidationStatus"), items, value::null());
     }
     // TODO: add link
-    web::json::value make_nc_property_restore_notice_type()
+    web::json::value make_nc_property_restore_notice_type_datatype()
     {
         using web::json::value;
 
@@ -2188,7 +2188,7 @@ namespace nmos
         return details::make_nc_datatype_descriptor_enum(U("Property restore notice type enumeration"), U("NcPropertyRestoreNoticeType"), items, value::null());
     }
     // TODO: add link
-    web::json::value make_nc_property_restore_notice()
+    web::json::value make_nc_property_restore_notice_datatype()
     {
         using web::json::value;
 
@@ -2198,7 +2198,7 @@ namespace nmos
         web::json::push_back(fields, details::make_nc_field_descriptor(U("Property restore notice type"), nmos::fields::nc::notice_type, U("NcPropertyRestoreNoticeType"), false, false, value::null()));
         web::json::push_back(fields, details::make_nc_field_descriptor(U("Property restore notice message"), nmos::fields::nc::notice_message, U("NcString"), false, false, value::null()));
 
-        return details::make_nc_datatype_descriptor_struct(U("Bulk values holder descriptor"), U("NcPropertyRestoreNotice"), fields, value::null());
+        return details::make_nc_datatype_descriptor_struct(U("Property restore notice descriptor"), U("NcPropertyRestoreNotice"), fields, value::null());
     }
     // TODO: add link
     web::json::value make_nc_object_properties_set_validation_datatype()

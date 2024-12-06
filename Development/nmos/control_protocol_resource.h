@@ -451,9 +451,9 @@ namespace nmos
     //
     web::json::value make_nc_restore_validation_status_datatype();
     //
-    web::json::value make_nc_property_restore_notice_type();
+    web::json::value make_nc_property_restore_notice_type_datatype();
     //
-    web::json::value make_nc_property_restore_notice();
+    web::json::value make_nc_property_restore_notice_datatype();
     //
     web::json::value make_nc_object_properties_set_validation_datatype();
     //
