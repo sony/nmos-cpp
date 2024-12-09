@@ -819,30 +819,6 @@ namespace nmos
             return data;
         }
 
-        // TODO: add link
-        web::json::value make_nc_bulk_properties_manager(nc_oid oid, nc_oid owner, const web::json::value &user_label, const utility::string_t& description, const web::json::value& touchpoints, const web::json::value& runtime_property_constraints)
-        {
-            using web::json::value;
-
-            auto data = make_nc_manager(nc_bulk_properties_manager_class_id, oid, true, owner, U("BulkPropertiesManager"), user_label, description, touchpoints, runtime_property_constraints);
-
-            return data;
-        }
-
-        // TODO: add link
-        web::json::value make_nc_property_value_holder(const nc_property_id& property_id, const nc_name& name, const utility::string_t& type_name, bool is_read_only, const web::json::value& property_value)
-        {
-            using web::json::value;
-
-            return web::json::value_of({
-                { nmos::fields::nc::id, make_nc_property_id(property_id)},
-                { nmos::fields::nc::name, value::string(name)},
-                { nmos::fields::nc::type_name, value::string(type_name)},
-                { nmos::fields::nc::is_read_only, value::boolean(is_read_only)},
-                { nmos::fields::nc::value, property_value},
-                }, true);
-        }
-
         // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncpropertychangedeventdata
         web::json::value make_nc_property_changed_event_data(const nc_property_changed_event_data& property_changed_event_data)
         {
@@ -853,7 +829,88 @@ namespace nmos
                 { nmos::fields::nc::change_type, property_changed_event_data.change_type },
                 { nmos::fields::nc::value, property_changed_event_data.value },
                 { nmos::fields::nc::sequence_item_index, property_changed_event_data.sequence_item_index }
-            });
+                }, true
+            );
+        }
+
+        // TODO: add link
+        web::json::value make_nc_bulk_properties_manager(nc_oid oid, nc_oid owner, const web::json::value &user_label, const utility::string_t& description, const web::json::value& touchpoints, const web::json::value& runtime_property_constraints)
+        {
+            using web::json::value;
+
+            auto data = make_nc_manager(nc_bulk_properties_manager_class_id, oid, true, owner, U("BulkPropertiesManager"), user_label, description, touchpoints, runtime_property_constraints);
+
+            return data;
+        }
+
+        web::json::value make_nc_bulk_values_holder(const utility::string_t& validation_fingerprint, const web::json::value& object_properties_holders)
+        {
+            using web::json::value_of;
+
+            return value_of({
+                { nmos::fields::nc::validation_fingerprint, validation_fingerprint },
+                { nmos::fields::nc::values, object_properties_holders }
+                }, true
+            );
+        }
+
+        // TODO: add link
+        web::json::value make_nc_property_value_holder(const nc_property_id& property_id, const nc_name& name, const utility::string_t& type_name, bool is_read_only, const web::json::value& property_value)
+        {
+            using web::json::value; 
+            using web::json::value_of;
+
+            return value_of({
+                { nmos::fields::nc::id, make_nc_property_id(property_id)},
+                { nmos::fields::nc::name, value::string(name)},
+                { nmos::fields::nc::type_name, value::string(type_name)},
+                { nmos::fields::nc::is_read_only, value::boolean(is_read_only)},
+                { nmos::fields::nc::value, property_value},
+                }, true);
+        }
+
+        // TODO: add link
+        web::json::value make_nc_object_properties_holder(const web::json::value& role_path, const web::json::value& property_value_holders, bool is_rebuildable)
+        {
+            using web::json::value_of;
+
+            return value_of({
+                { nmos::fields::nc::path, role_path },
+                { nmos::fields::nc::values, property_value_holders},
+                { nmos::fields::nc::is_rebuildable, is_rebuildable}
+                }, true
+            );
+
+        }
+
+        // TODO: add link
+        web::json::value make_nc_property_restore_notice(const nc_property_id& property_id, const nc_name& name, nc_property_restore_notice_type::type notice_type, const utility::string_t& notice_message)
+        {
+            using web::json::value;
+            using web::json::value_of;
+
+            return value_of({
+                { nmos::fields::nc::id, make_nc_property_id(property_id)},
+                { nmos::fields::nc::name, value::string(name)}, 
+                { nmos::fields::nc::notice_type, value::number(notice_type)},
+                { nmos::fields::nc::notice_message, value::string(notice_message)}
+                }, true
+            );
+        }
+
+        // TODO: add link
+        web::json::value make_nc_object_properties_set_validation(const web::json::value& role_path, nc_restore_validation_status::status status, const web::json::value& notices, const utility::string_t& status_message)
+        {
+            using web::json::value;
+            using web::json::value_of;
+
+            return value_of({ 
+                { nmos::fields::nc::path, role_path},
+                { nmos::fields::nc::status, value::number(status)},
+                { nmos::fields::nc::notices, notices },
+                { nmos::fields::nc::status_message, value::string(status_message)}
+                }, true
+            );
         }
     }
 
@@ -2198,9 +2255,8 @@ namespace nmos
         using web::json::value;
 
         auto items = value::array();
-        web::json::push_back(items, details::make_nc_enum_item_descriptor(U("Warning property restore notice"), U("Warning"), 300));
-        web::json::push_back(items, details::make_nc_enum_item_descriptor(U("Error property restore notice"), U("Error"), 400));
-
+        web::json::push_back(items, details::make_nc_enum_item_descriptor(U("Warning property restore notice"), U("Warning"), nc_property_restore_notice_type::warning));
+        web::json::push_back(items, details::make_nc_enum_item_descriptor(U("Error property restore notice"), U("Error"), nc_property_restore_notice_type::error));
         return details::make_nc_datatype_descriptor_enum(U("Property restore notice type enumeration"), U("NcPropertyRestoreNoticeType"), items, value::null());
     }
     // TODO: add link

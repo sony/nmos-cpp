@@ -2,6 +2,7 @@
 
 #include <boost/algorithm/string/case_conv.hpp>
 #include <boost/algorithm/string/find.hpp>
+#include <boost/algorithm/string/split.hpp>
 #include <boost/iterator/filter_iterator.hpp>
 #include "bst/regex.h"
 #include "cpprest/json_utils.h"
@@ -334,6 +335,70 @@ namespace nmos
             // do level 1 property constraints & level 0 datatype constraints validation
             constraints_validation(data, value::null(), property_constraints, params);
         }
+
+        web::json::value get_nc_block_member_descriptor(const resources& resources, const nmos::resource& parent_nc_block_resource, web::json::value& role_path_segments)
+        {
+            if (parent_nc_block_resource.data.has_field(nmos::fields::nc::members))
+            {
+                const auto& members = nmos::fields::nc::members(parent_nc_block_resource.data);
+
+
+                const auto role_path_segement = web::json::front(role_path_segments);
+                role_path_segments.erase(0);
+                // find the role_path_segment member
+                auto member_found = std::find_if(members.begin(), members.end(), [&](const web::json::value& member)
+                    {
+                        return role_path_segement.as_string() == nmos::fields::nc::role(member);
+                    });
+
+                if (members.end() != member_found)
+                {
+                    if (role_path_segments.size() == 0)
+                    {
+                        // NcBlockMemberDescriptor
+                        return *member_found;
+                    }
+
+                    // get the role_path_segement member resource
+                    if (is_nc_block(nmos::details::parse_nc_class_id(nmos::fields::nc::class_id(*member_found))))
+                    {
+                        // get resource based on the oid
+                        const auto& oid = nmos::fields::nc::oid(*member_found);
+                        const auto& found = nmos::find_resource(resources, utility::s2us(std::to_string(oid)));
+                        if (resources.end() != found)
+                        {
+                            return get_nc_block_member_descriptor(resources, *found, role_path_segments);
+                        }
+                    }
+                }
+            }
+            return web::json::value{};
+        }
+
+        typedef std::function<web::json::value(const nmos::experimental::control_class_descriptor&)> get_property_descriptors_handler;
+
+        // generic find control class property descriptor in property_descriptor_ array (NcPropertyDescriptor)
+        web::json::value find_property_descriptor(const nc_property_id& property_id, const nc_class_id& class_id_, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor)
+        {
+            using web::json::value;
+
+            auto class_id = class_id_;
+
+            while (!class_id.empty())
+            {
+                const auto& control_class = get_control_protocol_class_descriptor(class_id);
+                const auto& property_descriptors = control_class.property_descriptors;
+                auto found = std::find_if(property_descriptors.as_array().begin(), property_descriptors.as_array().end(), [&property_id](const web::json::value& property_descriptor)
+                    {
+                        return (property_id == nmos::details::parse_nc_property_id(nmos::fields::nc::id(property_descriptor)));
+                    });
+                if (property_descriptors.as_array().end() != found) { return *found; }
+
+                class_id.pop_back();
+            }
+
+            return value::null();
+        }
     }
 
     // is the given class_id a NcBlock
@@ -382,24 +447,7 @@ namespace nmos
     // find control class property descriptor (NcPropertyDescriptor)
     web::json::value find_property_descriptor(const nc_property_id& property_id, const nc_class_id& class_id_, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor)
     {
-        using web::json::value;
-
-        auto class_id = class_id_;
-
-        while (!class_id.empty())
-        {
-            const auto& control_class = get_control_protocol_class_descriptor(class_id);
-            auto& property_descriptors = control_class.property_descriptors.as_array();
-            auto found = std::find_if(property_descriptors.begin(), property_descriptors.end(), [&property_id](const web::json::value& property_descriptor)
-            {
-                return (property_id == nmos::details::parse_nc_property_id(nmos::fields::nc::id(property_descriptor)));
-            });
-            if (property_descriptors.end() != found) { return *found; }
-
-            class_id.pop_back();
-        }
-
-        return value::null();
+        return details::find_property_descriptor(property_id, class_id_, get_control_protocol_class_descriptor);
     }
 
     // get block member descriptors
@@ -636,5 +684,55 @@ namespace nmos
             }
             details::method_parameter_constraints_validation(arguments.at(name), constraints, { nmos::details::get_datatype_descriptor(type_name, get_control_protocol_datatype_descriptor), get_control_protocol_datatype_descriptor });
         }
+    }
+
+    resources::const_iterator find_control_protocol_resource_by_role_path(const resources& resources, const web::json::value& role_path_)
+    {
+        web::json::value role_path = role_path_;
+        auto resource = nmos::find_resource(resources, utility::s2us(std::to_string(nmos::root_block_oid)));
+        if (resources.end() != resource)
+        {
+            const auto role = nmos::fields::nc::role(resource->data);
+
+            if (role_path.size() && role == web::json::front(role_path).as_string())
+            {
+                role_path.erase(0);
+
+                if (role_path.size())
+                {
+                    const auto& block_member_descriptor = details::get_nc_block_member_descriptor(resources, *resource, role_path);
+                    if (!block_member_descriptor.is_null())
+                    {
+                        const auto& oid = nmos::fields::nc::oid(block_member_descriptor);
+                        const auto& found = nmos::find_resource(resources, utility::s2us(std::to_string(oid)));
+                        if (resources.end() != found)
+                        {
+                            return found;
+                        }
+                    }
+                }
+                else
+                {
+                    return resource;
+                }
+            }
+        }
+        return resources.end();
+    }
+
+
+    resources::const_iterator find_control_protocol_resource_by_role_path(const resources& resources, const utility::string_t& role_path_)
+    {
+        // tokenize the role_path with the '.' delimiter
+        std::list<utility::string_t> role_path_segments;
+        boost::algorithm::split(role_path_segments, role_path_, [](utility::char_t c) { return '.' == c; });
+
+        web::json::value role_path = web::json::value::array();
+
+        for (auto item : role_path_segments)
+        {
+            web::json::push_back(role_path, utility::string_t(item.c_str()));
+        }
+        return find_control_protocol_resource_by_role_path(resources, role_path);
     }
 }
