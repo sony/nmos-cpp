@@ -1761,7 +1761,8 @@ void get_object_property_holder(const nmos::resources& resources, slog::base_gat
 
     auto object_properties_holder = web::json::value_of({
             { nmos::fields::nc::path, role_path },
-            { nmos::fields::nc::values, property_value_holders}
+            { nmos::fields::nc::values, property_value_holders},
+            { nmos::fields::nc::is_rebuildable, nmos::fields::nc::is_rebuildable(resource.data)}
         }, true);
 
     web::json::push_back(object_properties_holders, object_properties_holder);

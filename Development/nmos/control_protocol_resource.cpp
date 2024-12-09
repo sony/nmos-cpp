@@ -697,7 +697,7 @@ namespace nmos
         }
 
         // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncobject
-        web::json::value make_nc_object(const nc_class_id& class_id, nc_oid oid, bool constant_oid, const web::json::value& owner, const utility::string_t& role, const web::json::value& user_label, const utility::string_t& description, const web::json::value& touchpoints, const web::json::value& runtime_property_constraints)
+        web::json::value make_nc_object(const nc_class_id& class_id, nc_oid oid, bool constant_oid, const web::json::value& owner, const utility::string_t& role, const web::json::value& user_label, const utility::string_t& description, const web::json::value& touchpoints, const web::json::value& runtime_property_constraints, bool is_rebuildable)
         {
             using web::json::value;
 
@@ -712,6 +712,8 @@ namespace nmos
             data[nmos::fields::nc::touchpoints] = touchpoints;
             data[nmos::fields::nc::runtime_property_constraints] = runtime_property_constraints; // level 2 runtime constraints. See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Constraints.html
 
+            // IS-14 isRebuilable flag
+            data[nmos::fields::nc::is_rebuildable] = value::boolean(is_rebuildable);
             return data;
         }
 
