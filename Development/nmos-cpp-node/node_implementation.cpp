@@ -1719,22 +1719,104 @@ nmos::control_protocol_property_changed_handler make_node_implementation_control
     };
 }
 
+void get_object_property_holder(const nmos::resources& resources, slog::base_gate& gate, nmos::get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, const nmos::resource& resource, bool recurse, web::json::value& object_properties_holders)
+{
+    using web::json::value;
+
+    value property_value_holders = value::array();
+
+    nmos::nc_class_id class_id = nmos::details::parse_nc_class_id(nmos::fields::nc::class_id(resource.data));
+
+    while (!class_id.empty())
+    {
+        // find the relevant nc_property_descriptor
+        const auto& control_class_descriptor = get_control_protocol_class_descriptor(class_id);
+
+        for (const auto& property_descriptor : control_class_descriptor.property_descriptors.as_array())
+        {
+            value property_value_holder = nmos::details::make_nc_property_value_holder(nmos::details::parse_nc_property_id(nmos::fields::nc::id(property_descriptor)), nmos::fields::nc::name(property_descriptor), nmos::fields::nc::type_name(property_descriptor), nmos::fields::nc::is_read_only(property_descriptor), resource.data.at(nmos::fields::nc::name(property_descriptor)));
+
+            web::json::push_back(property_value_holders, property_value_holder);
+        }
+        class_id.pop_back();
+    }
+
+    auto role_path = nmos::fields::nc::role(resource.data);
+    auto oid = nmos::fields::nc::id(resource.data);
+    nmos::resource found_resource = resource;
+
+    while (utility::s2us(std::to_string(nmos::root_block_oid)) != oid.as_string())
+    {
+        auto owner = nmos::fields::nc::owner(found_resource.data);
+        const auto& found = nmos::find_resource(resources, utility::s2us(std::to_string(owner)));
+        if (resources.end() == found)
+        {
+            break;
+        }
+
+        found_resource = (*found);
+        role_path = nmos::fields::nc::role(found_resource.data) + U(".") + role_path;
+        oid = nmos::fields::nc::id(found_resource.data);
+    }
+
+    auto object_properties_holder = web::json::value_of({
+            { nmos::fields::nc::path, role_path },
+            { nmos::fields::nc::values, property_value_holders}
+        }, true);
+
+    web::json::push_back(object_properties_holders, object_properties_holder);
+
+    // Recurse into members
+    if (recurse && nmos::is_nc_block(nmos::details::parse_nc_class_id(nmos::fields::nc::class_id(resource.data))))
+    {
+        if (resource.data.has_field(nmos::fields::nc::members))
+        {
+            const auto& members = nmos::fields::nc::members(resource.data);
+
+            for (const auto& member : members)
+            {
+                const auto& oid = nmos::fields::nc::oid(member);
+                const auto& found = find_resource(resources, utility::s2us(std::to_string(oid)));
+                if (resources.end() != found)
+                {
+                    get_object_property_holder(resources, gate, get_control_protocol_class_descriptor, *found, recurse, object_properties_holders);
+                }
+            }
+        }
+    }
+
+    return;
+}
+
 // Example Device Configuration callback for creating a back-up dataset
 nmos::get_properties_by_path_handler make_node_implementation_get_properties_by_path_handler(const nmos::resources& resources, slog::base_gate& gate)
 {
-    return [&resources, &gate](nmos::get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, nmos::get_control_protocol_datatype_descriptor_handler get_control_protocol_datatype_descriptor, const nmos::resource& resource, bool recurse)
+    return [&resources, &gate](nmos::experimental::control_protocol_state& control_protocol_state, nmos::get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, nmos::get_control_protocol_datatype_descriptor_handler get_control_protocol_datatype_descriptor, const nmos::resource& resource, bool recurse)
     {
+        using web::json::value;
+        using web::json::value_of;
+
         slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::stash_category(impl::categories::node_implementation) << "Do get_properties_by_path";
 
-        // Implement backup of device model here
-        return nmos::details::make_nc_method_result({ nmos::nc_method_status::ok });
+        auto lock = control_protocol_state.read_lock();
+
+        value object_properties_holders = value::array();
+
+        get_object_property_holder(resources, gate, get_control_protocol_class_descriptor, resource, recurse, object_properties_holders);
+
+        auto bulk_values_holder = value_of({
+        { nmos::fields::nc::validation_fingerprint, U("your-fingerprint-here")},
+        { nmos::fields::nc::values, object_properties_holders}
+            }, true);
+
+        return nmos::details::make_nc_method_result({ nmos::nc_method_status::ok }, bulk_values_holder);
     };
 }
 
 // Example Device Configuration callback for validating a back-up dataset
 nmos::validate_set_properties_by_path_handler make_node_implementation_validate_set_properties_by_path_handler(const nmos::resources& resources, slog::base_gate& gate)
 {
-    return [&resources, &gate](nmos::get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, nmos::get_control_protocol_datatype_descriptor_handler get_control_protocol_datatype_descriptor, const nmos::resource& resource, const web::json::value& backup_data_set, bool recurse, const web::json::value& restore_mode)
+    return [&resources, &gate](nmos::experimental::control_protocol_state& control_protocol_state, nmos::get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, nmos::get_control_protocol_datatype_descriptor_handler get_control_protocol_datatype_descriptor, const nmos::resource& resource, const web::json::value& backup_data_set, bool recurse, const web::json::value& restore_mode)
     {
         slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::stash_category(impl::categories::node_implementation) << "Do validate_set_properties_by_path";
 
@@ -1746,7 +1828,7 @@ nmos::validate_set_properties_by_path_handler make_node_implementation_validate_
 // Example Device Configuration callback for restoring a back-up dataset
 nmos::set_properties_by_path_handler make_node_implementation_set_properties_by_path_handler(nmos::resources& resources, slog::base_gate& gate)
 {
-    return [&resources, &gate](nmos::get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, nmos::get_control_protocol_datatype_descriptor_handler get_control_protocol_datatype_descriptor, const nmos::resource& resource, const web::json::value& data_set, bool recurse, const web::json::value& restore_mode)
+    return [&resources, &gate](nmos::experimental::control_protocol_state& control_protocol_state, nmos::get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, nmos::get_control_protocol_datatype_descriptor_handler get_control_protocol_datatype_descriptor, const nmos::resource& resource, const web::json::value& data_set, bool recurse, const web::json::value& restore_mode)
     {
         slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::stash_category(impl::categories::node_implementation) << "Do set_properties_by_path";
 

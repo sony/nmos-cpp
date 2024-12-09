@@ -827,6 +827,20 @@ namespace nmos
             return data;
         }
 
+        // TODO: add link
+        web::json::value make_nc_property_value_holder(const nc_property_id& property_id, const nc_name& name, const utility::string_t& type_name, bool is_read_only, const web::json::value& property_value)
+        {
+            using web::json::value;
+
+            return web::json::value_of({
+                { nmos::fields::nc::id, make_nc_property_id(property_id)},
+                { nmos::fields::nc::name, value::string(name)},
+                { nmos::fields::nc::type_name, value::string(type_name)},
+                { nmos::fields::nc::is_read_only, value::boolean(is_read_only)},
+                { nmos::fields::nc::value, property_value},
+                }, true);
+        }
+
         // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncpropertychangedeventdata
         web::json::value make_nc_property_changed_event_data(const nc_property_changed_event_data& property_changed_event_data)
         {

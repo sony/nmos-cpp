@@ -194,6 +194,9 @@ namespace nmos
 
         // TODO: add link
         web::json::value make_nc_bulk_properties_manager(nc_oid oid, nc_oid owner, const web::json::value& user_label, const utility::string_t& description, const web::json::value& touchpoints, const web::json::value& runtime_property_constraints);
+
+        // TODO: add link
+        web::json::value make_nc_property_value_holder(const nc_property_id& property_id, const nc_name& name, const utility::string_t& type_name, bool is_read_only, const web::json::value& property_value);
     }
 
     // command message response
