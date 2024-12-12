@@ -36,6 +36,19 @@ namespace nmos
 
                 static utility::string_t create_client_assertion(const utility::string_t& issuer, const utility::string_t& subject, const web::uri& audience, const std::chrono::seconds& token_lifetime, const utility::string_t& private_key, const utility::string_t& keyid)
                 {
+                    // see https://tools.ietf.org/html/rfc7523#section-3
+                    if (issuer.empty())
+                    {
+                        throw jwk_exception("empty issuer");
+                    }
+                    if (subject.empty())
+                    {
+                        throw jwk_exception("empty subject");
+                    }
+                    if (audience.is_empty())
+                    {
+                        throw jwk_exception("empty audience");
+                    }                    
                     return create_client_assertion(issuer, subject, audience, token_lifetime, rsa_public_key(private_key), private_key, keyid);
                 }
             };
