@@ -17,6 +17,8 @@ namespace nmos
                 static utility::string_t create_client_assertion(const utility::string_t& issuer, const utility::string_t& subject, const web::uri& audience, const std::chrono::seconds& token_lifetime, const utility::string_t& public_key, const utility::string_t& private_key, const utility::string_t& keyid)
                 {
                     using namespace jwt::traits;
+                    
+                    const auto now = std::chrono::system_clock::now();
 
                     // use server private key to create client_assertion (JWT)
                     // where client_assertion MUST including iss, sub, aud, exp, and may including jti
@@ -26,8 +28,8 @@ namespace nmos
                         .set_issuer(utility::us2s(issuer))
                         .set_subject(utility::us2s(subject))
                         .set_audience(utility::us2s(audience.to_string()))
-                        .set_issued_at(std::chrono::system_clock::now())
-                        .set_expires_at(std::chrono::system_clock::now() + token_lifetime)
+                        .set_issued_at(now)
+                        .set_expires_at(now + token_lifetime)
                         .set_id(utility::us2s(nmos::make_id()))
                         .set_key_id(utility::us2s(keyid))
                         .set_type("JWT")
