@@ -162,8 +162,8 @@ namespace nmos
                                     {
                                         return false;
                                     }
-                                    auto now = std::chrono::system_clock::now();
-                                    auto exp = std::chrono::system_clock::from_time_t(expires_at);
+                                    const auto now = std::chrono::system_clock::now();
+                                    const auto exp = std::chrono::system_clock::from_time_t(expires_at);
                                     return (now > exp);
                                 };
 
