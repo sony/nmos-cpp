@@ -555,6 +555,7 @@ namespace nmos
                         auto status = nmos::fields::nc::status(result);
                         auto code = (nc_method_status::ok == status || nc_method_status::property_deprecated == status) ? status_codes::OK : status_codes::InternalError;
                         set_reply(res, code, result);
+                        model.notify();
                     }
                 }
                 else
@@ -718,7 +719,7 @@ namespace nmos
             const auto& bulk_properties_manager = find_control_protocol_resource_by_role_path(resources, nmos::bulk_properties_manager_role);
             if (resources.end() != resource && resources.end() != bulk_properties_manager)
             {
-                return details::extract_json(req, gate_).then([res, resources, resource, get_control_protocol_method_descriptor, version, &gate_](value body) mutable
+                return details::extract_json(req, gate_).then([res, &resources, resource, get_control_protocol_method_descriptor, version, &model, &gate_](value body) mutable
                 {
                     // Validate JSON syntax according to the schema
                     details::configurationapi_validator().validate(body, experimental::make_configurationapi_bulkProperties_set_request_schema_uri(version));
@@ -739,6 +740,7 @@ namespace nmos
                             else if (nc_method_status::parameter_error == status) { code = status_codes::BadRequest; }
                             else if (nc_method_status::device_error == status) { code = status_codes::InternalError; }
                             else { code = status_codes::InternalError; }
+                            model.notify();
                         }
                         catch (const nmos::control_protocol_exception& e)
                         {

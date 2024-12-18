@@ -388,9 +388,9 @@ namespace nmos
                             // modify control protocol resources
                             const auto& value = nmos::fields::nc::value(property_value);
 
-                            modify_control_protocol_resource(resources, found->id, [&](nmos::resource& r_)
+                            modify_control_protocol_resource(resources, found->id, [&](nmos::resource& resource_)
                                 {
-                                    r_.data[nmos::fields::nc::name(property_value)] = value;
+                                    resource_.data[nmos::fields::nc::name(property_value)] = value;
 
                                 }, nmos::make_property_changed_event(nmos::fields::nc::oid(found->data), {{property_id, nmos::nc_property_change_type::type::value_changed, value}}));
                         }
