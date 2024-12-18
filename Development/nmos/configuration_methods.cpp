@@ -145,7 +145,7 @@ namespace nmos
             // root can't be longed that the path
             return false;
         }
-        for (int i = 0; i < role_path_root.as_array().size(); ++i)
+        for (size_t i = 0; i < role_path_root.as_array().size(); ++i)
         {
             if (role_path_root.as_array().at(i) != role_path_.as_array().at(i))
             {
@@ -221,7 +221,10 @@ namespace nmos
 
         size_t validation_fingerprint = details::generate_validation_fingerprint(resources, resource);
 
-        auto bulk_values_holder = nmos::details::make_nc_bulk_values_holder(utility::string_t(std::to_wstring(validation_fingerprint)), object_properties_holders);
+        utility::ostringstream_t ss;
+        ss << validation_fingerprint;
+
+        auto bulk_values_holder = nmos::details::make_nc_bulk_values_holder(ss.str(), object_properties_holders);
 
         return nmos::details::make_nc_method_result({ nmos::nc_method_status::ok }, bulk_values_holder);
     }
