@@ -154,7 +154,7 @@ namespace nmos
             warning = 300,  // Warning property restore notice
             error = 400     // Error property restore notice
         };
-    };
+    }
 
     // NcElementId
     // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncelementid
