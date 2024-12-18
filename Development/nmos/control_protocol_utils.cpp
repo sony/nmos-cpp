@@ -6,6 +6,7 @@
 #include <boost/iterator/filter_iterator.hpp>
 #include "bst/regex.h"
 #include "cpprest/json_utils.h"
+#include <list>
 #include "nmos/control_protocol_resource.h"
 #include "nmos/control_protocol_state.h"
 #include "nmos/json_fields.h"
