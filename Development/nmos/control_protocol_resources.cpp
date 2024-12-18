@@ -9,22 +9,22 @@ namespace nmos
     namespace details
     {
         // create block resource
-        control_protocol_resource make_block(nmos::nc_oid oid, const web::json::value& owner, const utility::string_t& role, const utility::string_t& user_label, const utility::string_t& description, const web::json::value& touchpoints, const web::json::value& runtime_property_constraints, const web::json::value& members)
+        control_protocol_resource make_block(nmos::nc_oid oid, const web::json::value& owner, const utility::string_t& role, const utility::string_t& user_label, const utility::string_t& description, const web::json::value& touchpoints, const web::json::value& runtime_property_constraints, const web::json::value& members, bool is_rebuildable)
         {
             using web::json::value;
 
-            auto data = details::make_nc_block(nc_block_class_id, oid, true, owner, role, value::string(user_label), description, touchpoints, runtime_property_constraints, true, members);
+            auto data = details::make_nc_block(nc_block_class_id, oid, true, owner, role, value::string(user_label), description, touchpoints, runtime_property_constraints, true, members, is_rebuildable);
 
             return{ is12_versions::v1_0, types::nc_block, std::move(data), true };
         }
     }
 
     // create block resource
-    control_protocol_resource make_block(nc_oid oid, nc_oid owner, const utility::string_t& role, const utility::string_t& user_label, const utility::string_t& description, const web::json::value& touchpoints, const web::json::value& runtime_property_constraints, const web::json::value& members)
+    control_protocol_resource make_block(nc_oid oid, nc_oid owner, const utility::string_t& role, const utility::string_t& user_label, const utility::string_t& description, const web::json::value& touchpoints, const web::json::value& runtime_property_constraints, const web::json::value& members, bool is_rebuildable)
     {
         using web::json::value;
 
-        return details::make_block(oid, value(owner), role, user_label, description, touchpoints, runtime_property_constraints, members);
+        return details::make_block(oid, value(owner), role, user_label, description, touchpoints, runtime_property_constraints, members, is_rebuildable);
     }
 
     // create Root block resource
@@ -32,7 +32,7 @@ namespace nmos
     {
         using web::json::value;
 
-        return details::make_block(nmos::root_block_oid, value::null(), nmos::root_block_role, U("Root"), U("Root block"), value::null(), value::null(), value::array());
+        return details::make_block(nmos::root_block_oid, value::null(), nmos::root_block_role, U("Root"), U("Root block"), value::null(), value::null(), value::array(), false);
     }
 
     // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncdevicemanager

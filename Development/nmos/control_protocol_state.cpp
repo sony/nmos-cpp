@@ -3,6 +3,7 @@
 #include "cpprest/http_utils.h"
 #include "nmos/control_protocol_methods.h"
 #include "nmos/control_protocol_resource.h"
+#include "nmos/configuration_methods.h"
 
 namespace nmos
 {
@@ -201,9 +202,9 @@ namespace nmos
                     return result;
                 };
             }
-            nmos::experimental::control_protocol_method_handler make_nc_validate_set_properties_by_path_handler(nmos::experimental::control_protocol_state& control_protocol_state, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor_handler get_control_protocol_datatype_descriptor, validate_set_properties_by_path_handler validate_set_properties_by_path)
+            nmos::experimental::control_protocol_method_handler make_nc_validate_set_properties_by_path_handler(nmos::experimental::control_protocol_state& control_protocol_state, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor_handler get_control_protocol_datatype_descriptor, modify_read_only_config_properties_handler modify_read_only_config_properties, modify_rebuildable_block_handler modify_rebuildable_block)
             {
-                return [&control_protocol_state, get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor, validate_set_properties_by_path](nmos::resources& resources, const nmos::resource& resource, const web::json::value& arguments, bool is_deprecated, slog::base_gate& gate)
+                return [&control_protocol_state, get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor, modify_read_only_config_properties, modify_rebuildable_block](nmos::resources& resources, const nmos::resource& resource, const web::json::value& arguments, bool is_deprecated, slog::base_gate& gate)
                 {
                     bool recurse = nmos::fields::nc::recurse(arguments);
                     const auto& restore_mode = nmos::fields::nc::restore_mode(arguments);
@@ -215,9 +216,9 @@ namespace nmos
                     }
 
                     auto result = nmos::details::make_nc_method_result_error({ nmos::nc_method_status::method_not_implemented }, U("not implemented"));
-                    if (validate_set_properties_by_path)
+                    if (modify_read_only_config_properties && modify_rebuildable_block)
                     {
-                        result = validate_set_properties_by_path(control_protocol_state, get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor, resource, data_set, recurse, restore_mode);
+                        result = validate_set_properties_by_path(resources, control_protocol_state, get_control_protocol_class_descriptor, resource, data_set, recurse, restore_mode, modify_read_only_config_properties, modify_rebuildable_block);
 
                         const auto& status = nmos::fields::nc::status(result);
                         if (!web::http::is_error_status_code((web::http::status_code)status) && is_deprecated)
@@ -228,9 +229,9 @@ namespace nmos
                     return result;
                 };
             }
-            nmos::experimental::control_protocol_method_handler make_nc_set_properties_by_path_handler(nmos::experimental::control_protocol_state& control_protocol_state, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor_handler get_control_protocol_datatype_descriptor, set_properties_by_path_handler set_properties_by_path)
+            nmos::experimental::control_protocol_method_handler make_nc_set_properties_by_path_handler(nmos::experimental::control_protocol_state& control_protocol_state, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor_handler get_control_protocol_datatype_descriptor, modify_read_only_config_properties_handler modify_read_only_config_properties, modify_rebuildable_block_handler modify_rebuildable_block)
             {
-                return [&control_protocol_state, get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor, set_properties_by_path](nmos::resources& resources, const nmos::resource& resource, const web::json::value& arguments, bool is_deprecated, slog::base_gate& gate)
+                return [&control_protocol_state, get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor, modify_read_only_config_properties, modify_rebuildable_block](nmos::resources& resources, const nmos::resource& resource, const web::json::value& arguments, bool is_deprecated, slog::base_gate& gate)
                 {
                     bool recurse = nmos::fields::nc::recurse(arguments);
                     const auto& restore_mode = nmos::fields::nc::restore_mode(arguments);
@@ -241,10 +242,10 @@ namespace nmos
                         return nmos::details::make_nc_method_result_error({ nc_method_status::parameter_error }, U("Null dataSet parameter"));
                     }
 
-                    auto result = nmos::details::make_nc_method_result_error({ nmos::nc_method_status::method_not_implemented }, U("not implemented"));
-                    if (set_properties_by_path)
+                    auto result = nmos::details::make_nc_method_result_error({ nmos::nc_method_status::method_not_implemented }, U("callbacks not implemented"));
+                    if (modify_read_only_config_properties && modify_rebuildable_block)
                     {
-                        result = set_properties_by_path(control_protocol_state, get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor, resource, data_set, recurse, restore_mode);
+                        result = set_properties_by_path(resources, control_protocol_state, get_control_protocol_class_descriptor, resource, data_set, recurse, restore_mode, modify_read_only_config_properties, modify_rebuildable_block);
 
                         const auto& status = nmos::fields::nc::status(result);
                         if (!web::http::is_error_status_code((web::http::status_code)status) && is_deprecated)
@@ -257,7 +258,7 @@ namespace nmos
             }
         }
 
-        control_protocol_state::control_protocol_state(control_protocol_property_changed_handler property_changed, get_properties_by_path_handler get_properties_by_path, validate_set_properties_by_path_handler validate_set_properties_by_path, set_properties_by_path_handler set_properties_by_path)
+        control_protocol_state::control_protocol_state(control_protocol_property_changed_handler property_changed, get_properties_by_path_handler get_properties_by_path, modify_read_only_config_properties_handler modify_read_only_config_properties, modify_rebuildable_block_handler modify_rebuildable_block)
         {
             auto to_vector = [](const web::json::value& data)
             {
@@ -396,8 +397,8 @@ namespace nmos
                     to_methods_vector(make_nc_bulk_properties_manager_methods(),
                     {
                         { nc_bulk_properties_manager_get_properties_by_path_method_id, details::make_nc_get_properties_by_path_handler(*this, make_get_control_protocol_class_descriptor_handler(*this), make_get_control_protocol_datatype_descriptor_handler(*this), get_properties_by_path)},
-                        { nc_bulk_properties_manager_validate_set_properties_by_path_method_id, details::make_nc_validate_set_properties_by_path_handler(*this, make_get_control_protocol_class_descriptor_handler(*this), make_get_control_protocol_datatype_descriptor_handler(*this), validate_set_properties_by_path) },
-                        { nc_bulk_properties_manager_set_properties_by_path_method_id, details::make_nc_set_properties_by_path_handler(*this, make_get_control_protocol_class_descriptor_handler(*this), make_get_control_protocol_datatype_descriptor_handler(*this), set_properties_by_path) }
+                        { nc_bulk_properties_manager_validate_set_properties_by_path_method_id, details::make_nc_validate_set_properties_by_path_handler(*this, make_get_control_protocol_class_descriptor_handler(*this), make_get_control_protocol_datatype_descriptor_handler(*this), modify_read_only_config_properties, modify_rebuildable_block) },
+                        { nc_bulk_properties_manager_set_properties_by_path_method_id, details::make_nc_set_properties_by_path_handler(*this, make_get_control_protocol_class_descriptor_handler(*this), make_get_control_protocol_datatype_descriptor_handler(*this), modify_read_only_config_properties, modify_rebuildable_block) }
                     }),
                     to_vector(make_nc_bulk_properties_manager_events())) }
             };

@@ -720,8 +720,7 @@ namespace nmos
         return resources.end();
     }
 
-
-    resources::const_iterator find_control_protocol_resource_by_role_path(const resources& resources, const utility::string_t& role_path_)
+    web::json::value parse_role_path(const const utility::string_t& role_path_)
     {
         // tokenize the role_path with the '.' delimiter
         std::list<utility::string_t> role_path_segments;
@@ -733,6 +732,14 @@ namespace nmos
         {
             web::json::push_back(role_path, utility::string_t(item.c_str()));
         }
+        return role_path;
+    }
+
+
+    resources::const_iterator find_control_protocol_resource_by_role_path(const resources& resources, const utility::string_t& role_path_)
+    {
+        const auto& role_path = parse_role_path(role_path_);
+
         return find_control_protocol_resource_by_role_path(resources, role_path);
     }
 }

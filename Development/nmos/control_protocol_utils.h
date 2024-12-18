@@ -83,6 +83,9 @@ namespace nmos
     // find resource based on role path. Roles in role path string must be delimited with a '.'
     resources::const_iterator find_control_protocol_resource_by_role_path(const resources& resources, const utility::string_t& role_path);
 
+    // convert . delimited string into role path object
+    web::json::value parse_role_path(const utility::string_t& role_path);
+
     // method parameters constraints validation, may throw nmos::control_protocol_exception
     void method_parameters_contraints_validation(const web::json::value& arguments, const web::json::value& nc_method_descriptor, get_control_protocol_datatype_descriptor_handler get_control_protocol_datatype_descriptor);
 }

@@ -1006,6 +1006,7 @@ set(NMOS_CPP_NMOS_SOURCES
     nmos/client_utils.cpp
     nmos/components.cpp
     nmos/configuration_api.cpp
+    nmos/configuration_methods.cpp
     nmos/connection_activation.cpp
     nmos/connection_api.cpp
     nmos/connection_events_activation.cpp
@@ -1100,6 +1101,8 @@ set(NMOS_CPP_NMOS_HEADERS
     nmos/components.h
     nmos/copyable_atomic.h
     nmos/configuration_api.h
+	nmos/configuration_handlers.h
+	nmos/configuration_methods.h
     nmos/connection_activation.h
     nmos/connection_api.h
     nmos/connection_events_activation.h

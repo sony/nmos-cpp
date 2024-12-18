@@ -124,13 +124,22 @@ namespace nmos
         };
     }
 
+    // NcRestoreMode
+    namespace nc_restore_mode
+    {
+        enum restore_mode
+        {
+            modify = 0, // Restore mode is Modify
+            rebuild = 1 // Restore mode is Rebuild
+        };
+    }
+
     // NcRestoreValidationStatus
     namespace nc_restore_validation_status
     {
         enum status
         {
             ok = 200,                 // Restore was successful
-            excluded = 210,           // Excluded from restore due to data provided in the request
             failed = 400,             // Restore failed because relevant backup data set provided is invalid
             not_found = 404,          // Restore failed because the role path is not found in the device model or the device cannot create the role path from the data set
             device_error = 500        // Restore failed due to an internal device error preventing the restore from happening
