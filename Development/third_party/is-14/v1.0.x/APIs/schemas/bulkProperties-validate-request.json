@@ -1,0 +1,24 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "description": "OPTIONS request body for invoking ValidateSetPropertiesByPath method on NcBulkPropertiesManager",
+  "title": "Bulk properties Validate request",
+  "required": [
+    "arguments"
+  ],
+  "properties": {
+    "arguments": {
+      "type": "object",
+      "description": "Method arguments. The rolePath is offered in the URL and is not part of these arguments",
+      "properties": {
+        "dataSet": {
+          "type": "object",
+          "description": "NcBulkValuesHolder datatype"
+        },
+        "recurse": {
+          "type": "boolean"
+        }
+      }
+    }
+  }
+}
