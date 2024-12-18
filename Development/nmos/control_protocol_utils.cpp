@@ -720,7 +720,7 @@ namespace nmos
         return resources.end();
     }
 
-    web::json::value parse_role_path(const const utility::string_t& role_path_)
+    web::json::value parse_role_path(const utility::string_t& role_path_)
     {
         // tokenize the role_path with the '.' delimiter
         std::list<utility::string_t> role_path_segments;
