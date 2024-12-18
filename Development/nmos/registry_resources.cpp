@@ -30,7 +30,7 @@ namespace nmos
                         .set_scheme(nmos::http_scheme(settings))
                         .set_port(nmos::experimental::fields::mdns_port(settings))
                         .set_path(U("/x-dns-sd/") + make_api_version(version));
-                    auto type = U("urn:x-dns-sd/") + make_api_version(version);
+                    auto type = U("urn:x-dns-sd:mdns-advertisement");
 
                     for (const auto& host : hosts)
                     {
