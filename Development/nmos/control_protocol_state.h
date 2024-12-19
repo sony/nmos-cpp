@@ -59,7 +59,7 @@ namespace nmos
             nmos::read_lock read_lock() const { return nmos::read_lock{ mutex }; }
             nmos::write_lock write_lock() const { return nmos::write_lock{ mutex }; }
 
-            control_protocol_state(control_protocol_property_changed_handler property_changed = nullptr, get_properties_by_path_handler get_properties_by_path = nullptr, modify_read_only_config_properties_handler modify_read_only_config_properties = nullptr, modify_rebuildable_block_handler modify_rebuildable_block = nullptr);
+            control_protocol_state(control_protocol_property_changed_handler property_changed = nullptr, modify_read_only_config_properties_handler modify_read_only_config_properties = nullptr, modify_rebuildable_block_handler modify_rebuildable_block = nullptr);
             // insert control class descriptor, false if class descriptor already inserted
             bool insert(const experimental::control_class_descriptor& control_class_descriptor);
             // erase control class of the given class id, false if the required class not found

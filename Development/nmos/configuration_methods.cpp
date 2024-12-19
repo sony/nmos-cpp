@@ -208,12 +208,10 @@ namespace nmos
         return false;
     }
 
-    web::json::value get_properties_by_path(const nmos::resources& resources, nmos::experimental::control_protocol_state& control_protocol_state, nmos::get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, nmos::get_control_protocol_datatype_descriptor_handler get_control_protocol_datatype_descriptor, const nmos::resource& resource, bool recurse)
+    web::json::value get_properties_by_path(const nmos::resources& resources, const nmos::resource& resource, bool recurse, nmos::get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, nmos::get_control_protocol_datatype_descriptor_handler get_control_protocol_datatype_descriptor)
     {
         using web::json::value;
         using web::json::value_of;
-
-        auto lock = control_protocol_state.read_lock();
 
         value object_properties_holders = value::array();
 

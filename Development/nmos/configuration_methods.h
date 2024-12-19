@@ -15,7 +15,7 @@ namespace nmos
     struct control_protocol_resource;
 
     // Implementation of IS-14 function for creating backup dataset from a Device Model
-    web::json::value get_properties_by_path(const nmos::resources& resources, nmos::experimental::control_protocol_state& control_protocol_state, nmos::get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, nmos::get_control_protocol_datatype_descriptor_handler get_control_protocol_datatype_descriptor, const nmos::resource& resource, bool recurse);
+    web::json::value get_properties_by_path(const nmos::resources& resources, const nmos::resource& resource, bool recurse, nmos::get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, nmos::get_control_protocol_datatype_descriptor_handler get_control_protocol_datatype_descriptor);
 
     // Check to see if role_path is sub path of parent_role_path
     bool is_role_path_root(const web::json::value& role_path_, const web::json::value& parent_role_path);

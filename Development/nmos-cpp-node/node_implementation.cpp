@@ -1722,17 +1722,6 @@ nmos::control_protocol_property_changed_handler make_node_implementation_control
     };
 }
 
-// Example Device Configuration callback for creating a back-up dataset
-nmos::get_properties_by_path_handler make_node_implementation_get_properties_by_path_handler(const nmos::resources& resources, slog::base_gate& gate)
-{
-    return [&resources, &gate](nmos::experimental::control_protocol_state& control_protocol_state, nmos::get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, nmos::get_control_protocol_datatype_descriptor_handler get_control_protocol_datatype_descriptor, const nmos::resource& resource, bool recurse)
-    {
-        slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::stash_category(impl::categories::node_implementation) << "Do get_properties_by_path";
-
-        return nmos::get_properties_by_path(resources, control_protocol_state, get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor, resource, recurse);
-    };
-}
-
 // Example Device Configuration callback for validating a back-up dataset
 nmos::modify_read_only_config_properties_handler make_modify_read_only_config_properties_handler(nmos::resources& resources, slog::base_gate& gate)
 {
@@ -1910,7 +1899,6 @@ nmos::experimental::node_implementation make_node_implementation(nmos::node_mode
         .on_validate_channelmapping_output_map(make_node_implementation_map_validator()) // may be omitted if not required
         .on_channelmapping_activated(make_node_implementation_channelmapping_activation_handler(gate))
         .on_control_protocol_property_changed(make_node_implementation_control_protocol_property_changed_handler(gate)) // may be omitted if IS-12 not required
-        .on_get_properties_by_path(make_node_implementation_get_properties_by_path_handler(model.control_protocol_resources, gate)) // may be omitted if IS-14 not required
-        .on_modify_read_only_config_properties(make_modify_read_only_config_properties_handler(model.control_protocol_resources, gate)) // may be omitted if IS-14 not required
-        .on_modify_rebuildable_block(make_modify_rebuildable_block_handler(model.control_protocol_resources, gate)); // may be omitted if IS-14 not required
+        .on_modify_read_only_config_properties(make_modify_read_only_config_properties_handler(model.control_protocol_resources, gate)) // may be omitted if either IS-14 not required, or IS-14 Rebuild functionality not required
+        .on_modify_rebuildable_block(make_modify_rebuildable_block_handler(model.control_protocol_resources, gate)); // may be omitted if either IS-14 not required, or IS-14 Rebuild functionality not required
 }

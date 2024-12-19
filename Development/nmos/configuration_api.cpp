@@ -4,6 +4,7 @@
 #include <boost/range/join.hpp>
 #include "cpprest/json_validator.h"
 #include "nmos/api_utils.h"
+#include "nmos/configuration_methods.h"
 #include "nmos/control_protocol_handlers.h"
 #include "nmos/control_protocol_methods.h"
 #include "nmos/control_protocol_resource.h"
@@ -568,68 +569,46 @@ namespace nmos
             });
         });
 
-        configuration_api.support(U("/rolePaths/") + nmos::patterns::rolePath.pattern + U("/bulkProperties/?"), methods::GET, [&model, get_control_protocol_method_descriptor, &gate_](http_request req, http_response res, const string_t&, const route_parameters& parameters)
+        configuration_api.support(U("/rolePaths/") + nmos::patterns::rolePath.pattern + U("/bulkProperties/?"), methods::GET, [&model, get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor, &gate_](http_request req, http_response res, const string_t&, const route_parameters& parameters)
         {
             const auto role_path = parameters.at(nmos::patterns::rolePath.name);
 
             auto lock = model.read_lock();
             auto& resources = model.control_protocol_resources;
             const auto& resource = find_control_protocol_resource_by_role_path(resources, role_path);
-            const auto& bulk_properties_manager = find_control_protocol_resource_by_role_path(resources, nmos::bulk_properties_manager_role);
 
-            if (resources.end() != resource && resources.end() != bulk_properties_manager)
+            if (resources.end() != resource)
             {
-                auto method = get_control_protocol_method_descriptor(nc_bulk_properties_manager_class_id, nc_bulk_properties_manager_get_properties_by_path_method_id);
-                auto& nc_method_descriptor = method.first;
-                auto& control_method_handler = method.second;
                 web::http::status_code code{ status_codes::BadRequest };
                 value method_result;
 
-                if (control_method_handler)
+                try
                 {
-                    try
-                    {
-                        bool recurse = details::parse_recurse_query_parameter(req.request_uri().query());
+                    bool recurse = details::parse_recurse_query_parameter(req.request_uri().query());
 
-                        method_result = control_method_handler(resources, *resource, value_of({ { nmos::fields::nc::recurse, recurse } }), nmos::fields::nc::is_deprecated(nc_method_descriptor), gate_);
+                    method_result = get_properties_by_path(resources, *resource, recurse, get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor);
 
-                        auto status = nmos::fields::nc::status(method_result);
-                        if (nc_method_status::ok == status || nc_method_status::method_deprecated == status) { code = status_codes::OK; }
-                        else if (nc_method_status::parameter_error == status) { code = status_codes::BadRequest; }
-                        else if (nc_method_status::device_error == status) { code = status_codes::InternalError; }
-                        else { code = status_codes::InternalError; }
-                    }
-                    catch (const nmos::control_protocol_exception& e)
-                    {
-                        // invalid arguments
-                        utility::stringstream_t ss;
-                        ss << U("parameter error: ") << e.what();
-                        method_result = details::make_nc_method_result_error({ nmos::nc_method_status::parameter_error }, ss.str());
-
-                        code = status_codes::BadRequest;
-                    }
+                    auto status = nmos::fields::nc::status(method_result);
+                    if (nc_method_status::ok == status || nc_method_status::method_deprecated == status) { code = status_codes::OK; }
+                    else if (nc_method_status::parameter_error == status) { code = status_codes::BadRequest; }
+                    else if (nc_method_status::device_error == status) { code = status_codes::InternalError; }
+                    else { code = status_codes::InternalError; }
                 }
-                else
+                catch (const nmos::control_protocol_exception& e)
                 {
-                    // unknown methodId
-                    method_result = details::make_nc_method_result_error({ nmos::nc_method_status::method_not_implemented }, U("get_properties_by_path unsupported by bulk properties manager."));
+                    // invalid arguments
+                    utility::stringstream_t ss;
+                    ss << U("parameter error: ") << e.what();
+                    method_result = details::make_nc_method_result_error({ nmos::nc_method_status::parameter_error }, ss.str());
 
-                    code = status_codes::NotFound;
+                    code = status_codes::BadRequest;
                 }
                 set_reply(res, code, method_result);
             }
             else
             {
-                if (resources.end() == bulk_properties_manager)
-                {
-                    // no bulk properties manager
-                    set_error_reply(res, status_codes::NotFound, U("Bulk Properties Manager not found at ") + nmos::bulk_properties_manager_role);
-                }
-                else
-                {
-                    // resource not found for the role path
-                    set_error_reply(res, status_codes::NotFound, U("Not Found; ") + role_path);
-                }
+                // resource not found for the role path
+                set_error_reply(res, status_codes::NotFound, U("Not Found; ") + role_path);
             }
 
             return pplx::task_from_result(true);
