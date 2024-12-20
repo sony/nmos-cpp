@@ -164,6 +164,7 @@ namespace nmos
             return pplx::task_from_result(true);
         });
 
+        // GET /rolePaths
         configuration_api.support(U("/rolePaths/?"), methods::GET, [&model](http_request req, http_response res, const string_t&, const route_parameters&)
         {
             auto lock = model.read_lock();
@@ -187,6 +188,7 @@ namespace nmos
             return pplx::task_from_result(true);
         });
 
+        // GET /rolePaths/{rolePath}
         configuration_api.support(U("/rolePaths/") + nmos::patterns::rolePath.pattern + U("/?"), methods::GET, [&model, &gate_](http_request req, http_response res, const string_t&, const route_parameters& parameters)
         {
             const auto role_path = parameters.at(nmos::patterns::rolePath.name);
@@ -208,6 +210,7 @@ namespace nmos
             return pplx::task_from_result(true);
         });
 
+        // GET /rolePaths/{rolePath}/properties
         configuration_api.support(U("/rolePaths/") + nmos::patterns::rolePath.pattern + U("/properties/?"), methods::GET, [&model, get_control_protocol_class_descriptor, &gate_](http_request req, http_response res, const string_t&, const route_parameters& parameters)
         {
             const auto role_path = parameters.at(nmos::patterns::rolePath.name);
@@ -247,6 +250,7 @@ namespace nmos
             return pplx::task_from_result(true);
         });
 
+        // GET /rolePaths/{rolePath}/methods
         configuration_api.support(U("/rolePaths/") + nmos::patterns::rolePath.pattern + U("/methods/?"), methods::GET, [&model, get_control_protocol_class_descriptor, &gate_](http_request req, http_response res, const string_t&, const route_parameters& parameters)
         {
             const auto role_path = parameters.at(nmos::patterns::rolePath.name);
@@ -293,6 +297,7 @@ namespace nmos
             return pplx::task_from_result(true);
         });
 
+        // GET /rolePaths/{rolePath}/descriptor
         configuration_api.support(U("/rolePaths/") + nmos::patterns::rolePath.pattern + U("/descriptor/?"), methods::GET, [&model, get_control_protocol_class_descriptor, &gate_](http_request req, http_response res, const string_t&, const route_parameters& parameters)
         {
             const auto role_path = parameters.at(nmos::patterns::rolePath.name);
@@ -348,6 +353,7 @@ namespace nmos
             return pplx::task_from_result(true);
         });
 
+        // GET /rolePaths/{rolePath}/properties/{propertyId}
         configuration_api.support(U("/rolePaths/") + nmos::patterns::rolePath.pattern + U("/properties/") + nmos::patterns::propertyId.pattern + U("/?"), methods::GET, [&model, get_control_protocol_class_descriptor, &gate_](http_request req, http_response res, const string_t&, const route_parameters& parameters)
         {
             const auto property_id = parameters.at(nmos::patterns::propertyId.name);
@@ -379,6 +385,7 @@ namespace nmos
             return pplx::task_from_result(true);
         });
 
+        // GET /rolePaths/{rolePath}/properties/{propertyId}/descriptor
         configuration_api.support(U("/rolePaths/") + nmos::patterns::rolePath.pattern + U("/properties/") + nmos::patterns::propertyId.pattern + U("/descriptor/?"), methods::GET, [&model, get_control_protocol_class_descriptor, &gate_](http_request req, http_response res, const string_t&, const route_parameters& parameters)
         {
             const auto property_id = parameters.at(nmos::patterns::propertyId.name);
@@ -411,6 +418,7 @@ namespace nmos
             return pplx::task_from_result(true);
         });
 
+        // GET /rolePaths/{rolePath}/properties/{propertyId}/value
         configuration_api.support(U("/rolePaths/") + nmos::patterns::rolePath.pattern + U("/properties/") + nmos::patterns::propertyId.pattern + U("/value/?"), methods::GET, [&model, get_control_protocol_class_descriptor, &gate_](http_request req, http_response res, const string_t&, const route_parameters& parameters)
         {
             const auto property_id = parameters.at(nmos::patterns::propertyId.name);
@@ -443,6 +451,7 @@ namespace nmos
             return pplx::task_from_result(true);
         });
 
+        // GET /rolePaths/{rolePath}/methods/{methodId}
         configuration_api.support(U("/rolePaths/") + nmos::patterns::rolePath.pattern + U("/methods/") + nmos::patterns::methodId.pattern + U("/?"), methods::PATCH, [&model, get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor, get_control_protocol_method_descriptor, property_changed, &gate_](http_request req, http_response res, const string_t&, const route_parameters& parameters)
         {
             nmos::api_gate gate(gate_, req, parameters);
@@ -518,6 +527,7 @@ namespace nmos
             });
         });
 
+        // PUT /rolePaths/{rolePath}/properties/{propertyId}/value
         configuration_api.support(U("/rolePaths/") + nmos::patterns::rolePath.pattern + U("/properties/") + nmos::patterns::propertyId.pattern + U("/value/?"), methods::PUT, [&model, get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor, property_changed, &gate_](http_request req, http_response res, const string_t&, const route_parameters& parameters)
         {
             nmos::api_gate gate(gate_, req, parameters);
@@ -569,6 +579,7 @@ namespace nmos
             });
         });
 
+        // GET /rolePaths/{rolePath}/bulkProperties
         configuration_api.support(U("/rolePaths/") + nmos::patterns::rolePath.pattern + U("/bulkProperties/?"), methods::GET, [&model, get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor, &gate_](http_request req, http_response res, const string_t&, const route_parameters& parameters)
         {
             const auto role_path = parameters.at(nmos::patterns::rolePath.name);
@@ -614,6 +625,7 @@ namespace nmos
             return pplx::task_from_result(true);
         });
 
+        // PATCH /rolePaths/{rolePath}/bulkProperties
         configuration_api.support(U("/rolePaths/") + nmos::patterns::rolePath.pattern + U("/bulkProperties/?"), methods::PATCH, [&model, get_control_protocol_method_descriptor, &gate_](http_request req, http_response res, const string_t&, const route_parameters& parameters)
         {
             const auto role_path = parameters.at(nmos::patterns::rolePath.name);
@@ -687,6 +699,7 @@ namespace nmos
             return pplx::task_from_result(true);
         });
 
+        // PUT /rolePaths/{rolePath}/bulkProperties
         configuration_api.support(U("/rolePaths/") + nmos::patterns::rolePath.pattern + U("/bulkProperties/?"), methods::PUT, [&model, get_control_protocol_method_descriptor, &gate_](http_request req, http_response res, const string_t&, const route_parameters& parameters)
         {
             const auto role_path = parameters.at(nmos::patterns::rolePath.name);
