@@ -3,6 +3,7 @@
 
 #include "cpprest/api_router.h"
 #include "nmos/control_protocol_handlers.h"
+#include "nmos/configuration_handlers.h"
 
 namespace slog
 {
@@ -15,7 +16,7 @@ namespace nmos
 {
     struct node_model;
 
-    web::http::experimental::listener::api_router make_configuration_api(nmos::node_model& model, web::http::experimental::listener::route_handler validate_authorization, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor_handler get_control_protocol_datatype_descriptor, get_control_protocol_method_descriptor_handler get_control_protocol_method_descriptor, control_protocol_property_changed_handler property_changed, slog::base_gate& gate);
+    web::http::experimental::listener::api_router make_configuration_api(nmos::node_model& model, web::http::experimental::listener::route_handler validate_authorization, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor_handler get_control_protocol_datatype_descriptor, get_control_protocol_method_descriptor_handler get_control_protocol_method_descriptor, modify_read_only_config_properties_handler modify_read_only_config_properties, modify_rebuildable_block_handler modify_rebuildable_block, control_protocol_property_changed_handler property_changed, slog::base_gate& gate);
 }
 
 #endif
