@@ -227,12 +227,10 @@ namespace nmos
         return nmos::details::make_nc_method_result({ nmos::nc_method_status::ok }, bulk_values_holder);
     }
 
-    web::json::value check_property_value(const web::json::value& property_value, const web::json::value& property_descriptor, const web::json::value& restore_mode)
+    bool is_property_value_valid(const web::json::value& property_value, const web::json::value& property_descriptor, const web::json::value& restore_mode, web::json::value& property_restore_notices)
     {
         const nmos::nc_property_id& property_id = nmos::details::parse_nc_property_id(nmos::fields::nc::id(property_descriptor));
-
-        auto property_restore_notices = web::json::value::array();
-
+        bool is_valid = true;
         // Check the name of the property is correct
         if (nmos::fields::nc::name(property_descriptor) != nmos::fields::nc::name(property_value))
         {
@@ -240,6 +238,7 @@ namespace nmos
             os << U("unexpected property name: expected ") << nmos::fields::nc::name(property_descriptor) << U(", actual ") << nmos::fields::nc::name(property_value);
             const auto& property_restore_notice = nmos::details::make_nc_property_restore_notice(property_id, nmos::fields::nc::name(property_value), nmos::nc_property_restore_notice_type::error, os.str());
             web::json::push_back(property_restore_notices, property_restore_notice);
+            is_valid = false;
         }
         // Check the type of the property value is correct
         if (nmos::fields::nc::type_name(property_descriptor) != nmos::fields::nc::type_name(property_value))
@@ -248,17 +247,19 @@ namespace nmos
             os << U("unexpected property type: expected ") << nmos::fields::nc::type_name(property_descriptor) << U(", actual ") << nmos::fields::nc::type_name(property_value);
             const auto& property_restore_notice = nmos::details::make_nc_property_restore_notice(property_id, nmos::fields::nc::name(property_value), nmos::nc_property_restore_notice_type::error, os.str());
             web::json::push_back(property_restore_notices, property_restore_notice);
+            is_valid = false;
         }
         // Only allow modification of read only properties when in Rebuild mode
         if (bool(nmos::fields::nc::is_read_only(property_descriptor)) && restore_mode != nmos::nc_restore_mode::restore_mode::rebuild)
         {
             const auto& property_restore_notice = nmos::details::make_nc_property_restore_notice(property_id, nmos::fields::nc::name(property_value), nmos::nc_property_restore_notice_type::error, U("read only properties can not be modified in Modify restore mode."));
             web::json::push_back(property_restore_notices, property_restore_notice);
+            is_valid = false;
         }
-        return property_restore_notices;
+        return is_valid;
     }
 
-    web::json::value modify_device_model(nmos::resources& resources, const nmos::resource& resource, const web::json::value& target_role_path, const web::json::array& object_properties_holders, bool recurse, const web::json::value& restore_mode, bool validate, nmos::get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, nmos::modify_read_only_config_properties_handler modify_read_only_config_properties, nmos::modify_rebuildable_block_handler modify_rebuildable_block)
+    web::json::value modify_device_model(nmos::resources& resources, const nmos::resource& resource, const web::json::value& target_role_path, const web::json::array& object_properties_holders, bool recurse, const web::json::value& restore_mode, bool validate, nmos::get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, nmos::filter_property_value_holders_handler filter_property_value_holders, nmos::modify_rebuildable_block_handler modify_rebuildable_block)
     {
         auto object_properties_set_validation_values = web::json::value::array();
 
@@ -298,7 +299,7 @@ namespace nmos
             if (nmos::fields::nc::is_rebuildable(resource.data) && target_object_properties_holders.size() && is_block_modified(resource, *target_object_properties_holders.begin()))
             {
                 // call back to application code
-                return modify_rebuildable_block(target_role_path, child_object_properties_holders, recurse, restore_mode, validate, get_control_protocol_class_descriptor);
+                return modify_rebuildable_block(resource, target_role_path, child_object_properties_holders, recurse, restore_mode, validate, get_control_protocol_class_descriptor);
             }
             // iterate through child objects
             if (resource.data.has_field(nmos::fields::nc::members))
@@ -311,6 +312,8 @@ namespace nmos
 
                     if (resources.end() != child)
                     {
+                        // Apend the role of the child to the target role path to create the child role path
+                        // Hmmmm, there must be a better way of appending the child role to the end of the target role path array...
                         auto child_role_path = web::json::value::array();
                         for (const auto& path_element : target_role_path.as_array())
                         {
@@ -318,7 +321,8 @@ namespace nmos
                         }
                         web::json::push_back(child_role_path, nmos::fields::nc::role(child->data));
 
-                        web::json::value child_object_properties_set_validation_values = modify_device_model(resources, *child, child_role_path, child_object_properties_holders.as_array(), recurse, restore_mode, validate, get_control_protocol_class_descriptor, modify_read_only_config_properties, modify_rebuildable_block);
+                        web::json::value child_object_properties_set_validation_values = modify_device_model(resources, *child, child_role_path, child_object_properties_holders.as_array(), recurse, restore_mode, validate, get_control_protocol_class_descriptor, filter_property_value_holders, modify_rebuildable_block);
+                        // Hmmm, there must be a better way of marging two json array objects
                         for (const auto& validation_values : child_object_properties_set_validation_values.as_array())
                         {
                             web::json::push_back(object_properties_set_validation_values, validation_values);
@@ -331,19 +335,14 @@ namespace nmos
         {
             auto property_restore_notices = web::json::value::array();
             auto property_modify_list = web::json::value::array();
-            unsigned int rebuildable_property_count = 0;
+            auto read_only_property_modify_list = web::json::value::array();
             // Validate property_values - filter out the incorrect, ignored or unallowed
             for (const auto& property_value : nmos::fields::nc::values(target_object_properties_holder))
             {
                 const auto& property_id = nmos::details::parse_nc_property_id(nmos::fields::nc::id(property_value));
                 const auto& property_descriptor = nmos::find_property_descriptor(property_id, class_id, get_control_protocol_class_descriptor);
-                const auto& property_restore_notices_ = check_property_value(property_value, property_descriptor, restore_mode);
-                if (property_restore_notices_.size() > 0)
+                if(!is_property_value_valid(property_value, property_descriptor, restore_mode, property_restore_notices))
                 {
-                    for (const auto& notice : property_restore_notices_.as_array())
-                    {
-                        web::json::push_back(property_restore_notices, notice);
-                    }
                     continue;
                 }
                 // Ignore if no change is being requested
@@ -354,53 +353,42 @@ namespace nmos
                 // Only allow modification of read only properties when in Rebuild mode
                 if (bool(nmos::fields::nc::is_read_only(property_descriptor)) && restore_mode == nmos::nc_restore_mode::restore_mode::rebuild)
                 {
-                    rebuildable_property_count++;
+                    push_back(read_only_property_modify_list, property_value);
                 }
                 web::json::push_back(property_modify_list, property_value);
             }
-            if (rebuildable_property_count > 0 && property_modify_list.as_array().size() > 0)
+
+            if (filter_property_value_holders && read_only_property_modify_list.as_array().size() > 0)
             {
                 // If this is a read only property then we should call back to the application code to 
                 // check that it's OK to change this value.  Bear in mind that this could be a class Id, or an oid or some other
                 // property that we don't want changed
-                const auto& object_properties_set_validation = modify_read_only_config_properties(target_role_path, property_modify_list, recurse, restore_mode, validate, get_control_protocol_class_descriptor);
-                // add in already generated property_restore_notices 
-                auto modified_object_properties_set_validation = object_properties_set_validation;
-                auto& notices = nmos::fields::nc::notices(modified_object_properties_set_validation);
-                for (const auto& notice : property_restore_notices.as_array())
-                {
-                    web::json::push_back(notices, notice);
-                }
-
-                web::json::push_back(object_properties_set_validation_values, modified_object_properties_set_validation);
+                property_modify_list = filter_property_value_holders(resource, target_role_path, property_modify_list, recurse, restore_mode, validate, property_restore_notices, get_control_protocol_class_descriptor);
             }
-            else
+            for (const auto& property_value : property_modify_list.as_array())
             {
-                for (const auto& property_value : property_modify_list.as_array())
+                const auto& property_id = nmos::details::parse_nc_property_id(nmos::fields::nc::id(property_value));
+
+                if (!validate)
                 {
-                    const auto& property_id = nmos::details::parse_nc_property_id(nmos::fields::nc::id(property_value));
+                    // modify control protocol resources
+                    const auto& value = nmos::fields::nc::value(property_value);
 
-                    if (!validate)
-                    {
-                        // modify control protocol resources
-                        const auto& value = nmos::fields::nc::value(property_value);
+                    modify_control_protocol_resource(resources, resource.id, [&](nmos::resource& resource_)
+                        {
+                            resource_.data[nmos::fields::nc::name(property_value)] = value;
 
-                        modify_control_protocol_resource(resources, resource.id, [&](nmos::resource& resource_)
-                            {
-                                resource_.data[nmos::fields::nc::name(property_value)] = value;
-
-                            }, nmos::make_property_changed_event(nmos::fields::nc::oid(resource.data), {{property_id, nmos::nc_property_change_type::type::value_changed, value}}));
-                    }
+                        }, nmos::make_property_changed_event(nmos::fields::nc::oid(resource.data), {{property_id, nmos::nc_property_change_type::type::value_changed, value}}));
                 }
-                const auto& object_properties_set_validation = nmos::details::make_nc_object_properties_set_validation(target_role_path, nmos::nc_restore_validation_status::ok, property_restore_notices, U("OK"));
-                web::json::push_back(object_properties_set_validation_values, object_properties_set_validation);
             }
+            const auto& object_properties_set_validation = nmos::details::make_nc_object_properties_set_validation(target_role_path, nmos::nc_restore_validation_status::ok, property_restore_notices, U("OK"));
+            web::json::push_back(object_properties_set_validation_values, object_properties_set_validation);
         }
 
         return object_properties_set_validation_values;
     }
 
-    web::json::value apply_backup_data_set(nmos::resources& resources, const nmos::resource& resource, const web::json::array& object_properties_holders, bool recurse, const web::json::value& restore_mode, bool validate, nmos::get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, nmos::modify_read_only_config_properties_handler modify_read_only_config_properties, nmos::modify_rebuildable_block_handler modify_rebuildable_block)
+    web::json::value apply_backup_data_set(nmos::resources& resources, const nmos::resource& resource, const web::json::array& object_properties_holders, bool recurse, const web::json::value& restore_mode, bool validate, nmos::get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, nmos::filter_property_value_holders_handler filter_property_value_holders, nmos::modify_rebuildable_block_handler modify_rebuildable_block)
     {
         auto object_properties_set_validation_values = web::json::value::array();
 
@@ -419,7 +407,7 @@ namespace nmos
             web::json::push_back(object_properties_set_validation_values, object_properties_set_validation);
         }
 
-        web::json::value child_object_properties_set_validation_values = modify_device_model(resources, resource, target_role_path, object_properties_holders, recurse, restore_mode, validate, get_control_protocol_class_descriptor, modify_read_only_config_properties, modify_rebuildable_block);
+        web::json::value child_object_properties_set_validation_values = modify_device_model(resources, resource, target_role_path, object_properties_holders, recurse, restore_mode, validate, get_control_protocol_class_descriptor, filter_property_value_holders, modify_rebuildable_block);
         for (const auto& validation_values : child_object_properties_set_validation_values.as_array())
         {
             web::json::push_back(object_properties_set_validation_values, validation_values);
@@ -428,22 +416,22 @@ namespace nmos
         return object_properties_set_validation_values;
     }
 
-    web::json::value validate_set_properties_by_path(nmos::resources& resources, const nmos::resource& resource, const web::json::value& backup_data_set, bool recurse, const web::json::value& restore_mode, nmos::get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, nmos::modify_read_only_config_properties_handler modify_read_only_config_properties, nmos::modify_rebuildable_block_handler modify_rebuildable_block)
+    web::json::value validate_set_properties_by_path(nmos::resources& resources, const nmos::resource& resource, const web::json::value& backup_data_set, bool recurse, const web::json::value& restore_mode, nmos::get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, nmos::filter_property_value_holders_handler filter_property_value_holders, nmos::modify_rebuildable_block_handler modify_rebuildable_block)
     {
         // Do something with validation fingerprint?
         const auto& object_properties_holders = nmos::fields::nc::values(backup_data_set);
 
-        const auto& object_properties_set_validation = apply_backup_data_set(resources, resource, object_properties_holders, recurse, restore_mode, true, get_control_protocol_class_descriptor, modify_read_only_config_properties, modify_rebuildable_block);
+        const auto& object_properties_set_validation = apply_backup_data_set(resources, resource, object_properties_holders, recurse, restore_mode, true, get_control_protocol_class_descriptor, filter_property_value_holders, modify_rebuildable_block);
 
         return nmos::details::make_nc_method_result({ nmos::nc_method_status::ok }, object_properties_set_validation);
     }
 
-    web::json::value set_properties_by_path(nmos::resources& resources, const nmos::resource& resource, const web::json::value& backup_data_set, bool recurse, const web::json::value& restore_mode, nmos::get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, nmos::modify_read_only_config_properties_handler modify_read_only_config_properties, nmos::modify_rebuildable_block_handler modify_rebuildable_block)
+    web::json::value set_properties_by_path(nmos::resources& resources, const nmos::resource& resource, const web::json::value& backup_data_set, bool recurse, const web::json::value& restore_mode, nmos::get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, nmos::filter_property_value_holders_handler filter_property_value_holders, nmos::modify_rebuildable_block_handler modify_rebuildable_block)
     {
         // Do something with validation fingerprint?
         const auto& object_properties_holders = nmos::fields::nc::values(backup_data_set);
 
-        const auto& object_properties_set_validation = apply_backup_data_set(resources, resource, object_properties_holders, recurse, restore_mode, false, get_control_protocol_class_descriptor, modify_read_only_config_properties, modify_rebuildable_block);
+        const auto& object_properties_set_validation = apply_backup_data_set(resources, resource, object_properties_holders, recurse, restore_mode, false, get_control_protocol_class_descriptor, filter_property_value_holders, modify_rebuildable_block);
 
         return nmos::details::make_nc_method_result({ nmos::nc_method_status::ok }, object_properties_set_validation);
     }

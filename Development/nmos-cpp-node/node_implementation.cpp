@@ -1723,20 +1723,43 @@ nmos::control_protocol_property_changed_handler make_node_implementation_control
 }
 
 // Example Device Configuration callback for validating a back-up dataset
-nmos::modify_read_only_config_properties_handler make_modify_read_only_config_properties_handler(nmos::resources& resources, slog::base_gate& gate)
+nmos::filter_property_value_holders_handler make_filter_property_value_holders_handler(nmos::resources& resources, slog::base_gate& gate)
 {
-    return [&resources, &gate](const web::json::value& target_role_path, const web::json::value& object_properties_holders, bool recurse, const web::json::value& restore_mode, bool validate, nmos::get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor)
+    return [&resources, &gate](const nmos::resource& resource, const web::json::value& target_role_path, const web::json::value& property_values, bool recurse, const web::json::value& restore_mode, bool validate, web::json::value& property_restore_notices, nmos::get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor)
     {
-        slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::stash_category(impl::categories::node_implementation) << "Do modify_read_only_config_properties";
+        // Use this function to filter which of the properties in the object should be modified by the configuration API
+        slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::stash_category(impl::categories::node_implementation) << "Do filter_property_value_holders";
 
-        return web::json::value();
+        nmos::nc_class_id class_id = nmos::details::parse_nc_class_id(nmos::fields::nc::class_id(resource.data));
+
+        auto modifiable_property_value_holders = web::json::value::array();
+
+        for (const auto property_value : property_values.as_array())
+        {
+            const auto& property_id = nmos::details::parse_nc_property_id(nmos::fields::nc::id(property_value));
+            const auto& property_descriptor = nmos::find_property_descriptor(property_id, class_id, get_control_protocol_class_descriptor);
+
+            // In this example we are only allowing writable properties to be modified
+            if (bool(nmos::fields::nc::is_read_only(property_descriptor)))
+            {
+                // We need to create a notice for any properties that will not be updated
+                const auto& property_restore_notice = nmos::details::make_nc_property_restore_notice(property_id, nmos::fields::nc::name(property_value), nmos::nc_property_restore_notice_type::warning, U("can not update read only properties"));
+                web::json::push_back(property_restore_notices, property_restore_notice);
+            }
+            else
+            {
+                web::json::push_back(modifiable_property_value_holders, property_value);
+            }
+        }
+        
+        return modifiable_property_value_holders;
     };
 }
 
 // Example Device Configuration callback for restoring a back-up dataset
 nmos::modify_rebuildable_block_handler make_modify_rebuildable_block_handler(nmos::resources& resources, slog::base_gate& gate)
 {
-    return [&resources, &gate](const web::json::value& target_role_path, const web::json::value& property_values, bool recurse, const web::json::value& restore_mode, bool validate, nmos::get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor)
+    return [&resources, &gate](const nmos::resource& resource, const web::json::value& target_role_path, const web::json::value& object_properties_holders, bool recurse, const web::json::value& restore_mode, bool validate, nmos::get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor)
     {
         slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::stash_category(impl::categories::node_implementation) << "Do modify_rebuildable_block";
 
@@ -1899,6 +1922,6 @@ nmos::experimental::node_implementation make_node_implementation(nmos::node_mode
         .on_validate_channelmapping_output_map(make_node_implementation_map_validator()) // may be omitted if not required
         .on_channelmapping_activated(make_node_implementation_channelmapping_activation_handler(gate))
         .on_control_protocol_property_changed(make_node_implementation_control_protocol_property_changed_handler(gate)) // may be omitted if IS-12 not required
-        .on_modify_read_only_config_properties(make_modify_read_only_config_properties_handler(model.control_protocol_resources, gate)) // may be omitted if either IS-14 not required, or IS-14 Rebuild functionality not required
+        .on_filter_property_value_holders(make_filter_property_value_holders_handler(model.control_protocol_resources, gate)) // may be omitted if either IS-14 not required, or IS-14 Rebuild functionality not required
         .on_modify_rebuildable_block(make_modify_rebuildable_block_handler(model.control_protocol_resources, gate)); // may be omitted if either IS-14 not required, or IS-14 Rebuild functionality not required
 }

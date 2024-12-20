@@ -18,9 +18,9 @@
 
 namespace nmos
 {
-    inline web::http::experimental::listener::api_router make_unmounted_configuration_api(node_model& model, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor_handler get_control_protocol_datatype_descriptor, get_control_protocol_method_descriptor_handler get_control_protocol_method_descriptor, modify_read_only_config_properties_handler modify_read_only_config_properties, modify_rebuildable_block_handler modify_rebuildable_block, control_protocol_property_changed_handler property_changed, slog::base_gate& gate);
+    inline web::http::experimental::listener::api_router make_unmounted_configuration_api(node_model& model, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor_handler get_control_protocol_datatype_descriptor, get_control_protocol_method_descriptor_handler get_control_protocol_method_descriptor, filter_property_value_holders_handler filter_property_value_holders, modify_rebuildable_block_handler modify_rebuildable_block, control_protocol_property_changed_handler property_changed, slog::base_gate& gate);
 
-    web::http::experimental::listener::api_router make_configuration_api(node_model& model, web::http::experimental::listener::route_handler validate_authorization, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor_handler get_control_protocol_datatype_descriptor, get_control_protocol_method_descriptor_handler get_control_protocol_method_descriptor, modify_read_only_config_properties_handler modify_read_only_config_properties, modify_rebuildable_block_handler modify_rebuildable_block, control_protocol_property_changed_handler property_changed, slog::base_gate& gate)
+    web::http::experimental::listener::api_router make_configuration_api(node_model& model, web::http::experimental::listener::route_handler validate_authorization, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor_handler get_control_protocol_datatype_descriptor, get_control_protocol_method_descriptor_handler get_control_protocol_method_descriptor, filter_property_value_holders_handler filter_property_value_holders, modify_rebuildable_block_handler modify_rebuildable_block, control_protocol_property_changed_handler property_changed, slog::base_gate& gate)
     {
         using namespace web::http::experimental::listener::api_router_using_declarations;
 
@@ -51,7 +51,7 @@ namespace nmos
             return pplx::task_from_result(true);
         });
 
-        configuration_api.mount(U("/x-nmos/") + nmos::patterns::configuration_api.pattern + U("/") + nmos::patterns::version.pattern, make_unmounted_configuration_api(model, get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor, get_control_protocol_method_descriptor, modify_read_only_config_properties, modify_rebuildable_block, property_changed, gate));
+        configuration_api.mount(U("/x-nmos/") + nmos::patterns::configuration_api.pattern + U("/") + nmos::patterns::version.pattern, make_unmounted_configuration_api(model, get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor, get_control_protocol_method_descriptor, filter_property_value_holders, modify_rebuildable_block, property_changed, gate));
 
         return configuration_api;
     }
@@ -148,7 +148,7 @@ namespace nmos
         }
     }
 
-    inline web::http::experimental::listener::api_router make_unmounted_configuration_api(node_model& model, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor_handler get_control_protocol_datatype_descriptor, get_control_protocol_method_descriptor_handler get_control_protocol_method_descriptor, modify_read_only_config_properties_handler modify_read_only_config_properties, modify_rebuildable_block_handler modify_rebuildable_block, control_protocol_property_changed_handler property_changed, slog::base_gate& gate_)
+    inline web::http::experimental::listener::api_router make_unmounted_configuration_api(node_model& model, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor_handler get_control_protocol_datatype_descriptor, get_control_protocol_method_descriptor_handler get_control_protocol_method_descriptor, filter_property_value_holders_handler filter_property_value_holders, modify_rebuildable_block_handler modify_rebuildable_block, control_protocol_property_changed_handler property_changed, slog::base_gate& gate_)
     {
         using namespace web::http::experimental::listener::api_router_using_declarations;
 
@@ -623,7 +623,7 @@ namespace nmos
         });
 
         // PATCH /rolePaths/{rolePath}/bulkProperties - invokes validation_set_properties_by_path method
-        configuration_api.support(U("/rolePaths/") + nmos::patterns::rolePath.pattern + U("/bulkProperties/?"), methods::PATCH, [&model, get_control_protocol_class_descriptor, modify_read_only_config_properties, modify_rebuildable_block, &gate_](http_request req, http_response res, const string_t&, const route_parameters& parameters)
+        configuration_api.support(U("/rolePaths/") + nmos::patterns::rolePath.pattern + U("/bulkProperties/?"), methods::PATCH, [&model, get_control_protocol_class_descriptor, filter_property_value_holders, modify_rebuildable_block, &gate_](http_request req, http_response res, const string_t&, const route_parameters& parameters)
         {
             const auto role_path = parameters.at(nmos::patterns::rolePath.name);
             const nmos::api_version version = nmos::parse_api_version(parameters.at(nmos::patterns::version.name));
@@ -633,7 +633,7 @@ namespace nmos
             const auto& resource = find_control_protocol_resource_by_role_path(resources, role_path);
             if (resources.end() != resource)
             {
-                return details::extract_json(req, gate_).then([res, resources, resource, get_control_protocol_class_descriptor, modify_read_only_config_properties, modify_rebuildable_block, version, &gate_](value body) mutable
+                return details::extract_json(req, gate_).then([res, resources, resource, get_control_protocol_class_descriptor, filter_property_value_holders, modify_rebuildable_block, version, &gate_](value body) mutable
                 {
                     // Validate JSON syntax according to the schema
                     details::configurationapi_validator().validate(body, experimental::make_configurationapi_bulkProperties_validate_request_schema_uri(version));
@@ -648,7 +648,7 @@ namespace nmos
                         const auto& restore_mode = nmos::fields::nc::restore_mode(arguments);
                         const auto& backup_data_set = nmos::fields::nc::data_set(arguments);
 
-                        method_result = validate_set_properties_by_path(resources, *resource, backup_data_set, recurse, restore_mode, get_control_protocol_class_descriptor, modify_read_only_config_properties, modify_rebuildable_block);
+                        method_result = validate_set_properties_by_path(resources, *resource, backup_data_set, recurse, restore_mode, get_control_protocol_class_descriptor, filter_property_value_holders, modify_rebuildable_block);
 
                         auto status = nmos::fields::nc::status(method_result);
                         if (nc_method_status::ok == status || nc_method_status::method_deprecated == status) { code = status_codes::OK; }
@@ -680,7 +680,7 @@ namespace nmos
         });
 
         // PUT /rolePaths/{rolePath}/bulkProperties - invokes set_properties_by_path method
-        configuration_api.support(U("/rolePaths/") + nmos::patterns::rolePath.pattern + U("/bulkProperties/?"), methods::PUT, [&model, get_control_protocol_class_descriptor, modify_read_only_config_properties, modify_rebuildable_block, &gate_](http_request req, http_response res, const string_t&, const route_parameters& parameters)
+        configuration_api.support(U("/rolePaths/") + nmos::patterns::rolePath.pattern + U("/bulkProperties/?"), methods::PUT, [&model, get_control_protocol_class_descriptor, filter_property_value_holders, modify_rebuildable_block, &gate_](http_request req, http_response res, const string_t&, const route_parameters& parameters)
         {
             const auto role_path = parameters.at(nmos::patterns::rolePath.name);
             const nmos::api_version version = nmos::parse_api_version(parameters.at(nmos::patterns::version.name));
@@ -690,7 +690,7 @@ namespace nmos
             const auto& resource = find_control_protocol_resource_by_role_path(resources, role_path);
             if (resources.end() != resource)
             {
-                return details::extract_json(req, gate_).then([res, &resources, resource, get_control_protocol_class_descriptor, modify_read_only_config_properties, modify_rebuildable_block, version, &model, &gate_](value body) mutable
+                return details::extract_json(req, gate_).then([res, &resources, resource, get_control_protocol_class_descriptor, filter_property_value_holders, modify_rebuildable_block, version, &model, &gate_](value body) mutable
                 {
                     // Validate JSON syntax according to the schema
                     details::configurationapi_validator().validate(body, experimental::make_configurationapi_bulkProperties_set_request_schema_uri(version));
@@ -705,7 +705,7 @@ namespace nmos
                         const auto& restore_mode = nmos::fields::nc::restore_mode(arguments);
                         const auto& backup_data_set = nmos::fields::nc::data_set(arguments);
 
-                        method_result = set_properties_by_path(resources, *resource, backup_data_set, recurse, restore_mode, get_control_protocol_class_descriptor, modify_read_only_config_properties, modify_rebuildable_block);
+                        method_result = set_properties_by_path(resources, *resource, backup_data_set, recurse, restore_mode, get_control_protocol_class_descriptor, filter_property_value_holders, modify_rebuildable_block);
 
                         model.notify();
                     }
