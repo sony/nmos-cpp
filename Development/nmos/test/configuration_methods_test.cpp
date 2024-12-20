@@ -267,12 +267,12 @@ BST_TEST_CASE(testApplyBackupDataSet)
     bool modify_rebuildable_block_called = false;
     
     // callback stubs
-    nmos::modify_read_only_config_properties_handler modify_read_only_config_properties = [&](nmos::get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, const web::json::value& target_role_path, const web::json::value& object_properties_holders, bool recurse, const web::json::value& restore_mode, bool validate)
+    nmos::modify_read_only_config_properties_handler modify_read_only_config_properties = [&](const web::json::value& target_role_path, const web::json::value& object_properties_holders, bool recurse, const web::json::value& restore_mode, bool validate, nmos::get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor)
         {
             modify_read_only_config_properties_called = true;
             return nmos::details::make_nc_object_properties_set_validation(target_role_path, nmos::nc_restore_validation_status::ok, value::array(), U("OK"));
         };
-    nmos::modify_rebuildable_block_handler modify_rebuildable_block = [&](nmos::get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, const web::json::value& target_role_path, const web::json::value& property_values, bool recurse, const web::json::value& restore_mode, bool validate)
+    nmos::modify_rebuildable_block_handler modify_rebuildable_block = [&](const web::json::value& target_role_path, const web::json::value& property_values, bool recurse, const web::json::value& restore_mode, bool validate, nmos::get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor)
         {
             modify_rebuildable_block_called = true;
             value out = value::array();
@@ -298,7 +298,7 @@ BST_TEST_CASE(testApplyBackupDataSet)
         web::json::value restore_mode = nmos::nc_restore_mode::restore_mode::modify;
 
         const auto& resource = find_control_protocol_resource_by_role_path(resources, target_role_path);
-        value output = nmos::apply_backup_data_set(resources, get_control_protocol_class_descriptor, *resource, object_properties_holders.as_array(), recurse, restore_mode, validate, modify_read_only_config_properties, modify_rebuildable_block);
+        value output = nmos::apply_backup_data_set(resources, *resource, object_properties_holders.as_array(), recurse, restore_mode, validate, get_control_protocol_class_descriptor, modify_read_only_config_properties, modify_rebuildable_block);
 
         // expectation is there will be a result for each of the object_properties_holders i.e. one
         BST_REQUIRE_EQUAL(1, output.as_array().size());
@@ -335,7 +335,7 @@ BST_TEST_CASE(testApplyBackupDataSet)
         bool validate = true;
 
         const auto& resource = find_control_protocol_resource_by_role_path(resources, target_role_path);
-        value output = nmos::apply_backup_data_set(resources, get_control_protocol_class_descriptor, *resource, object_properties_holders.as_array(), recurse, restore_mode, validate, modify_read_only_config_properties, modify_rebuildable_block);
+        value output = nmos::apply_backup_data_set(resources, *resource, object_properties_holders.as_array(), recurse, restore_mode, validate, get_control_protocol_class_descriptor, modify_read_only_config_properties, modify_rebuildable_block);
 
         // expectation is there will be a result for each of the object_properties_holders i.e. one
         BST_REQUIRE_EQUAL(1, output.as_array().size());
@@ -375,7 +375,7 @@ BST_TEST_CASE(testApplyBackupDataSet)
         bool validate = true;
 
         const auto& resource = find_control_protocol_resource_by_role_path(resources, target_role_path);
-        value output = nmos::apply_backup_data_set(resources, get_control_protocol_class_descriptor, *resource, object_properties_holders.as_array(), recurse, restore_mode, validate, modify_read_only_config_properties, modify_rebuildable_block);
+        value output = nmos::apply_backup_data_set(resources, *resource, object_properties_holders.as_array(), recurse, restore_mode, validate, get_control_protocol_class_descriptor, modify_read_only_config_properties, modify_rebuildable_block);
 
         // expectation is there will be a result for each of the object_properties_holders i.e. one
         BST_REQUIRE_EQUAL(1, output.as_array().size());
@@ -420,7 +420,7 @@ BST_TEST_CASE(testApplyBackupDataSet)
         web::json::value restore_mode = nmos::nc_restore_mode::restore_mode::rebuild;
 
         const auto& resource = find_control_protocol_resource_by_role_path(resources, target_role_path);
-        value output = nmos::apply_backup_data_set(resources, get_control_protocol_class_descriptor, *resource, object_properties_holders.as_array(), recurse, restore_mode, validate, modify_read_only_config_properties, modify_rebuildable_block);
+        value output = nmos::apply_backup_data_set(resources, *resource, object_properties_holders.as_array(), recurse, restore_mode, validate, get_control_protocol_class_descriptor, modify_read_only_config_properties, modify_rebuildable_block);
 
         // expectation is there will be a result for each of the object_properties_holders i.e. one
         BST_REQUIRE_EQUAL(1, output.as_array().size());
@@ -454,7 +454,7 @@ BST_TEST_CASE(testApplyBackupDataSet)
         web::json::value restore_mode = nmos::nc_restore_mode::restore_mode::rebuild;
 
         const auto& resource = find_control_protocol_resource_by_role_path(resources, target_role_path);
-        value output = nmos::apply_backup_data_set(resources, get_control_protocol_class_descriptor, *resource, object_properties_holders.as_array(), recurse, restore_mode, validate, modify_read_only_config_properties, modify_rebuildable_block);
+        value output = nmos::apply_backup_data_set(resources, *resource, object_properties_holders.as_array(), recurse, restore_mode, validate, get_control_protocol_class_descriptor, modify_read_only_config_properties, modify_rebuildable_block);
 
         // expectation is there will be a result for each of the object_properties_holders i.e. one
         BST_REQUIRE_EQUAL(1, output.as_array().size());
@@ -489,7 +489,7 @@ BST_TEST_CASE(testApplyBackupDataSet)
         bool validate = true;
 
         const auto& resource = find_control_protocol_resource_by_role_path(resources, target_role_path);
-        value output = nmos::apply_backup_data_set(resources, get_control_protocol_class_descriptor, *resource, object_properties_holders.as_array(), recurse, restore_mode, validate, modify_read_only_config_properties, modify_rebuildable_block);
+        value output = nmos::apply_backup_data_set(resources, *resource, object_properties_holders.as_array(), recurse, restore_mode, validate, get_control_protocol_class_descriptor, modify_read_only_config_properties, modify_rebuildable_block);
 
         // expectation is there will be a result for each of the object_properties_holders i.e. one
         BST_REQUIRE_EQUAL(1, output.as_array().size());

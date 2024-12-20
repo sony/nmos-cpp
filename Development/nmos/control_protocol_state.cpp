@@ -205,7 +205,7 @@ namespace nmos
                     auto result = nmos::details::make_nc_method_result_error({ nmos::nc_method_status::method_not_implemented }, U("not implemented"));
                     if (modify_read_only_config_properties && modify_rebuildable_block)
                     {
-                        result = validate_set_properties_by_path(resources, get_control_protocol_class_descriptor, resource, data_set, recurse, restore_mode, modify_read_only_config_properties, modify_rebuildable_block);
+                        result = validate_set_properties_by_path(resources, resource, data_set, recurse, restore_mode, get_control_protocol_class_descriptor, modify_read_only_config_properties, modify_rebuildable_block);
 
                         const auto& status = nmos::fields::nc::status(result);
                         if (!web::http::is_error_status_code((web::http::status_code)status) && is_deprecated)
@@ -232,7 +232,7 @@ namespace nmos
                     auto result = nmos::details::make_nc_method_result_error({ nmos::nc_method_status::method_not_implemented }, U("callbacks not implemented"));
                     if (modify_read_only_config_properties && modify_rebuildable_block)
                     {
-                        result = set_properties_by_path(resources, get_control_protocol_class_descriptor, resource, data_set, recurse, restore_mode, modify_read_only_config_properties, modify_rebuildable_block);
+                        result = set_properties_by_path(resources, resource, data_set, recurse, restore_mode, get_control_protocol_class_descriptor, modify_read_only_config_properties, modify_rebuildable_block);
 
                         const auto& status = nmos::fields::nc::status(result);
                         if (!web::http::is_error_status_code((web::http::status_code)status) && is_deprecated)

@@ -1725,7 +1725,7 @@ nmos::control_protocol_property_changed_handler make_node_implementation_control
 // Example Device Configuration callback for validating a back-up dataset
 nmos::modify_read_only_config_properties_handler make_modify_read_only_config_properties_handler(nmos::resources& resources, slog::base_gate& gate)
 {
-    return [&resources, &gate](nmos::get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, const web::json::value& target_role_path, const web::json::value& object_properties_holders, bool recurse, const web::json::value& restore_mode, bool validate)
+    return [&resources, &gate](const web::json::value& target_role_path, const web::json::value& object_properties_holders, bool recurse, const web::json::value& restore_mode, bool validate, nmos::get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor)
     {
         slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::stash_category(impl::categories::node_implementation) << "Do modify_read_only_config_properties";
 
@@ -1736,7 +1736,7 @@ nmos::modify_read_only_config_properties_handler make_modify_read_only_config_pr
 // Example Device Configuration callback for restoring a back-up dataset
 nmos::modify_rebuildable_block_handler make_modify_rebuildable_block_handler(nmos::resources& resources, slog::base_gate& gate)
 {
-    return [&resources, &gate](nmos::get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, const web::json::value& target_role_path, const web::json::value& property_values, bool recurse, const web::json::value& restore_mode, bool validate)
+    return [&resources, &gate](const web::json::value& target_role_path, const web::json::value& property_values, bool recurse, const web::json::value& restore_mode, bool validate, nmos::get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor)
     {
         slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::stash_category(impl::categories::node_implementation) << "Do modify_rebuildable_block";
 
