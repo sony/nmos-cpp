@@ -226,6 +226,57 @@ BST_TEST_CASE(testIsBlockModified)
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////
+BST_TEST_CASE(testGetRolePath)
+{
+    // Create Fake Device Model
+    using web::json::value_of;
+    using web::json::value;
+
+    nmos::experimental::control_protocol_state control_protocol_state;
+    nmos::resources resources;
+
+    // root
+    auto root_block = nmos::make_root_block();
+    nmos::nc_oid oid = nmos::root_block_oid;
+    // root, ClassManager
+    auto class_manager = nmos::make_class_manager(++oid, control_protocol_state);
+    nmos::nc_oid receiver_block_oid = ++oid;
+    // root, receivers
+    auto receivers = nmos::make_block(receiver_block_oid, nmos::root_block_oid, U("receivers"), U("Receivers"), U("Receivers block"), web::json::value::null(), web::json::value::null(), web::json::value::array(), true);
+    // root, receivers, mon1
+    auto monitor1 = nmos::make_receiver_monitor(++oid, true, receiver_block_oid, U("mon1"), U("monitor 1"), U("monitor 1"), value_of({ {nmos::details::make_nc_touchpoint_nmos({nmos::ncp_touchpoint_resource_types::receiver, U("id_1")})} }));
+    nmos::nc_class_id monitor_class_id = nmos::details::parse_nc_class_id(nmos::fields::nc::class_id(monitor1.data));
+    // root, receivers, mon2
+    auto monitor2 = nmos::make_receiver_monitor(++oid, true, receiver_block_oid, U("mon2"), U("monitor 2"), U("monitor 2"), value_of({ {nmos::details::make_nc_touchpoint_nmos({nmos::ncp_touchpoint_resource_types::receiver, U("id_2")})} }));
+    nmos::push_back(receivers, monitor1);
+    // add example-control to root-block
+    nmos::push_back(receivers, monitor2);
+    // add stereo-gain to root-block
+    nmos::push_back(root_block, receivers);
+    // add class-manager to root-block
+    nmos::push_back(root_block, class_manager);
+    insert_resource(resources, std::move(root_block));
+    insert_resource(resources, std::move(class_manager));
+    insert_resource(resources, std::move(receivers));
+    insert_resource(resources, std::move(monitor1));
+    insert_resource(resources, std::move(monitor2));
+
+    value expected_role_paths = value::array();
+    push_back(expected_role_paths, value_of({ U("root") }));
+    push_back(expected_role_paths, value_of({ U("root"), U("ClassManager")}));
+    push_back(expected_role_paths, value_of({ U("root"), U("receivers") }));
+    push_back(expected_role_paths, value_of({ U("root"), U("receivers"), U("mon1") }));
+    push_back(expected_role_paths, value_of({ U("root"), U("receivers"), U("mon2") }));
+
+    for (const auto& expected_role_path : expected_role_paths.as_array())
+    {
+        const auto& resource = find_control_protocol_resource_by_role_path(resources, expected_role_path);
+        value actual_role_path = nmos::get_role_path(resources, *resource);
+        BST_CHECK_EQUAL(expected_role_path, actual_role_path);
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////
 BST_TEST_CASE(testApplyBackupDataSet)
 {
     using web::json::value_of;
@@ -239,11 +290,11 @@ BST_TEST_CASE(testApplyBackupDataSet)
     // root
     auto root_block = nmos::make_root_block();
     nmos::nc_oid oid = nmos::root_block_oid;
-    // root, Class<anager
+    // root, ClassManager
     auto class_manager = nmos::make_class_manager(++oid, control_protocol_state);
     nmos::nc_oid receiver_block_oid = ++oid;
     // root, receivers
-    auto receivers = nmos::make_block(++oid, nmos::root_block_oid, U("receivers"), U("Receivers"), U("Receivers block"), web::json::value::null(), web::json::value::null(), web::json::value::array(), true);
+    auto receivers = nmos::make_block(receiver_block_oid, nmos::root_block_oid, U("receivers"), U("Receivers"), U("Receivers block"), web::json::value::null(), web::json::value::null(), web::json::value::array(), true);
     // root, receivers, mon1
     auto monitor1 = nmos::make_receiver_monitor(++oid, true, receiver_block_oid, U("mon1"), U("monitor 1"), U("monitor 1"), value_of({{nmos::details::make_nc_touchpoint_nmos({nmos::ncp_touchpoint_resource_types::receiver, U("id_1")})}}));
     nmos::nc_oid monitor_1_oid = oid;
