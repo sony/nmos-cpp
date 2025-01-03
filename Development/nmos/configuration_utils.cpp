@@ -156,8 +156,17 @@ namespace nmos
             // if rebuildable and the block has changed then callback
             if (nmos::fields::nc::is_rebuildable(resource.data) && target_object_properties_holders.size() && is_block_modified(resource, *target_object_properties_holders.begin()))
             {
-                // call back to application code
-                return modify_rebuildable_block(resource, target_role_path, child_object_properties_holders, recurse, restore_mode, validate, get_control_protocol_class_descriptor);
+                if (modify_rebuildable_block)
+                {
+                    // call back to application code which will return an object_properties_set_validation_values object
+                    return modify_rebuildable_block(resource, target_role_path, child_object_properties_holders, recurse, restore_mode, validate, get_control_protocol_class_descriptor);
+                }
+                else
+                {
+                    const auto& object_properties_set_validation = nmos::details::make_nc_object_properties_set_validation(target_role_path, nmos::nc_restore_validation_status::failed, web::json::value::array(), U("Rebuilding of Device Model blocks not supported"));
+                    web::json::push_back(object_properties_set_validation_values, object_properties_set_validation);
+                    return object_properties_set_validation_values;
+                }
             }
             // iterate through child objects
             if (resource.data.has_field(nmos::fields::nc::members))
@@ -216,12 +225,21 @@ namespace nmos
                 web::json::push_back(property_modify_list, property_value);
             }
 
-            if (filter_property_value_holders && read_only_property_modify_list.as_array().size() > 0)
+            if (read_only_property_modify_list.as_array().size() > 0)
             {
-                // If this is a read only property then we should call back to the application code to 
-                // check that it's OK to change this value.  Bear in mind that this could be a class Id, or an oid or some other
-                // property that we don't want changed
-                property_modify_list = filter_property_value_holders(resource, target_role_path, property_modify_list, recurse, restore_mode, validate, property_restore_notices, get_control_protocol_class_descriptor);
+                if (filter_property_value_holders)
+                {
+                    // If this is a read only property then we should call back to the application code to 
+                    // check that it's OK to change this value.  Bear in mind that this could be a class Id, or an oid or some other
+                    // property that we don't want changed
+                    property_modify_list = filter_property_value_holders(resource, target_role_path, property_modify_list, recurse, restore_mode, validate, property_restore_notices, get_control_protocol_class_descriptor);
+                }
+                else
+                {
+                    const auto& object_properties_set_validation = nmos::details::make_nc_object_properties_set_validation(target_role_path, nmos::nc_restore_validation_status::failed, property_restore_notices, U("Modification of read only properties not supported"));
+                    web::json::push_back(object_properties_set_validation_values, object_properties_set_validation);
+                    continue;
+                }
             }
             for (const auto& property_value : property_modify_list.as_array())
             {

@@ -221,8 +221,6 @@ BST_TEST_CASE(testIsBlockModified)
 
         BST_CHECK(nmos::is_block_modified(receivers, object_properties_holder));
     }
-
-
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////
@@ -659,4 +657,159 @@ BST_TEST_CASE(testApplyBackupDataSet)
         BST_CHECK(!modify_rebuildable_block_called);
     }
     // ensure an error if trying to invoke rebuildable block when in Modify mode
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////
+BST_TEST_CASE(testApplyBackupDataSet_WithoutCallbacks)
+{
+    using web::json::value_of;
+    using web::json::value;
+
+    nmos::resources resources;
+    nmos::experimental::control_protocol_state control_protocol_state;
+    nmos::get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor = nmos::make_get_control_protocol_class_descriptor_handler(control_protocol_state);
+
+    // Create Device Model
+    // root
+    auto root_block = nmos::make_root_block();
+    nmos::nc_oid oid = nmos::root_block_oid;
+    // root, ClassManager
+    auto class_manager = nmos::make_class_manager(++oid, control_protocol_state);
+    nmos::nc_oid receiver_block_oid = ++oid;
+    // root, receivers
+    auto receivers = nmos::make_block(receiver_block_oid, nmos::root_block_oid, U("receivers"), U("Receivers"), U("Receivers block"), web::json::value::null(), web::json::value::null(), web::json::value::array(), true);
+    // root, receivers, mon1
+    auto monitor1 = nmos::make_receiver_monitor(++oid, true, receiver_block_oid, U("mon1"), U("monitor 1"), U("monitor 1"), value_of({ {nmos::details::make_nc_touchpoint_nmos({nmos::ncp_touchpoint_resource_types::receiver, U("id_1")})} }));
+    nmos::nc_oid monitor_1_oid = oid;
+    nmos::nc_class_id monitor_class_id = nmos::details::parse_nc_class_id(nmos::fields::nc::class_id(monitor1.data));
+    // root, receivers, mon2
+    auto monitor2 = nmos::make_receiver_monitor(++oid, true, receiver_block_oid, U("mon2"), U("monitor 2"), U("monitor 2"), value_of({ {nmos::details::make_nc_touchpoint_nmos({nmos::ncp_touchpoint_resource_types::receiver, U("id_2")})} }));
+    nmos::push_back(receivers, monitor1);
+    // add example-control to root-block
+    nmos::push_back(receivers, monitor2);
+    // add stereo-gain to root-block
+    nmos::push_back(root_block, receivers);
+    // add class-manager to root-block
+    nmos::push_back(root_block, class_manager);
+    insert_resource(resources, std::move(root_block));
+    insert_resource(resources, std::move(class_manager));
+    insert_resource(resources, std::move(receivers));
+    insert_resource(resources, std::move(monitor1));
+    insert_resource(resources, std::move(monitor2));
+
+    // undefined callback stubs
+    nmos::filter_property_value_holders_handler filter_property_value_holders;
+    nmos::modify_rebuildable_block_handler modify_rebuildable_block;
+
+    {
+        // Check that Modify mode is unaffected by undefined Rebuild mode callbacks
+        //
+        // Create Object Properties Holder
+        value object_properties_holders = value::array();
+        value role_path = value_of({ U("root"), U("receivers"), U("mon1") });
+        value property_value_holders = value::array();
+        value property_value_holder = nmos::details::make_nc_property_value_holder(nmos::nc_property_id(2, 1), U("enabled"), U("NcBoolean"), false, false);
+        push_back(property_value_holders, property_value_holder);
+        auto object_properties_holder = nmos::details::make_nc_object_properties_holder(role_path, property_value_holders, false);
+        push_back(object_properties_holders, object_properties_holder);
+        value target_role_path = value_of({ U("root"), U("receivers") });
+        bool recurse = true;
+        bool validate = true;
+        web::json::value restore_mode = nmos::nc_restore_mode::restore_mode::modify;
+
+        const auto& resource = find_control_protocol_resource_by_role_path(resources, target_role_path);
+        value output = nmos::apply_backup_data_set(resources, *resource, object_properties_holders.as_array(), recurse, restore_mode, validate, get_control_protocol_class_descriptor, filter_property_value_holders, modify_rebuildable_block);
+
+        // expectation is there will be a result for each of the object_properties_holders i.e. one
+        BST_REQUIRE_EQUAL(1, output.as_array().size());
+        value object_properties_set_validation = output.as_array().at(0);
+
+        BST_CHECK_EQUAL(role_path, nmos::fields::nc::path(object_properties_set_validation));
+        BST_CHECK_EQUAL(nmos::nc_restore_validation_status::ok, nmos::fields::nc::status(object_properties_set_validation));
+        BST_CHECK_EQUAL(0, nmos::fields::nc::notices(object_properties_set_validation).size());
+    }
+    {
+        // Check that Rebuild mode is unaffected by undefined Rebuild mode callbacks when no objects are being rebuilt
+        //
+        // Create Object Properties Holder
+        value object_properties_holders = value::array();
+        value role_path = value_of({ U("root"), U("receivers"), U("mon1") });
+        value property_value_holders = value::array();
+        value property_value_holder = nmos::details::make_nc_property_value_holder(nmos::nc_property_id(2, 1), U("enabled"), U("NcBoolean"), false, false);
+        push_back(property_value_holders, property_value_holder);
+        auto object_properties_holder = nmos::details::make_nc_object_properties_holder(role_path, property_value_holders, false);
+        push_back(object_properties_holders, object_properties_holder);
+        value target_role_path = value_of({ U("root"), U("receivers") });
+        bool recurse = true;
+        bool validate = true;
+        web::json::value restore_mode = nmos::nc_restore_mode::restore_mode::rebuild;
+
+        const auto& resource = find_control_protocol_resource_by_role_path(resources, target_role_path);
+        value output = nmos::apply_backup_data_set(resources, *resource, object_properties_holders.as_array(), recurse, restore_mode, validate, get_control_protocol_class_descriptor, filter_property_value_holders, modify_rebuildable_block);
+
+        // expectation is there will be a result for each of the object_properties_holders i.e. one
+        BST_REQUIRE_EQUAL(1, output.as_array().size());
+        value object_properties_set_validation = output.as_array().at(0);
+
+        BST_CHECK_EQUAL(role_path, nmos::fields::nc::path(object_properties_set_validation));
+        BST_CHECK_EQUAL(nmos::nc_restore_validation_status::ok, nmos::fields::nc::status(object_properties_set_validation));
+        BST_CHECK_EQUAL(0, nmos::fields::nc::notices(object_properties_set_validation).size());
+    }
+    {
+        // Check undefined filter_property_value_holders_handler causes an unsupported mode error when attempting to modify a read only property in Rebuild mode
+        // 
+        // Create Object Properties Holder
+        value object_properties_holders = value::array();
+        value role_path = value_of({ U("root"), U("receivers"), U("mon1") });
+        value property_value_holders = value::array();
+        nmos::nc_property_id property_id(2, 1);
+        // This is a read only property
+        value property_value_holder = nmos::details::make_nc_property_value_holder(nmos::nc_property_id(3, 2), U("connectionStatusMessage"), U("NcString"), false, value("change this value"));
+        push_back(property_value_holders, property_value_holder);
+        auto object_properties_holder = nmos::details::make_nc_object_properties_holder(role_path, property_value_holders, false);
+        push_back(object_properties_holders, object_properties_holder);
+        // must be a more efficient way of initializing these role paths
+        value target_role_path = value_of({ U("root"), U("receivers") });
+        bool recurse = true;
+        web::json::value restore_mode = nmos::nc_restore_mode::restore_mode::rebuild;
+        bool validate = true;
+
+        const auto& resource = find_control_protocol_resource_by_role_path(resources, target_role_path);
+        value output = nmos::apply_backup_data_set(resources, *resource, object_properties_holders.as_array(), recurse, restore_mode, validate, get_control_protocol_class_descriptor, filter_property_value_holders, modify_rebuildable_block);
+
+        // expectation is there will be a result for each of the object_properties_holders i.e. one
+        BST_REQUIRE_EQUAL(1, output.as_array().size());
+
+        value object_properties_set_validation = output.as_array().at(0);
+
+        // make sure the validation status propagates from the callback
+        BST_CHECK_EQUAL(nmos::nc_restore_validation_status::failed, nmos::fields::nc::status(object_properties_set_validation));
+    }
+    {
+        // Check undefined modify_rebuildable_block_handler causes an unsupported error when attempting to modify a rebuildable block
+        //
+        // Create Object Properties Holder
+        value object_properties_holders = value::array();
+        value role_path = value_of({ U("root"), U("receivers") });
+        value property_value_holders = value::array();
+        value members = value::array();
+
+        push_back(members, nmos::details::make_nc_block_member_descriptor(U("monitor 1"), U("monitor 1"), monitor_1_oid, true, monitor_class_id, U("label"), receiver_block_oid));
+        push_back(property_value_holders, nmos::details::make_nc_property_value_holder(nmos::nc_property_id(2, 2), U("members"), U("NcBlockMemberDescriptor"), true, members));
+        push_back(object_properties_holders, nmos::details::make_nc_object_properties_holder(role_path, property_value_holders, false));
+        value target_role_path = value_of({ U("root"), U("receivers") });
+        bool recurse = true;
+        bool validate = true;
+        web::json::value restore_mode = nmos::nc_restore_mode::restore_mode::rebuild;
+
+        const auto& resource = find_control_protocol_resource_by_role_path(resources, target_role_path);
+        value output = nmos::apply_backup_data_set(resources, *resource, object_properties_holders.as_array(), recurse, restore_mode, validate, get_control_protocol_class_descriptor, filter_property_value_holders, modify_rebuildable_block);
+
+        // expectation is there will be a result for each of the object_properties_holders i.e. one
+        BST_REQUIRE_EQUAL(1, output.as_array().size());
+        value object_properties_set_validation = output.as_array().at(0);
+
+        BST_CHECK_EQUAL(role_path, nmos::fields::nc::path(object_properties_set_validation));
+        BST_CHECK_EQUAL(nmos::nc_restore_validation_status::failed, nmos::fields::nc::status(object_properties_set_validation));
+    }
 }
