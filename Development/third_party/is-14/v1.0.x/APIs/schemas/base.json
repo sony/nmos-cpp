@@ -1,0 +1,15 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "array",
+  "description": "Describes the Configuration API base resource",
+  "title": "Configuration API base resource",
+  "items": {
+    "type": "string",
+    "enum": [
+      "rolePaths/"
+    ]
+  },
+  "minItems": 1,
+  "maxItems": 1,
+  "uniqueItems": true
+}

@@ -49,6 +49,7 @@ namespace nmos
         const type nc_receiver_monitor{ U("nc_receiver_monitor") };
         const type nc_receiver_monitor_protected{ U("nc_receiver_monitor_protected") };
         const type nc_ident_beacon{ U("nc_ident_beacon") };
+        const type nc_bulk_properties_manager{ U("nc_bulk_properties_manager") };
     }
 }
 
