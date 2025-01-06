@@ -44,6 +44,21 @@ namespace nmos
             }
             return is_valid;
         }
+
+        bool is_contains_read_only_property(const web::json::array& property_values, const nmos::nc_class_id& class_id, nmos::get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor)
+        {
+            for (const auto& property_value : property_values)
+            {
+                const auto& property_id = nmos::details::parse_nc_property_id(nmos::fields::nc::id(property_value));
+                const auto& property_descriptor = nmos::find_property_descriptor(property_id, class_id, get_control_protocol_class_descriptor);
+
+                if (bool(nmos::fields::nc::is_read_only(property_descriptor)))
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
     }
 
     // Check to see if root_role_path is root of role_path_
@@ -121,7 +136,10 @@ namespace nmos
     {
         auto object_properties_set_validation_values = web::json::value::array();
 
-        // filter for the target_role_path and child objects
+        // Filter for the target_role_path and child objects
+        //
+        // hmmmmm, I don't like this two step filter process - creating a boost array and then converting to a json array.
+        // Could this be done in a single step?
         const auto& filtered_object_properties_holders = boost::copy_range<std::set<web::json::value>>(object_properties_holders
             | boost::adaptors::filtered([&target_role_path](const web::json::value& object_properties_holder)
                 {
@@ -144,12 +162,13 @@ namespace nmos
         // there should be 0 or 1 object_properties_holder for any role path.
         if (target_object_properties_holders.size() > 1)
         {
+            // Error in the backup dataset
             const auto& object_properties_set_validation = nmos::details::make_nc_object_properties_set_validation(nmos::fields::nc::path(*target_object_properties_holders.begin()), nmos::nc_restore_validation_status::failed, web::json::value::array(), U("more than one object_properties_holder for role path"));
             web::json::push_back(object_properties_set_validation_values, object_properties_set_validation);
             return object_properties_set_validation_values;
         }
 
-        nmos::nc_class_id class_id = nmos::details::parse_nc_class_id(nmos::fields::nc::class_id(resource.data));
+        const auto& class_id = nmos::details::parse_nc_class_id(nmos::fields::nc::class_id(resource.data));
 
         if (nmos::is_nc_block(class_id))
         {
@@ -163,6 +182,7 @@ namespace nmos
                 }
                 else
                 {
+                    // Rebuilding blocks not supported
                     const auto& object_properties_set_validation = nmos::details::make_nc_object_properties_set_validation(target_role_path, nmos::nc_restore_validation_status::failed, web::json::value::array(), U("Rebuilding of Device Model blocks not supported"));
                     web::json::push_back(object_properties_set_validation_values, object_properties_set_validation);
                     return object_properties_set_validation_values;
@@ -179,7 +199,7 @@ namespace nmos
 
                     if (resources.end() != child)
                     {
-                        // Apend the role of the child to the target role path to create the child role path
+                        // Append the role of the child to the target role path to create the child role path
                         // Hmmmm, there must be a better way of appending the child role to the end of the target role path array...
                         auto child_role_path = web::json::value::array();
                         for (const auto& path_element : target_role_path.as_array())
@@ -189,7 +209,7 @@ namespace nmos
                         web::json::push_back(child_role_path, nmos::fields::nc::role(child->data));
 
                         web::json::value child_object_properties_set_validation_values = modify_device_model(resources, *child, child_role_path, child_object_properties_holders.as_array(), recurse, restore_mode, validate, get_control_protocol_class_descriptor, filter_property_value_holders, modify_rebuildable_block);
-                        // Hmmm, there must be a better way of marging two json array objects
+                        // Hmmm, there must be a better way of merging two json array objects
                         for (const auto& validation_values : child_object_properties_set_validation_values.as_array())
                         {
                             web::json::push_back(object_properties_set_validation_values, validation_values);
@@ -201,41 +221,37 @@ namespace nmos
         for (const auto& target_object_properties_holder : target_object_properties_holders)
         {
             auto property_restore_notices = web::json::value::array();
+            
+            // Validate property_values - filter out the incorrect, ignored or unallowed values
+            // Hmm as above, don't like the two step filter process here
+            const auto& filtered_property_values = boost::copy_range<std::set<web::json::value>>(nmos::fields::nc::values(target_object_properties_holder)
+                | boost::adaptors::filtered([&property_restore_notices, &resource, class_id, get_control_protocol_class_descriptor, restore_mode](const web::json::value& property_value)
+                    {
+                        const auto& property_id = nmos::details::parse_nc_property_id(nmos::fields::nc::id(property_value));
+                        const auto& property_descriptor = nmos::find_property_descriptor(property_id, class_id, get_control_protocol_class_descriptor);
+
+                        return details::is_property_value_valid(property_value, property_descriptor, restore_mode, property_restore_notices)
+                            && resource.data.at(nmos::fields::nc::name(property_descriptor)) != nmos::fields::nc::value(property_value);
+                    })
+            );
             auto property_modify_list = web::json::value::array();
-            auto read_only_property_modify_list = web::json::value::array();
-            // Validate property_values - filter out the incorrect, ignored or unallowed
-            for (const auto& property_value : nmos::fields::nc::values(target_object_properties_holder))
+            for (const auto& property_value : filtered_property_values)
             {
-                const auto& property_id = nmos::details::parse_nc_property_id(nmos::fields::nc::id(property_value));
-                const auto& property_descriptor = nmos::find_property_descriptor(property_id, class_id, get_control_protocol_class_descriptor);
-                if (!details::is_property_value_valid(property_value, property_descriptor, restore_mode, property_restore_notices))
-                {
-                    continue;
-                }
-                // Ignore if no change is being requested
-                if (resource.data.at(nmos::fields::nc::name(property_descriptor)) == nmos::fields::nc::value(property_value))
-                {
-                    continue;
-                }
-                // Only allow modification of read only properties when in Rebuild mode
-                if (bool(nmos::fields::nc::is_read_only(property_descriptor)) && restore_mode == nmos::nc_restore_mode::restore_mode::rebuild)
-                {
-                    push_back(read_only_property_modify_list, property_value);
-                }
                 web::json::push_back(property_modify_list, property_value);
             }
 
-            if (read_only_property_modify_list.as_array().size() > 0)
+            if (details::is_contains_read_only_property(property_modify_list.as_array(), class_id, get_control_protocol_class_descriptor))
             {
                 if (filter_property_value_holders)
                 {
-                    // If this is a read only property then we should call back to the application code to 
-                    // check that it's OK to change this value.  Bear in mind that this could be a class Id, or an oid or some other
+                    // If the property_modify_list contains read only properties then we call back to the application code to 
+                    // check that it's OK to change those value.  Bear in mind that they could be the class Id, or the oid or some other
                     // property that we don't want changed
                     property_modify_list = filter_property_value_holders(resource, target_role_path, property_modify_list, recurse, restore_mode, validate, property_restore_notices, get_control_protocol_class_descriptor);
                 }
                 else
                 {
+                    // Modify of read only properties not supported
                     const auto& object_properties_set_validation = nmos::details::make_nc_object_properties_set_validation(target_role_path, nmos::nc_restore_validation_status::failed, property_restore_notices, U("Modification of read only properties not supported"));
                     web::json::push_back(object_properties_set_validation_values, object_properties_set_validation);
                     continue;
@@ -245,6 +261,8 @@ namespace nmos
             {
                 const auto& property_id = nmos::details::parse_nc_property_id(nmos::fields::nc::id(property_value));
 
+                // hmmm, ideally we would pass the value into modify_control_protocol_resource with the validate
+                // flag, so that it's subject to property contraints and also the application code can decide if it's a legal value
                 if (!validate)
                 {
                     // modify control protocol resources
@@ -301,6 +319,7 @@ namespace nmos
         const auto target_role_path = get_role_path(resources, resource);
 
         // Detect and warn if there are any object_properties_holders outside of the target role path's scope
+        // Hmmm, can this be done as a one step process rather than filtering and then iterating over filtered list?
         const auto& orphan_object_properties_holders = boost::copy_range<std::set<web::json::value>>(object_properties_holders
             | boost::adaptors::filtered([&target_role_path](const web::json::value& object_properties_holder)
                 {
@@ -314,6 +333,7 @@ namespace nmos
         }
 
         web::json::value child_object_properties_set_validation_values = modify_device_model(resources, resource, target_role_path, object_properties_holders, recurse, restore_mode, validate, get_control_protocol_class_descriptor, filter_property_value_holders, modify_rebuildable_block);
+        // Hmmm - there must be a better way to append an array
         for (const auto& validation_values : child_object_properties_set_validation_values.as_array())
         {
             web::json::push_back(object_properties_set_validation_values, validation_values);
