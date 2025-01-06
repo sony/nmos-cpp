@@ -1743,7 +1743,7 @@ nmos::filter_property_value_holders_handler make_filter_property_value_holders_h
             if (bool(nmos::fields::nc::is_read_only(property_descriptor)))
             {
                 // We need to create a notice for any properties that will not be updated
-                const auto& property_restore_notice = nmos::details::make_nc_property_restore_notice(property_id, nmos::fields::nc::name(property_value), nmos::nc_property_restore_notice_type::warning, U("can not update read only properties"));
+                const auto& property_restore_notice = nmos::details::make_nc_property_restore_notice(property_id, nmos::fields::nc::name(property_value), nmos::nc_property_restore_notice_type::warning, U("Update of read only properties not supported"));
                 web::json::push_back(property_restore_notices, property_restore_notice);
             }
             else
