@@ -1293,24 +1293,24 @@ namespace nmos
         // and Section 7.3 Media Type Parameters with default values
 
         const auto sampling = details::find_fmtp(sdp_params.fmtp, sdp::fields::sampling);
-        if (sdp_params.fmtp.end() == sampling) missing(sdp::fields::sampling);
-        else params.sampling = sdp::sampling{ sampling->second };
+        if (sdp_params.fmtp.end() != sampling) params.sampling = sdp::sampling{ sampling->second };
+        else missing(sdp::fields::sampling);
 
         const auto depth = details::find_fmtp(sdp_params.fmtp, sdp::fields::depth);
-        if (sdp_params.fmtp.end() == depth) missing(sdp::fields::depth);
-        else params.depth = utility::istringstreamed<uint32_t>(depth->second);
+        if (sdp_params.fmtp.end() != depth) params.depth = utility::istringstreamed<uint32_t>(depth->second);
+        else missing(sdp::fields::depth);
 
         const auto width = details::find_fmtp(sdp_params.fmtp, sdp::fields::width);
-        if (sdp_params.fmtp.end() == width) missing(sdp::fields::width);
-        else params.width = utility::istringstreamed<uint32_t>(width->second);
+        if (sdp_params.fmtp.end() != width) params.width = utility::istringstreamed<uint32_t>(width->second);
+        else missing(sdp::fields::width);
 
         const auto height = details::find_fmtp(sdp_params.fmtp, sdp::fields::height);
-        if (sdp_params.fmtp.end() == height) missing(sdp::fields::height);
-        else params.height = utility::istringstreamed<uint32_t>(height->second);
+        if (sdp_params.fmtp.end() != height) params.height = utility::istringstreamed<uint32_t>(height->second);
+        else missing(sdp::fields::height);
 
         const auto exactframerate = details::find_fmtp(sdp_params.fmtp, sdp::fields::exactframerate);
-        if (sdp_params.fmtp.end() == exactframerate) missing(sdp::fields::exactframerate);
-        else params.exactframerate = nmos::details::parse_exactframerate(exactframerate->second);
+        if (sdp_params.fmtp.end() != exactframerate) params.exactframerate = nmos::details::parse_exactframerate(exactframerate->second);
+        else missing(sdp::fields::exactframerate);
 
         // optional
         const auto interlace = details::find_fmtp(sdp_params.fmtp, sdp::fields::interlace);
@@ -1325,8 +1325,8 @@ namespace nmos
         if (sdp_params.fmtp.end() != tcs) params.tcs = sdp::transfer_characteristic_system{ tcs->second };
 
         const auto colorimetry = details::find_fmtp(sdp_params.fmtp, sdp::fields::colorimetry);
-        if (sdp_params.fmtp.end() == colorimetry) missing(sdp::fields::colorimetry);
-        else params.colorimetry = sdp::colorimetry{ colorimetry->second };
+        if (sdp_params.fmtp.end() != colorimetry) params.colorimetry = sdp::colorimetry{ colorimetry->second };
+        else missing(sdp::fields::colorimetry);
 
         // optional
         const auto range = details::find_fmtp(sdp_params.fmtp, sdp::fields::range);
@@ -1337,12 +1337,12 @@ namespace nmos
         if (sdp_params.fmtp.end() != par) params.par = nmos::details::parse_pixel_aspect_ratio(par->second);
 
         const auto pm = details::find_fmtp(sdp_params.fmtp, sdp::fields::packing_mode);
-        if (sdp_params.fmtp.end() == pm) missing(sdp::fields::packing_mode);
-        else params.pm = sdp::packing_mode{ pm->second };
+        if (sdp_params.fmtp.end() != pm) params.pm = sdp::packing_mode{ pm->second };
+        else missing(sdp::fields::packing_mode);
 
         const auto ssn = details::find_fmtp(sdp_params.fmtp, sdp::fields::smpte_standard_number);
-        if (sdp_params.fmtp.end() == ssn) missing(sdp::fields::smpte_standard_number);
-        else params.ssn = sdp::smpte_standard_number{ ssn->second };
+        if (sdp_params.fmtp.end() != ssn) params.ssn = sdp::smpte_standard_number{ ssn->second };
+        else missing(sdp::fields::smpte_standard_number);
 
         // "Senders and Receivers compliant to [ST 2110-20] shall comply with the provisions of SMPTE ST 2110-21."
         // See SMPTE ST 2110-20:2017 Section 6.1.1

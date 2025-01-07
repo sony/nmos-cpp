@@ -192,8 +192,8 @@ namespace nmos
         video_jxsv_parameters params;
 
         const auto packetmode = details::find_fmtp(sdp_params.fmtp, sdp::video_jxsv::fields::packetmode);
-        if (sdp_params.fmtp.end() == packetmode) missing(sdp::video_jxsv::fields::packetmode);
-        else params.packetmode = (sdp::video_jxsv::packetization_mode)utility::istringstreamed<uint32_t>(packetmode->second);
+        if (sdp_params.fmtp.end() != packetmode) params.packetmode = (sdp::video_jxsv::packetization_mode)utility::istringstreamed<uint32_t>(packetmode->second);
+        else missing(sdp::video_jxsv::fields::packetmode);
 
         // optional
         const auto transmode = details::find_fmtp(sdp_params.fmtp, sdp::video_jxsv::fields::transmode);
