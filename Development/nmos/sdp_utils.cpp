@@ -1380,8 +1380,6 @@ namespace nmos
     // Get additional "video/raw" parameters from the SDP parameters
     video_raw_parameters get_video_raw_parameters(const sdp_parameters& sdp_params)
     {
-        if (sdp_params.fmtp.empty()) throw details::sdp_processing_error("missing attribute: fmtp");
-
         return get_video_raw_parameters<details::throw_missing_fmtp>(sdp_params);
     }
 
