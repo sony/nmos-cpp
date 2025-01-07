@@ -507,6 +507,7 @@ namespace nmos
     sdp_parameters make_video_raw_sdp_parameters(const utility::string_t& session_name, const video_raw_parameters& params, uint64_t payload_type, const std::vector<utility::string_t>& media_stream_ids = {}, const std::vector<sdp_parameters::ts_refclk_t>& ts_refclk = {});
     // Get additional "video/raw" parameters from the SDP parameters
     video_raw_parameters get_video_raw_parameters(const sdp_parameters& sdp_params);
+    video_raw_parameters get_video_raw_parameters_or_defaults(const sdp_parameters& sdp_params);
 
     // Construct additional "audio/L" parameters from the IS-04 resources, using default values for unspecified items
     audio_L_parameters make_audio_L_parameters(const web::json::value& node, const web::json::value& source, const web::json::value& flow, const web::json::value& sender, bst::optional<double> packet_time);

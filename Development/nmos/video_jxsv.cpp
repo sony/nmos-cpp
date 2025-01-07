@@ -293,6 +293,12 @@ namespace nmos
         return get_video_jxsv_parameters<details::throw_missing_fmtp>(sdp_params);
     }
 
+    // Get additional "video/jxsv" parameters from the SDP parameters
+    video_jxsv_parameters get_video_jxsv_parameters_or_defaults(const sdp_parameters& sdp_params)
+    {
+        return get_video_jxsv_parameters<>(sdp_params, [](const utility::string_t&) {});
+    }
+
     // Calculate the format bit rate (kilobits/second) from the specified frame rate, dimensions and bits per pixel
     uint64_t get_video_jxsv_bit_rate(const nmos::rational& grain_rate, uint32_t frame_width, uint32_t frame_height, double bits_per_pixel)
     {

@@ -1383,6 +1383,12 @@ namespace nmos
         return get_video_raw_parameters<details::throw_missing_fmtp>(sdp_params);
     }
 
+    // Get additional "video/raw" parameters from the SDP parameters
+    video_raw_parameters get_video_raw_parameters_or_defaults(const sdp_parameters& sdp_params)
+    {
+        return get_video_raw_parameters<>(sdp_params, [](const utility::string_t&) {});
+    }
+
     // Get additional "audio/L" parameters from the SDP parameters
     audio_L_parameters get_audio_L_parameters(const sdp_parameters& sdp_params)
     {
