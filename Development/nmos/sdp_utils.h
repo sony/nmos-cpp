@@ -7,6 +7,7 @@
 #include <stdexcept>
 #include "bst/any.h"
 #include "bst/optional.h"
+#include "cpprest/basic_utils.h"
 #include "sdp/json.h"
 #include "sdp/ntp.h"
 #include "nmos/did_sdid.h"
@@ -581,6 +582,14 @@ namespace nmos
         {
             return std::runtime_error{ "sdp processing error - " + message };
         }
+
+        struct throw_missing_fmtp
+        {
+            void operator()(const utility::string_t& name) const
+            {
+                throw details::sdp_processing_error("missing format parameter: " + utility::us2s(name));
+            }
+        };
 
         inline sdp_parameters::fmtp_t::const_iterator find_fmtp(const sdp_parameters::fmtp_t& fmtp, const utility::string_t& name)
         {

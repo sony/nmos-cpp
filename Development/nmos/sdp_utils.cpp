@@ -1284,34 +1284,33 @@ namespace nmos
     }
 
     // Get additional "video/raw" parameters from the SDP parameters
-    video_raw_parameters get_video_raw_parameters(const sdp_parameters& sdp_params)
+    template <typename MissingRequiredParameter>
+    video_raw_parameters get_video_raw_parameters(const sdp_parameters& sdp_params, MissingRequiredParameter missing = MissingRequiredParameter{})
     {
         video_raw_parameters params;
-
-        if (sdp_params.fmtp.empty()) throw details::sdp_processing_error("missing attribute: fmtp");
 
         // See SMPTE ST 2110-20:2017 Section 7.2 Required Media Type Parameters
         // and Section 7.3 Media Type Parameters with default values
 
         const auto sampling = details::find_fmtp(sdp_params.fmtp, sdp::fields::sampling);
-        if (sdp_params.fmtp.end() == sampling) throw details::sdp_processing_error("missing format parameter: sampling");
-        params.sampling = sdp::sampling{ sampling->second };
+        if (sdp_params.fmtp.end() == sampling) missing(sdp::fields::sampling);
+        else params.sampling = sdp::sampling{ sampling->second };
 
         const auto depth = details::find_fmtp(sdp_params.fmtp, sdp::fields::depth);
-        if (sdp_params.fmtp.end() == depth) throw details::sdp_processing_error("missing format parameter: depth");
-        params.depth = utility::istringstreamed<uint32_t>(depth->second);
+        if (sdp_params.fmtp.end() == depth) missing(sdp::fields::depth);
+        else params.depth = utility::istringstreamed<uint32_t>(depth->second);
 
         const auto width = details::find_fmtp(sdp_params.fmtp, sdp::fields::width);
-        if (sdp_params.fmtp.end() == width) throw details::sdp_processing_error("missing format parameter: width");
-        params.width = utility::istringstreamed<uint32_t>(width->second);
+        if (sdp_params.fmtp.end() == width) missing(sdp::fields::width);
+        else params.width = utility::istringstreamed<uint32_t>(width->second);
 
         const auto height = details::find_fmtp(sdp_params.fmtp, sdp::fields::height);
-        if (sdp_params.fmtp.end() == height) throw details::sdp_processing_error("missing format parameter: height");
-        params.height = utility::istringstreamed<uint32_t>(height->second);
+        if (sdp_params.fmtp.end() == height) missing(sdp::fields::height);
+        else params.height = utility::istringstreamed<uint32_t>(height->second);
 
         const auto exactframerate = details::find_fmtp(sdp_params.fmtp, sdp::fields::exactframerate);
-        if (sdp_params.fmtp.end() == exactframerate) throw details::sdp_processing_error("missing format parameter: exactframerate");
-        params.exactframerate = nmos::details::parse_exactframerate(exactframerate->second);
+        if (sdp_params.fmtp.end() == exactframerate) missing(sdp::fields::exactframerate);
+        else params.exactframerate = nmos::details::parse_exactframerate(exactframerate->second);
 
         // optional
         const auto interlace = details::find_fmtp(sdp_params.fmtp, sdp::fields::interlace);
@@ -1326,8 +1325,8 @@ namespace nmos
         if (sdp_params.fmtp.end() != tcs) params.tcs = sdp::transfer_characteristic_system{ tcs->second };
 
         const auto colorimetry = details::find_fmtp(sdp_params.fmtp, sdp::fields::colorimetry);
-        if (sdp_params.fmtp.end() == colorimetry) throw details::sdp_processing_error("missing format parameter: colorimetry");
-        params.colorimetry = sdp::colorimetry{ colorimetry->second };
+        if (sdp_params.fmtp.end() == colorimetry) missing(sdp::fields::colorimetry);
+        else params.colorimetry = sdp::colorimetry{ colorimetry->second };
 
         // optional
         const auto range = details::find_fmtp(sdp_params.fmtp, sdp::fields::range);
@@ -1338,12 +1337,12 @@ namespace nmos
         if (sdp_params.fmtp.end() != par) params.par = nmos::details::parse_pixel_aspect_ratio(par->second);
 
         const auto pm = details::find_fmtp(sdp_params.fmtp, sdp::fields::packing_mode);
-        if (sdp_params.fmtp.end() == pm) throw details::sdp_processing_error("missing format parameter: PM");
-        params.pm = sdp::packing_mode{ pm->second };
+        if (sdp_params.fmtp.end() == pm) missing(sdp::fields::packing_mode);
+        else params.pm = sdp::packing_mode{ pm->second };
 
         const auto ssn = details::find_fmtp(sdp_params.fmtp, sdp::fields::smpte_standard_number);
-        if (sdp_params.fmtp.end() == ssn) throw details::sdp_processing_error("missing format parameter: SSN");
-        params.ssn = sdp::smpte_standard_number{ ssn->second };
+        if (sdp_params.fmtp.end() == ssn) missing(sdp::fields::smpte_standard_number);
+        else params.ssn = sdp::smpte_standard_number{ ssn->second };
 
         // "Senders and Receivers compliant to [ST 2110-20] shall comply with the provisions of SMPTE ST 2110-21."
         // See SMPTE ST 2110-20:2017 Section 6.1.1
@@ -1376,6 +1375,14 @@ namespace nmos
         if (sdp_params.fmtp.end() != tsdelay) params.tsdelay = utility::istringstreamed<uint32_t>(tsdelay->second);
 
         return params;
+    }
+
+    // Get additional "video/raw" parameters from the SDP parameters
+    video_raw_parameters get_video_raw_parameters(const sdp_parameters& sdp_params)
+    {
+        if (sdp_params.fmtp.empty()) throw details::sdp_processing_error("missing attribute: fmtp");
+
+        return get_video_raw_parameters<details::throw_missing_fmtp>(sdp_params);
     }
 
     // Get additional "audio/L" parameters from the SDP parameters
