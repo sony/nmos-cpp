@@ -13,7 +13,7 @@ namespace nmos
 {
     namespace details
     {
-        bool is_property_value_valid(const web::json::value& property_value, const web::json::value& property_descriptor, const web::json::value& restore_mode, web::json::value& property_restore_notices)
+        bool is_property_value_valid(web::json::value& property_restore_notices, const web::json::value& property_value, const web::json::value& property_descriptor, const web::json::value& restore_mode, bool is_rebuildable)
         {
             const nmos::nc_property_id& property_id = nmos::details::parse_nc_property_id(nmos::fields::nc::id(property_descriptor));
             bool is_valid = true;
@@ -36,12 +36,22 @@ namespace nmos
                 is_valid = false;
             }
             // Only allow modification of read only properties when in Rebuild mode
-            if (bool(nmos::fields::nc::is_read_only(property_descriptor)) && restore_mode != nmos::nc_restore_mode::restore_mode::rebuild)
+            if (bool(nmos::fields::nc::is_read_only(property_descriptor))
+                && restore_mode != nmos::nc_restore_mode::restore_mode::rebuild)
             {
                 const auto& property_restore_notice = nmos::details::make_nc_property_restore_notice(property_id, nmos::fields::nc::name(property_value), nmos::nc_property_restore_notice_type::error, U("read only properties can not be modified in Modify restore mode."));
                 web::json::push_back(property_restore_notices, property_restore_notice);
                 is_valid = false;
             }
+            // Only allow modification of read only properties when object is rebuildable
+            if (bool(nmos::fields::nc::is_read_only(property_descriptor))
+                && !is_rebuildable)
+            {
+                const auto& property_restore_notice = nmos::details::make_nc_property_restore_notice(property_id, nmos::fields::nc::name(property_value), nmos::nc_property_restore_notice_type::error, U("object must be rebuildable to allow modification of read only properties."));
+                web::json::push_back(property_restore_notices, property_restore_notice);
+                is_valid = false;
+            }
+
             return is_valid;
         }
 
@@ -230,8 +240,8 @@ namespace nmos
                         const auto& property_id = nmos::details::parse_nc_property_id(nmos::fields::nc::id(property_value));
                         const auto& property_descriptor = nmos::find_property_descriptor(property_id, class_id, get_control_protocol_class_descriptor);
 
-                        return details::is_property_value_valid(property_value, property_descriptor, restore_mode, property_restore_notices)
-                            && resource.data.at(nmos::fields::nc::name(property_descriptor)) != nmos::fields::nc::value(property_value);
+                        return resource.data.at(nmos::fields::nc::name(property_descriptor)) != nmos::fields::nc::value(property_value)
+                            && details::is_property_value_valid(property_restore_notices, property_value, property_descriptor, restore_mode, bool(nmos::fields::nc::is_rebuildable(resource.data)));
                     })
             );
             auto property_modify_list = web::json::value::array();

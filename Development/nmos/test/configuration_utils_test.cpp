@@ -240,7 +240,8 @@ BST_TEST_CASE(testGetRolePath)
     auto class_manager = nmos::make_class_manager(++oid, control_protocol_state);
     nmos::nc_oid receiver_block_oid = ++oid;
     // root, receivers
-    auto receivers = nmos::make_block(receiver_block_oid, nmos::root_block_oid, U("receivers"), U("Receivers"), U("Receivers block"), web::json::value::null(), web::json::value::null(), web::json::value::array(), true);
+    auto receivers = nmos::make_block(receiver_block_oid, nmos::root_block_oid, U("receivers"), U("Receivers"), U("Receivers block"));
+    nmos::make_rebuildable(receivers);
     // root, receivers, mon1
     auto monitor1 = nmos::make_receiver_monitor(++oid, true, receiver_block_oid, U("mon1"), U("monitor 1"), U("monitor 1"), value_of({ {nmos::details::make_nc_touchpoint_nmos({nmos::ncp_touchpoint_resource_types::receiver, U("id_1")})} }));
     nmos::nc_class_id monitor_class_id = nmos::details::parse_nc_class_id(nmos::fields::nc::class_id(monitor1.data));
@@ -292,9 +293,13 @@ BST_TEST_CASE(testApplyBackupDataSet)
     auto class_manager = nmos::make_class_manager(++oid, control_protocol_state);
     nmos::nc_oid receiver_block_oid = ++oid;
     // root, receivers
-    auto receivers = nmos::make_block(receiver_block_oid, nmos::root_block_oid, U("receivers"), U("Receivers"), U("Receivers block"), web::json::value::null(), web::json::value::null(), web::json::value::array(), true);
+    auto receivers = nmos::make_block(receiver_block_oid, nmos::root_block_oid, U("receivers"), U("Receivers"), U("Receivers block"));
+    nmos::make_rebuildable(receivers);
     // root, receivers, mon1
     auto monitor1 = nmos::make_receiver_monitor(++oid, true, receiver_block_oid, U("mon1"), U("monitor 1"), U("monitor 1"), value_of({{nmos::details::make_nc_touchpoint_nmos({nmos::ncp_touchpoint_resource_types::receiver, U("id_1")})}}));
+    // make monitor1 rebuildable
+    nmos::make_rebuildable(monitor1);
+    
     nmos::nc_oid monitor_1_oid = oid;
     nmos::nc_class_id monitor_class_id = nmos::details::parse_nc_class_id(nmos::fields::nc::class_id(monitor1.data));
     // root, receivers, mon2
@@ -343,7 +348,7 @@ BST_TEST_CASE(testApplyBackupDataSet)
         value object_properties_holders = value::array();
         value role_path = value_of({ U("root"), U("receivers"), U("mon1") });
         value property_value_holders = value::array();
-        value property_value_holder = nmos::details::make_nc_property_value_holder(nmos::nc_property_id(2, 1), U("enabled"), U("NcBoolean"), false, false);
+        value property_value_holder = nmos::details::make_nc_property_value_holder(nmos::nc_property_id(2, 1), U("enabled"), U("NcBoolean"), false, value::boolean(false));
         push_back(property_value_holders, property_value_holder);
         auto object_properties_holder = nmos::details::make_nc_object_properties_holder(role_path, property_value_holders, false);
         push_back(object_properties_holders, object_properties_holder);
@@ -368,7 +373,7 @@ BST_TEST_CASE(testApplyBackupDataSet)
         BST_CHECK(!modify_rebuildable_block_called);
     }
     {
-        // Check filter_property_value_holders_handler is called when changing a read only property in Rebuild mode
+        // Check filter_property_value_holders_handler is called when changing a read only property of rebuildable object in Rebuild mode
         // 
         filter_property_value_holders_called = false;
         modify_rebuildable_block_called = false;
@@ -403,6 +408,54 @@ BST_TEST_CASE(testApplyBackupDataSet)
         // expecting callback to filter_property_value_holders_called 
         // but not to modify_rebuildable_block_called
         BST_CHECK(filter_property_value_holders_called);
+        BST_CHECK(!modify_rebuildable_block_called);
+    }
+    {
+        // Check error generated when attempting to change a read only property of non-rebuidable object in Rebuild mode
+        // 
+        filter_property_value_holders_called = false;
+        modify_rebuildable_block_called = false;
+
+        // Create Object Properties Holder
+        value object_properties_holders = value::array();
+        value role_path = value_of({ U("root"), U("receivers"), U("mon2") });
+        value property_value_holders = value::array();
+        nmos::nc_property_id property_id(2, 1);
+        // This is a read only property
+        value property_value_holder = nmos::details::make_nc_property_value_holder(nmos::nc_property_id(3, 2), U("connectionStatusMessage"), U("NcString"), false, value("change this value"));
+        push_back(property_value_holders, property_value_holder);
+        auto object_properties_holder = nmos::details::make_nc_object_properties_holder(role_path, property_value_holders, false);
+        push_back(object_properties_holders, object_properties_holder);
+        // must be a more efficient way of initializing these role paths
+        value target_role_path = value_of({ U("root"), U("receivers") });
+        bool recurse = true;
+        web::json::value restore_mode = nmos::nc_restore_mode::restore_mode::rebuild;
+        bool validate = true;
+
+        const auto& resource = find_control_protocol_resource_by_role_path(resources, target_role_path);
+        value output = nmos::apply_backup_data_set(resources, *resource, object_properties_holders.as_array(), recurse, restore_mode, validate, get_control_protocol_class_descriptor, filter_property_value_holders, modify_rebuildable_block);
+
+        // expectation is there will be a result for each of the object_properties_holders i.e. one
+        BST_REQUIRE_EQUAL(1, output.as_array().size());
+
+        value object_properties_set_validation = output.as_array().at(0);
+
+        // make sure the validation status propagates from the callback
+        BST_CHECK_EQUAL(nmos::nc_restore_validation_status::ok, nmos::fields::nc::status(object_properties_set_validation));
+
+        const auto& property_restore_notices = nmos::fields::nc::notices(object_properties_set_validation);
+        // expectation a single notice for the read only property that couldn't be changed
+        BST_REQUIRE_EQUAL(1, property_restore_notices.size());
+
+        const auto& notice = *property_restore_notices.begin();
+        BST_CHECK_EQUAL(nmos::nc_property_id(3, 2), nmos::details::parse_nc_property_id(nmos::fields::nc::id(notice)));
+        BST_CHECK_EQUAL(U("connectionStatusMessage"), nmos::fields::nc::name(notice));
+        BST_CHECK_EQUAL(nmos::nc_property_restore_notice_type::error, nmos::fields::nc::notice_type(notice));
+        BST_CHECK_NE(U(""), nmos::fields::nc::notice_message(notice));
+
+        // expecting callback to filter_property_value_holders_called 
+        // but not to modify_rebuildable_block_called
+        BST_CHECK(!filter_property_value_holders_called);
         BST_CHECK(!modify_rebuildable_block_called);
     }
     {
@@ -445,7 +498,7 @@ BST_TEST_CASE(testApplyBackupDataSet)
         // expectation a single notice for the read only property that couldn't be changed
         BST_REQUIRE_EQUAL(1, property_restore_notices.size());
 
-        const auto notice = *property_restore_notices.begin();
+        const auto& notice = *property_restore_notices.begin();
         BST_CHECK_EQUAL(nmos::nc_property_id(3, 2), nmos::details::parse_nc_property_id(nmos::fields::nc::id(notice)));
         BST_CHECK_EQUAL(U("connectionStatusMessage"), nmos::fields::nc::name(notice));
         BST_CHECK_EQUAL(nmos::nc_property_restore_notice_type::error, nmos::fields::nc::notice_type(notice));
@@ -677,7 +730,8 @@ BST_TEST_CASE(testApplyBackupDataSet_WithoutCallbacks)
     auto class_manager = nmos::make_class_manager(++oid, control_protocol_state);
     nmos::nc_oid receiver_block_oid = ++oid;
     // root, receivers
-    auto receivers = nmos::make_block(receiver_block_oid, nmos::root_block_oid, U("receivers"), U("Receivers"), U("Receivers block"), web::json::value::null(), web::json::value::null(), web::json::value::array(), true);
+    auto receivers = nmos::make_block(receiver_block_oid, nmos::root_block_oid, U("receivers"), U("Receivers"), U("Receivers block"));
+    nmos::make_rebuildable(receivers);
     // root, receivers, mon1
     auto monitor1 = nmos::make_receiver_monitor(++oid, true, receiver_block_oid, U("mon1"), U("monitor 1"), U("monitor 1"), value_of({ {nmos::details::make_nc_touchpoint_nmos({nmos::ncp_touchpoint_resource_types::receiver, U("id_1")})} }));
     nmos::nc_oid monitor_1_oid = oid;
