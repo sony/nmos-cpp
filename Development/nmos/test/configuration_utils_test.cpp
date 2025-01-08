@@ -734,6 +734,7 @@ BST_TEST_CASE(testApplyBackupDataSet_WithoutCallbacks)
     nmos::make_rebuildable(receivers);
     // root, receivers, mon1
     auto monitor1 = nmos::make_receiver_monitor(++oid, true, receiver_block_oid, U("mon1"), U("monitor 1"), U("monitor 1"), value_of({ {nmos::details::make_nc_touchpoint_nmos({nmos::ncp_touchpoint_resource_types::receiver, U("id_1")})} }));
+    nmos::make_rebuildable(monitor1);
     nmos::nc_oid monitor_1_oid = oid;
     nmos::nc_class_id monitor_class_id = nmos::details::parse_nc_class_id(nmos::fields::nc::class_id(monitor1.data));
     // root, receivers, mon2
