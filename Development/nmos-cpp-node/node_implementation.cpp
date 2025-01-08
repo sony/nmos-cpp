@@ -1257,6 +1257,10 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
             { make_example_datatype(example_enum::Alpha, U("example"), 50, false), make_example_datatype(example_enum::Gamma, U("different"), 75, true) }
         );
 
+        const auto receiver_block_oid = ++oid;
+        auto receiver_block = nmos::make_block(receiver_block_oid, nmos::root_block_oid, U("receivers"), U("Receiver Monitors"), U("Receiver Monitors"));
+        nmos::make_rebuildable(receiver_block);
+
         // example receiver-monitor(s)
         {
             int count = 0;
@@ -1269,10 +1273,10 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
                     utility::ostringstream_t role;
                     role << U("monitor-") << ++count;
                     const auto& receiver = nmos::find_resource(model.node_resources, receiver_id);
-                    const auto receiver_monitor = nmos::make_receiver_monitor(++oid, true, nmos::root_block_oid, role.str(), nmos::fields::label(receiver->data), nmos::fields::description(receiver->data), value_of({ { nmos::details::make_nc_touchpoint_nmos({nmos::ncp_touchpoint_resource_types::receiver, receiver_id}) } }));
+                    const auto receiver_monitor = nmos::make_receiver_monitor(++oid, true, receiver_block_oid, role.str(), nmos::fields::label(receiver->data), nmos::fields::description(receiver->data), value_of({ { nmos::details::make_nc_touchpoint_nmos({nmos::ncp_touchpoint_resource_types::receiver, receiver_id}) } }));
 
                     // add receiver-monitor to root-block
-                    nmos::push_back(root_block, receiver_monitor);
+                    nmos::push_back(receiver_block, receiver_monitor);
                 }
             }
         }
@@ -1280,6 +1284,8 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
         // example temperature-sensor
         const auto temperature_sensor = make_temperature_sensor(++oid, nmos::root_block_oid, U("temperature-sensor"), U("Temperature Sensor"), U("Temperature Sensor block"), value::null(), value::null(), 0.0, U("Celsius"));
 
+        // add receiver monitor block
+        nmos::push_back(root_block, receiver_block);
         // add temperature-sensor to root-block
         nmos::push_back(root_block, temperature_sensor);
         // add example-control to root-block
@@ -1757,13 +1763,164 @@ nmos::filter_property_value_holders_handler make_filter_property_value_holders_h
 }
 
 // Example Device Configuration callback for restoring a back-up dataset
-nmos::modify_rebuildable_block_handler make_modify_rebuildable_block_handler(nmos::resources& resources, slog::base_gate& gate)
+nmos::modify_rebuildable_block_handler make_modify_rebuildable_block_handler(nmos::node_model& model, slog::base_gate& gate)
 {
-    return [&resources, &gate](const nmos::resource& resource, const web::json::value& target_role_path, const web::json::value& object_properties_holders, bool recurse, const web::json::value& restore_mode, bool validate, nmos::get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor)
+    return [&model, &gate](const nmos::resource& resource, const web::json::value& target_role_path, const web::json::value& object_properties_holders, bool recurse, const web::json::value& restore_mode, bool validate, nmos::get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor)
     {
+        nmos::resources& resources = model.control_protocol_resources;
+
         slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::stash_category(impl::categories::node_implementation) << "Do modify_rebuildable_block";
 
-        return web::json::value();
+        if (object_properties_holders.size() != 1)
+        {
+            // Error
+            return web::json::value::array();
+        }
+        const auto& object_properties_holder = *object_properties_holders.as_array().begin();
+        
+        const auto& class_id = nmos::details::parse_nc_class_id(nmos::fields::nc::class_id(resource.data));
+        if (!nmos::is_nc_block(class_id))
+        {
+            // Error
+            return web::json::value::array();
+        }
+        const auto& block_members_properties_holders = boost::copy_range<std::set<web::json::value>>(nmos::fields::nc::values(object_properties_holder)
+            | boost::adaptors::filtered([](const web::json::value& property_value_holder)
+                {
+                    return nmos::nc_property_id(2, 2) == nmos::details::parse_nc_property_id(nmos::fields::nc::id(property_value_holder));
+                })
+        );
+        // There should only be a single property holder for the members
+        if (block_members_properties_holders.size() != 1)
+        {
+            // Error
+            return web::json::value::array();
+        }
+
+        const auto& members_property_holder = *block_members_properties_holders.begin();
+        const auto& restore_members = nmos::fields::nc::value(members_property_holder);
+        const auto& reference_members = nmos::fields::nc::members(resource.data);
+
+        std::vector<nmos::id> members_to_remove;
+
+        for (const auto& reference_member : reference_members)
+        {
+            const auto& filtered_members = boost::copy_range<std::set<web::json::value>>(restore_members.as_array()
+                | boost::adaptors::filtered([&reference_member](const web::json::value& member)
+                    {
+                        return nmos::fields::nc::oid(reference_member) == nmos::fields::nc::oid(member);
+                    })
+            );
+            if (filtered_members.size() != 1)
+            {
+                // can't find this oid in restore dataset, so member has been removed
+                // Remove this resource
+                auto found = nmos::find_resource_if(resources, nmos::types::nc_receiver_monitor, [&reference_member](const nmos::resource& resource)
+                {
+                    return nmos::fields::nc::oid(reference_member) == nmos::fields::nc::oid(resource.data);
+                });
+
+//                const auto& receiver_monitor = *(reference_members.begin());
+                const auto& touchpoints = found->data.at(nmos::fields::nc::touchpoints);
+
+                if (touchpoints.size() == 0)
+                {
+                    // Error
+                    continue;
+                }
+
+                const auto& touchpoint_uuid = nmos::fields::nc::id(nmos::fields::nc::resource(*touchpoints.as_array().begin()));
+                const auto& receiver = nmos::find_resource(resources, touchpoint_uuid.as_string());
+                {
+                    const auto& lock = model.write_lock();
+                    // remove receiver
+                    bool success = erase_resource(model.node_resources, nmos::fields::id(receiver->data));
+
+                    if (!success)
+                    {
+                        // Error
+                        continue;
+                    }
+                    const auto oid = found->id;
+                    utility::ostringstream_t id_str;
+                    id_str << oid;
+                    success = erase_resource(resources, oid);
+                    if (success)
+                    {
+                        members_to_remove.push_back(oid);
+                    }
+                }
+            }
+            const auto restore_member = *filtered_members.begin();
+            // We ignore the description and user label as these are non-normative
+            if (nmos::fields::nc::role(reference_member) != nmos::fields::nc::role(restore_member)
+                || nmos::fields::nc::constant_oid(reference_member) != nmos::fields::nc::constant_oid(restore_member)
+                || nmos::fields::nc::class_id(reference_member) != nmos::fields::nc::class_id(restore_member)
+                || nmos::fields::nc::owner(reference_member) != nmos::fields::nc::owner(restore_member))
+            {
+                // Modify existing resource
+                // in this example we will ignore/reject changes to the role, constant_oid, class_id or owner
+                // Do nothing, return warning
+                continue;
+            }
+        }
+        auto modified_members = web::json::value::array();
+
+        for (const auto& member : reference_members)
+        {
+            const auto& remove_member = boost::copy_range<std::set<nmos::id>>(members_to_remove | boost::adaptors::filtered([&member](const nmos::id& oid)
+                {
+                    return oid == nmos::fields::id(member);
+                })
+            );
+
+            if (remove_member.size() == 0)
+            {
+                web::json::push_back(modified_members, member);
+            }
+        }
+     
+        modify_control_protocol_resource(resources, resource.id, [&](nmos::resource& resource)
+            {
+                resource.data[nmos::fields::nc::members] = modified_members;
+
+            }, nmos::make_property_changed_event(nmos::fields::nc::oid(resource.data), { { nmos::nc_property_id(2, 2), nmos::nc_property_change_type::type::value_changed, modified_members } }));
+
+        for (const auto& restore_member : restore_members.as_array())
+        {
+            const auto& filtered_members = boost::copy_range<std::set<web::json::value>>(reference_members
+                | boost::adaptors::filtered([&restore_member](const web::json::value& member)
+                    {
+                        return nmos::fields::nc::oid(restore_member) == nmos::fields::nc::oid(member);
+                    })
+            );
+            if (filtered_members.size() != 1)
+            {
+                // can't find this oid in existing members, so member has been added
+                // Add this resource
+                // Get example resource from the exising members to get node_id, device_id
+                const auto& example_monitor = *reference_members.begin();
+                const auto& touchpoints = nmos::fields::nc::touchpoints(example_monitor);
+
+                if (touchpoints.size() == 0)
+                {
+                    // Error
+                    continue;
+                }
+
+                const auto& touchpoint_uuid = *touchpoints.begin();
+                // Get resource
+                // Get node id and device id
+
+                // Create a source
+
+                // Create a receiver
+
+
+            }
+        }
+
+        return web::json::value::array();
     };
 }
 
@@ -1923,5 +2080,5 @@ nmos::experimental::node_implementation make_node_implementation(nmos::node_mode
         .on_channelmapping_activated(make_node_implementation_channelmapping_activation_handler(gate))
         .on_control_protocol_property_changed(make_node_implementation_control_protocol_property_changed_handler(gate)) // may be omitted if IS-12 not required
         .on_filter_property_value_holders(make_filter_property_value_holders_handler(model.control_protocol_resources, gate)) // may be omitted if either IS-14 not required, or IS-14 Rebuild functionality not required
-        .on_modify_rebuildable_block(make_modify_rebuildable_block_handler(model.control_protocol_resources, gate)); // may be omitted if either IS-14 not required, or IS-14 Rebuild functionality not required
+        .on_modify_rebuildable_block(make_modify_rebuildable_block_handler(model, gate)); // may be omitted if either IS-14 not required, or IS-14 Rebuild functionality not required
 }
