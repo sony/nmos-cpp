@@ -1773,7 +1773,7 @@ nmos::modify_rebuildable_block_handler make_modify_rebuildable_block_handler(nmo
         // Validate the object_properties_holder
 
         // Find object_properties_holder for resource
-        const auto& filtered_holders = boost::copy_range<std::set<web::json::value>>(object_properties_holders.as_array()
+        const auto& filtered_holders = boost::copy_range<std::set<web::json::value>>(object_properties_holders
             | boost::adaptors::filtered([&resources, &resource](const web::json::value& object_properties_holder)
                 {
                     return nmos::fields::nc::path(object_properties_holder) == nmos::get_role_path(resources, resource);
@@ -1911,27 +1911,23 @@ nmos::modify_rebuildable_block_handler make_modify_rebuildable_block_handler(nmo
                 const auto& found2 = nmos::find_resource(resources, touchpoint_uuid.as_string());
 
                 const auto& device_id = nmos::fields::device_id(found2->data);
-                const auto& interface_bindings = nmos::fields::interface_bindings(found2->data);
-                const auto& video_type = nmos::fields::format(found2->data);
 
                 // calculate child resource role path
-                const auto oid = nmos::fields::nc::oid(restore_member);
-
-                const auto& target_role_path = nmos::get_role_path(resources, resource);
+                const auto& target_role_path_ = nmos::get_role_path(resources, resource);
 
                 // Hmmmm, there must be a better way of appending the child role to the end of the target role path array...
                 auto child_role_path = web::json::value::array();
-                for (const auto& path_element : target_role_path.as_array())
+                for (const auto& path_element : target_role_path_)
                 {
                     web::json::push_back(child_role_path, path_element);
                 }
                 web::json::push_back(child_role_path, nmos::fields::nc::role(restore_member));
 
                 // Find the object_properties_holder that describes the new receiver monitor
-                const auto& filtered_child_object_properties_holders = boost::copy_range<std::set<web::json::value>>(object_properties_holders.as_array()
+                const auto& filtered_child_object_properties_holders = boost::copy_range<std::set<web::json::value>>(object_properties_holders
                     | boost::adaptors::filtered([&child_role_path](const web::json::value& object_properties_holder)
                         {
-                            return nmos::fields::nc::path(object_properties_holder) == child_role_path;
+                            return nmos::fields::nc::path(object_properties_holder) == child_role_path.as_array();
                         })
                 );
 
@@ -1957,11 +1953,11 @@ nmos::modify_rebuildable_block_handler make_modify_rebuildable_block_handler(nmo
                 }
 
                 const auto& oid_property_holder = *block_members_properties_holders.begin();
-                const auto& oid = nmos::fields::nc::value(oid_property_holder);
+                const auto& oid2 = nmos::fields::nc::value(oid_property_holder);
 
-                auto found3 = nmos::find_resource_if(resources, nmos::types::nc_receiver_monitor, [&oid](const nmos::resource& resource)
+                auto found3 = nmos::find_resource_if(resources, nmos::types::nc_receiver_monitor, [&oid2](const nmos::resource& resource)
                     {
-                        return oid == nmos::fields::nc::oid(resource.data);
+                        return oid2 == nmos::fields::nc::oid(resource.data);
                     });
 
                 const auto& touchpoints2 = found3->data.at(nmos::fields::nc::touchpoints);
@@ -2010,8 +2006,7 @@ nmos::modify_rebuildable_block_handler make_modify_rebuildable_block_handler(nmo
 
                 // Hmmmmmmmmmmmmmmmmmmmmmmmmmmmmm
                 // create some helper functions to do things like:
-                // - find an nmos resource assosiated with a control protocol resource (via touchpoint)
-                // - find an nmos resource assosiated with a control protocol resource (via touchpoint)
+                // - find an nmos resource associated with a control protocol resource (via touchpoint)
                 // - manipulate the object_properties_holder to create a json resource based on the object_properties_holders so don't have to keep querying json
                 // - functions to compare device model to object_properties_holder to show differences
 
