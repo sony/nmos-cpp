@@ -374,30 +374,6 @@ namespace nmos
             }
             return web::json::value{};
         }
-
-
-        // generic find control class property descriptor in property_descriptor_ array (NcPropertyDescriptor)
-        web::json::value find_property_descriptor(const nc_property_id& property_id, const nc_class_id& class_id_, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor)
-        {
-            using web::json::value;
-
-            auto class_id = class_id_;
-
-            while (!class_id.empty())
-            {
-                const auto& control_class = get_control_protocol_class_descriptor(class_id);
-                const auto& property_descriptors = control_class.property_descriptors.as_array();
-                auto found = std::find_if(property_descriptors.begin(), property_descriptors.end(), [&property_id](const web::json::value& property_descriptor)
-                    {
-                        return (property_id == nmos::details::parse_nc_property_id(nmos::fields::nc::id(property_descriptor)));
-                    });
-                if (property_descriptors.end() != found) { return *found; }
-
-                class_id.pop_back();
-            }
-
-            return value::null();
-        }
     }
 
     // is the given class_id a NcBlock
@@ -446,7 +422,24 @@ namespace nmos
     // find control class property descriptor (NcPropertyDescriptor)
     web::json::value find_property_descriptor(const nc_property_id& property_id, const nc_class_id& class_id_, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor)
     {
-        return details::find_property_descriptor(property_id, class_id_, get_control_protocol_class_descriptor);
+        using web::json::value;
+
+        auto class_id = class_id_;
+
+        while (!class_id.empty())
+        {
+            const auto& control_class = get_control_protocol_class_descriptor(class_id);
+            const auto& property_descriptors = control_class.property_descriptors.as_array();
+            auto found = std::find_if(property_descriptors.begin(), property_descriptors.end(), [&property_id](const web::json::value& property_descriptor)
+                {
+                    return (property_id == nmos::details::parse_nc_property_id(nmos::fields::nc::id(property_descriptor)));
+                });
+            if (property_descriptors.end() != found) { return *found; }
+
+            class_id.pop_back();
+        }
+
+        return value::null();
     }
 
     // get block member descriptors
