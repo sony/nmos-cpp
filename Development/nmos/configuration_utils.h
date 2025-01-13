@@ -10,7 +10,7 @@ namespace nmos
     struct control_protocol_resource;
 
     // Check to see if role_path is sub path of parent_role_path
-    bool is_role_path_root(const web::json::value& role_path_, const web::json::value& parent_role_path);
+    bool is_role_path_root(const web::json::array& role_path_, const web::json::array& parent_role_path);
 
     bool is_block_modified(const nmos::resource& resource, const web::json::value& object_properties_holder);
 

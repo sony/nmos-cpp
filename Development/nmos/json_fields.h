@@ -312,7 +312,7 @@ namespace nmos
             const web::json::field_as_array fields{ U("fields") }; // sequence<NcFieldDescriptor>
             const web::json::field_as_integer generic_state{ U("generic") }; // NcDeviceGenericState
             const web::json::field_as_string device_specific_details{ U("deviceSpecificDetails") };
-            const web::json::field_as_value path{ U("path") }; // NcRolePath
+            const web::json::field_as_array path{ U("path") }; // NcRolePath
             const web::json::field_as_bool case_sensitive{ U("caseSensitive") };
             const web::json::field_as_bool match_whole_string{ U("matchWholeString") };
             const web::json::field_as_bool include_derived{ U("includeDerived") };

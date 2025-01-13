@@ -78,7 +78,7 @@ namespace nmos
     resources::const_iterator find_control_protocol_resource(resources& resources, type type, const id& id);
 
     // find resource based on role path.
-    resources::const_iterator find_control_protocol_resource_by_role_path(const resources& resources, const web::json::value& role_path);
+    resources::const_iterator find_control_protocol_resource_by_role_path(const resources& resources, const web::json::array& role_path);
 
     // find resource based on role path. Roles in role path string must be delimited with a '.'
     resources::const_iterator find_control_protocol_resource_by_role_path(const resources& resources, const utility::string_t& role_path);

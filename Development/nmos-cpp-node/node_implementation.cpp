@@ -1,6 +1,5 @@
 #include "node_implementation.h"
 
-#include <algorithm>
 #include <boost/range/adaptor/filtered.hpp>
 #include <boost/range/adaptor/transformed.hpp>
 #include <boost/range/algorithm/find.hpp>
@@ -1731,7 +1730,7 @@ nmos::control_protocol_property_changed_handler make_node_implementation_control
 // Example Device Configuration callback for validating a back-up dataset
 nmos::filter_property_value_holders_handler make_filter_property_value_holders_handler(nmos::resources& resources, slog::base_gate& gate)
 {
-    return [&resources, &gate](const nmos::resource& resource, const web::json::value& target_role_path, const web::json::value& property_values, bool recurse, const web::json::value& restore_mode, bool validate, web::json::value& property_restore_notices, nmos::get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor)
+    return [&resources, &gate](const nmos::resource& resource, const web::json::array& target_role_path, const web::json::array& property_values, bool recurse, const web::json::value& restore_mode, bool validate, web::json::array& property_restore_notices, nmos::get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor)
     {
         // Use this function to filter which of the properties in the object should be modified by the configuration API
         slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::stash_category(impl::categories::node_implementation) << "Do filter_property_value_holders";
@@ -1740,7 +1739,7 @@ nmos::filter_property_value_holders_handler make_filter_property_value_holders_h
 
         auto modifiable_property_value_holders = web::json::value::array();
 
-        for (const auto property_value : property_values.as_array())
+        for (const auto& property_value : property_values)
         {
             const auto& property_id = nmos::details::parse_nc_property_id(nmos::fields::nc::id(property_value));
             const auto& property_descriptor = nmos::find_property_descriptor(property_id, class_id, get_control_protocol_class_descriptor);
@@ -1757,7 +1756,6 @@ nmos::filter_property_value_holders_handler make_filter_property_value_holders_h
                 web::json::push_back(modifiable_property_value_holders, property_value);
             }
         }
-        
         return modifiable_property_value_holders;
     };
 }
@@ -1765,7 +1763,7 @@ nmos::filter_property_value_holders_handler make_filter_property_value_holders_h
 // Example Device Configuration callback for restoring a back-up dataset
 nmos::modify_rebuildable_block_handler make_modify_rebuildable_block_handler(nmos::node_model& model, slog::base_gate& gate)
 {
-    return [&model, &gate](const nmos::resource& resource, const web::json::value& target_role_path, const web::json::value& object_properties_holders, bool recurse, const web::json::value& restore_mode, bool validate, nmos::get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor)
+    return [&model, &gate](const nmos::resource& resource, const web::json::array& target_role_path, const web::json::array& object_properties_holders, bool recurse, const web::json::value& restore_mode, bool validate, nmos::get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor)
     {
         nmos::resources& resources = model.control_protocol_resources;
 
@@ -1776,7 +1774,7 @@ nmos::modify_rebuildable_block_handler make_modify_rebuildable_block_handler(nmo
             // Error
             return web::json::value::array();
         }
-        const auto& object_properties_holder = *object_properties_holders.as_array().begin();
+        const auto& object_properties_holder = *object_properties_holders.begin();
         
         const auto& class_id = nmos::details::parse_nc_class_id(nmos::fields::nc::class_id(resource.data));
         if (!nmos::is_nc_block(class_id))
@@ -1879,7 +1877,6 @@ nmos::modify_rebuildable_block_handler make_modify_rebuildable_block_handler(nmo
                 web::json::push_back(modified_members, member);
             }
         }
-     
         modify_control_protocol_resource(resources, resource.id, [&](nmos::resource& resource)
             {
                 resource.data[nmos::fields::nc::members] = modified_members;

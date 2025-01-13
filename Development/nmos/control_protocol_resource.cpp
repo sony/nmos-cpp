@@ -871,13 +871,13 @@ namespace nmos
         }
 
         // TODO: add link
-        web::json::value make_nc_object_properties_holder(const web::json::value& role_path, const web::json::value& property_value_holders, bool is_rebuildable)
+        web::json::value make_nc_object_properties_holder(const web::json::array& role_path, const web::json::array& property_value_holders, bool is_rebuildable)
         {
             using web::json::value_of;
 
             return value_of({
-                { nmos::fields::nc::path, role_path },
-                { nmos::fields::nc::values, property_value_holders},
+                { nmos::fields::nc::path, web::json::value_from_elements(role_path)},
+                { nmos::fields::nc::values, web::json::value_from_elements(property_value_holders)},
                 { nmos::fields::nc::is_rebuildable, is_rebuildable}
                 }, true
             );
@@ -900,15 +900,15 @@ namespace nmos
         }
 
         // TODO: add link
-        web::json::value make_nc_object_properties_set_validation(const web::json::value& role_path, nc_restore_validation_status::status status, const web::json::value& notices, const utility::string_t& status_message)
+        web::json::value make_nc_object_properties_set_validation(const web::json::array& role_path, nc_restore_validation_status::status status, const web::json::array& notices, const utility::string_t& status_message)
         {
             using web::json::value;
             using web::json::value_of;
 
             return value_of({ 
-                { nmos::fields::nc::path, role_path},
+                { nmos::fields::nc::path, web::json::value_from_elements(role_path)},
                 { nmos::fields::nc::status, value::number(status)},
-                { nmos::fields::nc::notices, notices },
+                { nmos::fields::nc::notices, web::json::value_from_elements(notices)},
                 { nmos::fields::nc::status_message, value::string(status_message)}
                 }, true
             );

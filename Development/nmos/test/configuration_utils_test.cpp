@@ -13,32 +13,32 @@
 BST_TEST_CASE(testIsRolePathRoot)
 {
     {
-        web::json::value role_path = web::json::value_of({ U("root"), U("path1")});
-        web::json::value role_path_root = web::json::value_of({ U("root"), U("path1")});
+        auto role_path = web::json::value_of({ U("root"), U("path1") }).as_array();
+        auto role_path_root = web::json::value_of({ U("root"), U("path1") }).as_array();
 
         BST_REQUIRE(nmos::is_role_path_root(role_path_root, role_path));
     }
     {
-        web::json::value role_path = web::json::value_of({ U("root"), U("path1"), U("path2"), U("path3")});
-        web::json::value role_path_root = web::json::value_of({ U("root"), U("path1"), U("path2") });
+        auto role_path = web::json::value_of({ U("root"), U("path1"), U("path2"), U("path3") }).as_array();
+        auto role_path_root = web::json::value_of({ U("root"), U("path1"), U("path2") }).as_array();
 
         BST_REQUIRE(nmos::is_role_path_root(role_path_root, role_path));
     }
     {
-        web::json::value role_path = web::json::value_of({ U("root"), U("path1")});
-        web::json::value role_path_root = web::json::value_of({ U("root"), U("path1"), U("path2") });
+        auto role_path = web::json::value_of({ U("root"), U("path1") }).as_array();
+        auto role_path_root = web::json::value_of({ U("root"), U("path1"), U("path2") }).as_array();
 
         BST_REQUIRE(!nmos::is_role_path_root(role_path_root, role_path));
     }
     {
-        web::json::value role_path = web::json::value_of({ U("root"), U("path3"), U("path4") });
-        web::json::value role_path_root = web::json::value_of({ U("root"), U("path1"), U("path2") });
+        auto role_path = web::json::value_of({ U("root"), U("path3"), U("path4") }).as_array();
+        auto role_path_root = web::json::value_of({ U("root"), U("path1"), U("path2") }).as_array();
 
         BST_REQUIRE(!nmos::is_role_path_root(role_path_root, role_path));
     }
     {
-        web::json::value role_path = web::json::value_of({ U("path3"), U("path4") });
-        web::json::value role_path_root = web::json::value_of({ U("root"), U("path1"), U("path2") });
+        auto role_path = web::json::value_of({ U("path3"), U("path4") }).as_array();
+        auto role_path_root = web::json::value_of({ U("root"), U("path1"), U("path2") }).as_array();
 
         BST_REQUIRE(!nmos::is_role_path_root(role_path_root, role_path));
     }
@@ -91,7 +91,7 @@ BST_TEST_CASE(testIsBlockModified)
         nmos::nc_property_id property_id(2, 2); // block members
         web::json::value property_value_holder = nmos::details::make_nc_property_value_holder(property_id, U("members"), U("NcBlockMemberDescriptor"), false, members);
         web::json::push_back(property_value_holders, property_value_holder);
-        auto object_properties_holder = nmos::details::make_nc_object_properties_holder(role_path, property_value_holders, false);
+        auto object_properties_holder = nmos::details::make_nc_object_properties_holder(role_path.as_array(), property_value_holders.as_array(), false);
 
         BST_CHECK(!nmos::is_block_modified(receivers, object_properties_holder));
     }
@@ -107,7 +107,7 @@ BST_TEST_CASE(testIsBlockModified)
         nmos::nc_property_id property_id(2, 2); // block members
         web::json::value property_value_holder = nmos::details::make_nc_property_value_holder(property_id, U("members"), U("NcBlockMemberDescriptor"), false, members);
         web::json::push_back(property_value_holders, property_value_holder);
-        auto object_properties_holder = nmos::details::make_nc_object_properties_holder(role_path, property_value_holders, false);
+        auto object_properties_holder = nmos::details::make_nc_object_properties_holder(role_path.as_array(), property_value_holders.as_array(), false);
 
         BST_CHECK(nmos::is_block_modified(receivers, object_properties_holder));
     }
@@ -129,7 +129,7 @@ BST_TEST_CASE(testIsBlockModified)
         nmos::nc_property_id property_id(2, 2); // block members
         web::json::value property_value_holder = nmos::details::make_nc_property_value_holder(property_id, U("members"), U("NcBlockMemberDescriptor"), false, members);
         web::json::push_back(property_value_holders, property_value_holder);
-        auto object_properties_holder = nmos::details::make_nc_object_properties_holder(role_path, property_value_holders, false);
+        auto object_properties_holder = nmos::details::make_nc_object_properties_holder(role_path.as_array(), property_value_holders.as_array(), false);
 
         BST_CHECK(nmos::is_block_modified(receivers, object_properties_holder));
     }
@@ -151,7 +151,7 @@ BST_TEST_CASE(testIsBlockModified)
         nmos::nc_property_id property_id(2, 2); // block members
         web::json::value property_value_holder = nmos::details::make_nc_property_value_holder(property_id, U("members"), U("NcBlockMemberDescriptor"), false, members);
         web::json::push_back(property_value_holders, property_value_holder);
-        auto object_properties_holder = nmos::details::make_nc_object_properties_holder(role_path, property_value_holders, false);
+        auto object_properties_holder = nmos::details::make_nc_object_properties_holder(role_path.as_array(), property_value_holders.as_array(), false);
 
         BST_CHECK(nmos::is_block_modified(receivers, object_properties_holder));
     }
@@ -173,7 +173,7 @@ BST_TEST_CASE(testIsBlockModified)
         nmos::nc_property_id property_id(2, 2); // block members
         web::json::value property_value_holder = nmos::details::make_nc_property_value_holder(property_id, U("members"), U("NcBlockMemberDescriptor"), false, members);
         web::json::push_back(property_value_holders, property_value_holder);
-        auto object_properties_holder = nmos::details::make_nc_object_properties_holder(role_path, property_value_holders, false);
+        auto object_properties_holder = nmos::details::make_nc_object_properties_holder(role_path.as_array(), property_value_holders.as_array(), false);
 
         BST_CHECK(nmos::is_block_modified(receivers, object_properties_holder));
     }
@@ -195,7 +195,7 @@ BST_TEST_CASE(testIsBlockModified)
         nmos::nc_property_id property_id(2, 2); // block members
         web::json::value property_value_holder = nmos::details::make_nc_property_value_holder(property_id, U("members"), U("NcBlockMemberDescriptor"), false, members);
         web::json::push_back(property_value_holders, property_value_holder);
-        auto object_properties_holder = nmos::details::make_nc_object_properties_holder(role_path, property_value_holders, false);
+        auto object_properties_holder = nmos::details::make_nc_object_properties_holder(role_path.as_array(), property_value_holders.as_array(), false);
 
         BST_CHECK(nmos::is_block_modified(receivers, object_properties_holder));
     }
@@ -217,7 +217,7 @@ BST_TEST_CASE(testIsBlockModified)
         nmos::nc_property_id property_id(2, 2); // block members
         web::json::value property_value_holder = nmos::details::make_nc_property_value_holder(property_id, U("members"), U("NcBlockMemberDescriptor"), false, members);
         web::json::push_back(property_value_holders, property_value_holder);
-        auto object_properties_holder = nmos::details::make_nc_object_properties_holder(role_path, property_value_holders, false);
+        auto object_properties_holder = nmos::details::make_nc_object_properties_holder(role_path.as_array(), property_value_holders.as_array(), false);
 
         BST_CHECK(nmos::is_block_modified(receivers, object_properties_holder));
     }
@@ -269,7 +269,7 @@ BST_TEST_CASE(testGetRolePath)
 
     for (const auto& expected_role_path : expected_role_paths.as_array())
     {
-        const auto& resource = find_control_protocol_resource_by_role_path(resources, expected_role_path);
+        const auto& resource = find_control_protocol_resource_by_role_path(resources, expected_role_path.as_array());
         value actual_role_path = nmos::get_role_path(resources, *resource);
         BST_CHECK_EQUAL(expected_role_path, actual_role_path);
     }
@@ -321,22 +321,22 @@ BST_TEST_CASE(testApplyBackupDataSet)
     bool modify_rebuildable_block_called = false;
     
     // callback stubs
-    nmos::filter_property_value_holders_handler filter_property_value_holders = [&](const nmos::resource& resource, const web::json::value& target_role_path, const web::json::value& property_values, bool recurse, const web::json::value& restore_mode, bool validate, web::json::value& property_restore_notices, nmos::get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor)
+    nmos::filter_property_value_holders_handler filter_property_value_holders = [&](const nmos::resource& resource, const web::json::array& target_role_path, const web::json::array& property_values, bool recurse, const web::json::value& restore_mode, bool validate, web::json::array& property_restore_notices, nmos::get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor)
         {
             filter_property_value_holders_called = true;
             auto modifiable_property_value_holders = web::json::value::array();
 
-            for (const auto property_value : property_values.as_array())
+            for (const auto& property_value : property_values)
             {
                 web::json::push_back(modifiable_property_value_holders, property_value);
             }
             return modifiable_property_value_holders;
         };
-    nmos::modify_rebuildable_block_handler modify_rebuildable_block = [&](const nmos::resource& resource, const web::json::value& target_role_path, const web::json::value& object_properties_holders, bool recurse, const web::json::value& restore_mode, bool validate, nmos::get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor)
+    nmos::modify_rebuildable_block_handler modify_rebuildable_block = [&](const nmos::resource& resource, const web::json::array& target_role_path, const web::json::array& object_properties_holders, bool recurse, const web::json::value& restore_mode, bool validate, nmos::get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor)
         {
             modify_rebuildable_block_called = true;
             value out = value::array();
-            const auto& object_properties_set_validation = nmos::details::make_nc_object_properties_set_validation(target_role_path, nmos::nc_restore_validation_status::ok, value::array(), U("OK"));
+            const auto& object_properties_set_validation = nmos::details::make_nc_object_properties_set_validation(target_role_path, nmos::nc_restore_validation_status::ok, value::array().as_array(), U("OK"));
             web::json::push_back(out, object_properties_set_validation);
             return out;
         };
@@ -350,21 +350,21 @@ BST_TEST_CASE(testApplyBackupDataSet)
         value property_value_holders = value::array();
         value property_value_holder = nmos::details::make_nc_property_value_holder(nmos::nc_property_id(2, 1), U("enabled"), U("NcBoolean"), false, value::boolean(false));
         push_back(property_value_holders, property_value_holder);
-        auto object_properties_holder = nmos::details::make_nc_object_properties_holder(role_path, property_value_holders, false);
+        auto object_properties_holder = nmos::details::make_nc_object_properties_holder(role_path.as_array(), property_value_holders.as_array(), false);
         push_back(object_properties_holders, object_properties_holder);
         value target_role_path = value_of({ U("root"), U("receivers")});
         bool recurse = true;
         bool validate = true;
         web::json::value restore_mode = nmos::nc_restore_mode::restore_mode::modify;
 
-        const auto& resource = find_control_protocol_resource_by_role_path(resources, target_role_path);
+        const auto& resource = find_control_protocol_resource_by_role_path(resources, target_role_path.as_array());
         value output = nmos::apply_backup_data_set(resources, *resource, object_properties_holders.as_array(), recurse, restore_mode, validate, get_control_protocol_class_descriptor, filter_property_value_holders, modify_rebuildable_block);
 
         // expectation is there will be a result for each of the object_properties_holders i.e. one
         BST_REQUIRE_EQUAL(1, output.as_array().size());
         value object_properties_set_validation = output.as_array().at(0);
 
-        BST_CHECK_EQUAL(role_path, nmos::fields::nc::path(object_properties_set_validation));
+        BST_CHECK_EQUAL(role_path.as_array(), nmos::fields::nc::path(object_properties_set_validation));
         BST_CHECK_EQUAL(nmos::nc_restore_validation_status::ok, nmos::fields::nc::status(object_properties_set_validation));
         BST_CHECK_EQUAL(0, nmos::fields::nc::notices(object_properties_set_validation).size());
 
@@ -386,7 +386,7 @@ BST_TEST_CASE(testApplyBackupDataSet)
         // This is a read only property
         value property_value_holder = nmos::details::make_nc_property_value_holder(nmos::nc_property_id(3, 2), U("connectionStatusMessage"), U("NcString"), false, value("change this value"));
         push_back(property_value_holders, property_value_holder);
-        auto object_properties_holder = nmos::details::make_nc_object_properties_holder(role_path, property_value_holders, false);
+        auto object_properties_holder = nmos::details::make_nc_object_properties_holder(role_path.as_array(), property_value_holders.as_array(), false);
         push_back(object_properties_holders, object_properties_holder);
         // must be a more efficient way of initializing these role paths
         value target_role_path = value_of({ U("root"), U("receivers") });
@@ -394,7 +394,7 @@ BST_TEST_CASE(testApplyBackupDataSet)
         web::json::value restore_mode = nmos::nc_restore_mode::restore_mode::rebuild;
         bool validate = true;
 
-        const auto& resource = find_control_protocol_resource_by_role_path(resources, target_role_path);
+        const auto& resource = find_control_protocol_resource_by_role_path(resources, target_role_path.as_array());
         value output = nmos::apply_backup_data_set(resources, *resource, object_properties_holders.as_array(), recurse, restore_mode, validate, get_control_protocol_class_descriptor, filter_property_value_holders, modify_rebuildable_block);
 
         // expectation is there will be a result for each of the object_properties_holders i.e. one
@@ -424,7 +424,7 @@ BST_TEST_CASE(testApplyBackupDataSet)
         // This is a read only property
         value property_value_holder = nmos::details::make_nc_property_value_holder(nmos::nc_property_id(3, 2), U("connectionStatusMessage"), U("NcString"), false, value("change this value"));
         push_back(property_value_holders, property_value_holder);
-        auto object_properties_holder = nmos::details::make_nc_object_properties_holder(role_path, property_value_holders, false);
+        auto object_properties_holder = nmos::details::make_nc_object_properties_holder(role_path.as_array(), property_value_holders.as_array(), false);
         push_back(object_properties_holders, object_properties_holder);
         // must be a more efficient way of initializing these role paths
         value target_role_path = value_of({ U("root"), U("receivers") });
@@ -432,7 +432,7 @@ BST_TEST_CASE(testApplyBackupDataSet)
         web::json::value restore_mode = nmos::nc_restore_mode::restore_mode::rebuild;
         bool validate = true;
 
-        const auto& resource = find_control_protocol_resource_by_role_path(resources, target_role_path);
+        const auto& resource = find_control_protocol_resource_by_role_path(resources, target_role_path.as_array());
         value output = nmos::apply_backup_data_set(resources, *resource, object_properties_holders.as_array(), recurse, restore_mode, validate, get_control_protocol_class_descriptor, filter_property_value_holders, modify_rebuildable_block);
 
         // expectation is there will be a result for each of the object_properties_holders i.e. one

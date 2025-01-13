@@ -202,13 +202,13 @@ namespace nmos
         web::json::value make_nc_property_value_holder(const nc_property_id& property_id, const nc_name& name, const utility::string_t& type_name, bool is_read_only, const web::json::value& property_value);
 
         // TODO: add link
-        web::json::value make_nc_object_properties_holder(const web::json::value& role_path, const web::json::value& property_value_holders, bool is_rebuildable);
+        web::json::value make_nc_object_properties_holder(const web::json::array& role_path, const web::json::array& property_value_holders, bool is_rebuildable);
 
         // TODO: add link
         web::json::value make_nc_property_restore_notice(const nc_property_id& property_id, const nc_name& name, nc_property_restore_notice_type::type notice_type, const utility::string_t& notice_message);
 
         // TODO: add link
-        web::json::value make_nc_object_properties_set_validation(const web::json::value& role_path, nc_restore_validation_status::status status, const web::json::value& notices, const utility::string_t& status_message);
+        web::json::value make_nc_object_properties_set_validation(const web::json::array& role_path, nc_restore_validation_status::status status, const web::json::array& notices, const utility::string_t& status_message);
     }
 
     // command message response
