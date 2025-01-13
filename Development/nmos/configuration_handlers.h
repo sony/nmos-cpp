@@ -24,7 +24,7 @@ namespace nmos
     // This callback is invoked if attempting to modify a rebuildable block when restoring a configuration.
     // This function should handle the modification of the Device Model and any corresponding NMOS resources
     // and return correpsonding NcObjectPropertiesSetValidation objects for each object modified/added
-    typedef std::function<web::json::value(const nmos::resource& resource, const web::json::value& target_role_path, const web::json::array& property_values, bool recurse, const web::json::value& restore_mode, bool validate, nmos::get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor)> modify_rebuildable_block_handler;
+    typedef std::function<web::json::value(const nmos::resource& resource, const web::json::array& target_role_path, const web::json::array& property_values, bool recurse, const web::json::value& restore_mode, bool validate, nmos::get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor)> modify_rebuildable_block_handler;
 }
 
 #endif

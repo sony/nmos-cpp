@@ -337,7 +337,7 @@ namespace nmos
             constraints_validation(data, value::null(), property_constraints, params);
         }
 
-        web::json::value get_nc_block_member_descriptor(const resources& resources, const nmos::resource& parent_nc_block_resource, web::json::value& role_path_segments)
+        web::json::value get_nc_block_member_descriptor(const resources& resources, const nmos::resource& parent_nc_block_resource, web::json::array& role_path_segments)
         {
             if (parent_nc_block_resource.data.has_field(nmos::fields::nc::members))
             {

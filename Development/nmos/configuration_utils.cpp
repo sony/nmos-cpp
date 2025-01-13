@@ -291,7 +291,7 @@ namespace nmos
         return object_properties_set_validation_values;
     }
 
-    web::json::value get_role_path(const nmos::resources& resources, const nmos::resource& resource)
+    web::json::array get_role_path(const nmos::resources& resources, const nmos::resource& resource)
     {
         // Find role path for object
         // Hmmm do we not have a library function to do this?
@@ -318,14 +318,14 @@ namespace nmos
 
         std::reverse(role_path.as_array().begin(), role_path.as_array().end());
 
-        return role_path;
+        return role_path.as_array();
     }
 
     web::json::value apply_backup_data_set(nmos::resources& resources, const nmos::resource& resource, const web::json::array& object_properties_holders, bool recurse, const web::json::value& restore_mode, bool validate, nmos::get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, nmos::filter_property_value_holders_handler filter_property_value_holders, nmos::modify_rebuildable_block_handler modify_rebuildable_block)
     {
         auto object_properties_set_validation_values = web::json::value::array();
 
-        const auto target_role_path = get_role_path(resources, resource).as_array();
+        const auto target_role_path = get_role_path(resources, resource);
 
         // Detect and warn if there are any object_properties_holders outside of the target role path's scope
         // Hmmm, can this be done as a one step process rather than filtering and then iterating over filtered list?

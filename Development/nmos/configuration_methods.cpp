@@ -45,7 +45,7 @@ namespace nmos
             // Get property_value_holders for this resource
             const auto property_value_holders = make_property_value_holders(resource, get_control_protocol_class_descriptor).as_array();
 
-            const auto role_path = get_role_path(resources, resource).as_array();
+            const auto role_path = get_role_path(resources, resource);
 
             auto object_properties_holder = nmos::details::make_nc_object_properties_holder(role_path, property_value_holders, nmos::fields::nc::is_rebuildable(resource.data));
 

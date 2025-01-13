@@ -15,7 +15,7 @@ namespace nmos
     bool is_block_modified(const nmos::resource& resource, const web::json::value& object_properties_holder);
 
     // Get role path of resource given the Device Model resources
-    web::json::value get_role_path(const nmos::resources& resources, const nmos::resource& resource);
+    web::json::array get_role_path(const nmos::resources& resources, const nmos::resource& resource);
 
     web::json::value apply_backup_data_set(nmos::resources& resources, const nmos::resource& resource, const web::json::array& object_properties_holders, bool recurse, const web::json::value& restore_mode, bool validate, nmos::get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, nmos::filter_property_value_holders_handler filter_property_value_holders, nmos::modify_rebuildable_block_handler modify_rebuildable_block);
 }
