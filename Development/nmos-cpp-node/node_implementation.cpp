@@ -1773,12 +1773,7 @@ nmos::modify_rebuildable_block_handler make_modify_rebuildable_block_handler(nmo
         // Validate the object_properties_holder
 
         // Find object_properties_holder for resource
-        const auto& filtered_holders = boost::copy_range<std::set<web::json::value>>(object_properties_holders
-            | boost::adaptors::filtered([&resources, &resource](const web::json::value& object_properties_holder)
-                {
-                    return nmos::fields::nc::path(object_properties_holder) == nmos::get_role_path(resources, resource);
-                })
-        );
+        const auto& filtered_holders = nmos::get_object_properties_holder(object_properties_holders, nmos::get_role_path(resources, resource));
 
         if (filtered_holders.size() != 1)
         {
@@ -1786,30 +1781,21 @@ nmos::modify_rebuildable_block_handler make_modify_rebuildable_block_handler(nmo
             // Error
             return web::json::value::array();
         }
-
-        const auto& object_properties_holder = *filtered_holders.begin();
         
-        const auto& class_id = nmos::details::parse_nc_class_id(nmos::fields::nc::class_id(resource.data));
-        if (!nmos::nc::is_block(class_id))
+        if (!nmos::nc::is_block(nmos::details::parse_nc_class_id(nmos::fields::nc::class_id(resource.data))))
         {
             // Error
             return web::json::value::array();
         }
-        const auto& block_members_properties_holders = boost::copy_range<std::set<web::json::value>>(nmos::fields::nc::values(object_properties_holder)
-            | boost::adaptors::filtered([](const web::json::value& property_value_holder)
-                {
-                    return nmos::nc_property_id(2, 2) == nmos::details::parse_nc_property_id(nmos::fields::nc::id(property_value_holder));
-                })
-        );
-        // There should only be a single property holder for the members
-        if (block_members_properties_holders.size() != 1)
+        const auto& block_members_properties_holder = nmos::get_property_value_holder(*filtered_holders.begin(), nmos::nc_property_id(2, 2));
+
+        if (block_members_properties_holder == web::json::value::null())
         {
             // Error
             return web::json::value::array();
         }
 
-        const auto& members_property_holder = *block_members_properties_holders.begin();
-        const auto& restore_members = nmos::fields::nc::value(members_property_holder);
+        const auto& restore_members = nmos::fields::nc::value(block_members_properties_holder);
         const auto& reference_members = nmos::fields::nc::members(resource.data);
 
         std::vector<int> members_to_remove;
@@ -2001,11 +1987,6 @@ nmos::modify_rebuildable_block_handler make_modify_rebuildable_block_handler(nmo
                 // insert resources
                 insert_resource(model.node_resources, std::move(receiver));
                 insert_resource(resources, std::move(receiver_monitor));
-
-                // Hmmmmmmmmmmmmmmmmmmmmmmmmmmmmm
-                // create some helper functions to do things like:
-                // - manipulate the object_properties_holder to create a json resource based on the object_properties_holders so don't have to keep querying json
-                // - functions to compare device model to object_properties_holder to show differences
             }
         }
 
