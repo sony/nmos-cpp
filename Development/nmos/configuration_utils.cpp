@@ -60,7 +60,7 @@ namespace nmos
             for (const auto& property_value : property_values)
             {
                 const auto& property_id = nmos::details::parse_nc_property_id(nmos::fields::nc::id(property_value));
-                const auto& property_descriptor = nmos::find_property_descriptor(property_id, class_id, get_control_protocol_class_descriptor);
+                const auto& property_descriptor = nmos::nc::find_property_descriptor(property_id, class_id, get_control_protocol_class_descriptor);
 
                 if (bool(nmos::fields::nc::is_read_only(property_descriptor)))
                 {
@@ -93,7 +93,7 @@ namespace nmos
     {
         // Are they blocks?
         nmos::nc_class_id class_id = nmos::details::parse_nc_class_id(nmos::fields::nc::class_id(resource.data));
-        if (!nmos::is_nc_block(class_id))
+        if (!nmos::nc::is_block(class_id))
         {
             return false;
         }
@@ -180,7 +180,7 @@ namespace nmos
 
         const auto& class_id = nmos::details::parse_nc_class_id(nmos::fields::nc::class_id(resource.data));
 
-        if (nmos::is_nc_block(class_id))
+        if (nmos::nc::is_block(class_id))
         {
             // if rebuildable and the block has changed then callback
             if (nmos::fields::nc::is_rebuildable(resource.data) && target_object_properties_holders.size() && is_block_modified(resource, *target_object_properties_holders.begin()))
@@ -210,12 +210,7 @@ namespace nmos
                     if (resources.end() != child)
                     {
                         // Append the role of the child to the target role path to create the child role path
-                        // Hmmmm, there must be a better way of appending the child role to the end of the target role path array...
-                        auto child_role_path = web::json::value::array();
-                        for (const auto& path_element : target_role_path)
-                        {
-                            web::json::push_back(child_role_path, path_element);
-                        }
+                        auto child_role_path = web::json::value_from_elements(target_role_path);
                         web::json::push_back(child_role_path, nmos::fields::nc::role(child->data));
 
                         web::json::value child_object_properties_set_validation_values = modify_device_model(resources, *child, child_role_path.as_array(), child_object_properties_holders.as_array(), recurse, restore_mode, validate, get_control_protocol_class_descriptor, filter_property_value_holders, modify_rebuildable_block);
@@ -237,7 +232,7 @@ namespace nmos
                 | boost::adaptors::filtered([&property_restore_notices, &resource, class_id, get_control_protocol_class_descriptor, restore_mode](const web::json::value& property_value)
                     {
                         const auto& property_id = nmos::details::parse_nc_property_id(nmos::fields::nc::id(property_value));
-                        const auto& property_descriptor = nmos::find_property_descriptor(property_id, class_id, get_control_protocol_class_descriptor);
+                        const auto& property_descriptor = nmos::nc::find_property_descriptor(property_id, class_id, get_control_protocol_class_descriptor);
 
                         return resource.data.at(nmos::fields::nc::name(property_descriptor)) != nmos::fields::nc::value(property_value)
                             && details::is_property_value_valid(property_restore_notices, property_value, property_descriptor, restore_mode, bool(nmos::fields::nc::is_rebuildable(resource.data)));
@@ -270,14 +265,14 @@ namespace nmos
             {
                 const auto& property_id = nmos::details::parse_nc_property_id(nmos::fields::nc::id(property_value));
 
-                // hmmm, ideally we would pass the value into modify_control_protocol_resource with the validate
+                // hmmm, ideally we would pass the value into modify_resource with the validate
                 // flag, so that it's subject to property contraints and also the application code can decide if it's a legal value
                 if (!validate)
                 {
                     // modify control protocol resources
                     const auto& value = nmos::fields::nc::value(property_value);
 
-                    modify_control_protocol_resource(resources, resource.id, [&](nmos::resource& resource_)
+                    nc::modify_resource(resources, resource.id, [&](nmos::resource& resource_)
                         {
                             resource_.data[nmos::fields::nc::name(property_value)] = value;
 
@@ -349,5 +344,23 @@ namespace nmos
         }
 
         return object_properties_set_validation_values;
+    }
+
+    web::json::value get_property_value_holder(const web::json::value& object_properties_holder, const nmos::nc_property_id& property_id)
+    {
+        const auto& filtered_property_value_holders = boost::copy_range<std::set<web::json::value>>(nmos::fields::nc::values(object_properties_holder)
+            | boost::adaptors::filtered([&property_id](const web::json::value& property_value_holder)
+                {
+                    return property_id == nmos::details::parse_nc_property_id(nmos::fields::nc::id(property_value_holder));
+                })
+        );
+        // There should only be a single property holder for the members
+        if (filtered_property_value_holders.size() != 1)
+        {
+            // Error
+            return web::json::value::null();
+        }
+
+        return *filtered_property_value_holders.begin();
     }
 }

@@ -21,7 +21,7 @@ namespace nmos
         slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Get property: " << property_id.serialize();
 
         // find the relevant nc_property_descriptor
-        const auto& property = find_property_descriptor(details::parse_nc_property_id(property_id), details::parse_nc_class_id(nmos::fields::nc::class_id(resource.data)), get_control_protocol_class_descriptor);
+        const auto& property = nc::find_property_descriptor(details::parse_nc_property_id(property_id), details::parse_nc_class_id(nmos::fields::nc::class_id(resource.data)), get_control_protocol_class_descriptor);
         if (!property.is_null())
         {
             return details::make_nc_method_result({ is_deprecated ? nmos::nc_method_status::method_deprecated : nmos::fields::nc::is_deprecated(property) ? nc_method_status::property_deprecated : nc_method_status::ok }, resource.data.at(nmos::fields::nc::name(property)));
@@ -46,7 +46,7 @@ namespace nmos
 
         // find the relevant nc_property_descriptor
         const auto property_id_ = details::parse_nc_property_id(property_id);
-        const auto& property = find_property_descriptor(property_id_, details::parse_nc_class_id(nmos::fields::nc::class_id(resource.data)), get_control_protocol_class_descriptor);
+        const auto& property = nc::find_property_descriptor(property_id_, details::parse_nc_class_id(nmos::fields::nc::class_id(resource.data)), get_control_protocol_class_descriptor);
         if (!property.is_null())
         {
             if (nmos::fields::nc::is_read_only(property))
@@ -70,10 +70,10 @@ namespace nmos
             try
             {
                 // do property constraints validation
-                nmos::details::constraints_validation(val, details::get_runtime_property_constraints(property_id_, resource.data.at(nmos::fields::nc::runtime_property_constraints)), nmos::fields::nc::constraints(property), { details::get_datatype_descriptor(property.at(nmos::fields::nc::type_name), get_control_protocol_datatype_descriptor), get_control_protocol_datatype_descriptor });
+                nmos::nc::details::constraints_validation(val, nc::details::get_runtime_property_constraints(property_id_, resource.data.at(nmos::fields::nc::runtime_property_constraints)), nmos::fields::nc::constraints(property), { nc::details::get_datatype_descriptor(property.at(nmos::fields::nc::type_name), get_control_protocol_datatype_descriptor), get_control_protocol_datatype_descriptor });
 
                 // update property
-                modify_control_protocol_resource(resources, resource.id, [&](nmos::resource& resource)
+                nc::modify_resource(resources, resource.id, [&](nmos::resource& resource)
                 {
                     resource.data[nmos::fields::nc::name(property)] = val;
 
@@ -114,7 +114,7 @@ namespace nmos
         slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Get sequence item: " << property_id.serialize() << " index: " << index;
 
         // find the relevant nc_property_descriptor
-        const auto& property = find_property_descriptor(details::parse_nc_property_id(property_id), details::parse_nc_class_id(nmos::fields::nc::class_id(resource.data)), get_control_protocol_class_descriptor);
+        const auto& property = nc::find_property_descriptor(details::parse_nc_property_id(property_id), details::parse_nc_class_id(nmos::fields::nc::class_id(resource.data)), get_control_protocol_class_descriptor);
         if (!property.is_null())
         {
             const auto& data = resource.data.at(nmos::fields::nc::name(property));
@@ -159,7 +159,7 @@ namespace nmos
 
         // find the relevant nc_property_descriptor
         const auto property_id_ = details::parse_nc_property_id(property_id);
-        const auto& property = find_property_descriptor(property_id_, details::parse_nc_class_id(nmos::fields::nc::class_id(resource.data)), get_control_protocol_class_descriptor);
+        const auto& property = nc::find_property_descriptor(property_id_, details::parse_nc_class_id(nmos::fields::nc::class_id(resource.data)), get_control_protocol_class_descriptor);
         if (!property.is_null())
         {
             if (nmos::fields::nc::is_read_only(property))
@@ -183,10 +183,10 @@ namespace nmos
                 try
                 {
                     // do property constraints validation
-                    nmos::details::constraints_validation(val, details::get_runtime_property_constraints(property_id_, resource.data.at(nmos::fields::nc::runtime_property_constraints)), nmos::fields::nc::constraints(property), { details::get_datatype_descriptor(property.at(nmos::fields::nc::type_name), get_control_protocol_datatype_descriptor), get_control_protocol_datatype_descriptor });
+                    nmos::nc::details::constraints_validation(val, nc::details::get_runtime_property_constraints(property_id_, resource.data.at(nmos::fields::nc::runtime_property_constraints)), nmos::fields::nc::constraints(property), { nc::details::get_datatype_descriptor(property.at(nmos::fields::nc::type_name), get_control_protocol_datatype_descriptor), get_control_protocol_datatype_descriptor });
 
                     // update property
-                    modify_control_protocol_resource(resources, resource.id, [&](nmos::resource& resource)
+                    nc::modify_resource(resources, resource.id, [&](nmos::resource& resource)
                     {
                         resource.data[nmos::fields::nc::name(property)][index] = val;
 
@@ -237,7 +237,7 @@ namespace nmos
 
         // find the relevant nc_property_descriptor
         const auto property_id_ = details::parse_nc_property_id(property_id);
-        const auto& property = find_property_descriptor(property_id_, details::parse_nc_class_id(nmos::fields::nc::class_id(resource.data)), get_control_protocol_class_descriptor);
+        const auto& property = nc::find_property_descriptor(property_id_, details::parse_nc_class_id(nmos::fields::nc::class_id(resource.data)), get_control_protocol_class_descriptor);
         if (!property.is_null())
         {
             if (nmos::fields::nc::is_read_only(property))
@@ -260,10 +260,10 @@ namespace nmos
             try
             {
                 // do property constraints validation
-                nmos::details::constraints_validation(val, details::get_runtime_property_constraints(property_id_, resource.data.at(nmos::fields::nc::runtime_property_constraints)), nmos::fields::nc::constraints(property), { details::get_datatype_descriptor(property.at(nmos::fields::nc::type_name), get_control_protocol_datatype_descriptor), get_control_protocol_datatype_descriptor });
+                nmos::nc::details::constraints_validation(val, nc::details::get_runtime_property_constraints(property_id_, resource.data.at(nmos::fields::nc::runtime_property_constraints)), nmos::fields::nc::constraints(property), { nc::details::get_datatype_descriptor(property.at(nmos::fields::nc::type_name), get_control_protocol_datatype_descriptor), get_control_protocol_datatype_descriptor });
 
                 // update property
-                modify_control_protocol_resource(resources, resource.id, [&](nmos::resource& resource)
+                nc::modify_resource(resources, resource.id, [&](nmos::resource& resource)
                 {
                     auto& sequence = resource.data[nmos::fields::nc::name(property)];
                     if (data.is_null()) { sequence = value::array(); }
@@ -306,7 +306,7 @@ namespace nmos
         slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Remove sequence item: " << property_id.serialize() << " index: " << index;
 
         // find the relevant nc_property_descriptor
-        const auto& property = find_property_descriptor(details::parse_nc_property_id(property_id), details::parse_nc_class_id(nmos::fields::nc::class_id(resource.data)), get_control_protocol_class_descriptor);
+        const auto& property = nc::find_property_descriptor(details::parse_nc_property_id(property_id), details::parse_nc_class_id(nmos::fields::nc::class_id(resource.data)), get_control_protocol_class_descriptor);
         if (!property.is_null())
         {
             const auto& data = resource.data.at(nmos::fields::nc::name(property));
@@ -322,7 +322,7 @@ namespace nmos
 
             if (data.as_array().size() > (size_t)index)
             {
-                modify_control_protocol_resource(resources, resource.id, [&](nmos::resource& resource)
+                nc::modify_resource(resources, resource.id, [&](nmos::resource& resource)
                 {
                     auto& sequence = resource.data[nmos::fields::nc::name(property)].as_array();
                     sequence.erase(index);
@@ -358,7 +358,7 @@ namespace nmos
         slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Get sequence length: " << property_id.serialize();
 
         // find the relevant nc_property_descriptor
-        const auto& property = find_property_descriptor(details::parse_nc_property_id(property_id), details::parse_nc_class_id(nmos::fields::nc::class_id(resource.data)), get_control_protocol_class_descriptor);
+        const auto& property = nc::find_property_descriptor(details::parse_nc_property_id(property_id), details::parse_nc_class_id(nmos::fields::nc::class_id(resource.data)), get_control_protocol_class_descriptor);
         if (!property.is_null())
         {
             if (!nmos::fields::nc::is_sequence(property))
@@ -416,7 +416,7 @@ namespace nmos
         slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Get descriptors of members of the block: " << "recurse: " << recurse;
 
         auto descriptors = value::array();
-        nmos::get_member_descriptors(resources, resource, recurse, descriptors.as_array());
+        nmos::nc::get_member_descriptors(resources, resource, recurse, descriptors.as_array());
 
         return details::make_nc_method_result({ is_deprecated ? nmos::nc_method_status::method_deprecated : nc_method_status::ok }, descriptors);
     }
@@ -506,7 +506,7 @@ namespace nmos
         }
 
         auto descriptors = value::array();
-        nmos::find_members_by_role(resources, resource, role, match_whole_string, case_sensitive, recurse, descriptors.as_array());
+        nmos::nc::find_members_by_role(resources, resource, role, match_whole_string, case_sensitive, recurse, descriptors.as_array());
 
         return details::make_nc_method_result({ is_deprecated ? nmos::nc_method_status::method_deprecated : nc_method_status::ok }, descriptors);
     }
@@ -533,7 +533,7 @@ namespace nmos
         // note, model mutex is already locked by the outer function, so access to control_protocol_resources is OK...
 
         auto descriptors = value::array();
-        nmos::find_members_by_class_id(resources, resource, class_id, include_derived, recurse, descriptors.as_array());
+        nmos::nc::find_members_by_class_id(resources, resource, class_id, include_derived, recurse, descriptors.as_array());
 
         return details::make_nc_method_result({ is_deprecated ? nmos::nc_method_status::method_deprecated : nc_method_status::ok }, descriptors);
     }

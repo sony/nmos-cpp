@@ -52,7 +52,7 @@ namespace nmos
             web::json::push_back(object_properties_holders, object_properties_holder);
 
             // Recurse into members...if we want to...and the object has them
-            if (recurse && nmos::is_nc_block(nmos::details::parse_nc_class_id(nmos::fields::nc::class_id(resource.data))))
+            if (recurse && nmos::nc::is_block(nmos::details::parse_nc_class_id(nmos::fields::nc::class_id(resource.data))))
             {
                 if (resource.data.has_field(nmos::fields::nc::members))
                 {
@@ -82,7 +82,7 @@ namespace nmos
             boost::hash_combine(hash, nmos::fields::nc::role(resource.data));
 
             // Recurse into members...if we want to...and the object has them
-            if (nmos::is_nc_block(nmos::details::parse_nc_class_id(nmos::fields::nc::class_id(resource.data))))
+            if (nmos::nc::is_block(nmos::details::parse_nc_class_id(nmos::fields::nc::class_id(resource.data))))
             {
                 if (resource.data.has_field(nmos::fields::nc::members))
                 {

@@ -63,11 +63,11 @@ BST_TEST_CASE(testIsBlockModified)
     // root, receivers, mon2
     auto monitor2 = nmos::make_receiver_monitor(++oid, true, receiver_block_oid, U("mon2"), U("monitor 2"), U("monitor 2"), value_of({ {nmos::details::make_nc_touchpoint_nmos({nmos::ncp_touchpoint_resource_types::receiver, U("id_2")})} }));
     auto monitor_2_oid = oid;
-    nmos::push_back(receivers, monitor1);
+    nmos::nc::push_back(receivers, monitor1);
     // add example-control to root-block
-    nmos::push_back(receivers, monitor2);
+    nmos::nc::push_back(receivers, monitor2);
     // add stereo-gain to root-block
-    nmos::push_back(root_block, receivers);
+    nmos::nc::push_back(root_block, receivers);
 
     // Create Object Properties Holder
     auto role_path = value::array();
@@ -161,7 +161,7 @@ BST_TEST_CASE(testIsBlockModified)
         auto property_value_holders = value::array();
 
         auto members = value::array();
-        const auto class_id = nmos::make_nc_class_id(nmos::nc_worker_class_id, 0, { 1 });
+        const auto class_id = nmos::nc::make_class_id(nmos::nc_worker_class_id, 0, { 1 });
         {
             const auto block_member_descriptor = nmos::details::make_nc_block_member_descriptor(U("monitor 1"), U("mon1"), monitor_1_oid, true, class_id, U("monitor 1"), receiver_block_oid);
             push_back(members, block_member_descriptor);
@@ -183,7 +183,7 @@ BST_TEST_CASE(testIsBlockModified)
         auto property_value_holders = value::array();
 
         auto members = value::array();
-        const auto class_id = nmos::make_nc_class_id(nmos::nc_worker_class_id, 0, { 1 });
+        const auto class_id = nmos::nc::make_class_id(nmos::nc_worker_class_id, 0, { 1 });
         {
             const auto block_member_descriptor = nmos::details::make_nc_block_member_descriptor(U("monitor 1"), U("mon1"), monitor_1_oid, true, class_id, U("monitor 1"), 20);
             push_back(members, block_member_descriptor);
@@ -205,7 +205,7 @@ BST_TEST_CASE(testIsBlockModified)
         auto property_value_holders = value::array();
 
         auto members = value::array();
-        const auto class_id = nmos::make_nc_class_id(nmos::nc_worker_class_id, 0, { 1 });
+        const auto class_id = nmos::nc::make_class_id(nmos::nc_worker_class_id, 0, { 1 });
         {
             const auto block_member_descriptor = nmos::details::make_nc_block_member_descriptor(U("monitor 1"), U("mon1"), monitor_1_oid, false, class_id, U("monitor 1"), receiver_block_oid);
             push_back(members, block_member_descriptor);
@@ -247,13 +247,13 @@ BST_TEST_CASE(testGetRolePath)
     nmos::nc_class_id monitor_class_id = nmos::details::parse_nc_class_id(nmos::fields::nc::class_id(monitor1.data));
     // root, receivers, mon2
     auto monitor2 = nmos::make_receiver_monitor(++oid, true, receiver_block_oid, U("mon2"), U("monitor 2"), U("monitor 2"), value_of({ {nmos::details::make_nc_touchpoint_nmos({nmos::ncp_touchpoint_resource_types::receiver, U("id_2")})} }));
-    nmos::push_back(receivers, monitor1);
+    nmos::nc::push_back(receivers, monitor1);
     // add example-control to root-block
-    nmos::push_back(receivers, monitor2);
+    nmos::nc::push_back(receivers, monitor2);
     // add stereo-gain to root-block
-    nmos::push_back(root_block, receivers);
+    nmos::nc::push_back(root_block, receivers);
     // add class-manager to root-block
-    nmos::push_back(root_block, class_manager);
+    nmos::nc::push_back(root_block, class_manager);
     insert_resource(resources, std::move(root_block));
     insert_resource(resources, std::move(class_manager));
     insert_resource(resources, std::move(receivers));
@@ -269,7 +269,7 @@ BST_TEST_CASE(testGetRolePath)
 
     for (const auto& expected_role_path : expected_role_paths.as_array())
     {
-        const auto& resource = find_control_protocol_resource_by_role_path(resources, expected_role_path.as_array());
+        const auto& resource = nmos::nc::find_resource_by_role_path(resources, expected_role_path.as_array());
         const auto actual_role_path = nmos::get_role_path(resources, *resource);
         BST_CHECK_EQUAL(expected_role_path.as_array(), actual_role_path);
     }
@@ -304,13 +304,13 @@ BST_TEST_CASE(testApplyBackupDataSet)
     auto monitor_class_id = nmos::details::parse_nc_class_id(nmos::fields::nc::class_id(monitor1.data));
     // root, receivers, mon2
     auto monitor2 = nmos::make_receiver_monitor(++oid, true, receiver_block_oid, U("mon2"), U("monitor 2"), U("monitor 2"), value_of({ {nmos::details::make_nc_touchpoint_nmos({nmos::ncp_touchpoint_resource_types::receiver, U("id_2")})} }));
-    nmos::push_back(receivers, monitor1);
+    nmos::nc::push_back(receivers, monitor1);
     // add example-control to root-block
-    nmos::push_back(receivers, monitor2);
+    nmos::nc::push_back(receivers, monitor2);
     // add stereo-gain to root-block
-    nmos::push_back(root_block, receivers);
+    nmos::nc::push_back(root_block, receivers);
     // add class-manager to root-block
-    nmos::push_back(root_block, class_manager);
+    nmos::nc::push_back(root_block, class_manager);
     insert_resource(resources, std::move(root_block));
     insert_resource(resources, std::move(class_manager));
     insert_resource(resources, std::move(receivers));
@@ -357,7 +357,7 @@ BST_TEST_CASE(testApplyBackupDataSet)
         bool validate = true;
         const value restore_mode{ nmos::nc_restore_mode::restore_mode::modify };
 
-        const auto& resource = find_control_protocol_resource_by_role_path(resources, target_role_path.as_array());
+        const auto& resource = nmos::nc::find_resource_by_role_path(resources, target_role_path.as_array());
         auto output = nmos::apply_backup_data_set(resources, *resource, object_properties_holders.as_array(), recurse, restore_mode, validate, get_control_protocol_class_descriptor, filter_property_value_holders, modify_rebuildable_block);
 
         // expectation is there will be a result for each of the object_properties_holders i.e. one
@@ -394,7 +394,7 @@ BST_TEST_CASE(testApplyBackupDataSet)
         const value restore_mode{ nmos::nc_restore_mode::restore_mode::rebuild };
         bool validate = true;
 
-        const auto& resource = find_control_protocol_resource_by_role_path(resources, target_role_path.as_array());
+        const auto& resource = nmos::nc::find_resource_by_role_path(resources, target_role_path.as_array());
         auto output = nmos::apply_backup_data_set(resources, *resource, object_properties_holders.as_array(), recurse, restore_mode, validate, get_control_protocol_class_descriptor, filter_property_value_holders, modify_rebuildable_block);
 
         // expectation is there will be a result for each of the object_properties_holders i.e. one
@@ -432,7 +432,7 @@ BST_TEST_CASE(testApplyBackupDataSet)
         const value restore_mode{ nmos::nc_restore_mode::restore_mode::rebuild };
         bool validate = true;
 
-        const auto& resource = find_control_protocol_resource_by_role_path(resources, target_role_path.as_array());
+        const auto& resource = nmos::nc::find_resource_by_role_path(resources, target_role_path.as_array());
         const auto output = nmos::apply_backup_data_set(resources, *resource, object_properties_holders.as_array(), recurse, restore_mode, validate, get_control_protocol_class_descriptor, filter_property_value_holders, modify_rebuildable_block);
 
         // expectation is there will be a result for each of the object_properties_holders i.e. one
@@ -482,7 +482,7 @@ BST_TEST_CASE(testApplyBackupDataSet)
         const value restore_mode{ nmos::nc_restore_mode::restore_mode::modify };
         bool validate = true;
 
-        const auto& resource = find_control_protocol_resource_by_role_path(resources, target_role_path.as_array());
+        const auto& resource = nmos::nc::find_resource_by_role_path(resources, target_role_path.as_array());
         const auto output = nmos::apply_backup_data_set(resources, *resource, object_properties_holders.as_array(), recurse, restore_mode, validate, get_control_protocol_class_descriptor, filter_property_value_holders, modify_rebuildable_block);
 
         // expectation is there will be a result for each of the object_properties_holders i.e. one
@@ -527,7 +527,7 @@ BST_TEST_CASE(testApplyBackupDataSet)
         bool validate = true;
         const value restore_mode{ nmos::nc_restore_mode::restore_mode::rebuild };
 
-        const auto& resource = find_control_protocol_resource_by_role_path(resources, target_role_path.as_array());
+        const auto& resource = nmos::nc::find_resource_by_role_path(resources, target_role_path.as_array());
         const auto output = nmos::apply_backup_data_set(resources, *resource, object_properties_holders.as_array(), recurse, restore_mode, validate, get_control_protocol_class_descriptor, filter_property_value_holders, modify_rebuildable_block);
 
         // expectation is there will be a result for each of the object_properties_holders i.e. one
@@ -561,7 +561,7 @@ BST_TEST_CASE(testApplyBackupDataSet)
         bool validate = true;
         const value restore_mode{ nmos::nc_restore_mode::restore_mode::rebuild };
 
-        const auto& resource = find_control_protocol_resource_by_role_path(resources, target_role_path.as_array());
+        const auto& resource = nmos::nc::find_resource_by_role_path(resources, target_role_path.as_array());
         const auto output = nmos::apply_backup_data_set(resources, *resource, object_properties_holders.as_array(), recurse, restore_mode, validate, get_control_protocol_class_descriptor, filter_property_value_holders, modify_rebuildable_block);
 
         // expectation is there will be a result for each of the object_properties_holders i.e. one
@@ -596,7 +596,7 @@ BST_TEST_CASE(testApplyBackupDataSet)
         const value restore_mode{ nmos::nc_restore_mode::restore_mode::rebuild };
         bool validate = true;
 
-        const auto& resource = find_control_protocol_resource_by_role_path(resources, target_role_path.as_array());
+        const auto& resource = nmos::nc::find_resource_by_role_path(resources, target_role_path.as_array());
         const auto output = nmos::apply_backup_data_set(resources, *resource, object_properties_holders.as_array(), recurse, restore_mode, validate, get_control_protocol_class_descriptor, filter_property_value_holders, modify_rebuildable_block);
 
         // expectation is there will be a result for each of the object_properties_holders i.e. one
@@ -640,7 +640,7 @@ BST_TEST_CASE(testApplyBackupDataSet)
         const value restore_mode{ nmos::nc_restore_mode::restore_mode::rebuild };
         bool validate = true;
 
-        const auto& resource = find_control_protocol_resource_by_role_path(resources, target_role_path.as_array());
+        const auto& resource = nmos::nc::find_resource_by_role_path(resources, target_role_path.as_array());
         const auto output = nmos::apply_backup_data_set(resources, *resource, object_properties_holders.as_array(), recurse, restore_mode, validate, get_control_protocol_class_descriptor, filter_property_value_holders, modify_rebuildable_block);
 
         // expectation is there will be a result for each of the object_properties_holders i.e. one
@@ -684,7 +684,7 @@ BST_TEST_CASE(testApplyBackupDataSet)
         const value restore_mode{ nmos::nc_restore_mode::restore_mode::rebuild };
         bool validate = true;
 
-        const auto& resource = find_control_protocol_resource_by_role_path(resources, target_role_path.as_array());
+        const auto& resource = nmos::nc::find_resource_by_role_path(resources, target_role_path.as_array());
         const auto output = nmos::apply_backup_data_set(resources, *resource, object_properties_holders.as_array(), recurse, restore_mode, validate, get_control_protocol_class_descriptor, filter_property_value_holders, modify_rebuildable_block);
 
         // expectation is there will be a result for each of the object_properties_holders i.e. one
@@ -739,13 +739,13 @@ BST_TEST_CASE(testApplyBackupDataSet_WithoutCallbacks)
     const auto monitor_class_id = nmos::details::parse_nc_class_id(nmos::fields::nc::class_id(monitor1.data));
     // root, receivers, mon2
     auto monitor2 = nmos::make_receiver_monitor(++oid, true, receiver_block_oid, U("mon2"), U("monitor 2"), U("monitor 2"), value_of({ {nmos::details::make_nc_touchpoint_nmos({nmos::ncp_touchpoint_resource_types::receiver, U("id_2")})} }));
-    nmos::push_back(receivers, monitor1);
+    nmos::nc::push_back(receivers, monitor1);
     // add example-control to root-block
-    nmos::push_back(receivers, monitor2);
+    nmos::nc::push_back(receivers, monitor2);
     // add stereo-gain to root-block
-    nmos::push_back(root_block, receivers);
+    nmos::nc::push_back(root_block, receivers);
     // add class-manager to root-block
-    nmos::push_back(root_block, class_manager);
+    nmos::nc::push_back(root_block, class_manager);
     insert_resource(resources, std::move(root_block));
     insert_resource(resources, std::move(class_manager));
     insert_resource(resources, std::move(receivers));
@@ -772,7 +772,7 @@ BST_TEST_CASE(testApplyBackupDataSet_WithoutCallbacks)
         bool validate = true;
         const value restore_mode{ nmos::nc_restore_mode::restore_mode::modify };
 
-        const auto& resource = find_control_protocol_resource_by_role_path(resources, target_role_path.as_array());
+        const auto& resource = nmos::nc::find_resource_by_role_path(resources, target_role_path.as_array());
         const auto output = nmos::apply_backup_data_set(resources, *resource, object_properties_holders.as_array(), recurse, restore_mode, validate, get_control_protocol_class_descriptor, filter_property_value_holders, modify_rebuildable_block);
 
         // expectation is there will be a result for each of the object_properties_holders i.e. one
@@ -799,7 +799,7 @@ BST_TEST_CASE(testApplyBackupDataSet_WithoutCallbacks)
         bool validate = true;
         const value restore_mode{ nmos::nc_restore_mode::restore_mode::rebuild };
 
-        const auto& resource = find_control_protocol_resource_by_role_path(resources, target_role_path.as_array());
+        const auto& resource = nmos::nc::find_resource_by_role_path(resources, target_role_path.as_array());
         const auto output = nmos::apply_backup_data_set(resources, *resource, object_properties_holders.as_array(), recurse, restore_mode, validate, get_control_protocol_class_descriptor, filter_property_value_holders, modify_rebuildable_block);
 
         // expectation is there will be a result for each of the object_properties_holders i.e. one
@@ -829,7 +829,7 @@ BST_TEST_CASE(testApplyBackupDataSet_WithoutCallbacks)
         const value restore_mode{ nmos::nc_restore_mode::restore_mode::rebuild };
         bool validate = true;
 
-        const auto& resource = find_control_protocol_resource_by_role_path(resources, target_role_path.as_array());
+        const auto& resource = nmos::nc::find_resource_by_role_path(resources, target_role_path.as_array());
         const auto output = nmos::apply_backup_data_set(resources, *resource, object_properties_holders.as_array(), recurse, restore_mode, validate, get_control_protocol_class_descriptor, filter_property_value_holders, modify_rebuildable_block);
 
         // expectation is there will be a result for each of the object_properties_holders i.e. one
@@ -857,7 +857,7 @@ BST_TEST_CASE(testApplyBackupDataSet_WithoutCallbacks)
         bool validate = true;
         const value restore_mode{ nmos::nc_restore_mode::restore_mode::rebuild };
 
-        const auto& resource = find_control_protocol_resource_by_role_path(resources, target_role_path.as_array());
+        const auto& resource = nmos::nc::find_resource_by_role_path(resources, target_role_path.as_array());
         const auto output = nmos::apply_backup_data_set(resources, *resource, object_properties_holders.as_array(), recurse, restore_mode, validate, get_control_protocol_class_descriptor, filter_property_value_holders, modify_rebuildable_block);
 
         // expectation is there will be a result for each of the object_properties_holders i.e. one
