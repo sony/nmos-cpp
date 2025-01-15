@@ -224,6 +224,130 @@ BST_TEST_CASE(testIsBlockModified)
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////
+BST_TEST_CASE(testGetObjectPropertiesHolder)
+{
+    using web::json::value_of;
+    using web::json::value;
+
+    // Create Object Properties Holder
+    auto object_properties_holders = value::array();
+
+    {
+        const auto role_path = value_of({ U("root"), U("receivers"), U("mon1") });
+        auto property_value_holders = value::array();
+        const auto property_value_holder = nmos::details::make_nc_property_value_holder(nmos::nc_property_id(2, 1), U("enabled"), U("NcBoolean"), false, value::boolean(false));
+        push_back(property_value_holders, property_value_holder);
+        const auto object_properties_holder = nmos::details::make_nc_object_properties_holder(role_path.as_array(), property_value_holders.as_array(), false);
+        push_back(object_properties_holders, object_properties_holder);
+    }
+    {
+        const auto role_path = value_of({ U("root"), U("receivers"), U("mon2") });
+        auto property_value_holders = value::array();
+        const auto property_value_holder = nmos::details::make_nc_property_value_holder(nmos::nc_property_id(2, 1), U("enabled"), U("NcBoolean"), false, value::boolean(false));
+        push_back(property_value_holders, property_value_holder);
+        const auto object_properties_holder = nmos::details::make_nc_object_properties_holder(role_path.as_array(), property_value_holders.as_array(), false);
+        push_back(object_properties_holders, object_properties_holder);
+    }
+    {
+        const auto role_path = value_of({ U("root"), U("senders"), U("mon1") });
+        auto property_value_holders = value::array();
+        const auto property_value_holder = nmos::details::make_nc_property_value_holder(nmos::nc_property_id(2, 1), U("enabled"), U("NcBoolean"), false, value::boolean(false));
+        push_back(property_value_holders, property_value_holder);
+        const auto object_properties_holder = nmos::details::make_nc_object_properties_holder(role_path.as_array(), property_value_holders.as_array(), false);
+        push_back(object_properties_holders, object_properties_holder);
+    }
+
+    {
+        const auto target_role_path = value_of({ U("root"), U("receivers"), U("mon1") });
+        web::json::array object_property_holder = nmos::get_object_properties_holder(object_properties_holders.as_array(), target_role_path.as_array());
+        BST_REQUIRE_EQUAL(1, object_property_holder.size());
+        BST_CHECK_EQUAL(target_role_path.as_array(), nmos::fields::nc::path(*object_property_holder.begin()));
+    }
+    {
+        const auto target_role_path = value_of({ U("root"), U("receivers"), U("mon2") });
+        web::json::array object_property_holder = nmos::get_object_properties_holder(object_properties_holders.as_array(), target_role_path.as_array());
+        BST_REQUIRE_EQUAL(1, object_property_holder.size());
+        BST_CHECK_EQUAL(target_role_path.as_array(), nmos::fields::nc::path(*object_property_holder.begin()));
+    }
+    {
+        const auto target_role_path = value_of({ U("root"), U("receivers") });
+        web::json::array object_property_holder = nmos::get_object_properties_holder(object_properties_holders.as_array(), target_role_path.as_array());
+        BST_REQUIRE_EQUAL(0, object_property_holder.size());
+    }
+    {
+        const auto target_role_path = value_of({ U("root"), U("does_not_exist") });
+        web::json::array object_property_holder = nmos::get_object_properties_holder(object_properties_holders.as_array(), target_role_path.as_array());
+        BST_REQUIRE_EQUAL(0, object_property_holder.size());
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////
+BST_TEST_CASE(testGetChildObjectPropertiesHolders)
+{
+    using web::json::value_of;
+    using web::json::value;
+
+    // Create Object Properties Holder
+    auto object_properties_holders = value::array();
+    
+    {
+        const auto role_path = value_of({ U("root"), U("receivers"), U("mon1") });
+        auto property_value_holders = value::array();
+        const auto property_value_holder = nmos::details::make_nc_property_value_holder(nmos::nc_property_id(2, 1), U("enabled"), U("NcBoolean"), false, value::boolean(false));
+        push_back(property_value_holders, property_value_holder);
+        const auto object_properties_holder = nmos::details::make_nc_object_properties_holder(role_path.as_array(), property_value_holders.as_array(), false);
+        push_back(object_properties_holders, object_properties_holder);
+    }
+    {
+        const auto role_path = value_of({ U("root"), U("receivers"), U("mon2") });
+        auto property_value_holders = value::array();
+        const auto property_value_holder = nmos::details::make_nc_property_value_holder(nmos::nc_property_id(2, 1), U("enabled"), U("NcBoolean"), false, value::boolean(false));
+        push_back(property_value_holders, property_value_holder);
+        const auto object_properties_holder = nmos::details::make_nc_object_properties_holder(role_path.as_array(), property_value_holders.as_array(), false);
+        push_back(object_properties_holders, object_properties_holder);
+    }
+    {
+        const auto role_path = value_of({ U("root"), U("senders"), U("mon1") });
+        auto property_value_holders = value::array();
+        const auto property_value_holder = nmos::details::make_nc_property_value_holder(nmos::nc_property_id(2, 1), U("enabled"), U("NcBoolean"), false, value::boolean(false));
+        push_back(property_value_holders, property_value_holder);
+        const auto object_properties_holder = nmos::details::make_nc_object_properties_holder(role_path.as_array(), property_value_holders.as_array(), false);
+        push_back(object_properties_holders, object_properties_holder);
+    }
+
+    {
+        const auto target_role_path = value_of({ U("root"), U("receivers") });
+
+        const auto child_object_properties_holders = nmos::get_child_object_properties_holders(object_properties_holders.as_array(), target_role_path.as_array());
+
+        BST_REQUIRE_EQUAL(2, child_object_properties_holders.size());
+
+        const auto& object_properties_holder1 = nmos::get_object_properties_holder(child_object_properties_holders, value_of({ U("root"), U("receivers"), U("mon1") }).as_array());
+        BST_CHECK_EQUAL(1, object_properties_holder1.size());
+
+        const auto& object_properties_holder2 = nmos::get_object_properties_holder(child_object_properties_holders, value_of({ U("root"), U("receivers"), U("mon2") }).as_array());
+        BST_CHECK_EQUAL(1, object_properties_holder2.size());
+    }
+    {
+        const auto target_role_path = value_of({ U("root"), U("receivers"), U("mon1")});
+
+        const auto child_object_properties_holders = nmos::get_child_object_properties_holders(object_properties_holders.as_array(), target_role_path.as_array());
+
+        BST_REQUIRE_EQUAL(1, child_object_properties_holders.size());
+
+        const auto& object_properties_holder1 = nmos::get_object_properties_holder(child_object_properties_holders, value_of({ U("root"), U("receivers"), U("mon1") }).as_array());
+        BST_CHECK_EQUAL(1, object_properties_holder1.size());
+    }
+    {
+        const auto target_role_path = value_of({ U("root"), U("does_not_exist") });
+
+        const auto child_object_properties_holders = nmos::get_child_object_properties_holders(object_properties_holders.as_array(), target_role_path.as_array());
+
+        BST_REQUIRE_EQUAL(0, child_object_properties_holders.size());
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////
 BST_TEST_CASE(testGetRolePath)
 {
     // Create Fake Device Model
@@ -330,7 +454,7 @@ BST_TEST_CASE(testApplyBackupDataSet)
             {
                 web::json::push_back(modifiable_property_value_holders, property_value);
             }
-            return modifiable_property_value_holders;
+            return modifiable_property_value_holders.as_array();
         };
     nmos::modify_rebuildable_block_handler modify_rebuildable_block = [&](const nmos::resource& resource, const web::json::array& target_role_path, const web::json::array& object_properties_holders, bool recurse, const web::json::value& restore_mode, bool validate, nmos::get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor)
         {

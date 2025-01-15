@@ -1757,7 +1757,7 @@ nmos::filter_property_value_holders_handler make_filter_property_value_holders_h
                 web::json::push_back(modifiable_property_value_holders, property_value);
             }
         }
-        return modifiable_property_value_holders;
+        return modifiable_property_value_holders.as_array();
     };
 }
 
