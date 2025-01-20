@@ -22,5 +22,7 @@ Third-party source files used by the nmos-cpp libraries
   The JSON Schema files used for validation of System API requests and responses
 - [is-10](is-10)  
   The JSON Schema files used for validation of Authorization API requests and responses
+- [is-13](is-13)  
+  The JSON Schema files used for validation of Annotation API requests and responses
 - [WpdPack](WpdPack)  
   Libraries and header files from the [WinPcap](https://www.winpcap.org/) Developer's Pack
