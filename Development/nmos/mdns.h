@@ -45,6 +45,9 @@ namespace nmos
         // MQTT Broker
         // See https://specs.amwa.tv/is-07/releases/v1.0.1/docs/5.1._Transport_-_MQTT.html#7-broker-discovery
         const service_type mqtt{ "_nmos-mqtt._tcp" };
+
+        // EST API
+        const service_type est{ "_nmos-certs._tcp" };
     }
 
     // "The DNS-SD advertisement MUST be accompanied by a TXT record of name 'api_proto' with a value
