@@ -43,7 +43,7 @@ namespace nmos
             using web::json::value;
 
             // Get property_value_holders for this resource
-            const auto property_value_holders = make_property_value_holders(resource, get_control_protocol_class_descriptor).as_array();
+            const auto& property_value_holders = make_property_value_holders(resource, get_control_protocol_class_descriptor).as_array();
 
             const auto role_path = get_role_path(resources, resource);
 
