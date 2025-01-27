@@ -713,7 +713,7 @@ namespace nmos
             data[nmos::fields::nc::runtime_property_constraints] = runtime_property_constraints; // level 2 runtime constraints. See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Constraints.html
 
             // IS-14 isRebuilable flag
-            // use make_rebuildable function to declare an control protocl resource rebuildable 
+            // use make_rebuildable function to declare an control protocl resource rebuildable
             data[nmos::fields::nc::is_rebuildable] = value::boolean(false);
             return data;
         }
@@ -858,7 +858,7 @@ namespace nmos
         // TODO: add link
         web::json::value make_nc_property_value_holder(const nc_property_id& property_id, const nc_name& name, const utility::string_t& type_name, bool is_read_only, const web::json::value& property_value)
         {
-            using web::json::value; 
+            using web::json::value;
             using web::json::value_of;
 
             return value_of({
@@ -892,7 +892,7 @@ namespace nmos
 
             return value_of({
                 { nmos::fields::nc::id, make_nc_property_id(property_id)},
-                { nmos::fields::nc::name, value::string(name)}, 
+                { nmos::fields::nc::name, value::string(name)},
                 { nmos::fields::nc::notice_type, value::number(notice_type)},
                 { nmos::fields::nc::notice_message, value::string(notice_message)}
                 }, true
@@ -900,16 +900,16 @@ namespace nmos
         }
 
         // TODO: add link
-        web::json::value make_nc_object_properties_set_validation(const web::json::array& role_path, nc_restore_validation_status::status status, const web::json::array& notices, const utility::string_t& status_message)
+        web::json::value make_nc_object_properties_set_validation(const web::json::array& role_path, nc_restore_validation_status::status status, const web::json::array& notices, const web::json::value& status_message)
         {
             using web::json::value;
             using web::json::value_of;
 
-            return value_of({ 
+            return value_of({
                 { nmos::fields::nc::path, web::json::value_from_elements(role_path)},
                 { nmos::fields::nc::status, value::number(status)},
                 { nmos::fields::nc::notices, web::json::value_from_elements(notices)},
-                { nmos::fields::nc::status_message, value::string(status_message)}
+                { nmos::fields::nc::status_message, status_message}
                 }, true
             );
         }

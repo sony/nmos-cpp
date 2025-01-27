@@ -3,6 +3,7 @@
 #include <boost/range/adaptor/filtered.hpp>
 #include "cpprest/json_utils.h"
 #include "nmos/configuration_handlers.h"
+#include "nmos/configuration_resources.h"
 #include "nmos/control_protocol_resource.h"
 #include "nmos/control_protocol_resources.h"
 #include "nmos/control_protocol_state.h"
@@ -127,7 +128,7 @@ namespace nmos
                     // can't find this oid, so member has been removed
                     return true;
                 }
-                const auto restore_member = *filtered_members.begin();
+                const auto& restore_member = *filtered_members.begin();
                 // We ignore the description and user label as these are non-normative
                 if (nmos::fields::nc::role(reference_member) != nmos::fields::nc::role(restore_member)
                     || nmos::fields::nc::constant_oid(reference_member) != nmos::fields::nc::constant_oid(restore_member)
@@ -181,7 +182,7 @@ namespace nmos
         if (target_object_properties_holders.size() > 1)
         {
             // Error in the backup dataset
-            const auto& object_properties_set_validation = nmos::details::make_nc_object_properties_set_validation(nmos::fields::nc::path(*target_object_properties_holders.begin()), nmos::nc_restore_validation_status::failed, web::json::value::array().as_array(), U("more than one object_properties_holder for role path"));
+            const auto& object_properties_set_validation = nmos::make_object_properties_set_validation(nmos::fields::nc::path(*target_object_properties_holders.begin()), nmos::nc_restore_validation_status::failed, U("more than one object_properties_holder for role path"));
             web::json::push_back(object_properties_set_validation_values, object_properties_set_validation);
             return object_properties_set_validation_values;
         }
@@ -201,7 +202,7 @@ namespace nmos
                 else
                 {
                     // Rebuilding blocks not supported
-                    const auto& object_properties_set_validation = nmos::details::make_nc_object_properties_set_validation(target_role_path, nmos::nc_restore_validation_status::failed, web::json::value::array().as_array(), U("Rebuilding of Device Model blocks not supported"));
+                    const auto& object_properties_set_validation = nmos::make_object_properties_set_validation(target_role_path, nmos::nc_restore_validation_status::failed, U("Rebuilding of Device Model blocks not supported"));
                     web::json::push_back(object_properties_set_validation_values, object_properties_set_validation);
                     return object_properties_set_validation_values;
                 }
@@ -259,7 +260,7 @@ namespace nmos
                 else
                 {
                     // Modify of read only properties not supported
-                    const auto& object_properties_set_validation = nmos::details::make_nc_object_properties_set_validation(target_role_path, nmos::nc_restore_validation_status::failed, property_restore_notices.as_array(), U("Modification of read only properties not supported"));
+                    const auto& object_properties_set_validation = nmos::make_object_properties_set_validation(target_role_path, nmos::nc_restore_validation_status::failed, property_restore_notices.as_array(), U("Modification of read only properties not supported"));
                     web::json::push_back(object_properties_set_validation_values, object_properties_set_validation);
                     continue;
                 }
@@ -282,7 +283,7 @@ namespace nmos
                         }, nmos::make_property_changed_event(nmos::fields::nc::oid(resource.data), { {property_id, nmos::nc_property_change_type::type::value_changed, value} }));
                 }
             }
-            const auto& object_properties_set_validation = nmos::details::make_nc_object_properties_set_validation(target_role_path, nmos::nc_restore_validation_status::ok, property_restore_notices.as_array(), U("OK"));
+            const auto& object_properties_set_validation = nmos::make_object_properties_set_validation(target_role_path, nmos::nc_restore_validation_status::ok, property_restore_notices.as_array(), U("OK"));
             web::json::push_back(object_properties_set_validation_values, object_properties_set_validation);
         }
 
@@ -335,7 +336,7 @@ namespace nmos
         );
         for (const auto& orphan_object_properties_holder : orphan_object_properties_holders)
         {
-            const auto& object_properties_set_validation = nmos::details::make_nc_object_properties_set_validation(nmos::fields::nc::path(orphan_object_properties_holder), nmos::nc_restore_validation_status::not_found, web::json::value::array().as_array(), U("object role path not found under target role path"));
+            const auto& object_properties_set_validation = nmos::make_object_properties_set_validation(nmos::fields::nc::path(orphan_object_properties_holder), nmos::nc_restore_validation_status::not_found, U("object role path not found under target role path"));
             web::json::push_back(object_properties_set_validation_values, object_properties_set_validation);
         }
 

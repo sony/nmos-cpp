@@ -5,6 +5,7 @@
 #include "nmos/control_protocol_typedefs.h"
 #include "nmos/control_protocol_utils.h"
 #include "nmos/configuration_handlers.h"
+#include "nmos/configuration_resources.h"
 #include "nmos/configuration_utils.h"
 
 #include "bst/test/test.h"
@@ -460,7 +461,7 @@ BST_TEST_CASE(testApplyBackupDataSet)
         {
             modify_rebuildable_block_called = true;
             auto out = value::array();
-            const auto& object_properties_set_validation = nmos::details::make_nc_object_properties_set_validation(target_role_path, nmos::nc_restore_validation_status::ok, value::array().as_array(), U("OK"));
+            const auto& object_properties_set_validation = nmos::make_object_properties_set_validation(target_role_path, nmos::nc_restore_validation_status::ok, U("OK"));
             web::json::push_back(out, object_properties_set_validation);
             return out;
         };

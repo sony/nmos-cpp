@@ -12,7 +12,7 @@ BST_TEST_CASE(testMakeObjectPropertiesSetValidation)
 
     auto role_path = web::json::value_of({ U("root"), U("path1") }).as_array();
     auto status = nmos::nc_restore_validation_status::ok;
-    auto notices = value::array();
+    auto notices = value::array().as_array();
     auto status_message = U("status message");
 
     {
@@ -25,7 +25,7 @@ BST_TEST_CASE(testMakeObjectPropertiesSetValidation)
 
         BST_CHECK_EQUAL(role_path, nmos::fields::nc::path(object_properties_set_validation));
         BST_CHECK_EQUAL(status, nmos::fields::nc::status(object_properties_set_validation));
-        BST_CHECK_EQUAL(notices.as_array(), nmos::fields::nc::notices(object_properties_set_validation));
+        BST_CHECK_EQUAL(notices, nmos::fields::nc::notices(object_properties_set_validation));
         BST_CHECK_EQUAL(value::string(status_message), nmos::fields::nc::status_message(object_properties_set_validation));
     }
     {
@@ -38,7 +38,7 @@ BST_TEST_CASE(testMakeObjectPropertiesSetValidation)
 
         BST_CHECK_EQUAL(role_path, nmos::fields::nc::path(object_properties_set_validation));
         BST_CHECK_EQUAL(status, nmos::fields::nc::status(object_properties_set_validation));
-        BST_CHECK_EQUAL(notices.as_array(), nmos::fields::nc::notices(object_properties_set_validation));
+        BST_CHECK_EQUAL(notices, nmos::fields::nc::notices(object_properties_set_validation));
         BST_CHECK_EQUAL(web::json::value::null(), nmos::fields::nc::status_message(object_properties_set_validation));
     }
     {
