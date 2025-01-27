@@ -289,7 +289,7 @@ BST_TEST_CASE(testGetChildObjectPropertiesHolders)
 
     // Create Object Properties Holder
     auto object_properties_holders = value::array();
-    
+
     {
         const auto role_path = value_of({ U("root"), U("receivers"), U("mon1") });
         auto property_value_holders = value::array();
@@ -445,7 +445,7 @@ BST_TEST_CASE(testApplyBackupDataSet)
     bool modify_rebuildable_block_called = false;
 
     // callback stubs
-    nmos::filter_property_value_holders_handler filter_property_value_holders = [&](const nmos::resource& resource, const web::json::array& target_role_path, const web::json::array& property_values, bool recurse, const web::json::value& restore_mode, bool validate, web::json::array& property_restore_notices, nmos::get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor)
+    nmos::filter_property_value_holders_handler filter_property_value_holders = [&](const nmos::resource& resource, const web::json::array& target_role_path, const web::json::array& property_values, bool recurse, bool validate, web::json::array& property_restore_notices, nmos::get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor)
         {
             filter_property_value_holders_called = true;
             auto modifiable_property_value_holders = value::array();
@@ -456,7 +456,7 @@ BST_TEST_CASE(testApplyBackupDataSet)
             }
             return modifiable_property_value_holders.as_array();
         };
-    nmos::modify_rebuildable_block_handler modify_rebuildable_block = [&](const nmos::resource& resource, const web::json::array& target_role_path, const web::json::array& object_properties_holders, bool recurse, const web::json::value& restore_mode, bool validate, nmos::get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor)
+    nmos::modify_rebuildable_block_handler modify_rebuildable_block = [&](const nmos::resource& resource, const web::json::array& target_role_path, const web::json::array& object_properties_holders, bool recurse, bool validate, nmos::get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor)
         {
             modify_rebuildable_block_called = true;
             auto out = value::array();

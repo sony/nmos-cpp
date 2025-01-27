@@ -628,13 +628,15 @@ namespace nmos
             const auto role_path = parameters.at(nmos::patterns::rolePath.name);
             const nmos::api_version version = nmos::parse_api_version(parameters.at(nmos::patterns::version.name));
 
-            auto lock = model.read_lock();
-            auto& resources = model.control_protocol_resources;
-            const auto& resource = nc::find_resource_by_role_path(resources, role_path);
-            if (resources.end() != resource)
+            return details::extract_json(req, gate_).then([res, &model, role_path, get_control_protocol_class_descriptor, filter_property_value_holders, modify_rebuildable_block, version, &gate_](value body) mutable
             {
-                return details::extract_json(req, gate_).then([res, resources, resource, get_control_protocol_class_descriptor, filter_property_value_holders, modify_rebuildable_block, version, &gate_](value body) mutable
+                auto& resources = model.control_protocol_resources;
+                const auto& resource = nc::find_resource_by_role_path(resources, role_path);
+
+                if (resources.end() != resource)
                 {
+                    auto lock = model.write_lock();
+
                     // Validate JSON syntax according to the schema
                     details::configurationapi_validator().validate(body, experimental::make_configurationapi_bulkProperties_validate_request_schema_uri(version));
 
@@ -666,15 +668,14 @@ namespace nmos
                         code = status_codes::BadRequest;
                     }
                     set_reply(res, code, method_result);
-
-                    return true;
-                });
-            }
-            else
-            {
-                // resource not found for the role path
-                set_error_reply(res, status_codes::NotFound, U("Not Found; ") + role_path);
-            }
+                }
+                else
+                {
+                    // resource not found for the role path
+                    set_error_reply(res, status_codes::NotFound, U("Not Found; ") + role_path);
+                }
+                return true;
+            });
 
             return pplx::task_from_result(true);
         });
@@ -685,12 +686,12 @@ namespace nmos
             const auto role_path = parameters.at(nmos::patterns::rolePath.name);
             const nmos::api_version version = nmos::parse_api_version(parameters.at(nmos::patterns::version.name));
 
-            auto lock = model.read_lock();
-            auto& resources = model.control_protocol_resources;
-            const auto& resource = nc::find_resource_by_role_path(resources, role_path);
-            if (resources.end() != resource)
+            return details::extract_json(req, gate_).then([res, &model, role_path, get_control_protocol_class_descriptor, filter_property_value_holders, modify_rebuildable_block, version, &gate_](value body) mutable
             {
-                return details::extract_json(req, gate_).then([res, &resources, resource, get_control_protocol_class_descriptor, filter_property_value_holders, modify_rebuildable_block, version, &model, &gate_](value body) mutable
+                auto lock = model.write_lock();
+                auto& resources = model.control_protocol_resources;
+                const auto& resource = nc::find_resource_by_role_path(resources, role_path);
+                if (resources.end() != resource)
                 {
                     // Validate JSON syntax according to the schema
                     details::configurationapi_validator().validate(body, experimental::make_configurationapi_bulkProperties_set_request_schema_uri(version));
@@ -719,15 +720,15 @@ namespace nmos
                         code = status_codes::BadRequest;
                     }
                     set_reply(res, code, method_result);
+                }
+                else
+                {
+                    // resource not found for the role path
+                    set_error_reply(res, status_codes::NotFound, U("Not Found; ") + role_path);
+                }
 
-                    return true;
-                });
-            }
-            else
-            {
-                // resource not found for the role path
-                set_error_reply(res, status_codes::NotFound, U("Not Found; ") + role_path);
-            }
+                return true;
+            });
 
             return pplx::task_from_result(true);
         });

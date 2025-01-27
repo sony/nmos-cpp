@@ -196,7 +196,7 @@ namespace nmos
                 if (modify_rebuildable_block)
                 {
                     // call back to application code which will return an object_properties_set_validation_values object
-                    return modify_rebuildable_block(resource, target_role_path, child_object_properties_holders, recurse, restore_mode, validate, get_control_protocol_class_descriptor);
+                    return modify_rebuildable_block(resource, target_role_path, child_object_properties_holders, recurse, validate, get_control_protocol_class_descriptor);
                 }
                 else
                 {
@@ -251,10 +251,10 @@ namespace nmos
             {
                 if (filter_property_value_holders)
                 {
-                    // If the property_modify_list contains read only properties then we call back to the application code to 
+                    // If the property_modify_list contains read only properties then we call back to the application code to
                     // check that it's OK to change those value.  Bear in mind that they could be the class Id, or the oid or some other
                     // property that we don't want changed
-                    property_modify_list = filter_property_value_holders(resource, target_role_path, property_modify_list, recurse, restore_mode, validate, property_restore_notices.as_array(), get_control_protocol_class_descriptor);
+                    property_modify_list = filter_property_value_holders(resource, target_role_path, property_modify_list, recurse, validate, property_restore_notices.as_array(), get_control_protocol_class_descriptor);
                 }
                 else
                 {

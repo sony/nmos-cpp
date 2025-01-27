@@ -1731,7 +1731,7 @@ nmos::control_protocol_property_changed_handler make_node_implementation_control
 // Example Device Configuration callback for validating a back-up dataset
 nmos::filter_property_value_holders_handler make_filter_property_value_holders_handler(nmos::resources& resources, slog::base_gate& gate)
 {
-    return [&resources, &gate](const nmos::resource& resource, const web::json::array& target_role_path, const web::json::array& property_values, bool recurse, const web::json::value& restore_mode, bool validate, web::json::array& property_restore_notices, nmos::get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor)
+    return [&resources, &gate](const nmos::resource& resource, const web::json::array& target_role_path, const web::json::array& property_values, bool recurse, bool validate, web::json::array& property_restore_notices, nmos::get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor)
     {
         // Use this function to filter which of the properties in the object should be modified by the configuration API
         slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::stash_category(impl::categories::node_implementation) << "Do filter_property_value_holders";
@@ -1764,7 +1764,7 @@ nmos::filter_property_value_holders_handler make_filter_property_value_holders_h
 // Example Device Configuration callback for restoring a back-up dataset
 nmos::modify_rebuildable_block_handler make_modify_rebuildable_block_handler(nmos::node_model& model, slog::base_gate& gate)
 {
-    return [&model, &gate](const nmos::resource& resource, const web::json::array& target_role_path, const web::json::array& object_properties_holders, bool recurse, const web::json::value& restore_mode, bool validate, nmos::get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor)
+    return [&model, &gate](const nmos::resource& resource, const web::json::array& target_role_path, const web::json::array& object_properties_holders, bool recurse, bool validate, nmos::get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor)
     {
         nmos::resources& resources = model.control_protocol_resources;
 
@@ -1781,7 +1781,7 @@ nmos::modify_rebuildable_block_handler make_modify_rebuildable_block_handler(nmo
             // Error
             return web::json::value::array();
         }
-        
+
         if (!nmos::nc::is_block(nmos::details::parse_nc_class_id(nmos::fields::nc::class_id(resource.data))))
         {
             // Error
@@ -1820,7 +1820,6 @@ nmos::modify_rebuildable_block_handler make_modify_rebuildable_block_handler(nmo
 
                 if (touchpoint_resource != resources.end())
                 {
-                    const auto lock = model.write_lock();
                     bool success = erase_resource(model.node_resources, nmos::fields::id(touchpoint_resource->data));
 
                     if (!success)
@@ -1919,7 +1918,7 @@ nmos::modify_rebuildable_block_handler make_modify_rebuildable_block_handler(nmo
 
                 if (touchpoint_property_holder == web::json::value::null())
                 {
-                    // Error 
+                    // Error
                     continue;
                 }
                 const auto& oid2 = nmos::fields::nc::value(oid_property_holder);
@@ -1978,7 +1977,7 @@ nmos::modify_rebuildable_block_handler make_modify_rebuildable_block_handler(nmo
 
                 const auto& owner = nmos::fields::nc::value(owner_property_holder).as_integer();
                 const auto& role = nmos::fields::nc::value(role_property_holder).as_string();
-                
+
                 auto receiver_monitor = nmos::make_receiver_monitor(oid2.as_integer(), true, owner, role, U(""), U(""), web::json::value_of({{nmos::details::make_nc_touchpoint_nmos({nmos::ncp_touchpoint_resource_types::receiver, touchpoint_uuid.as_string()})}}));
 
                 auto block_member_descriptor = nmos::details::make_nc_block_member_descriptor(U(""), role, oid2.as_integer(), true, nmos::nc_receiver_monitor_class_id, U(""), owner);
