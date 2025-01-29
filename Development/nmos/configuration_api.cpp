@@ -630,13 +630,11 @@ namespace nmos
 
             return details::extract_json(req, gate_).then([res, &model, role_path, get_control_protocol_class_descriptor, filter_property_value_holders, modify_rebuildable_block, version, &gate_](value body) mutable
             {
+                auto lock = model.write_lock();
                 auto& resources = model.control_protocol_resources;
                 const auto& resource = nc::find_resource_by_role_path(resources, role_path);
-
                 if (resources.end() != resource)
                 {
-                    auto lock = model.write_lock();
-
                     // Validate JSON syntax according to the schema
                     details::configurationapi_validator().validate(body, experimental::make_configurationapi_bulkProperties_validate_request_schema_uri(version));
 
