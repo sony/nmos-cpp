@@ -194,6 +194,21 @@ namespace nmos
 
         // TODO: add link
         web::json::value make_nc_bulk_properties_manager(nc_oid oid, nc_oid owner, const web::json::value& user_label, const utility::string_t& description, const web::json::value& touchpoints, const web::json::value& runtime_property_constraints);
+
+        // TODO: add link
+        web::json::value make_nc_bulk_values_holder(const utility::string_t& validation_fingerprint, const web::json::value& object_properties_holders);
+
+        // TODO: add link
+        web::json::value make_nc_property_value_holder(const nc_property_id& property_id, const nc_name& name, const utility::string_t& type_name, bool is_read_only, const web::json::value& property_value);
+
+        // TODO: add link
+        web::json::value make_nc_object_properties_holder(const web::json::array& role_path, const web::json::array& property_value_holders, bool is_rebuildable);
+
+        // TODO: add link
+        web::json::value make_nc_property_restore_notice(const nc_property_id& property_id, const nc_name& name, nc_property_restore_notice_type::type notice_type, const utility::string_t& notice_message);
+
+        // TODO: add link
+        web::json::value make_nc_object_properties_set_validation(const web::json::array& role_path, nc_restore_validation_status::status status, const web::json::array& notices, const web::json::value& status_message);
     }
 
     // command message response

@@ -27,6 +27,15 @@ namespace nmos
         return details::make_block(oid, value(owner), role, user_label, description, touchpoints, runtime_property_constraints, members);
     }
 
+    control_protocol_resource make_rebuildable(control_protocol_resource& control_protocol_resource)
+    {
+        using web::json::value;
+
+        control_protocol_resource.data[nmos::fields::nc::is_rebuildable] = value::boolean(true);
+
+        return control_protocol_resource;
+    }
+
     // create Root block resource
     control_protocol_resource make_root_block()
     {
