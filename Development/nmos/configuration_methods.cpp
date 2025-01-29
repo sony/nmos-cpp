@@ -8,13 +8,12 @@
 #include "nmos/control_protocol_resources.h"
 #include "nmos/control_protocol_state.h"
 #include "nmos/control_protocol_utils.h"
-#include "nmos/slog.h"
 
 namespace nmos
 {
     namespace details
     {
-        web::json::value make_property_value_holders(const nmos::resource& resource, nmos::get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor)
+        web::json::array make_property_value_holders(const nmos::resource& resource, nmos::get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor)
         {
             using web::json::value;
 
@@ -35,7 +34,7 @@ namespace nmos
                 }
                 class_id.pop_back();
             }
-            return property_value_holders;
+            return property_value_holders.as_array();
         }
 
         void populate_object_property_holder(const nmos::resources& resources, nmos::get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, const nmos::resource& resource, bool recurse, web::json::value& object_properties_holders)
@@ -43,7 +42,7 @@ namespace nmos
             using web::json::value;
 
             // Get property_value_holders for this resource
-            const auto& property_value_holders = make_property_value_holders(resource, get_control_protocol_class_descriptor).as_array();
+            const auto& property_value_holders = make_property_value_holders(resource, get_control_protocol_class_descriptor);
 
             const auto role_path = get_role_path(resources, resource);
 
