@@ -609,9 +609,11 @@ namespace nmos
         auto& data = resource.data;
 
         data[U("format")] = value::string(format.name);
+        auto& caps = data[U("caps")] = value::object();
+
         for (const auto& media_type : media_types)
         {
-            web::json::push_back(data[U("caps")][U("media_types")], value::string(media_type.name));
+            web::json::push_back(caps[U("media_types")], value::string(media_type.name));
         }
 
         return resource;

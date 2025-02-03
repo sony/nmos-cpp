@@ -186,13 +186,14 @@ namespace nmos
     }
 
     // Get additional "video/jxsv" parameters from the SDP parameters
-    video_jxsv_parameters get_video_jxsv_parameters(const sdp_parameters& sdp_params)
+    template <typename MissingRequiredParameter>
+    video_jxsv_parameters get_video_jxsv_parameters(const sdp_parameters& sdp_params, MissingRequiredParameter missing = MissingRequiredParameter{})
     {
         video_jxsv_parameters params;
 
         const auto packetmode = details::find_fmtp(sdp_params.fmtp, sdp::video_jxsv::fields::packetmode);
-        if (sdp_params.fmtp.end() == packetmode) throw details::sdp_processing_error("missing format parameter: packetmode");
-        params.packetmode = (sdp::video_jxsv::packetization_mode)utility::istringstreamed<uint32_t>(packetmode->second);
+        if (sdp_params.fmtp.end() != packetmode) params.packetmode = (sdp::video_jxsv::packetization_mode)utility::istringstreamed<uint32_t>(packetmode->second);
+        else missing(sdp::video_jxsv::fields::packetmode);
 
         // optional
         const auto transmode = details::find_fmtp(sdp_params.fmtp, sdp::video_jxsv::fields::transmode);
@@ -284,6 +285,18 @@ namespace nmos
         if (sdp::bandwidth_types::application_specific == sdp_params.bandwidth.bandwidth_type) params.bit_rate = sdp_params.bandwidth.bandwidth;
 
         return params;
+    }
+
+    // Get additional "video/jxsv" parameters from the SDP parameters
+    video_jxsv_parameters get_video_jxsv_parameters(const sdp_parameters& sdp_params)
+    {
+        return get_video_jxsv_parameters<details::throw_missing_fmtp>(sdp_params);
+    }
+
+    // Get additional "video/jxsv" parameters from the SDP parameters
+    video_jxsv_parameters get_video_jxsv_parameters_or_defaults(const sdp_parameters& sdp_params)
+    {
+        return get_video_jxsv_parameters<>(sdp_params, [](const utility::string_t&) {});
     }
 
     // Calculate the format bit rate (kilobits/second) from the specified frame rate, dimensions and bits per pixel
