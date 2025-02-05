@@ -277,24 +277,28 @@ namespace nmos
                                             catch (const nmos::control_protocol_exception& e)
                                             {
                                                 // invalid arguments
-                                                slog::log<slog::severities::error>(gate, SLOG_FLF) << "invalid argument: " << arguments.serialize() << " error: " << e.what();
-                                                nc_method_result = details::make_nc_method_result({ nmos::nc_method_status::parameter_error });
+                                                utility::ostringstream_t ss;
+                                                ss << "invalid argument: " << arguments.serialize() << " error: " << e.what();
+                                                slog::log<slog::severities::error>(gate, SLOG_FLF) << ss.str();
+                                                nc_method_result = details::make_nc_method_result_error({ nmos::nc_method_status::parameter_error }, ss.str());
                                             }
                                         }
                                         else
                                         {
                                             // unknown methodId
-                                            utility::stringstream_t ss;
+                                            utility::ostringstream_t ss;
                                             ss << U("unsupported method_id: ") << nmos::fields::nc::method_id(cmd).serialize()
                                                 << U(" for control class class_id: ") << resource->data.at(nmos::fields::nc::class_id).serialize();
+                                            slog::log<slog::severities::error>(gate, SLOG_FLF) << ss.str();
                                             nc_method_result = details::make_nc_method_result_error({ nc_method_status::method_not_implemented }, ss.str());
                                         }
                                     }
                                     else
                                     {
                                         // resource not found for the given oid
-                                        utility::stringstream_t ss;
+                                        utility::ostringstream_t ss;
                                         ss << U("unknown oid: ") << oid;
+                                        slog::log<slog::severities::error>(gate, SLOG_FLF) << ss.str();
                                         nc_method_result = details::make_nc_method_result_error({ nc_method_status::bad_oid }, ss.str());
                                     }
                                     // accumulating up response

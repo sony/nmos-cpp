@@ -21,7 +21,7 @@ This repository contains an implementation of the [AMWA Networked Media Open Spe
 - [AMWA MS-05-01 NMOS Control Architecture](https://specs.amwa.tv/ms-05-01/)
 - [AMWA MS-05-02 NMOS Control Framework](https://specs.amwa.tv/ms-05-02/)
 
-For more information about AMWA, NMOS and the Networked Media Incubator, please refer to <http://amwa.tv/>.
+For more information about AMWA, NMOS and the Networked Media Incubator, please refer to <https://www.amwa.tv/>.
 
 - The [nmos module](Development/nmos) includes implementations of the NMOS Node, Registration and Query APIs, the NMOS Connection API, and so on.
 - The [nmos-cpp-registry application](Development/nmos-cpp-registry) provides a simple but functional instance of an NMOS Registration & Discovery System (RDS), utilising the nmos module.

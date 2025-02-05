@@ -47,11 +47,13 @@ set(NMOS_CPP_TEST_NMOS_TEST_SOURCES
     nmos/test/did_sdid_test.cpp
     nmos/test/event_type_test.cpp
     nmos/test/json_validator_test.cpp
+    nmos/test/jwt_generator_test.cpp
     nmos/test/jwt_validation_test.cpp
     nmos/test/paging_utils_test.cpp
     nmos/test/query_api_test.cpp
     nmos/test/sdp_test_utils.cpp
     nmos/test/sdp_utils_test.cpp
+    nmos/test/slog_test.cpp
     nmos/test/system_resources_test.cpp
     nmos/test/video_jxsv_test.cpp
     )
