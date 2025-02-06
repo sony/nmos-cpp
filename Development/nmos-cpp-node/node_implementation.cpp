@@ -1746,8 +1746,15 @@ nmos::reset_packet_counters_handler make_node_implementation_reset_packet_counte
     };
 }
 
-
-
+// Example Receiver Status Monitor callback for reset_synchronization_source_changes method
+nmos::reset_synchronization_source_changes_handler make_reset_synchronization_source_changes_handler()
+{
+    return [&]()
+        {
+            // Implement reset of lost and late packet counters
+            return nmos::details::make_nc_method_result({ nmos::nc_method_status::ok });
+        };
+}
 
 namespace impl
 {
@@ -1906,5 +1913,6 @@ nmos::experimental::node_implementation make_node_implementation(nmos::node_mode
         .on_control_protocol_property_changed(make_node_implementation_control_protocol_property_changed_handler(gate)) // may be omitted if IS-12 not required
         .on_get_lost_packet_counters(make_node_implementation_get_lost_packet_counters_handler())
         .on_get_late_packet_counters(make_node_implementation_get_late_packet_counters_handler())
-        .on_reset_packet_counters(make_node_implementation_reset_packet_counters_handler());
+        .on_reset_packet_counters(make_node_implementation_reset_packet_counters_handler())
+        .on_reset_synchronization_source_changes(make_reset_synchronization_source_changes_handler());
 }

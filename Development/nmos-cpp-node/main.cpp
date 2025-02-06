@@ -138,7 +138,7 @@ int main(int argc, char* argv[])
                 .on_request_authorization_code(nmos::experimental::make_request_authorization_code_handler(gate)); // may be omitted, only required for OAuth client which is using the Authorization Code Flow to obtain the access token
         }
 
-        nmos::experimental::control_protocol_state control_protocol_state(node_implementation.get_lost_packet_counters, node_implementation.get_late_packet_counters, node_implementation.reset_packet_counters, node_implementation.control_protocol_property_changed);
+        nmos::experimental::control_protocol_state control_protocol_state(node_implementation.get_lost_packet_counters, node_implementation.get_late_packet_counters, node_implementation.reset_packet_counters, node_implementation.reset_synchronization_source_changes, node_implementation.control_protocol_property_changed);
         if (0 <= nmos::fields::control_protocol_ws_port(node_model.settings))
         {
             node_implementation

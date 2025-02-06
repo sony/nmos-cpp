@@ -85,6 +85,7 @@ namespace nmos
             node_implementation& on_get_lost_packet_counters(nmos::get_lost_packet_counters_handler get_lost_packet_counters) { this->get_lost_packet_counters = std::move(get_lost_packet_counters); return *this; }
             node_implementation& on_get_late_packet_counters(nmos::get_late_packet_counters_handler get_late_packet_counters) { this->get_late_packet_counters = std::move(get_late_packet_counters); return *this; }
             node_implementation& on_reset_packet_counters(nmos::reset_packet_counters_handler reset_packet_counters) { this->reset_packet_counters = std::move(reset_packet_counters); return *this; }
+            node_implementation& on_reset_synchronization_source_changes(nmos::reset_synchronization_source_changes_handler reset_synchronization_source_changes) { this->reset_synchronization_source_changes = std::move(reset_synchronization_source_changes); return *this; }
 
             // deprecated, use on_validate_connection_resource_patch
             node_implementation& on_validate_merged(nmos::details::connection_resource_patch_validator validate_merged) { return on_validate_connection_resource_patch(std::move(validate_merged)); }
@@ -130,6 +131,7 @@ namespace nmos
             nmos::get_lost_packet_counters_handler get_lost_packet_counters;
             nmos::get_late_packet_counters_handler get_late_packet_counters;
             nmos::reset_packet_counters_handler reset_packet_counters;
+            nmos::reset_synchronization_source_changes_handler reset_synchronization_source_changes;
         };
 
         // Construct a server instance for an NMOS Node, implementing the IS-04 Node API, IS-05 Connection API, IS-07 Events API

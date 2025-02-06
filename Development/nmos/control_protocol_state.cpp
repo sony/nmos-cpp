@@ -185,7 +185,7 @@ namespace nmos
                 {
                     // Delegate to user defined handler
                     auto result = nmos::details::make_nc_method_result_error({ nmos::nc_method_status::method_not_implemented }, U("not implemented"));
-                    
+
                     if (get_lost_packet_counters)
                     {
                         result = get_lost_packet_counters();
@@ -239,9 +239,29 @@ namespace nmos
                     return result;
                 };
             }
+            nmos::experimental::control_protocol_method_handler make_nc_reset_synchronization_source_changes_handler(reset_synchronization_source_changes_handler reset_synchonization_source_changes)
+            {
+                return [reset_synchonization_source_changes](nmos::resources& resources, const nmos::resource& resource, const web::json::value& arguments, bool is_deprecated, slog::base_gate& gate)
+                    {
+                        // Delegate to user defined handler
+                        auto result = nmos::details::make_nc_method_result_error({ nmos::nc_method_status::method_not_implemented }, U("not implemented"));
+
+                        if (reset_synchonization_source_changes)
+                        {
+                            result = reset_synchonization_source_changes();
+
+                            const auto& status = nmos::fields::nc::status(result);
+                            if (!web::http::is_error_status_code((web::http::status_code)status) && is_deprecated)
+                            {
+                                return nmos::details::make_nc_method_result({ nmos::nc_method_status::method_deprecated }, nmos::fields::nc::value(result));
+                            }
+                        }
+                        return result;
+                    };
+            }
         }
 
-        control_protocol_state::control_protocol_state(get_lost_packet_counters_handler get_lost_packet_counters, get_late_packet_counters_handler get_late_packet_counters, reset_packet_counters_handler reset_packet_counters, control_protocol_property_changed_handler property_changed)
+        control_protocol_state::control_protocol_state(get_lost_packet_counters_handler get_lost_packet_counters, get_late_packet_counters_handler get_late_packet_counters, reset_packet_counters_handler reset_packet_counters, reset_synchronization_source_changes_handler reset_synchonization_source_changes, control_protocol_property_changed_handler property_changed)
         {
             using web::json::value;
 
@@ -374,11 +394,12 @@ namespace nmos
                     to_vector(make_nc_receiver_monitor_properties()),
                     // NcReceiverMonitor methods
                     to_methods_vector(make_nc_receiver_monitor_methods(),
-                    { 
+                    {
                         // link NcReceiverMonitor method_ids with method functions
                         { nc_receiver_monitor_get_lost_packet_counters_method_id, details::make_nc_get_lost_packet_counters_handler(get_lost_packet_counters)},
                         { nc_receiver_monitor_get_late_packet_counters_method_id, details::make_nc_get_late_packet_counters_handler(get_late_packet_counters)},
-                        { nc_receiver_monitor_reset_packet_counters_method_id, details::make_nc_reset_packet_counters_handler(reset_packet_counters)}
+                        { nc_receiver_monitor_reset_packet_counters_method_id, details::make_nc_reset_packet_counters_handler(reset_packet_counters)},
+                        { nc_receiver_monitor_reset_synchonization_source_changes_method_id, details::make_nc_reset_synchronization_source_changes_handler(reset_packet_counters) }
                     }),
                     // NcReceiverMonitor events
                     to_vector(make_nc_receiver_monitor_events())) }
@@ -460,12 +481,14 @@ namespace nmos
                 // Monitoring feature set
                 // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/monitoring/#datatypes
                 { U("NcConnectionStatus"), {make_nc_connection_status_datatype()} },
-                { U("NcOverallStatus"), {make_nc_overall_status_datatype() } },
-                { U("NcLinkStatus"), {make_nc_link_status_datatype() } },
-                { U("NcSynchronizationStatus"), {make_nc_synchronization_status_datatype() } },
-                { U("NcStreamStatus"), {make_nc_stream_status_datatype() } },
-                { U("NcPacketCounter"), {make_nc_packet_counter_datatype() } },
-                { U("NcMethodResultCounters"), {make_nc_method_result_counters_datatype() } }
+                { U("NcCounter"), {make_nc_counter_datatype()} },
+                { U("NcEssenceStatus"), {make_nc_essence_status_datatype()} },
+                { U("NcLinkStatus"), {make_nc_link_status_datatype()} },
+                { U("NcMethodResultCounters"), {make_nc_method_result_counters_datatype()} },
+                { U("NcOverallStatus"), {make_nc_overall_status_datatype()} },
+                { U("NcSynchronizationStatus"), {make_nc_synchronization_status_datatype()} },
+                { U("NcStreamStatus"), {make_nc_stream_status_datatype()} },
+                { U("NcTransmissionStatus"), {make_nc_transmission_status_datatype()} }
             };
         }
 

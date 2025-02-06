@@ -58,7 +58,7 @@ namespace nmos
             nmos::read_lock read_lock() const { return nmos::read_lock{ mutex }; }
             nmos::write_lock write_lock() const { return nmos::write_lock{ mutex }; }
 
-            control_protocol_state(get_lost_packet_counters_handler get_lost_packet_counters = nullptr, get_late_packet_counters_handler get_late_packet_counters = nullptr, reset_packet_counters_handler reset_packet_counters = nullptr, control_protocol_property_changed_handler property_changed = nullptr);
+            control_protocol_state(get_lost_packet_counters_handler get_lost_packet_counters = nullptr, get_late_packet_counters_handler get_late_packet_counters = nullptr, reset_packet_counters_handler reset_packet_counters = nullptr, reset_synchronization_source_changes_handler reset_synchonization_source_changes = nullptr, control_protocol_property_changed_handler property_changed = nullptr);
 
             // insert control class descriptor, false if class descriptor already inserted
             bool insert(const experimental::control_class_descriptor& control_class_descriptor);

@@ -98,6 +98,8 @@ namespace nmos
         };
     }
 
+    // BCP-008-01/02 enum types
+
     // NcConnectionStatus
     // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/monitoring/#ncconnectionstatus
     namespace nc_connection_status
@@ -111,15 +113,16 @@ namespace nmos
         };
     }
 
-    // NcOverallStatus
+    // NcEssenceStatus
     // TODO: link
-    namespace nc_overall_status
+    namespace nc_essence_status
     {
         enum status
         {
-            healthy = 1, //         // The overall status is healthy
-            partially_unhealthy = 2,// The overall status is partially healthy
-            unhealthy = 3           // The overall status is unhealthy
+            inactive = 0,           // Inactive
+            healthy = 1,            // Active and healthy
+            partially_healthy = 2,  // Active and partially healthy
+            unhealthy = 3           // Active and unhealthy
         };
     }
 
@@ -129,9 +132,22 @@ namespace nmos
     {
         enum status
         {
-            all_down = 1,   // All the associated network interfaces are down
-            some_down = 2,  // Some of the associated network interfaces are down
-            all_up = 3      // All the associated network interfaces are up
+            all_up = 1,    // All the associated network interfaces are up
+            some_down = 2, // Some of the associated network interfaces are down
+            all_down = 3   // All the associated network interfaces are down
+        };
+    }
+
+    // NcOverallStatus
+    // TODO: link
+    namespace nc_overall_status
+    {
+        enum status
+        {
+            inactive = 0,           // Inactive
+            healthy = 1,            // The overall status is healthy
+            partially_healthy = 2,// The overall status is partially healthy
+            unhealthy = 3           // The overall status is unhealthy
         };
     }
 
@@ -141,18 +157,29 @@ namespace nmos
     {
         enum status
         {
-            not_used = 0,                   // Feature not in use
-            baseband_locked = 1,            // Locked from baseband
-            baseband_partially_locked = 2,  // Partially locked from baseband
-            network_locked = 3,             // Partially locked from network
-            network_partially_locked = 4,   // Partially locked from network
-            not_locked = 5                  // Not locked
+            not_used = 0,           // Feature not in use
+            healthy = 1,            // Locked to a synchronization source
+            partially_healthy = 2,  // Partially locked to a synchronization source
+            unhealthy = 3           // Not locked to a synchronization source
         };
     }
 
     //NcStreamStatus
     // TODO: add link
     namespace nc_stream_status
+    {
+        enum status
+        {
+            inactive = 0,           // Inactive
+            healthy = 1,            // Active and healthy
+            partially_healthy = 2,  // Active and partially healthy
+            unhealthy = 3           // Active and unhealthy
+        };
+    }
+
+    //NcTransmissionStatus
+    // TODO: add link
+    namespace nc_transmission_status
     {
         enum status
         {
@@ -215,6 +242,7 @@ namespace nmos
     const nc_method_id nc_receiver_monitor_get_lost_packet_counters_method_id(4, 1);
     const nc_method_id nc_receiver_monitor_get_late_packet_counters_method_id(4, 2);
     const nc_method_id nc_receiver_monitor_reset_packet_counters_method_id(4, 3);
+    const nc_method_id nc_receiver_monitor_reset_synchonization_source_changes_method_id(4, 4);
 
     // NcPropertyId
     // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncpropertyid
@@ -255,18 +283,21 @@ namespace nmos
     // NcPropertyIds for NcStatusMonitor
     const nc_property_id nc_status_monitor_overall_status_property_id(3, 1);
     const nc_property_id nc_status_monitor_overall_status_message_property_id(3, 2);
+    const nc_property_id nc_status_monitor_status_reporting_delay(3, 3);
     // NcPropertyids for NcReceiverMonitor
     // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/monitoring/#ncreceivermonitor
     const nc_property_id nc_receiver_monitor_link_status_property_id(4, 1);
     const nc_property_id nc_receiver_monitor_link_status_message_property_id(4, 2);
     const nc_property_id nc_receiver_monitor_connection_status_property_id(4, 3);
     const nc_property_id nc_receiver_monitor_connection_status_message_property_id(4, 4);
-    const nc_property_id nc_receiver_monitor_synchronization_status_property_id(4, 5);
-    const nc_property_id nc_receiver_monitor_synchronization_status_message_property_id(4, 6);
-    const nc_property_id nc_receiver_monitor_synchronization_synchronization_source_id_property_id(4, 7);
-    const nc_property_id nc_receiver_monitor_stream_status_property_id(4, 8);
-    const nc_property_id nc_receiver_monitor_stream_status_message_property_id(4, 9);
-    const nc_property_id nc_receiver_monitor_protected_signal_protection_status_property_id(4, 1);
+    const nc_property_id nc_receiver_monitor_external_synchronization_status_property_id(4, 5);
+    const nc_property_id nc_receiver_monitor_external_synchronization_status_message_property_id(4, 6);
+    const nc_property_id nc_receiver_monitor_synchronization_source_id_property_id(4, 7);
+    const nc_property_id nc_receiver_monitor_synchronization_source_changes_property_id(4, 8);
+    const nc_property_id nc_receiver_monitor_stream_status_property_id(4, 9);
+    const nc_property_id nc_receiver_monitor_stream_status_message_property_id(4, 10);
+    const nc_property_id nc_receiver_monitor_auto_reset_packet_counters_property_id(4, 11);
+    const nc_property_id nc_receiver_monitor_auto_reset_synchronization_source_changes_property_id(4, 12);
     // NcPropertyids for NcIdentBeacon
     // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/identification/#ncidentbeacon
     const nc_property_id nc_ident_beacon_active_property_id(3, 1);

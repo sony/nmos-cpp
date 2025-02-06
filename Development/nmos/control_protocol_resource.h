@@ -263,7 +263,7 @@ namespace nmos
     web::json::value make_nc_class_manager_properties();
     web::json::value make_nc_class_manager_methods();
     web::json::value make_nc_class_manager_events();
-    
+
     // Monitoring feature set control classes
     // TODO: link
     web::json::value make_nc_status_monitor_properties();
@@ -426,6 +426,8 @@ namespace nmos
     // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/monitoring/#ncconnectionstatus
     web::json::value make_nc_connection_status_datatype();
     // TODO: link
+    web::json::value make_nc_essence_status_datatype();
+    // TODO: link
     web::json::value make_nc_overall_status_datatype();
     // TODO: link
     web::json::value make_nc_link_status_datatype();
@@ -434,9 +436,11 @@ namespace nmos
     // TODO: link
     web::json::value make_nc_stream_status_datatype();
     // TODO: link
-    web::json::value make_nc_packet_counter_datatype();
+    web::json::value make_nc_counter_datatype();
     // TODO: link
     web::json::value make_nc_method_result_counters_datatype();
+    // TODO: link
+    web::json::value make_nc_transmission_status_datatype();
 }
 
 #endif
