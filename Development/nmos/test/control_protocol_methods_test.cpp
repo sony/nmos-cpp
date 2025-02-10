@@ -41,16 +41,16 @@ BST_TEST_CASE(testRemoveSequenceItem)
     const auto writable_sequence_class_id = nmos::make_nc_class_id(nmos::nc_worker_class_id, -1234, { 1000 });
     const web::json::field_as_array writable_value{ U("writableValue") };
     {
-        // Gain control class property descriptors
+        // Writable sequence_class property descriptors
         std::vector<web::json::value> writable_sequence_property_descriptors = { nmos::experimental::make_control_class_property_descriptor(U("Writable sequence"), { 3, 1 }, writable_value, U("NcInt16"), false, false, true, false, web::json::value::null()) };
 
-        // create Gain control class descriptor
+        // create writable_sequence class descriptor
         auto writable_sequence_class_descriptor = nmos::experimental::make_control_class_descriptor(U("Writable sequence class descriptor"), writable_sequence_class_id, U("WritableSequence"), writable_sequence_property_descriptors);
 
-        // insert Gain control class descriptor to global state, which will be used by the control_protocol_ws_message_handler to process incoming ws message
+        // insert writable_sequence class descriptor to global state, which will be used by the control_protocol_ws_message_handler to process incoming ws message
         control_protocol_state.insert(writable_sequence_class_descriptor);
     }
-    // helper function to create Gain control instance
+    // helper function to create writable_sequence object
     auto make_writable_sequence = [&writable_value, &writable_sequence_class_id](nmos::nc_oid oid, nmos::nc_oid owner, const utility::string_t& role, const utility::string_t& user_label, const utility::string_t& description)
     {
         auto data = nmos::details::make_nc_worker(writable_sequence_class_id, oid, true, owner, role, value::string(user_label), description, web::json::value::null(), web::json::value::null(), true);
@@ -121,7 +121,7 @@ BST_TEST_CASE(testRemoveSequenceItem)
         BST_CHECK_EQUAL(nmos::nc_method_status::read_only, nmos::fields::nc::status(result));
     }
 
-    // Remove writable sequence item - succss and property_changed event expected
+    // Remove writable sequence item - success and property_changed event expected
     {
         property_changed_called = false;
 
