@@ -837,6 +837,12 @@ add_library(nmos-cpp::nmos_is12_schemas ALIAS nmos_is12_schemas)
 
 # nmos-cpp library
 
+if(${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
+    set(NMOS_CPP_BOOST_THREAD_HEADERS
+        boost/thread/win32_condition_variable.hpp
+        )
+endif()
+
 set(NMOS_CPP_BST_SOURCES
     )
 set(NMOS_CPP_BST_HEADERS
@@ -1237,6 +1243,9 @@ target_include_directories(nmos-cpp PUBLIC
     $<INSTALL_INTERFACE:${NMOS_CPP_INSTALL_INCLUDEDIR}>
     )
 
+if(${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
+    install(FILES ${NMOS_CPP_BOOST_THREAD_HEADERS} DESTINATION ${NMOS_CPP_INSTALL_INCLUDEDIR}/boost/thread)
+endif()
 install(FILES ${NMOS_CPP_BST_HEADERS} DESTINATION ${NMOS_CPP_INSTALL_INCLUDEDIR}/bst)
 install(FILES ${NMOS_CPP_CPPREST_HEADERS} DESTINATION ${NMOS_CPP_INSTALL_INCLUDEDIR}/cpprest)
 install(FILES ${NMOS_CPP_CPPREST_DETAILS_HEADERS} DESTINATION ${NMOS_CPP_INSTALL_INCLUDEDIR}/cpprest/details)
