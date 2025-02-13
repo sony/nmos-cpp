@@ -283,7 +283,7 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
     // and that the the node behaviour thread be notified after doing so
     const auto insert_resource_after = [&model, &lock](unsigned int milliseconds, nmos::resources& resources, nmos::resource&& resource, slog::base_gate& gate)
     {
-        if (nmos::details::wait_for(model.shutdown_condition, lock, std::chrono::milliseconds(milliseconds), [&] { return model.shutdown; })) return false;
+        if (nmos::details::wait_for(model.shutdown_condition, lock, bst::chrono::milliseconds(milliseconds), [&] { return model.shutdown; })) return false;
 
         const std::pair<nmos::id, nmos::type> id_type{ resource.id, resource.type };
         const bool success = insert_resource(resources, std::move(resource)).second;

@@ -1,7 +1,6 @@
 #ifndef NMOS_MUTEX_H
 #define NMOS_MUTEX_H
 
-#include <condition_variable>
 #include "bst/shared_mutex.h"
 
 namespace nmos
@@ -28,8 +27,8 @@ namespace nmos
     const try_to_lock_t try_to_lock;
 #endif
 
-    typedef std::condition_variable_any condition_variable;
-    typedef std::cv_status cv_status;
+    typedef bst::condition_variable_any condition_variable;
+    typedef bst::cv_status cv_status;
 
     template <typename Func>
     auto with_read_lock(nmos::mutex& mutex, Func&& func) -> decltype(func())

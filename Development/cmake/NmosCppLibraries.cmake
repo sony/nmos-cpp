@@ -30,6 +30,7 @@ target_compile_definitions(
     slog INTERFACE
     SLOG_STATIC
     SLOG_LOGGING_SEVERITY=${SLOG_LOGGING_SEVERITY}
+    BST_THREAD_BOOST # provide bst::chrono::duration, etc. using either std:: or boost:: symbols
     )
 if(CMAKE_CXX_COMPILER_ID MATCHES GNU)
     if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS 4.8)

@@ -1,7 +1,7 @@
 #ifndef NMOS_THREAD_UTILS_H
 #define NMOS_THREAD_UTILS_H
 
-#include <thread>
+#include "slog/all_in_one.h"
 
 namespace nmos
 {
@@ -29,8 +29,18 @@ namespace nmos
         {
             if ((TimePoint::max)() == tp)
             {
-                condition.wait(lock, predicate);
-                return true;
+                // note, the try-catch block is here because Windows boost::condition_variable_any::wait can throw
+                // an expectation once boost::shared_mutex has reached the maximum number of exclusive_waiting locks
+                try
+                {
+                    condition.wait(lock, predicate);
+                    return true;
+                }
+                catch (...)
+                {
+                    // wait failed, return false
+                }
+                return false;
             }
             else
             {
@@ -39,9 +49,9 @@ namespace nmos
         }
 
         template <typename ConditionVariable, typename Lock, typename Rep, typename Period, typename Predicate>
-        inline bool wait_for(ConditionVariable& condition, Lock& lock, const std::chrono::duration<Rep, Period>& duration, Predicate predicate)
+        inline bool wait_for(ConditionVariable& condition, Lock& lock, const bst::chrono::duration<Rep, Period>& duration, Predicate predicate)
         {
-            if ((std::chrono::duration<Rep, Period>::max)() == duration)
+            if ((bst::chrono::duration<Rep, Period>::max)() == duration)
             {
                 condition.wait(lock, predicate);
                 return true;
@@ -50,7 +60,7 @@ namespace nmos
             {
                 // using wait_until as a workaround for bug in VS2015, resolved in VS2017
                 // see https://developercommunity.visualstudio.com/content/problem/274532/bug-in-visual-studio-2015-implementation-of-stdcon.html
-                return condition.wait_until(lock, std::chrono::steady_clock::now() + duration, predicate);
+                return condition.wait_until(lock, bst::chrono::steady_clock::now() + duration, predicate);
             }
         }
 
@@ -70,9 +80,9 @@ namespace nmos
         }
 
         template <typename ConditionVariable, typename Lock, typename Rep, typename Period>
-        inline auto wait_for(ConditionVariable& condition, Lock& lock, const std::chrono::duration<Rep, Period>& duration) -> decltype(condition.wait_for(lock, duration))
+        inline auto wait_for(ConditionVariable& condition, Lock& lock, const bst::chrono::duration<Rep, Period>& duration) -> decltype(condition.wait_for(lock, duration))
         {
-            if ((std::chrono::duration<Rep, Period>::max)() == duration)
+            if ((bst::chrono::duration<Rep, Period>::max)() == duration)
             {
                 condition.wait(lock);
                 typedef decltype(condition.wait_for(lock, duration)) cv_status;
@@ -80,7 +90,7 @@ namespace nmos
             }
             else
             {
-                return condition.wait_until(lock, std::chrono::steady_clock::now() + duration);
+                return condition.wait_until(lock, bst::chrono::steady_clock::now() + duration);
             }
         }
 

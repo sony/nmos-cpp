@@ -168,186 +168,195 @@ namespace nmos
         {
             // wait for the thread to be interrupted either because there are resource changes, or because the server is being shut down
             // or because message sending was throttled earlier
-            details::wait_until(condition, lock, earliest_necessary_update, [&]{ return shutdown || most_recent_message < most_recent_update(resources); });
-            if (shutdown) break;
-            most_recent_message = most_recent_update(resources);
-
-            slog::log<slog::severities::too_much_info>(gate, SLOG_FLF) << "Got notification on query websockets thread";
-
-            const auto now = tai_clock::now();
-
-            earliest_necessary_update = (tai_clock::time_point::max)();
-
-            std::vector<std::pair<web::websockets::experimental::listener::connection_id, web::websockets::websocket_outgoing_message>> outgoing_messages;
-
-            for (auto wit = websockets.left.begin(); websockets.left.end() != wit;)
+            if (details::wait_until(condition, lock, earliest_necessary_update, [&] { return shutdown || most_recent_message < most_recent_update(resources); }))
             {
-                const auto& websocket = *wit;
+                if (shutdown) break;
+                most_recent_message = most_recent_update(resources);
 
-                // for each websocket connection that has valid grain and subscription resources
-                const auto grain = find_resource(resources, { websocket.first, nmos::types::grain });
-                if (resources.end() == grain)
+                slog::log<slog::severities::too_much_info>(gate, SLOG_FLF) << "Got notification on query websockets thread";
+
+                const auto now = tai_clock::now();
+
+                earliest_necessary_update = (tai_clock::time_point::max)();
+
+                std::vector<std::pair<web::websockets::experimental::listener::connection_id, web::websockets::websocket_outgoing_message>> outgoing_messages;
+
+                for (auto wit = websockets.left.begin(); websockets.left.end() != wit;)
                 {
-                    // theoretically blocking, but in fact not
-                    listener.close(websocket.second, web::websockets::websocket_close_status::server_terminate, U("Deleted")).wait();
+                    const auto& websocket = *wit;
 
-                    wit = websockets.left.erase(wit);
-                    continue;
-                }
-                const auto subscription = find_resource(resources, { nmos::fields::subscription_id(grain->data), nmos::types::subscription });
-                if (resources.end() == subscription)
-                {
-                    // a grain without a subscription shouldn't be possible, but let's be tidy
-                    erase_resource(resources, grain->id);
-
-                    // theoretically blocking, but in fact not
-                    listener.close(websocket.second, web::websockets::websocket_close_status::server_terminate, U("Deleted")).wait();
-
-                    wit = websockets.left.erase(wit);
-                    continue;
-                }
-                // and has events to send
-                if (0 == nmos::fields::message_grain_data(grain->data).size())
-                {
-                    ++wit;
-                    continue;
-                }
-
-                // throttle messages according to the subscription's max_update_rate_ms
-                // see discussion about creation_timestamp below...
-                const auto max_update_rate = std::chrono::milliseconds(nmos::fields::max_update_rate_ms(subscription->data));
-                const auto earliest_allowed_update = time_point_from_tai(nmos::fields::creation_timestamp(nmos::fields::message(grain->data))) + max_update_rate;
-                if (earliest_allowed_update > now)
-                {
-                    // make sure to send a message as soon as allowed
-                    if (earliest_allowed_update < earliest_necessary_update)
+                    // for each websocket connection that has valid grain and subscription resources
+                    const auto grain = find_resource(resources, { websocket.first, nmos::types::grain });
+                    if (resources.end() == grain)
                     {
-                        earliest_necessary_update = earliest_allowed_update;
+                        // theoretically blocking, but in fact not
+                        listener.close(websocket.second, web::websockets::websocket_close_status::server_terminate, U("Deleted")).wait();
+
+                        wit = websockets.left.erase(wit);
+                        continue;
                     }
-                    // just don't do it now!
-                    ++wit;
-                    continue;
-                }
-
-                // experimental extension, to limit maximum number of events per message
-
-                resource_paging paging(nmos::fields::params(subscription->data), most_recent_message, (size_t)nmos::experimental::fields::query_ws_paging_default(model.settings), (size_t)nmos::experimental::fields::query_ws_paging_limit(model.settings));
-                auto next_events = value::array();
-
-                // determine the grain timestamps
-
-                // the meanings of each of these are being clarified in IS-04 v1.3
-                // see https://github.com/AMWA-TV/is-04/pull/102
-
-                // origin_timestamp is like paging.until, the timestamp of the most recent update potentially included in this message
-                // it has therefore been subject to the usual adjustments to make it unique and strictly increasing
-                // another possibility would be to make it the timestamp of the most recent update *actually* included
-                // or it could be the timestamp of (or the timestamp before, like paging.since) the least recent update included
-                const auto origin_timestamp = value::string(nmos::make_version(most_recent_message));
-
-                // creation_timestamp reflects the time that the message is actually being prepared
-                // this may be more recent if messages have been throttled
-                // or less recent since it hasn't been adjusted in the same way as the update timestamps
-                const auto creation_timestamp = value::string(nmos::make_version(tai_from_time_point(now)));
-
-                // prepare the message
-
-                resources.modify(grain, [&paging, &next_events, &origin_timestamp, &creation_timestamp](nmos::resource& grain)
-                {
-                    auto& message = nmos::fields::message(grain.data);
-
-                    // postpone all the events after the specified limit
-                    auto& next_storage = web::json::storage_of(next_events.as_array());
-                    auto& message_storage = web::json::storage_of(nmos::fields::grain_data(message).as_array());
-                    if (paging.limit < message_storage.size())
+                    const auto subscription = find_resource(resources, { nmos::fields::subscription_id(grain->data), nmos::types::subscription });
+                    if (resources.end() == subscription)
                     {
-                        const auto b = message_storage.begin() + paging.limit, e = message_storage.end();
-                        next_storage.assign(std::make_move_iterator(b), std::make_move_iterator(e));
-                        message_storage.erase(b, e);
-                        // hmm, feels like origin_timestamp should be adjusted in this case, but how?
+                        // a grain without a subscription shouldn't be possible, but let's be tidy
+                        erase_resource(resources, grain->id);
+
+                        // theoretically blocking, but in fact not
+                        listener.close(websocket.second, web::websockets::websocket_close_status::server_terminate, U("Deleted")).wait();
+
+                        wit = websockets.left.erase(wit);
+                        continue;
+                    }
+                    // and has events to send
+                    if (0 == nmos::fields::message_grain_data(grain->data).size())
+                    {
+                        ++wit;
+                        continue;
                     }
 
-                    // set the timestamps
-                    message[nmos::fields::origin_timestamp] = origin_timestamp;
-                    message[nmos::fields::sync_timestamp] = origin_timestamp;
-                    message[nmos::fields::creation_timestamp] = creation_timestamp;
-                });
-
-                slog::log<slog::severities::info>(gate, SLOG_FLF) << "Preparing to send " << nmos::fields::message_grain_data(grain->data).size() << " changes on websocket connection: " << grain->id;
-
-                //+ additional logging, cf. nmos::details::request_registration
-                // see nmos/node_behaviour.cpp
-                const auto topic = nmos::fields::grain_topic(nmos::fields::message(grain->data));
-                const auto message_origin_timestamp = nmos::fields::origin_timestamp(nmos::fields::message(grain->data));
-                for (const auto& event : nmos::fields::message_grain_data(grain->data).as_array())
-                {
-                    const auto id_type = nmos::details::get_resource_event_resource(topic, event);
-                    const auto event_type = nmos::details::get_resource_event_type(event);
-                    const auto event_origin_timestamp = web::json::field_with_default<tai>{ nmos::fields::origin_timestamp, message_origin_timestamp }(event);
-
-                    slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Sending registration " << slog::omanip([&event_type](std::ostream& s)
+                    // throttle messages according to the subscription's max_update_rate_ms
+                    // see discussion about creation_timestamp below...
+                    const auto max_update_rate = bst::chrono::milliseconds(nmos::fields::max_update_rate_ms(subscription->data));
+                    const auto earliest_allowed_update = time_point_from_tai(nmos::fields::creation_timestamp(nmos::fields::message(grain->data))) + max_update_rate;
+                    if (earliest_allowed_update > now)
                     {
-                        switch (event_type)
+                        // make sure to send a message as soon as allowed
+                        if (earliest_allowed_update < earliest_necessary_update)
                         {
-                        case nmos::details::resource_added_event: s << "creation"; break;
-                        case nmos::details::resource_removed_event: s << "deletion"; break;
-                        case nmos::details::resource_modified_event: s << "update"; break;
-                        case nmos::details::resource_unchanged_event: s << "sync"; break;
-                        default: s << "event"; break;
+                            earliest_necessary_update = earliest_allowed_update;
                         }
-                    }) << " for " << id_type << " at: " << nmos::make_version(event_origin_timestamp);
+                        // just don't do it now!
+                        ++wit;
+                        continue;
+                    }
+
+                    // experimental extension, to limit maximum number of events per message
+
+                    resource_paging paging(nmos::fields::params(subscription->data), most_recent_message, (size_t)nmos::experimental::fields::query_ws_paging_default(model.settings), (size_t)nmos::experimental::fields::query_ws_paging_limit(model.settings));
+                    auto next_events = value::array();
+
+                    // determine the grain timestamps
+
+                    // the meanings of each of these are being clarified in IS-04 v1.3
+                    // see https://github.com/AMWA-TV/is-04/pull/102
+
+                    // origin_timestamp is like paging.until, the timestamp of the most recent update potentially included in this message
+                    // it has therefore been subject to the usual adjustments to make it unique and strictly increasing
+                    // another possibility would be to make it the timestamp of the most recent update *actually* included
+                    // or it could be the timestamp of (or the timestamp before, like paging.since) the least recent update included
+                    const auto origin_timestamp = value::string(nmos::make_version(most_recent_message));
+
+                    // creation_timestamp reflects the time that the message is actually being prepared
+                    // this may be more recent if messages have been throttled
+                    // or less recent since it hasn't been adjusted in the same way as the update timestamps
+                    const auto creation_timestamp = value::string(nmos::make_version(tai_from_time_point(now)));
+
+                    // prepare the message
+
+                    resources.modify(grain, [&paging, &next_events, &origin_timestamp, &creation_timestamp](nmos::resource& grain)
+                        {
+                            auto& message = nmos::fields::message(grain.data);
+
+                            // postpone all the events after the specified limit
+                            auto& next_storage = web::json::storage_of(next_events.as_array());
+                            auto& message_storage = web::json::storage_of(nmos::fields::grain_data(message).as_array());
+                            if (paging.limit < message_storage.size())
+                            {
+                                const auto b = message_storage.begin() + paging.limit, e = message_storage.end();
+                                next_storage.assign(std::make_move_iterator(b), std::make_move_iterator(e));
+                                message_storage.erase(b, e);
+                                // hmm, feels like origin_timestamp should be adjusted in this case, but how?
+                            }
+
+                            // set the timestamps
+                            message[nmos::fields::origin_timestamp] = origin_timestamp;
+                            message[nmos::fields::sync_timestamp] = origin_timestamp;
+                            message[nmos::fields::creation_timestamp] = creation_timestamp;
+                        });
+
+                    slog::log<slog::severities::info>(gate, SLOG_FLF) << "Preparing to send " << nmos::fields::message_grain_data(grain->data).size() << " changes on websocket connection: " << grain->id;
+
+                    //+ additional logging, cf. nmos::details::request_registration
+                    // see nmos/node_behaviour.cpp
+                    const auto topic = nmos::fields::grain_topic(nmos::fields::message(grain->data));
+                    const auto message_origin_timestamp = nmos::fields::origin_timestamp(nmos::fields::message(grain->data));
+                    for (const auto& event : nmos::fields::message_grain_data(grain->data).as_array())
+                    {
+                        const auto id_type = nmos::details::get_resource_event_resource(topic, event);
+                        const auto event_type = nmos::details::get_resource_event_type(event);
+                        const auto event_origin_timestamp = web::json::field_with_default<tai>{ nmos::fields::origin_timestamp, message_origin_timestamp }(event);
+
+                        slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Sending registration " << slog::omanip([&event_type](std::ostream& s)
+                            {
+                                switch (event_type)
+                                {
+                                case nmos::details::resource_added_event: s << "creation"; break;
+                                case nmos::details::resource_removed_event: s << "deletion"; break;
+                                case nmos::details::resource_modified_event: s << "update"; break;
+                                case nmos::details::resource_unchanged_event: s << "sync"; break;
+                                default: s << "event"; break;
+                                }
+                            }) << " for " << id_type << " at: " << nmos::make_version(event_origin_timestamp);
+                    }
+                    //- additional logging, cf. nmos::details::request_registration
+
+                    auto serialized = utility::us2s(nmos::fields::message(grain->data).serialize());
+                    web::websockets::websocket_outgoing_message message;
+                    message.set_utf8_message(serialized);
+
+                    outgoing_messages.push_back({ websocket.second, message });
+
+                    if (0 != next_events.size())
+                    {
+                        // make sure to send a message as soon as allowed
+                        if (now + max_update_rate < earliest_necessary_update)
+                        {
+                            earliest_necessary_update = now + max_update_rate;
+                        }
+                    }
+
+                    // reset the grain for next time
+                    resources.modify(grain, [&next_events, &resources](nmos::resource& grain)
+                        {
+                            using std::swap;
+                            swap(nmos::fields::message_grain_data(grain.data), next_events);
+                            next_events = value::array(); // unnecessary
+                            grain.updated = strictly_increasing_update(resources);
+                        });
+
+                    ++wit;
                 }
-                //- additional logging, cf. nmos::details::request_registration
 
-                auto serialized = utility::us2s(nmos::fields::message(grain->data).serialize());
-                web::websockets::websocket_outgoing_message message;
-                message.set_utf8_message(serialized);
-
-                outgoing_messages.push_back({ websocket.second, message });
-
-                if (0 != next_events.size())
+                // send the messages without the lock on resources
+                try
                 {
-                    // make sure to send a message as soon as allowed
-                    if (now + max_update_rate < earliest_necessary_update)
-                    {
-                        earliest_necessary_update = now + max_update_rate;
-                    }
+                    details::reverse_lock_guard<nmos::write_lock> unlock{ lock };
+                }
+                catch (const std::exception& e)
+                {
+                    slog::log<slog::severities::error>(gate, SLOG_FLF) << "Unlock error: " << e.what();
                 }
 
-                // reset the grain for next time
-                resources.modify(grain, [&next_events, &resources](nmos::resource& grain)
+                if (!outgoing_messages.empty()) slog::log<slog::severities::info>(gate, SLOG_FLF) << "Sending " << outgoing_messages.size() << " websocket messages";
+
+                for (auto& outgoing_message : outgoing_messages)
                 {
-                    using std::swap;
-                    swap(nmos::fields::message_grain_data(grain.data), next_events);
-                    next_events = value::array(); // unnecessary
-                    grain.updated = strictly_increasing_update(resources);
-                });
-
-                ++wit;
-            }
-
-            // send the messages without the lock on resources
-            details::reverse_lock_guard<nmos::write_lock> unlock{ lock };
-
-            if (!outgoing_messages.empty()) slog::log<slog::severities::info>(gate, SLOG_FLF) << "Sending " << outgoing_messages.size() << " websocket messages";
-
-            for (auto& outgoing_message : outgoing_messages)
-            {
-                // hmmm, no way to cancel this currently...
-                auto send = listener.send(outgoing_message.first, outgoing_message.second).then([&](pplx::task<void> finally)
-                {
-                    try
-                    {
-                        finally.get();
-                    }
-                    catch (const web::websockets::websocket_exception& e)
-                    {
-                        slog::log<slog::severities::error>(gate, SLOG_FLF) << "WebSocket error: " << e.what() << " [" << e.error_code() << "]";
-                    }
-                });
-                // current websocket_listener implementation is synchronous in any case, but just to make clear...
-                // for now, wait for the message to be sent
-                send.wait();
+                    // hmmm, no way to cancel this currently...
+                    auto send = listener.send(outgoing_message.first, outgoing_message.second).then([&](pplx::task<void> finally)
+                        {
+                            try
+                            {
+                                finally.get();
+                            }
+                            catch (const web::websockets::websocket_exception& e)
+                            {
+                                slog::log<slog::severities::error>(gate, SLOG_FLF) << "WebSocket error: " << e.what() << " [" << e.error_code() << "]";
+                            }
+                        });
+                    // current websocket_listener implementation is synchronous in any case, but just to make clear...
+                    // for now, wait for the message to be sent
+                    send.wait();
+                }
             }
         }
     }

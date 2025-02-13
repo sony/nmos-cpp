@@ -12,8 +12,10 @@
 
 #ifndef BST_SHARED_MUTEX_BOOST
 
+#include <condition_variable>
 #include <shared_mutex>
 namespace bst_shared_mutex = std;
+namespace bst_shared_mutex_condition_variable_any = std;
 
 #else
 
@@ -21,12 +23,27 @@ namespace bst_shared_mutex = std;
 #include <boost/thread/shared_mutex.hpp>
 namespace bst_shared_mutex = boost;
 
+#if defined(_WIN32)
+// note, Windows boost::condition_variable_any::wait would throw a lock expectation when boost::shared_mutex has reached the
+// maximum number of exclusive_waiting locks. Unfortunately, the standard boost::condition_variable_any's relocker
+// destructor could also throw a lock exception. This could cause program termination due to unhandled exceptions by the
+// boost::condition_variable_any's do_wait_until(...)
+#include "boost/thread/win32_condition_variable.hpp"
+namespace bst_shared_mutex_condition_variable_any = boost::experimental;
+#else
+#include <boost/thread/condition_variable.hpp>
+namespace bst_shared_mutex_condition_variable_any = boost;
+#endif
+
 #endif
 
 namespace bst
 {
     using bst_shared_mutex::shared_mutex;
     using bst_shared_mutex::shared_lock;
+    using bst_shared_mutex_condition_variable_any::condition_variable_any;
+    using bst_shared_mutex::nano;
+    using bst_shared_mutex::cv_status;
 }
 
 #endif
