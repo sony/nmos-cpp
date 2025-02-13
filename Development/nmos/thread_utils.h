@@ -1,7 +1,7 @@
 #ifndef NMOS_THREAD_UTILS_H
 #define NMOS_THREAD_UTILS_H
 
-#include "slog/all_in_one.h"
+#include <thread>
 
 namespace nmos
 {
