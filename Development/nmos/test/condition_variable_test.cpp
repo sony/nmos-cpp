@@ -1,8 +1,8 @@
 // The first "test" is of course whether the header compiles standalone
 #include <iostream>
-#include "nmos/thread_utils.h" // for wait_until
 #include "nmos/mutex.h"
 #include "nmos/tai.h"
+#include "nmos/thread_utils.h" // for wait_until
 
 #include "bst/test/test.h"
 
