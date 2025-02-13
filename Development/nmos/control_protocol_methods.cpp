@@ -296,7 +296,7 @@ namespace nmos
     }
 
     // Delete sequence item
-    web::json::value remove_sequence_item(nmos::resources& resources, const nmos::resource& resource, const web::json::value& arguments, bool is_deprecated, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, slog::base_gate& gate)
+    web::json::value remove_sequence_item(nmos::resources& resources, const nmos::resource& resource, const web::json::value& arguments, bool is_deprecated, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, control_protocol_property_changed_handler property_changed, slog::base_gate& gate)
     {
         // note, model mutex is already locked by the outer function, so access to control_protocol_resources is OK...
 
@@ -309,6 +309,11 @@ namespace nmos
         const auto& property = find_property_descriptor(details::parse_nc_property_id(property_id), details::parse_nc_class_id(nmos::fields::nc::class_id(resource.data)), get_control_protocol_class_descriptor);
         if (!property.is_null())
         {
+            if (nmos::fields::nc::is_read_only(property))
+            {
+                return details::make_nc_method_result({ nc_method_status::read_only });
+            }
+
             const auto& data = resource.data.at(nmos::fields::nc::name(property));
 
             if (!nmos::fields::nc::is_sequence(property) || data.is_null() || !data.is_array())
@@ -326,6 +331,12 @@ namespace nmos
                 {
                     auto& sequence = resource.data[nmos::fields::nc::name(property)].as_array();
                     sequence.erase(index);
+
+                    // do notification that the specified property has changed
+                    if (property_changed)
+                    {
+                        property_changed(resource, nmos::fields::nc::name(property), index);
+                    }
 
                 }, make_property_changed_event(nmos::fields::nc::oid(resource.data), { { details::parse_nc_property_id(property_id), nc_property_change_type::type::sequence_item_removed, nc_id(index) } }));
 
