@@ -738,17 +738,34 @@ namespace nmos
             return data;
         }
 
-        // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/monitoring/#ncreceivermonitor
-        web::json::value make_receiver_monitor(const nc_class_id& class_id, nc_oid oid, bool constant_oid, nc_oid owner, const utility::string_t& role, const utility::string_t& user_label, const utility::string_t& description, const web::json::value& touchpoints, const web::json::value& runtime_property_constraints, bool enabled,
-            nc_connection_status::status connection_status, const utility::string_t& connection_status_message, nc_payload_status::status payload_status, const utility::string_t& payload_status_message)
+        // TODO: add link
+        web::json::value make_nc_status_monitor(const nc_class_id& class_id, nc_oid oid, bool constant_oid, nc_oid owner, const utility::string_t& role, const utility::string_t& user_label, const utility::string_t& description, const web::json::value& touchpoints, const web::json::value& runtime_property_constraints, bool enabled, nc_overall_status::status overall_status, const utility::string_t& overall_status_message)
         {
             using web::json::value;
 
             auto data = make_nc_worker(class_id, oid, constant_oid, owner, role, value::string(user_label), description, touchpoints, runtime_property_constraints, enabled);
+            data[nmos::fields::nc::overall_status] = value::number(overall_status);
+            data[nmos::fields::nc::overall_status_message] = value::string(overall_status_message);
+
+            return data;
+        }
+
+        // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/monitoring/#ncreceivermonitor
+        web::json::value make_receiver_monitor(const nc_class_id& class_id, nc_oid oid, bool constant_oid, nc_oid owner, const utility::string_t& role, const utility::string_t& user_label, const utility::string_t& description, const web::json::value& touchpoints, const web::json::value& runtime_property_constraints, bool enabled, nc_overall_status::status overall_status, const utility::string_t& overall_status_message, nc_link_status::status link_status, const utility::string_t& link_status_message, nc_connection_status::status connection_status, const utility::string_t& connection_status_message, nc_synchronization_status::status synchronization_status, const utility::string_t& synchronization_status_message, const utility::string_t& synchronization_source_id, nc_stream_status::status stream_status, const utility::string_t& stream_status_message)
+        {
+            using web::json::value;
+
+            auto data = make_nc_status_monitor(class_id, oid, constant_oid, owner, role, user_label, description, touchpoints, runtime_property_constraints, enabled, overall_status, overall_status_message);
+
+            data[nmos::fields::nc::link_status] = value::number(link_status);
+            data[nmos::fields::nc::link_status_message] = value::string(link_status_message);
             data[nmos::fields::nc::connection_status] = value::number(connection_status);
             data[nmos::fields::nc::connection_status_message] = value::string(connection_status_message);
-            data[nmos::fields::nc::payload_status] = value::number(payload_status);
-            data[nmos::fields::nc::payload_status_message] = value::string(payload_status_message);
+            data[nmos::fields::nc::synchronization_status] = value::number(synchronization_status);
+            data[nmos::fields::nc::synchronization_status_message] = value::string(synchronization_status_message);
+            data[nmos::fields::nc::synchronization_source_id] = value::string(synchronization_source_id);
+            data[nmos::fields::nc::stream_status] = value::number(stream_status);
+            data[nmos::fields::nc::stream_status_message] = value::string(stream_status_message);
 
             return data;
         }
@@ -1155,16 +1172,49 @@ namespace nmos
         return value::array();
     }
 
+    // TODO: add link
+    web::json::value make_nc_status_monitor_properties()
+    {
+        using web::json::value;
+
+        auto properties = value::array();
+        web::json::push_back(properties, details::make_nc_property_descriptor(U("Overall status property"), nc_status_monitor_overall_status_property_id, nmos::fields::nc::overall_status, U("NcOverallStatus"), true, false, false, false, value::null()));
+        web::json::push_back(properties, details::make_nc_property_descriptor(U("Overall status message property"), nc_status_monitor_overall_status_message_property_id, nmos::fields::nc::overall_status_message, U("NcString"), true, true, false, false, value::null()));
+        web::json::push_back(properties, details::make_nc_property_descriptor(U("Status reporting delay property (in seconds, default is 3s and 0 means no delay)"), nc_status_monitor_status_reporting_delay, nmos::fields::nc::status_reporting_delay, U("NcUint32"), false, false, false, false, value::null()));
+
+        return properties;
+    }
+    web::json::value make_nc_status_monitor_methods()
+    {
+        using web::json::value;
+
+        return value::array();
+    }
+    web::json::value make_nc_status_monitor_events()
+    {
+        using web::json::value;
+
+        return value::array();
+    }
+
     // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/monitoring/#ncreceivermonitor
     web::json::value make_nc_receiver_monitor_properties()
     {
         using web::json::value;
 
         auto properties = value::array();
+        web::json::push_back(properties, details::make_nc_property_descriptor(U("Link status property"), nc_receiver_monitor_link_status_property_id, nmos::fields::nc::link_status, U("NcLinkStatus"), true, false, false, false, value::null()));
+        web::json::push_back(properties, details::make_nc_property_descriptor(U("Link status message property"), nc_receiver_monitor_link_status_message_property_id, nmos::fields::nc::link_status_message, U("NcString"), true, true, false, false, value::null()));
         web::json::push_back(properties, details::make_nc_property_descriptor(U("Connection status property"), nc_receiver_monitor_connection_status_property_id, nmos::fields::nc::connection_status, U("NcConnectionStatus"), true, false, false, false, value::null()));
         web::json::push_back(properties, details::make_nc_property_descriptor(U("Connection status message property"), nc_receiver_monitor_connection_status_message_property_id, nmos::fields::nc::connection_status_message, U("NcString"), true, true, false, false, value::null()));
-        web::json::push_back(properties, details::make_nc_property_descriptor(U("Payload status property"), nc_receiver_monitor_payload_status_property_id, nmos::fields::nc::payload_status, U("NcPayloadStatus"), true, false, false, false, value::null()));
-        web::json::push_back(properties, details::make_nc_property_descriptor(U("Payload status message property"), nc_receiver_monitor_payload_status_message_property_id, nmos::fields::nc::payload_status_message, U("NcString"), true, true, false, false, value::null()));
+        web::json::push_back(properties, details::make_nc_property_descriptor(U("External synchronization status property"), nc_receiver_monitor_external_synchronization_status_property_id, nmos::fields::nc::synchronization_status, U("NcSynchronizationStatus"), true, false, false, false, value::null()));
+        web::json::push_back(properties, details::make_nc_property_descriptor(U("External synchronization status message property"), nc_receiver_monitor_external_synchronization_status_message_property_id, nmos::fields::nc::synchronization_status_message, U("NcString"), true, true, false, false, value::null()));
+        web::json::push_back(properties, details::make_nc_property_descriptor(U("Synchronization source id property"), nc_receiver_monitor_synchronization_source_id_property_id, nmos::fields::nc::synchronization_source_id, U("NcString"), true, true, false, false, value::null()));
+        web::json::push_back(properties, details::make_nc_property_descriptor(U("Synchronization source changes counter"), nc_receiver_monitor_synchronization_source_changes_property_id, nmos::fields::nc::synchronization_source_changes, U("NcUint64"), true, false, false, false, value::null()));
+        web::json::push_back(properties, details::make_nc_property_descriptor(U("Stream status property"), nc_receiver_monitor_stream_status_property_id, nmos::fields::nc::stream_status, U("NcStreamStatus"), true, false, false, false, value::null()));
+        web::json::push_back(properties, details::make_nc_property_descriptor(U("Stream status message property"), nc_receiver_monitor_stream_status_message_property_id, nmos::fields::nc::stream_status_message, U("NcString"), true, true, false, false, value::null()));
+        web::json::push_back(properties, details::make_nc_property_descriptor(U("Automatic reset packet counters property (default: true)"), nc_receiver_monitor_auto_reset_packet_counters_property_id, nmos::fields::nc::auto_reset_packet_counters, U("NcBoolean"), false, false, false, false, value::null()));
+        web::json::push_back(properties, details::make_nc_property_descriptor(U("Automatic reset synchronization source changes property (default: true)"), nc_receiver_monitor_auto_reset_synchronization_source_changes_property_id, nmos::fields::nc::auto_reset_synchronization_source_changes, U("NcBoolean"), false, false, false, false, value::null()));
 
         return properties;
     }
@@ -1172,32 +1222,15 @@ namespace nmos
     {
         using web::json::value;
 
-        return value::array();
+        auto methods = value::array();
+        web::json::push_back(methods, details::make_nc_method_descriptor(U("Gets the lost packet counters"), nc_receiver_monitor_get_lost_packet_counters_method_id, U("GetLostPacketCounters"), U("NcMethodResultCounters"), value::array(), false));
+        web::json::push_back(methods, details::make_nc_method_descriptor(U("Gets the late packet counters"), nc_receiver_monitor_get_late_packet_counters_method_id, U("GetLatePacketCounters"), U("NcMethodResultCounters"), value::array(), false));
+        web::json::push_back(methods, details::make_nc_method_descriptor(U("Resets the packet counters"), nc_receiver_monitor_reset_packet_counters_method_id, U("ResetPacketCounters"), U("NcMethodResult"), value::array(), false));
+        web::json::push_back(methods, details::make_nc_method_descriptor(U("Resets the packet counters"), nc_receiver_monitor_reset_synchonization_source_changes_method_id, U("ResetSynchronizationSourceChanges"), U("NcMethodResult"), value::array(), false));
+
+        return methods;
     }
     web::json::value make_nc_receiver_monitor_events()
-    {
-        using web::json::value;
-
-        return value::array();
-    }
-
-    // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/monitoring/#ncreceivermonitorprotected
-    web::json::value make_nc_receiver_monitor_protected_properties()
-    {
-        using web::json::value;
-
-        auto properties = value::array();
-        web::json::push_back(properties, details::make_nc_property_descriptor(U("Indicates if signal protection is active"), nc_receiver_monitor_protected_signal_protection_status_property_id, nmos::fields::nc::signal_protection_status, U("NcBoolean"), true, false, false, false, value::null()));
-
-        return properties;
-    }
-    web::json::value make_nc_receiver_monitor_protected_methods()
-    {
-        using web::json::value;
-
-        return value::array();
-    }
-    web::json::value make_nc_receiver_monitor_protected_events()
     {
         using web::json::value;
 
@@ -1285,20 +1318,20 @@ namespace nmos
     }
 
     // Monitoring feature set control classes
+    // TODO: link
+    web::json::value make_nc_status_monitor_class()
+    {
+        using web::json::value;
+
+        return details::make_nc_class_descriptor(U("NcStatusMonitor class descriptor"), nc_status_monitor_class_id, U("NcStatusMonitor"), make_nc_status_monitor_properties(), make_nc_status_monitor_methods(), make_nc_status_monitor_events());
+    }
+
     // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/monitoring/#ncreceivermonitor
     web::json::value make_nc_receiver_monitor_class()
     {
         using web::json::value;
 
         return details::make_nc_class_descriptor(U("NcReceiverMonitor class descriptor"), nc_receiver_monitor_class_id, U("NcReceiverMonitor"), make_nc_receiver_monitor_properties(), make_nc_receiver_monitor_methods(), make_nc_receiver_monitor_events());
-    }
-
-    // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/monitoring/#ncreceivermonitorprotected
-    web::json::value make_nc_receiver_monitor_protected_class()
-    {
-        using web::json::value;
-
-        return details::make_nc_class_descriptor(U("NcReceiverMonitorProtected class descriptor"), nc_receiver_monitor_protected_class_id, U("NcReceiverMonitorProtected"), make_nc_receiver_monitor_protected_properties(), make_nc_receiver_monitor_protected_methods(), make_nc_receiver_monitor_protected_events());
     }
 
     // Primitive datatypes
@@ -2024,29 +2057,110 @@ namespace nmos
         return details::make_nc_datatype_typedef(U("Version code in semantic versioning format"), U("NcVersionCode"), false, U("NcString"), value::null());
     }
 
-    // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/monitoring/#ncconnectionstatus
+    // Monitoring datatype defintions
+    //
+
+    // TODO: link
     web::json::value make_nc_connection_status_datatype()
     {
         using web::json::value;
 
         auto items = value::array();
-        web::json::push_back(items, details::make_nc_enum_item_descriptor(U("This is the value when there is no receiver"), U("Undefined"), 0));
-        web::json::push_back(items, details::make_nc_enum_item_descriptor(U("Connected to a stream"), U("Connected"), 1));
-        web::json::push_back(items, details::make_nc_enum_item_descriptor(U("Not connected to a stream"), U("Disconnected"), 2));
-        web::json::push_back(items, details::make_nc_enum_item_descriptor(U("A connection error was encountered"), U("ConnectionError"), 3));
+        web::json::push_back(items, details::make_nc_enum_item_descriptor(U("Inactive"), U("Inactive"), nc_connection_status::status::inactive));
+        web::json::push_back(items, details::make_nc_enum_item_descriptor(U("Active and healthy"), U("Healthy"), nc_connection_status::status::healthy));
+        web::json::push_back(items, details::make_nc_enum_item_descriptor(U("Active and partially healthy"), U("PartiallyHealthy"), nc_connection_status::status::partially_healthy));
+        web::json::push_back(items, details::make_nc_enum_item_descriptor(U("Active and unhealthy"), U("Unhealthy"), nc_connection_status::status::unhealthy));
         return details::make_nc_datatype_descriptor_enum(U("Connection status enum data typee"), U("NcConnectionStatus"), items, value::null());
     }
+    // TODO: link
+    web::json::value make_nc_counter_datatype()
+    {
+        using web::json::value;
 
-    // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/monitoring/#ncpayloadstatus
-    web::json::value make_nc_payload_status_datatype()
+        auto fields = value::array();
+        web::json::push_back(fields, details::make_nc_field_descriptor(U("Counter name"), nmos::fields::nc::name, U("NcString"), false, false, value::null()));
+        web::json::push_back(fields, details::make_nc_field_descriptor(U("Counter value"), nmos::fields::nc::value, U("NcUint64"), false, false, value::null()));
+        web::json::push_back(fields, details::make_nc_field_descriptor(U("Description"), nmos::fields::nc::description, U("NcString"), true, false, value::null()));
+        return details::make_nc_datatype_descriptor_struct(U("Counter data type"), U("NcCounter"), fields, value::null());
+    }
+    // TOO: link
+    web::json::value make_nc_essence_status_datatype()
     {
         using web::json::value;
 
         auto items = value::array();
-        web::json::push_back(items, details::make_nc_enum_item_descriptor(U("This is the value when there's no connection"), U("Undefined"), 0));
-        web::json::push_back(items, details::make_nc_enum_item_descriptor(U("Payload is being received without errors and is the correct type"), U("PayloadOK"), 1));
-        web::json::push_back(items, details::make_nc_enum_item_descriptor(U("Payload is being received but is of an unsupported type"), U("PayloadFormatUnsupported"), 2));
-        web::json::push_back(items, details::make_nc_enum_item_descriptor(U("A payload error was encountered"), U("PayloadError"), 3));
-        return details::make_nc_datatype_descriptor_enum(U("Connection status enum data typee"), U("NcPayloadStatus"), items, value::null());
+        web::json::push_back(items, details::make_nc_enum_item_descriptor(U("Inactive"), U("Inactive"), nc_essence_status::status::inactive));
+        web::json::push_back(items, details::make_nc_enum_item_descriptor(U("Active and healthy"), U("Healthy"), nc_essence_status::status::healthy));
+        web::json::push_back(items, details::make_nc_enum_item_descriptor(U("Active and partially healthy"), U("PartiallyHealthy"), nc_essence_status::status::partially_healthy));
+        web::json::push_back(items, details::make_nc_enum_item_descriptor(U("Active and unhealthy"), U("Unhealthy"), nc_essence_status::status::unhealthy));
+        return details::make_nc_datatype_descriptor_enum(U("Essence status enum data type"), U("NcEssenceStatus"), items, value::null());
+    }
+    // TODO: link
+    web::json::value make_nc_link_status_datatype()
+    {
+        using web::json::value;
+
+        auto items = value::array();
+        web::json::push_back(items, details::make_nc_enum_item_descriptor(U("All the associated network interfaces are up"), U("AllUp"), nc_link_status::status::all_up));
+        web::json::push_back(items, details::make_nc_enum_item_descriptor(U("Some of the associated network interfaces are down"), U("SomeDown"), nc_link_status::status::some_down));
+        web::json::push_back(items, details::make_nc_enum_item_descriptor(U("All the associated network interfaces are down"), U("AllDown"), nc_link_status::status::all_down));
+        return details::make_nc_datatype_descriptor_enum(U("Link status enum data type"), U("NcLinkStatus"), items, value::null());
+    }
+    // TODO: link
+    web::json::value make_nc_overall_status_datatype()
+    {
+        using web::json::value;
+
+        auto items = value::array();
+        web::json::push_back(items, details::make_nc_enum_item_descriptor(U("Inactive"), U("Inactive"), nc_overall_status::status::inactive));
+        web::json::push_back(items, details::make_nc_enum_item_descriptor(U("The overall status is healthy"), U("Healthy"), nc_overall_status::status::healthy));
+        web::json::push_back(items, details::make_nc_enum_item_descriptor(U("The overall status is partially healthy"), U("PartiallyHealthy"), nc_overall_status::status::partially_healthy));
+        web::json::push_back(items, details::make_nc_enum_item_descriptor(U("The overall status is unhealthy"), U("Unhealthy"), nc_overall_status::status::unhealthy));
+        return details::make_nc_datatype_descriptor_enum(U("Overall status enum data type"), U("NcOverallStatus"), items, value::null());
+    }
+    // TOO: link
+    web::json::value make_nc_synchronization_status_datatype()
+    {
+        using web::json::value;
+
+        auto items = value::array();
+        web::json::push_back(items, details::make_nc_enum_item_descriptor(U("Feature not in use"), U("NotUsed"), nc_synchronization_status::status::not_used));
+        web::json::push_back(items, details::make_nc_enum_item_descriptor(U("Locked to a synchronization source"), U("Healthy"), nc_synchronization_status::status::healthy));
+        web::json::push_back(items, details::make_nc_enum_item_descriptor(U("Partially locked to a synchronization source"), U("PartiallyHealthy"), nc_synchronization_status::status::partially_healthy));
+        web::json::push_back(items, details::make_nc_enum_item_descriptor(U("Not locked to a synchronization source"), U("Unhealthy"), nc_synchronization_status::status::unhealthy));
+        return details::make_nc_datatype_descriptor_enum(U("Synchronization status enum data type"), U("NcSynchronizationStatus"), items, value::null());
+    }
+    // TOO: link
+    web::json::value make_nc_stream_status_datatype()
+    {
+        using web::json::value;
+
+        auto items = value::array();
+        web::json::push_back(items, details::make_nc_enum_item_descriptor(U("Inactive"), U("Inactive"), nc_stream_status::status::inactive));
+        web::json::push_back(items, details::make_nc_enum_item_descriptor(U("Active and healthy"), U("Healthy"), nc_stream_status::status::healthy));
+        web::json::push_back(items, details::make_nc_enum_item_descriptor(U("Active and partially healthy"), U("PartiallyHealthy"), nc_stream_status::status::partially_healthy));
+        web::json::push_back(items, details::make_nc_enum_item_descriptor(U("Active and unhealthy"), U("Unhealthy"), nc_stream_status::status::unhealthy));
+        return details::make_nc_datatype_descriptor_enum(U("Stream status enum data type"), U("NcStreamStatus"), items, value::null());
+    }
+    // TODO: link
+    web::json::value make_nc_transmission_status_datatype()
+    {
+        using web::json::value;
+
+        auto items = value::array();
+        web::json::push_back(items, details::make_nc_enum_item_descriptor(U("Inactive"), U("Inactive"), nc_transmission_status::status::inactive));
+        web::json::push_back(items, details::make_nc_enum_item_descriptor(U("The overall status is healthy"), U("Healthy"), nc_transmission_status::status::healthy));
+        web::json::push_back(items, details::make_nc_enum_item_descriptor(U("The overall status is partially healthy"), U("PartiallyHealthy"), nc_transmission_status::status::partially_healthy));
+        web::json::push_back(items, details::make_nc_enum_item_descriptor(U("The overall status is unhealthy"), U("Unhealthy"), nc_transmission_status::status::unhealthy));
+        return details::make_nc_datatype_descriptor_enum(U("Transmission status enum data type"), U("NcTransmissionStatus"), items, value::null());
+    }
+    // TOO: link
+    web::json::value make_nc_method_result_counters_datatype()
+    {
+        using web::json::value;
+
+        auto fields = value::array();
+        web::json::push_back(fields, details::make_nc_field_descriptor(U("Counters"), nmos::fields::nc::value, U("NcCounter"), false, true, value::null()));
+        return details::make_nc_datatype_descriptor_struct(U("Counter method result"), U("NcMethodResultCounters"), fields, U("NcMethodResult"), value::null());
     }
 }

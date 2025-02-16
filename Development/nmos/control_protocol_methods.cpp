@@ -663,4 +663,23 @@ namespace nmos
 
         return details::make_nc_method_result_error({ nc_method_status::parameter_error }, U("name not found"));
     }
+
+    // NcReceiverMonitor methods
+    web::json::value get_lost_packets(nmos::resources&, const nmos::resource&, const web::json::value&, bool, slog::base_gate&)
+    {
+        // this will need to be defined in a user defined handler
+        return details::make_nc_method_result({ nc_method_status::ok });
+    }
+
+    web::json::value get_late_packets(nmos::resources&, const nmos::resource&, const web::json::value&, bool, slog::base_gate&)
+    {
+        // this will need to be defined in a user defined handler
+        return details::make_nc_method_result({ nc_method_status::ok });
+    }
+
+    web::json::value reset_packet_counters(nmos::resources&, const nmos::resource&, const web::json::value&, bool, slog::base_gate&)
+    {
+        // this will need to be defined in a user defined handler
+        return details::make_nc_method_result({ nc_method_status::ok });
+    }
 }

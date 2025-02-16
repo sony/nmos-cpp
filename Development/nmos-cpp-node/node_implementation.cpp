@@ -1714,6 +1714,48 @@ nmos::control_protocol_property_changed_handler make_node_implementation_control
     };
 }
 
+// Example Receiver Status Monitor callback for get_lost_packets method
+nmos::get_lost_packet_counters_handler make_node_implementation_get_lost_packet_counters_handler()
+{
+    return [&]()
+    {
+        // Implement polling of lost packet count here
+        uint16_t lost_packet_count(0);
+        return nmos::details::make_nc_method_result({ nmos::nc_method_status::ok }, lost_packet_count);
+    };
+}
+
+// Example Receiver Status Monitor callback for get_late_packets method
+nmos::get_late_packet_counters_handler make_node_implementation_get_late_packet_counters_handler()
+{
+    return [&]()
+    {
+        // Implement polling of late packet count here
+        uint16_t late_packet_count(0);
+        return nmos::details::make_nc_method_result({ nmos::nc_method_status::ok }, late_packet_count);
+    };
+}
+
+// Example Receiver Status Monitor callback for reset_packet_counters method
+nmos::reset_packet_counters_handler make_node_implementation_reset_packet_counters_handler()
+{
+    return [&]()
+    {
+        // Implement reset of lost and late packet counters
+        return nmos::details::make_nc_method_result({ nmos::nc_method_status::ok });
+    };
+}
+
+// Example Receiver Status Monitor callback for reset_synchronization_source_changes method
+nmos::reset_synchronization_source_changes_handler make_reset_synchronization_source_changes_handler()
+{
+    return [&]()
+        {
+            // Implement reset of lost and late packet counters
+            return nmos::details::make_nc_method_result({ nmos::nc_method_status::ok });
+        };
+}
+
 namespace impl
 {
     nmos::interlace_mode get_interlace_mode(const nmos::settings& settings)
@@ -1868,5 +1910,9 @@ nmos::experimental::node_implementation make_node_implementation(nmos::node_mode
         .on_connection_activated(make_node_implementation_connection_activation_handler(model, gate))
         .on_validate_channelmapping_output_map(make_node_implementation_map_validator()) // may be omitted if not required
         .on_channelmapping_activated(make_node_implementation_channelmapping_activation_handler(gate))
-        .on_control_protocol_property_changed(make_node_implementation_control_protocol_property_changed_handler(gate)); // may be omitted if IS-12 not required
+        .on_control_protocol_property_changed(make_node_implementation_control_protocol_property_changed_handler(gate)) // may be omitted if IS-12 not required
+        .on_get_lost_packet_counters(make_node_implementation_get_lost_packet_counters_handler())
+        .on_get_late_packet_counters(make_node_implementation_get_late_packet_counters_handler())
+        .on_reset_packet_counters(make_node_implementation_reset_packet_counters_handler())
+        .on_reset_synchronization_source_changes(make_reset_synchronization_source_changes_handler());
 }
