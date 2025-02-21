@@ -9,11 +9,10 @@
 
 #include <boost/thread/win32/condition_variable.hpp>
 
-// note, Windows `boost::condition_variable_any::wait` would throw a lock expectation when `boost::shared_mutex` has reached the
-// maximum number of exclusive_waiting locks. Unfortunately, the standard `boost::condition_variable_any`'s relocker
-// destructor could also throw a lock exception. This could cause program termination due to unhandled exceptions by the
-// `boost::condition_variable_any`'s do_wait_until(...).
-// The modified version of `condition_variable_any` presented below addresses the issues mentioned earlier.
+// Note: Windows `boost::condition_variable_any::wait` would throw nested lock exceptions when `boost::shared_mutex` has reached the
+// maximum number of exclusive_waiting locks. This problem occurrs inside the `boost::basic_condition_variable`'s do_wait_until(...),
+// when relocker is out scope. This could cause program termination due to unhandled exception.
+// This modified version of `condition_variable_any` presented below addresses the issues mentioned earlier.
 namespace boost
 {
 	namespace experimental

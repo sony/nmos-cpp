@@ -11,7 +11,7 @@ namespace nmos
     typedef std::unique_lock<mutex> write_lock;
 
     // locking strategy tag structs must be usable for both read_lock and write_lock
-#ifndef BST_SHARED_MUTEX_BOOST
+#ifndef BST_THREAD_BOOST
     typedef std::adopt_lock_t adopt_lock_t;
     typedef std::defer_lock_t defer_lock_t;
     typedef std::try_to_lock_t try_to_lock_t;

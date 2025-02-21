@@ -448,91 +448,89 @@ namespace nmos
         {
             // wait for the thread to be interrupted either because there are resource changes, or because the server is being shut down
             // or because message sending was throttled earlier
-            if (details::wait_until(condition, lock, earliest_necessary_update, [&] { return shutdown || most_recent_message < most_recent_update(resources); }))
+            details::wait_until(condition, lock, earliest_necessary_update, [&] { return shutdown || most_recent_message < most_recent_update(resources); });
+            if (shutdown) break;
+            most_recent_message = most_recent_update(resources);
+
+            slog::log<slog::severities::too_much_info>(gate, SLOG_FLF) << "Got notification on control protocol websockets thread";
+
+            earliest_necessary_update = (tai_clock::time_point::max)();
+
+            std::vector<std::pair<web::websockets::experimental::listener::connection_id, web::websockets::websocket_outgoing_message>> outgoing_messages;
+
+            for (auto wit = websockets.left.begin(); websockets.left.end() != wit;)
             {
-                if (shutdown) break;
-                most_recent_message = most_recent_update(resources);
+                const auto& websocket = *wit;
 
-                slog::log<slog::severities::too_much_info>(gate, SLOG_FLF) << "Got notification on control protocol websockets thread";
-
-                earliest_necessary_update = (tai_clock::time_point::max)();
-
-                std::vector<std::pair<web::websockets::experimental::listener::connection_id, web::websockets::websocket_outgoing_message>> outgoing_messages;
-
-                for (auto wit = websockets.left.begin(); websockets.left.end() != wit;)
+                // for each websocket connection that has valid grain and subscription resources
+                const auto grain = find_resource(resources, { websocket.first, nmos::types::grain });
+                if (resources.end() == grain)
                 {
-                    const auto& websocket = *wit;
-
-                    // for each websocket connection that has valid grain and subscription resources
-                    const auto grain = find_resource(resources, { websocket.first, nmos::types::grain });
-                    if (resources.end() == grain)
-                    {
-                        auto close = listener.close(websocket.second, web::websockets::websocket_close_status::server_terminate, U("Expired"))
-                            .then(details::observe_websocket_exception(gate));
-                        // theoretically blocking, but in fact not
-                        close.wait();
-
-                        wit = websockets.left.erase(wit);
-                        continue;
-                    }
-                    const auto subscription = find_resource(resources, { nmos::fields::subscription_id(grain->data), nmos::types::subscription });
-                    if (resources.end() == subscription)
-                    {
-                        // a grain without a subscription shouldn't be possible, but let's be tidy
-                        erase_resource(resources, grain->id);
-
-                        auto close = listener.close(websocket.second, web::websockets::websocket_close_status::server_terminate, U("Expired"))
-                            .then(details::observe_websocket_exception(gate));
-                        // theoretically blocking, but in fact not
-                        close.wait();
-
-                        wit = websockets.left.erase(wit);
-                        continue;
-                    }
-                    // and has events to send
-                    if (0 == nmos::fields::message_grain_data(grain->data).size())
-                    {
-                        ++wit;
-                        continue;
-                    }
-
-                    slog::log<slog::severities::info>(gate, SLOG_FLF) << "Preparing to send " << nmos::fields::message_grain_data(grain->data).size() << " events on websocket connection: " << grain->id;
-
-                    for (const auto& event : nmos::fields::message_grain_data(grain->data).as_array())
-                    {
-                        web::websockets::websocket_outgoing_message message;
-
-                        slog::log<slog::severities::too_much_info>(gate, SLOG_FLF) << "outgoing_message: " << event.serialize();
-                        message.set_utf8_message(utility::us2s(event.serialize()));
-                        outgoing_messages.push_back({ websocket.second, message });
-                    }
-
-                    // reset the grain for next time
-                    resources.modify(grain, [&resources](nmos::resource& grain)
-                    {
-                        // all messages have now been prepared
-                        nmos::fields::message_grain_data(grain.data) = value::array();
-                        grain.updated = strictly_increasing_update(resources);
-                    });
-
-                    ++wit;
-                }
-
-                // send the messages without the lock on resources
-                details::reverse_lock_guard<nmos::write_lock> unlock{ lock };
-
-                if (!outgoing_messages.empty()) slog::log<slog::severities::info>(gate, SLOG_FLF) << "Sending " << outgoing_messages.size() << " websocket messages";
-
-                for (auto& outgoing_message : outgoing_messages)
-                {
-                    // hmmm, no way to cancel this currently...
-
-                    auto send = listener.send(outgoing_message.first, outgoing_message.second)
+                    auto close = listener.close(websocket.second, web::websockets::websocket_close_status::server_terminate, U("Expired"))
                         .then(details::observe_websocket_exception(gate));
-                    // current websocket_listener implementation is synchronous in any case, but just to make clear...
-                    // for now, wait for the message to be sent
-                    send.wait();
+                    // theoretically blocking, but in fact not
+                    close.wait();
+
+                    wit = websockets.left.erase(wit);
+                    continue;
                 }
+                const auto subscription = find_resource(resources, { nmos::fields::subscription_id(grain->data), nmos::types::subscription });
+                if (resources.end() == subscription)
+                {
+                    // a grain without a subscription shouldn't be possible, but let's be tidy
+                    erase_resource(resources, grain->id);
+
+                    auto close = listener.close(websocket.second, web::websockets::websocket_close_status::server_terminate, U("Expired"))
+                        .then(details::observe_websocket_exception(gate));
+                    // theoretically blocking, but in fact not
+                    close.wait();
+
+                    wit = websockets.left.erase(wit);
+                    continue;
+                }
+                // and has events to send
+                if (0 == nmos::fields::message_grain_data(grain->data).size())
+                {
+                    ++wit;
+                    continue;
+                }
+
+                slog::log<slog::severities::info>(gate, SLOG_FLF) << "Preparing to send " << nmos::fields::message_grain_data(grain->data).size() << " events on websocket connection: " << grain->id;
+
+                for (const auto& event : nmos::fields::message_grain_data(grain->data).as_array())
+                {
+                    web::websockets::websocket_outgoing_message message;
+
+                    slog::log<slog::severities::too_much_info>(gate, SLOG_FLF) << "outgoing_message: " << event.serialize();
+                    message.set_utf8_message(utility::us2s(event.serialize()));
+                    outgoing_messages.push_back({ websocket.second, message });
+                }
+
+                // reset the grain for next time
+                resources.modify(grain, [&resources](nmos::resource& grain)
+                {
+                    // all messages have now been prepared
+                    nmos::fields::message_grain_data(grain.data) = value::array();
+                    grain.updated = strictly_increasing_update(resources);
+                });
+
+                ++wit;
+            }
+
+            // send the messages without the lock on resources
+            details::reverse_lock_guard<nmos::write_lock> unlock{ lock };
+
+            if (!outgoing_messages.empty()) slog::log<slog::severities::info>(gate, SLOG_FLF) << "Sending " << outgoing_messages.size() << " websocket messages";
+
+            for (auto& outgoing_message : outgoing_messages)
+            {
+                // hmmm, no way to cancel this currently...
+
+                auto send = listener.send(outgoing_message.first, outgoing_message.second)
+                    .then(details::observe_websocket_exception(gate));
+                // current websocket_listener implementation is synchronous in any case, but just to make clear...
+                // for now, wait for the message to be sent
+                send.wait();
             }
         }
     }

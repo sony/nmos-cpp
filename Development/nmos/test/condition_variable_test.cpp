@@ -52,15 +52,11 @@ namespace
 
         for (;;)
         {
-            if (nmos::details::wait_until(condition, lock, earliest_necessary_update, [&] { return shutdown; }))
-            {
-                ++waken_up_count;
+            nmos::details::wait_until(condition, lock, earliest_necessary_update, [&] { return shutdown; });
 
-                if (shutdown)
-                {
-                    break;
-                }
-            }
+            ++waken_up_count;
+
+            if (shutdown) break;
         }
 
         BST_REQUIRE_EQUAL(1, waken_up_count);
