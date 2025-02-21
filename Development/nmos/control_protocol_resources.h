@@ -29,17 +29,21 @@ namespace nmos
     //
     // create Receiver Monitor resource
     control_protocol_resource make_receiver_monitor(nc_oid oid, bool constant_oid, nmos::nc_oid owner, const utility::string_t& role, const utility::string_t& user_label, const utility::string_t& description, const web::json::value& touchpoints = web::json::value::null(), const web::json::value& runtime_property_constraints = web::json::value::null(), bool enabled = true,
-        nc_overall_status::status overall_status = nc_overall_status::healthy, 
+        nc_overall_status::status overall_status = nc_overall_status::healthy,
         const utility::string_t& overall_status_message = U(""),
-        nc_link_status::status link_status = nc_link_status::all_up, 
-        const utility::string_t& link_status_message = U(""), 
+        nc_link_status::status link_status = nc_link_status::all_up,
+        const utility::string_t& link_status_message = U(""),
         nc_connection_status::status connection_status = nc_connection_status::status::inactive,
-        const utility::string_t& connection_status_message = U(""), 
+        const utility::string_t& connection_status_message = U(""),
         nc_synchronization_status::status synchronization_status = nc_synchronization_status::not_used,
-        const utility::string_t& synchronization_status_message = U(""), 
+        const utility::string_t& synchronization_status_message = U(""),
         const utility::string_t& synchronization_source_id = U(""),
+        uint64_t synchronization_source_changes = 0,
         nc_stream_status::status stream_status = nc_stream_status::inactive,
-        const utility::string_t& stream_status_message = U("")
+        const utility::string_t& stream_status_message = U(""),
+        uint32_t status_reporting_delay = 3,
+        bool auto_reset_packet_counters = true,
+        bool auto_reset_synchronization_source_changes = true
     );
 
     // Identification feature set control classes

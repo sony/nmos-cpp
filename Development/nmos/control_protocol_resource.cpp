@@ -739,23 +739,24 @@ namespace nmos
         }
 
         // TODO: add link
-        web::json::value make_nc_status_monitor(const nc_class_id& class_id, nc_oid oid, bool constant_oid, nc_oid owner, const utility::string_t& role, const utility::string_t& user_label, const utility::string_t& description, const web::json::value& touchpoints, const web::json::value& runtime_property_constraints, bool enabled, nc_overall_status::status overall_status, const utility::string_t& overall_status_message)
+        web::json::value make_nc_status_monitor(const nc_class_id& class_id, nc_oid oid, bool constant_oid, nc_oid owner, const utility::string_t& role, const utility::string_t& user_label, const utility::string_t& description, const web::json::value& touchpoints, const web::json::value& runtime_property_constraints, bool enabled, nc_overall_status::status overall_status, const utility::string_t& overall_status_message, uint64_t status_reporting_delay)
         {
             using web::json::value;
 
             auto data = make_nc_worker(class_id, oid, constant_oid, owner, role, value::string(user_label), description, touchpoints, runtime_property_constraints, enabled);
             data[nmos::fields::nc::overall_status] = value::number(overall_status);
             data[nmos::fields::nc::overall_status_message] = value::string(overall_status_message);
+            data[nmos::fields::nc::status_reporting_delay] = value::number(status_reporting_delay);
 
             return data;
         }
 
         // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/monitoring/#ncreceivermonitor
-        web::json::value make_receiver_monitor(const nc_class_id& class_id, nc_oid oid, bool constant_oid, nc_oid owner, const utility::string_t& role, const utility::string_t& user_label, const utility::string_t& description, const web::json::value& touchpoints, const web::json::value& runtime_property_constraints, bool enabled, nc_overall_status::status overall_status, const utility::string_t& overall_status_message, nc_link_status::status link_status, const utility::string_t& link_status_message, nc_connection_status::status connection_status, const utility::string_t& connection_status_message, nc_synchronization_status::status synchronization_status, const utility::string_t& synchronization_status_message, const utility::string_t& synchronization_source_id, nc_stream_status::status stream_status, const utility::string_t& stream_status_message)
+        web::json::value make_receiver_monitor(const nc_class_id& class_id, nc_oid oid, bool constant_oid, nc_oid owner, const utility::string_t& role, const utility::string_t& user_label, const utility::string_t& description, const web::json::value& touchpoints, const web::json::value& runtime_property_constraints, bool enabled, nc_overall_status::status overall_status, const utility::string_t& overall_status_message, nc_link_status::status link_status, const utility::string_t& link_status_message, nc_connection_status::status connection_status, const utility::string_t& connection_status_message, nc_synchronization_status::status synchronization_status, const utility::string_t& synchronization_status_message, const utility::string_t& synchronization_source_id, uint64_t synchronization_source_changes, nc_stream_status::status stream_status, const utility::string_t& stream_status_message, uint32_t status_reporting_delay, bool auto_reset_packet_counters, bool auto_reset_synchronization_source_changes)
         {
             using web::json::value;
 
-            auto data = make_nc_status_monitor(class_id, oid, constant_oid, owner, role, user_label, description, touchpoints, runtime_property_constraints, enabled, overall_status, overall_status_message);
+            auto data = make_nc_status_monitor(class_id, oid, constant_oid, owner, role, user_label, description, touchpoints, runtime_property_constraints, enabled, overall_status, overall_status_message, status_reporting_delay);
 
             data[nmos::fields::nc::link_status] = value::number(link_status);
             data[nmos::fields::nc::link_status_message] = value::string(link_status_message);
@@ -764,8 +765,11 @@ namespace nmos
             data[nmos::fields::nc::synchronization_status] = value::number(synchronization_status);
             data[nmos::fields::nc::synchronization_status_message] = value::string(synchronization_status_message);
             data[nmos::fields::nc::synchronization_source_id] = value::string(synchronization_source_id);
+            data[nmos::fields::nc::synchronization_source_changes] = value::number(synchronization_source_changes);
             data[nmos::fields::nc::stream_status] = value::number(stream_status);
             data[nmos::fields::nc::stream_status_message] = value::string(stream_status_message);
+            data[nmos::fields::nc::auto_reset_packet_counters] = value::boolean(auto_reset_packet_counters);
+            data[nmos::fields::nc::auto_reset_synchronization_source_changes] = value::boolean(auto_reset_synchronization_source_changes);
 
             return data;
         }
