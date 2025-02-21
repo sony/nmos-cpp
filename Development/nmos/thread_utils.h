@@ -27,24 +27,26 @@ namespace nmos
         template <typename ConditionVariable, typename Lock, typename TimePoint, typename Predicate>
         inline bool wait_until(ConditionVariable& condition, Lock& lock, const TimePoint& tp, Predicate predicate)
         {
-            if ((TimePoint::max)() == tp)
+            for (;;)
             {
-                // note, the try-catch block is here because Windows boost::condition_variable_any::wait can throw
-                // an expectation once boost::shared_mutex has reached the maximum number of exclusive_waiting locks
+                // Note: the try-catch block is here because Windows boost::condition_variable_any::wait can throw
+                // an exception once boost::shared_mutex has reached the maximum number of exclusive_waiting locks
                 try
                 {
-                    condition.wait(lock, predicate);
-                    return true;
+                    if ((TimePoint::max)() == tp)
+                    {
+                        condition.wait(lock, predicate);
+                        return true;
+                    }
+                    else
+                    {
+                        return condition.wait_until(lock, tp, predicate);
+                    }
                 }
                 catch (...)
                 {
-                    // wait failed, return false
+                    // try the wait again
                 }
-                return false;
-            }
-            else
-            {
-                return condition.wait_until(lock, tp, predicate);
             }
         }
 
