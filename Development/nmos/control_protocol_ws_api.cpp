@@ -499,6 +499,10 @@ namespace nmos
 
                 for (const auto& event : nmos::fields::message_grain_data(grain->data).as_array())
                 {
+                    // Only send control events to the control client
+                    if (event.has_field(U("pre")) || event.has_field(U("post"))) {
+                        continue;
+                    }
                     web::websockets::websocket_outgoing_message message;
 
                     slog::log<slog::severities::too_much_info>(gate, SLOG_FLF) << "outgoing_message: " << event.serialize();
