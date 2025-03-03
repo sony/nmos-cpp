@@ -335,7 +335,7 @@ namespace nmos
                     // do notification that the specified property has changed
                     if (property_changed)
                     {
-                        property_changed(resource, nmos::fields::nc::name(property), index);
+                        property_changed(resource, nmos::fields::nc::name(property), -1);
                     }
 
                 }, make_property_changed_event(nmos::fields::nc::oid(resource.data), { { details::parse_nc_property_id(property_id), nc_property_change_type::type::sequence_item_removed, nc_id(index) } }));
