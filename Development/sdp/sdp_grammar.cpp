@@ -310,7 +310,7 @@ namespace sdp
             object_converter({
                 { sdp::fields::user_name, string_converter },
                 { sdp::fields::session_id, long_digits_converter },
-                { sdp::fields::session_version, digits_converter },
+                { sdp::fields::session_version, long_digits_converter },
                 { sdp::fields::network_type, string_converter },
                 { sdp::fields::address_type, string_converter },
                 { sdp::fields::unicast_address, string_converter }
