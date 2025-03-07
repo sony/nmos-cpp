@@ -100,7 +100,7 @@ a=mid:SECONDARY
         { sdp::fields::protocol_version, 0 },
         { sdp::fields::origin, web::json::value_of({
             { sdp::fields::user_name, U("-") },
-            { sdp::fields::session_id, 3745911798u },
+            { sdp::fields::session_id, U("3745911798") },
             { sdp::fields::session_version, 3745911798u },
             { sdp::fields::network_type, sdp::network_types::internet.name },
             { sdp::fields::address_type, sdp::address_types::IP4.name },
@@ -346,7 +346,7 @@ a=framerate:59.94
         { sdp::fields::protocol_version, 0 },
         { sdp::fields::origin, web::json::value_of({
             { sdp::fields::user_name, U("-") },
-            { sdp::fields::session_id, 0 },
+            { sdp::fields::session_id, U("0") },
             { sdp::fields::session_version, 0 },
             { sdp::fields::network_type, sdp::network_types::internet.name },
             { sdp::fields::address_type, sdp::address_types::IP4.name },
@@ -570,4 +570,20 @@ a=fmtp:96)";
     {
         BST_REQUIRE_THROW(sdp::parse_session_description(test_sdp + bp), std::runtime_error);
     }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////
+BST_TEST_CASE(testSdpSessionId)
+{
+    const std::string before = "v=0\r\no=- ";
+    const std::string after = " 42 IN IP4 10.0.0.1\r\ns= \r\nt=0 0\r\n";
+    BST_REQUIRE_NO_THROW(sdp::parse_session_description(before + "0" + after));
+    BST_REQUIRE_NO_THROW(sdp::parse_session_description(before + "007" + after));
+    BST_REQUIRE_NO_THROW(sdp::parse_session_description(before + "18446744073709551615" + after));  // session id to UINT64_MAX
+    BST_REQUIRE_NO_THROW(sdp::parse_session_description(before + "184467440737095516150" + after)); // session id larger than UINT64_MAX
+    // an invalid session id results in "sdp parse error - expected a sequence of digits at line 2"
+    BST_REQUIRE_THROW(sdp::parse_session_description(before + "foo" + after), std::runtime_error);
+    BST_REQUIRE_THROW(sdp::parse_session_description(before + "0foo" + after), std::runtime_error);
+    BST_REQUIRE_THROW(sdp::parse_session_description(before + "0.0" + after), std::runtime_error);
+    BST_REQUIRE_THROW(sdp::parse_session_description(before + "0x0" + after), std::runtime_error);
 }

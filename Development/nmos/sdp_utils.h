@@ -82,19 +82,28 @@ namespace nmos
         struct origin_t
         {
             utility::string_t user_name;
-            uint64_t session_id;
+            utility::string_t session_id;
             uint64_t session_version;
 
             origin_t() : session_id(), session_version() {}
             origin_t(const utility::string_t& user_name, uint64_t session_id, uint64_t session_version)
                 : user_name(user_name)
-                , session_id(session_id)
+                , session_id(std::to_wstring(session_id))
                 , session_version(session_version)
             {}
-            origin_t(const utility::string_t& user_name, uint64_t session_id_version)
+            origin_t(const utility::string_t& user_name, const utility::string_t& session_id, uint64_t session_version)
                 : user_name(user_name)
-                , session_id(session_id_version)
-                , session_version(session_id_version)
+                , session_version(session_version)
+            {
+                // validate session_id is a numeric string
+                if (!std::all_of(session_id.begin(), session_id.end(), ::isdigit))
+                {
+                    throw std::invalid_argument("session_id must be a numeric string");
+                }
+                this->session_id = session_id;
+            }
+            origin_t(const utility::string_t& user_name, uint64_t session_id_version)
+                : origin_t{ user_name, session_id_version, session_id_version }
             {}
         } origin;
 

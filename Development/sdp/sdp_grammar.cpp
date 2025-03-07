@@ -68,6 +68,22 @@ namespace sdp
             return web::json::value(v);
         }
 
+        inline std::string jns2s(const web::json::value& v)
+        {
+            if (v.is_number()) return jn2s(v);
+            else return js2s(v);
+        }
+        inline web::json::value digits2jns(const std::string& s)
+        {
+            if (!std::all_of(s.begin(), s.end(), ::isdigit)) throw sdp_parse_error("expected a sequence of digits");
+
+            uint64_t v;
+            std::istringstream is(s);
+            is >> v;
+            if (is.fail() || !is.eof()) return s2js(s);
+            return web::json::value(std::to_wstring(v));
+        }
+
         // find the first delimiter in str, beginning at pos, and return the substring from pos to the delimiter (or end)
         // set pos to the end of the delimiter
         inline std::string substr_find(const std::string& str, std::string::size_type& pos, const std::string& delimiter = {})
@@ -95,6 +111,8 @@ namespace sdp
         const converter number_converter{ jn2s, s2jn };
 
         const converter digits_converter{ jn2s, digits2jn };
+
+        const converter long_digits_converter{ jns2s, digits2jns };
 
         // <key>[<separator><value>]
         converter key_value_converter(char separator, const std::pair<utility::string_t, converter>& key_converter, const std::pair<utility::string_t, converter>& value_converter)
@@ -290,7 +308,7 @@ namespace sdp
             'o',
             object_converter({
                 { sdp::fields::user_name, string_converter },
-                { sdp::fields::session_id, digits_converter },
+                { sdp::fields::session_id, long_digits_converter },
                 { sdp::fields::session_version, digits_converter },
                 { sdp::fields::network_type, string_converter },
                 { sdp::fields::address_type, string_converter },
