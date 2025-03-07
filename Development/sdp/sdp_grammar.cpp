@@ -2,6 +2,7 @@
 #include "sdp/sdp.h"
 
 #include <stdexcept>
+#include <boost/lexical_cast.hpp>
 #include "bst/regex.h"
 #include "cpprest/basic_utils.h"
 #include "cpprest/json_visit.h"
@@ -81,7 +82,7 @@ namespace sdp
             std::istringstream is(s);
             is >> v;
             if (is.fail() || !is.eof()) return s2js(s);
-            return web::json::value(std::to_wstring(v));
+            return web::json::value(boost::lexical_cast<utility::string_t>(v));
         }
 
         // find the first delimiter in str, beginning at pos, and return the substring from pos to the delimiter (or end)

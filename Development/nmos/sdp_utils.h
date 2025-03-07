@@ -5,6 +5,7 @@
 #include <functional>
 #include <map>
 #include <stdexcept>
+#include <boost/lexical_cast.hpp>
 #include "bst/any.h"
 #include "bst/optional.h"
 #include "cpprest/basic_utils.h"
@@ -88,7 +89,7 @@ namespace nmos
             origin_t() : session_id(), session_version() {}
             origin_t(const utility::string_t& user_name, uint64_t session_id, uint64_t session_version)
                 : user_name(user_name)
-                , session_id(std::to_wstring(session_id))
+                , session_id(boost::lexical_cast<utility::string_t>(session_id))
                 , session_version(session_version)
             {}
             origin_t(const utility::string_t& user_name, const utility::string_t& session_id, uint64_t session_version)
