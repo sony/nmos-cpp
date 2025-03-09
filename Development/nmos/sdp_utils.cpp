@@ -1624,4 +1624,14 @@ namespace nmos
     {
         details::validate_sdp_parameters(details::format_constraints, sdp_params, details::get_format(sdp_params), details::get_format_parameters(sdp_params), receiver);
     }
+
+    // Validate the numeric string
+    const utility::string_t& valid_numeric_string(const utility::string_t& s)
+    {
+        if (!std::all_of(s.begin(), s.end(), ::isdigit))
+        {
+            throw std::invalid_argument("not a numeric string");
+        }
+        return s;
+    }
 }

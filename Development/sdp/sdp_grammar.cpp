@@ -2,7 +2,6 @@
 #include "sdp/sdp.h"
 
 #include <stdexcept>
-#include <boost/lexical_cast.hpp>
 #include "bst/regex.h"
 #include "cpprest/basic_utils.h"
 #include "cpprest/json_visit.h"
@@ -77,12 +76,7 @@ namespace sdp
         inline web::json::value digits2jns(const std::string& s)
         {
             if (!std::all_of(s.begin(), s.end(), ::isdigit)) throw sdp_parse_error("expected a sequence of digits");
-
-            uint64_t v;
-            std::istringstream is(s);
-            is >> v;
-            if (is.fail() || !is.eof()) return s2js(s);
-            return web::json::value(boost::lexical_cast<utility::string_t>(v));
+            return s2js(s);
         }
 
         // find the first delimiter in str, beginning at pos, and return the substring from pos to the delimiter (or end)

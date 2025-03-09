@@ -396,7 +396,7 @@ m=video 000000000000000000050020 RTP/AVP 0096
 )";
 
     const std::string expected_sdp = R"(v=0
-o=- 7 987654321098765432 IN IP4 192.0.2.0
+o=- 007 0987654321098765432 IN IP4 192.0.2.0
 s=Leading zeros
 b=AS:9876543210
 t=0 0
@@ -577,10 +577,21 @@ BST_TEST_CASE(testSdpSessionId)
 {
     const std::string before = "v=0\r\no=- ";
     const std::string after = " 42 IN IP4 10.0.0.1\r\ns= \r\nt=0 0\r\n";
-    BST_REQUIRE_NO_THROW(sdp::parse_session_description(before + "0" + after));
-    BST_REQUIRE_NO_THROW(sdp::parse_session_description(before + "007" + after));
-    BST_REQUIRE_NO_THROW(sdp::parse_session_description(before + "18446744073709551615" + after));  // session id to UINT64_MAX
-    BST_REQUIRE_NO_THROW(sdp::parse_session_description(before + "184467440737095516150" + after)); // session id greater than UINT64_MAX
+
+    const std::vector<std::pair<utility::string_t, std::string>> session_id_params = {
+        {U("1"), before + "1" + after},
+        {U("00000000000000000000"), before + "00000000000000000000" + after},
+        {U("0018446744073709551615"), before + "0018446744073709551615" + after},
+        {U("001844674407370955161500"), before + "001844674407370955161500" + after}
+    };
+    for (const auto& session_id_param : session_id_params)
+    {
+        auto session_description = sdp::parse_session_description(session_id_param.second);
+        auto origin = sdp::fields::origin(session_description);
+        auto session_id = sdp::fields::session_id(origin);
+        BST_CHECK_EQUAL(session_id_param.first, session_id);
+    }
+
     // an invalid session id results in "sdp parse error - expected a sequence of digits at line 2"
     BST_REQUIRE_THROW(sdp::parse_session_description(before + "foo" + after), std::runtime_error);
     BST_REQUIRE_THROW(sdp::parse_session_description(before + "0foo" + after), std::runtime_error);
@@ -593,10 +604,21 @@ BST_TEST_CASE(testSdpSessionVersion)
 {
     const std::string before = "v=0\r\no=- 42 ";
     const std::string after = " IN IP4 10.0.0.1\r\ns= \r\nt=0 0\r\n";
-    BST_REQUIRE_NO_THROW(sdp::parse_session_description(before + "0" + after));
-    BST_REQUIRE_NO_THROW(sdp::parse_session_description(before + "007" + after));
-    BST_REQUIRE_NO_THROW(sdp::parse_session_description(before + "18446744073709551615" + after));  // session version to UINT64_MAX
-    BST_REQUIRE_NO_THROW(sdp::parse_session_description(before + "184467440737095516150" + after)); // session version greater than UINT64_MAX
+
+    const std::vector<std::pair<utility::string_t, std::string>> session_version_params = {
+    {U("1"), before + "1" + after},
+    {U("00000000000000000000"), before + "00000000000000000000" + after},
+    {U("0018446744073709551615"), before + "0018446744073709551615" + after},
+    {U("001844674407370955161500"), before + "001844674407370955161500" + after}
+    };
+    for (const auto& session_version_param : session_version_params)
+    {
+        auto session_description = sdp::parse_session_description(session_version_param.second);
+        auto origin = sdp::fields::origin(session_description);
+        auto session_version = sdp::fields::session_version(origin);
+        BST_CHECK_EQUAL(session_version_param.first, session_version);
+    }
+
     // an invalid session version results in "sdp parse error - expected a sequence of digits at line 2"
     BST_REQUIRE_THROW(sdp::parse_session_description(before + "foo" + after), std::runtime_error);
     BST_REQUIRE_THROW(sdp::parse_session_description(before + "0foo" + after), std::runtime_error);

@@ -5,7 +5,6 @@
 #include <functional>
 #include <map>
 #include <stdexcept>
-#include <boost/lexical_cast.hpp>
 #include "bst/any.h"
 #include "bst/optional.h"
 #include "cpprest/basic_utils.h"
@@ -64,6 +63,11 @@ namespace nmos
     // Validate the SDP parameters against a receiver for "video/raw", "audio/L", "video/smpte291" or "video/SMPTE2022-6"
     void validate_sdp_parameters(const web::json::value& receiver, const sdp_parameters& sdp_params);
 
+    // sdp_parameters helper functions
+
+    // Validate the numeric string
+    const utility::string_t& valid_numeric_string(const utility::string_t& s);
+
     // Format-specific types
 
     struct video_raw_parameters;
@@ -86,30 +90,17 @@ namespace nmos
             utility::string_t session_id;
             utility::string_t session_version;
 
-            origin_t() : session_id(), session_version() {}
+            origin_t() {}
             origin_t(const utility::string_t& user_name, uint64_t session_id, uint64_t session_version)
                 : user_name(user_name)
-                , session_id(boost::lexical_cast<utility::string_t>(session_id))
-                , session_version(boost::lexical_cast<utility::string_t>(session_version))
+                , session_id(utility::conversions::details::to_string_t(session_id))
+                , session_version(utility::conversions::details::to_string_t(session_version))
             {}
             origin_t(const utility::string_t& user_name, const utility::string_t& session_id, const utility::string_t& session_version)
                 : user_name(user_name)
-                , session_version(session_version)
-            {
-                // validate session_id is a numeric string
-                if (!std::all_of(session_id.begin(), session_id.end(), ::isdigit))
-                {
-                    throw std::invalid_argument("session id must be a numeric string");
-                }
-                this->session_id = session_id;
-
-                // validate session_version is a numeric string
-                if (!std::all_of(session_version.begin(), session_version.end(), ::isdigit))
-                {
-                    throw std::invalid_argument("session version must be a numeric string");
-                }
-                this->session_version = session_version;
-            }
+                , session_id(valid_numeric_string(session_id))
+                , session_version(valid_numeric_string(session_version))
+            {}
             origin_t(const utility::string_t& user_name, uint64_t session_id_version)
                 : origin_t{ user_name, session_id_version, session_id_version }
             {}
