@@ -589,7 +589,7 @@ BST_TEST_CASE(testSdpSessionId)
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////
-BST_TEST_CASE(testSdpSessionVesrion)
+BST_TEST_CASE(testSdpSessionVersion)
 {
     const std::string before = "v=0\r\no=- 42 ";
     const std::string after = " IN IP4 10.0.0.1\r\ns= \r\nt=0 0\r\n";
