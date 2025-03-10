@@ -1706,10 +1706,15 @@ nmos::control_protocol_property_changed_handler make_node_implementation_control
             // sequence property
             slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::stash_category(impl::categories::node_implementation) << "Property: " << property_name << " index " << index << " has value changed to " << resource.data.at(property_name).at(index).serialize();
         }
-        else
+        else if (index == -1)
         {
             // non-sequence property
             slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::stash_category(impl::categories::node_implementation) << "Property: " << property_name << " has value changed to " << resource.data.at(property_name).serialize();
+        }
+        else if (index == -2)
+        {
+            // sequence property removed
+            slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::stash_category(impl::categories::node_implementation) << "Property: " << property_name << " has sequence item removed. Value changed to " << resource.data.at(property_name).serialize();
         }
     };
 }
