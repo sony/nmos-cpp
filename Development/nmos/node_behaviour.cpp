@@ -153,7 +153,7 @@ namespace nmos
                     const auto random_backoff = std::uniform_real_distribution<>(0, discovery_backoff)(discovery_backoff_engine);
                     slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Waiting to retry Registration API discovery for about " << std::fixed << std::setprecision(3) << random_backoff << " seconds (current backoff limit: " << discovery_backoff << " seconds)";
                     model.wait_for(lock, bst::chrono::milliseconds(bst::chrono::milliseconds::rep(1000 * random_backoff)), [&] { return model.shutdown; });
-                        if (model.shutdown) break;
+                    if (model.shutdown) break;
                 }
 
                 // "4. The Node performs a DNS-SD browse for services of type '_nmos-registration._tcp' as specified."
