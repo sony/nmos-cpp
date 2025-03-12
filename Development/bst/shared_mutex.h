@@ -17,8 +17,8 @@ namespace bst_shared_mutex_condition_variable_any = std;
 namespace bst_shared_mutex = boost;
 
 #ifdef _WIN32
-// Note:: Windows boost::condition_variable_any::wait would throw nested lock exceptions when boost::shared_mutex has reached the
-// maximum number of exclusive_waiting locks.A modified version of the boost::condition_variable_any was created to address this issue.
+// Note:: Windows boost::condition_variable_any::wait throws nested lock exceptions when boost::shared_mutex has reached the
+// maximum number of exclusive_waiting locks. A modified version of the boost::condition_variable_any was created to address this issue.
 #include "boost/thread/win32_condition_variable.hpp"
 namespace bst_shared_mutex_condition_variable_any = boost::experimental;
 #else
