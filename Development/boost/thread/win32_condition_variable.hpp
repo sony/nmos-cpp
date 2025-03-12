@@ -1,4 +1,4 @@
-// based on the <boost/thread/win32/condition_variable.hpp>
+// based on the <boost/thread/win32/condition_variable.hpp version 1.83.0>
 
 #ifndef BOOST_THREAD_WIN32_CONDITION_VARIABLE_HPP
 #define BOOST_THREAD_WIN32_CONDITION_VARIABLE_HPP
@@ -15,7 +15,7 @@
 // This modified version of `condition_variable_any` presented below addresses the issues mentioned earlier.
 namespace boost
 {
-	namespace experimental
+    namespace experimental
     {
         class basic_condition_variable
         {
@@ -438,7 +438,7 @@ namespace boost
             }
 #endif
         };
-	} // namespace experimental
+    } // namespace experimental
 } // namespace boost
 
 #endif // BOOST_THREAD_WIN32_CONDITION_VARIABLE_HPP
