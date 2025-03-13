@@ -45,6 +45,7 @@ set(NMOS_CPP_TEST_NMOS_TEST_SOURCES
     nmos/test/channels_test.cpp
     nmos/test/condition_variable_test.cpp
     nmos/test/control_protocol_test.cpp
+    nmos/test/control_protocol_methods_test.cpp
     nmos/test/did_sdid_test.cpp
     nmos/test/event_type_test.cpp
     nmos/test/json_validator_test.cpp
