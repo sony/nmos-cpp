@@ -174,37 +174,37 @@ namespace nmos
                     if (datatype_constraints.is_null())
                     {
                         auto primitive_validation = [](const nc_name& name, const web::json::value& value)
+                        {
+                            auto is_int16 = [](int32_t value)
                             {
-                                auto is_int16 = [](int32_t value)
-                                    {
-                                        return value >= (std::numeric_limits<int16_t>::min)()
-                                            && value <= (std::numeric_limits<int16_t>::max)();
-                                    };
-                                auto is_uint16 = [](uint32_t value)
-                                    {
-                                        return value >= (std::numeric_limits<uint16_t>::min)()
-                                            && value <= (std::numeric_limits<uint16_t>::max)();
-                                    };
-                                auto is_float32 = [](double value)
-                                    {
-                                        return value >= (std::numeric_limits<float_t>::lowest)()
-                                            && value <= (std::numeric_limits<float_t>::max)();
-                                    };
-
-                                if (U("NcBoolean") == name) { return value.is_boolean(); }
-                                if (U("NcInt16") == name && value.is_number()) { return is_int16(value.as_number().to_int32()); }
-                                if (U("NcInt32") == name && value.is_number()) { return value.as_number().is_int32(); }
-                                if (U("NcInt64") == name && value.is_number()) { return value.as_number().is_int64(); }
-                                if (U("NcUint16") == name && value.is_number()) { return is_uint16(value.as_number().to_uint32()); }
-                                if (U("NcUint32") == name && value.is_number()) { return value.as_number().is_uint32(); }
-                                if (U("NcUint64") == name && value.is_number()) { return value.as_number().is_uint64(); }
-                                if (U("NcFloat32") == name && value.is_number()) { return is_float32(value.as_number().to_double()); }
-                                if (U("NcFloat64") == name && value.is_number()) { return !value.as_number().is_integral(); }
-                                if (U("NcString") == name) { return value.is_string(); }
-
-                                // invalid primitive type
-                                return false;
+                                return value >= (std::numeric_limits<int16_t>::min)()
+                                    && value <= (std::numeric_limits<int16_t>::max)();
                             };
+                            auto is_uint16 = [](uint32_t value)
+                            {
+                                return value >= (std::numeric_limits<uint16_t>::min)()
+                                    && value <= (std::numeric_limits<uint16_t>::max)();
+                            };
+                            auto is_float32 = [](double value)
+                            {
+                                return value >= (std::numeric_limits<float_t>::lowest)()
+                                    && value <= (std::numeric_limits<float_t>::max)();
+                            };
+
+                            if (U("NcBoolean") == name) { return value.is_boolean(); }
+                            if (U("NcInt16") == name && value.is_number()) { return is_int16(value.as_number().to_int32()); }
+                            if (U("NcInt32") == name && value.is_number()) { return value.as_number().is_int32(); }
+                            if (U("NcInt64") == name && value.is_number()) { return value.as_number().is_int64(); }
+                            if (U("NcUint16") == name && value.is_number()) { return is_uint16(value.as_number().to_uint32()); }
+                            if (U("NcUint32") == name && value.is_number()) { return value.as_number().is_uint32(); }
+                            if (U("NcUint64") == name && value.is_number()) { return value.as_number().is_uint64(); }
+                            if (U("NcFloat32") == name && value.is_number()) { return is_float32(value.as_number().to_double()); }
+                            if (U("NcFloat64") == name && value.is_number()) { return !value.as_number().is_integral(); }
+                            if (U("NcString") == name) { return value.is_string(); }
+
+                            // invalid primitive type
+                            return false;
+                        };
 
                         // do primitive type constraints validation
                         const auto& name = nmos::fields::nc::name(params.datatype_descriptor);
@@ -589,7 +589,6 @@ namespace nmos
         if (result)
         {
             auto& modified = *found;
-
             insert_notification_events(resources, modified.version, modified.downgrade_version, modified.type, pre, modified.data, notification_event);
         }
 
