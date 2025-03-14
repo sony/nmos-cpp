@@ -71,14 +71,23 @@ namespace nmos
     // push control protocol resource into other control protocol NcBlock resource
     void push_back(control_protocol_resource& nc_block_resource, const control_protocol_resource& resource);
 
+    // insert a control protocol resource
+    std::pair<resources::iterator, bool> insert_control_protocol_resource(resources& resources, resource&& resource);
+
     // modify a control protocol resource, and insert notification event to all subscriptions
     bool modify_control_protocol_resource(resources& resources, const id& id, std::function<void(resource&)> modifier, const web::json::value& notification_event);
+
+    // erase a control protocol resource
+    resources::size_type erase_control_protocol_resource(resources& resources, const id& id);
 
     // find the control protocol resource which is assoicated with the given IS-04/IS-05/IS-08 resource id
     resources::const_iterator find_control_protocol_resource(resources& resources, type type, const id& id);
 
     // method parameters constraints validation, may throw nmos::control_protocol_exception
     void method_parameters_contraints_validation(const web::json::value& arguments, const web::json::value& nc_method_descriptor, get_control_protocol_datatype_descriptor_handler get_control_protocol_datatype_descriptor);
+
+    // insert 'value changed', 'sequence item added', 'sequence item changed' or 'sequence item removed' notification events into all grains whose subscriptions match the specified version, type and "pre" or "post" values
+    void insert_notification_events(resources& resources, const api_version& version, const api_version& downgrade_version, const type& type, const web::json::value& pre, const web::json::value& post, const web::json::value& event);
 }
 
 #endif
