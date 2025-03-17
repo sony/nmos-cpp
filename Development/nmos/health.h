@@ -13,13 +13,13 @@ namespace nmos
 
     inline health health_now()
     {
-        return std::chrono::duration_cast<std::chrono::seconds>(
+        return bst::chrono::duration_cast<bst::chrono::seconds>(
             tai_clock::now().time_since_epoch()).count();
     }
 
     inline tai_clock::time_point time_point_from_health(health health)
     {
-        return tai_clock::time_point(std::chrono::seconds(health));
+        return tai_clock::time_point(bst::chrono::seconds(health));
     }
 }
 
