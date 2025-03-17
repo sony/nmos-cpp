@@ -551,6 +551,7 @@ namespace nmos
         web::json::push_back(parent[nmos::fields::nc::members],
             details::make_nc_block_member_descriptor(nmos::fields::description(child), nmos::fields::nc::role(child), nmos::fields::nc::oid(child), nmos::fields::nc::constant_oid(child), details::parse_nc_class_id(nmos::fields::nc::class_id(child)), nmos::fields::nc::user_label(child), nmos::fields::nc::oid(parent)));
 
+        // add to temporary storage until they are moved to the model resources
         nc_block_resource.resources.push_back(resource);
     }
 
