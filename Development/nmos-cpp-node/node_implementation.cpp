@@ -313,6 +313,7 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
                 insert_resources(resources, resource_);
                 if (!insert_resource_after(milliseconds, resources, std::move(resource_), gate)) throw node_implementation_init_exception();
             }
+            resource.resources.clear();
         };
 
         auto& resources = model.control_protocol_resources;
