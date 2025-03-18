@@ -33,6 +33,7 @@ namespace nmos
 
     // a control_protocol_property_changed_handler is a notification that the specified (IS-12) property has changed
     // index is set to -1 for non-sequence property
+    // index is set to -2 when a sequence item had been removed
     // this callback should not throw exceptions, as the relevant property will already has been changed and those changes will not be rolled back
     typedef std::function<void(const nmos::resource& resource, const utility::string_t& property_name, int index)> control_protocol_property_changed_handler;
 

@@ -283,10 +283,11 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
     // and that the the node behaviour thread be notified after doing so
     const auto insert_resource_after = [&model, &lock](unsigned int milliseconds, nmos::resources& resources, nmos::resource&& resource, slog::base_gate& gate)
     {
-        if (nmos::details::wait_for(model.shutdown_condition, lock, std::chrono::milliseconds(milliseconds), [&] { return model.shutdown; })) return false;
+        if (nmos::details::wait_for(model.shutdown_condition, lock, bst::chrono::milliseconds(milliseconds), [&] { return model.shutdown; })) return false;
 
+        const auto is_control_protocol_resource = [&resource]() { return nmos::types::all_nc.end() != std::find(nmos::types::all_nc.begin(), nmos::types::all_nc.end(), resource.type); };
         const std::pair<nmos::id, nmos::type> id_type{ resource.id, resource.type };
-        const bool success = insert_resource(resources, std::move(resource)).second;
+        const bool success = is_control_protocol_resource() ? insert_control_protocol_resource(resources, std::move(resource)).second : insert_resource(resources, std::move(resource)).second;
 
         if (success)
             slog::log<slog::severities::info>(gate, SLOG_FLF) << "Updated model with " << id_type;
@@ -312,6 +313,7 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
                 insert_resources(resources, resource_);
                 if (!insert_resource_after(milliseconds, resources, std::move(resource_), gate)) throw node_implementation_init_exception();
             }
+            resource.resources.clear();
         };
 
         auto& resources = model.control_protocol_resources;
@@ -1706,10 +1708,15 @@ nmos::control_protocol_property_changed_handler make_node_implementation_control
             // sequence property
             slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::stash_category(impl::categories::node_implementation) << "Property: " << property_name << " index " << index << " has value changed to " << resource.data.at(property_name).at(index).serialize();
         }
-        else
+        else if (index == -1)
         {
             // non-sequence property
             slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::stash_category(impl::categories::node_implementation) << "Property: " << property_name << " has value changed to " << resource.data.at(property_name).serialize();
+        }
+        else if (index == -2)
+        {
+            // sequence property removed
+            slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::stash_category(impl::categories::node_implementation) << "Property: " << property_name << " has sequence item removed. Value changed to " << resource.data.at(property_name).serialize();
         }
     };
 }

@@ -270,7 +270,11 @@ namespace nmos
 
                                 resources.modify(grain, [&](nmos::resource& grain)
                                 {
-                                    web::json::push_back(nmos::fields::message_grain_data(grain.data), make_events_health_message({ nmos::tai_now(), nmos::fields::timestamp(message) }));
+                                    // ensure the health response creation_timestamp is greater than the health command timestamp
+                                    const auto command_timestamp = nmos::fields::timestamp(message);
+                                    const auto now = nmos::tai_now();
+                                    const auto response_time = now > command_timestamp ? now : tai_from_time_point(time_point_from_tai(command_timestamp) + tai_clock::duration(1));
+                                    web::json::push_back(nmos::fields::message_grain_data(grain.data), make_events_health_message({ response_time, command_timestamp }));
 
                                     grain.updated = strictly_increasing_update(resources);
                                 });

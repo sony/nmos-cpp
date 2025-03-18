@@ -506,7 +506,7 @@ namespace nmos
 
                 const auto received_time = req.headers().find(details::received_time);
                 const auto processing_dur = req.headers().end() != received_time
-                    ? std::chrono::duration_cast<std::chrono::microseconds>(nmos::tai_clock::now() - nmos::time_point_from_tai(nmos::parse_version(received_time->second))).count() / 1000.0
+                    ? bst::chrono::duration_cast<bst::chrono::microseconds>(nmos::tai_clock::now() - nmos::time_point_from_tai(nmos::parse_version(received_time->second))).count() / 1000.0
                     : 0.0;
 
                 // experimental extension, to add Server-Timing response header

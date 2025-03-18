@@ -123,11 +123,11 @@ namespace nmos
                     return add_sequence_item(resources, resource, arguments, is_deprecated, get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor, property_changed, gate);
                 };
             }
-            nmos::experimental::control_protocol_method_handler make_nc_remove_sequence_item_handler(get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor)
+            nmos::experimental::control_protocol_method_handler make_nc_remove_sequence_item_handler(get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, control_protocol_property_changed_handler property_changed)
             {
-                return [get_control_protocol_class_descriptor](nmos::resources& resources, const nmos::resource& resource, const web::json::value& arguments, bool is_deprecated, slog::base_gate& gate)
+                return [get_control_protocol_class_descriptor, property_changed](nmos::resources& resources, const nmos::resource& resource, const web::json::value& arguments, bool is_deprecated, slog::base_gate& gate)
                 {
-                    return remove_sequence_item(resources, resource, arguments, is_deprecated, get_control_protocol_class_descriptor, gate);
+                    return remove_sequence_item(resources, resource, arguments, is_deprecated, get_control_protocol_class_descriptor, property_changed, gate);
                 };
             }
             nmos::experimental::control_protocol_method_handler make_nc_get_sequence_length_handler(get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor)
@@ -311,7 +311,7 @@ namespace nmos
                         { nc_object_get_sequence_item_method_id, details::make_nc_get_sequence_item_handler(get_control_protocol_class_descriptor) },
                         { nc_object_set_sequence_item_method_id, details::make_nc_set_sequence_item_handler(get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor, property_changed) },
                         { nc_object_add_sequence_item_method_id, details::make_nc_add_sequence_item_handler(get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor, property_changed) },
-                        { nc_object_remove_sequence_item_method_id, details::make_nc_remove_sequence_item_handler(get_control_protocol_class_descriptor) },
+                        { nc_object_remove_sequence_item_method_id, details::make_nc_remove_sequence_item_handler(get_control_protocol_class_descriptor, property_changed) },
                         { nc_object_get_sequence_length_method_id, details::make_nc_get_sequence_length_handler(get_control_protocol_class_descriptor) }
                     }),
                     // NcObject events
