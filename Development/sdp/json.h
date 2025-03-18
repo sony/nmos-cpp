@@ -20,8 +20,8 @@ namespace sdp
         // See https://tools.ietf.org/html/rfc4566#section-5.2
         const web::json::field_as_value origin{ U("origin") };
         const web::json::field_as_string user_name{ U("user_name") };
-        const web::json::field<uint64_t> session_id{ U("session_id") };
-        const web::json::field<uint64_t> session_version{ U("session_version") };
+        const web::json::field_as_string session_id{ U("session_id") };
+        const web::json::field_as_string session_version{ U("session_version") };
         const web::json::field_as_string network_type{ U("network_type") }; // see sdp::network_types
         const web::json::field_as_string address_type{ U("address_type") }; // see sdp::address_types
         const web::json::field_as_string unicast_address{ U("unicast_address") };
