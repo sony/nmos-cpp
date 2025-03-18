@@ -291,7 +291,7 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
 
         const auto is_control_protocol_resource = [&resource]() { return nmos::types::all_nc.end() != std::find(nmos::types::all_nc.begin(), nmos::types::all_nc.end(), resource.type); };
         const std::pair<nmos::id, nmos::type> id_type{ resource.id, resource.type };
-        const bool success = is_control_protocol_resource() ? insert_control_protocol_resource(resources, std::move(resource)).second : insert_resource(resources, std::move(resource)).second;
+        const bool success = is_control_protocol_resource() ? nmos::nc::insert_resource(resources, std::move(resource)).second : insert_resource(resources, std::move(resource)).second;
 
         if (success)
             slog::log<slog::severities::info>(gate, SLOG_FLF) << "Updated model with " << id_type;

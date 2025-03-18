@@ -605,7 +605,23 @@ namespace nmos
             nc_block_resource.resources.push_back(resource);
         }
 
-        // *** insert_control_protocol_resource ***
+        // insert a control protocol resource
+        std::pair<resources::iterator, bool> insert_resource(resources& resources, resource&& resource)
+        {
+            // set the creation and update timestamps, before inserting the resource
+            resource.updated = resource.created = nmos::strictly_increasing_update(resources);
+
+            auto result = resources.insert(std::move(resource));
+            // replacement of a deleted or expired resource is also allowed
+            // (currently, with no further checks on api_version, type, etc.)
+            if (!result.second && !result.first->has_data())
+            {
+                // if the insertion was banned, resource has not been moved from
+                result.second = resources.replace(result.first, std::move(resource));
+            }
+            return result;
+        }
+
 
         // modify a control protocol resource, and insert notification event to all subscriptions
         bool modify_resource(resources& resources, const id& id, std::function<void(resource&)> modifier, const web::json::value& notification_event)
@@ -654,7 +670,19 @@ namespace nmos
             return result;
         }
 
-        // *** erase_control_protocol_resource ***
+        // erase a control protocol resource
+        resources::size_type erase_resource(resources& resources, const id& id)
+        {
+            // hmm, may be also erasing all it's member blocks?
+            resources::size_type count = 0;
+            auto found = resources.find(id);
+            if (resources.end() != found && found->has_data())
+            {
+                resources.erase(found);
+                ++count;
+            }
+            return count;
+        }
 
         // find the control protocol resource which is assoicated with the given IS-04/IS-05/IS-08 resource id
         resources::const_iterator find_resource(resources& resources, type type, const id& resource_id)
@@ -752,37 +780,6 @@ namespace nmos
             const auto& touchpoint_uuid = nmos::fields::nc::id(nmos::fields::nc::resource(*touchpoints.as_array().begin()));
             return nmos::find_resource(resources, touchpoint_uuid.as_string());
         }
-    }
-    
-    // insert a control protocol resource
-    std::pair<resources::iterator, bool> insert_control_protocol_resource(resources& resources, resource&& resource)
-    {
-        // set the creation and update timestamps, before inserting the resource
-        resource.updated = resource.created = nmos::strictly_increasing_update(resources);
-
-        auto result = resources.insert(std::move(resource));
-        // replacement of a deleted or expired resource is also allowed
-        // (currently, with no further checks on api_version, type, etc.)
-        if (!result.second && !result.first->has_data())
-        {
-            // if the insertion was banned, resource has not been moved from
-            result.second = resources.replace(result.first, std::move(resource));
-        }
-        return result;
-    }
-    
-    // erase a control protocol resource
-    resources::size_type erase_control_protocol_resource(resources& resources, const id& id)
-    {
-        // hmm, may be also erasing all it's member blocks?
-        resources::size_type count = 0;
-        auto found = resources.find(id);
-        if (resources.end() != found && found->has_data())
-        {
-            resources.erase(found);
-            ++count;
-        }
-        return count;
     }
 
     // insert 'value changed', 'sequence item added', 'sequence item changed' or 'sequence item removed' notification events into all grains whose subscriptions match the specified version, type and "pre" or "post" values
