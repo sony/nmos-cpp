@@ -30,6 +30,7 @@ target_compile_definitions(
     slog INTERFACE
     SLOG_STATIC
     SLOG_LOGGING_SEVERITY=${SLOG_LOGGING_SEVERITY}
+    BST_THREAD_BOOST # provide bst::chrono::duration, etc. using either std:: or boost:: symbols
     )
 if(CMAKE_CXX_COMPILER_ID MATCHES GNU)
     if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS 4.8)
@@ -920,6 +921,12 @@ add_library(nmos-cpp::nmos_is14_schemas ALIAS nmos_is14_schemas)
 
 # nmos-cpp library
 
+if(${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
+    set(NMOS_CPP_BOOST_THREAD_HEADERS
+        boost/thread/win32_condition_variable.hpp
+        )
+endif()
+
 set(NMOS_CPP_BST_SOURCES
     )
 set(NMOS_CPP_BST_HEADERS
@@ -1331,6 +1338,9 @@ target_include_directories(nmos-cpp PUBLIC
     $<INSTALL_INTERFACE:${NMOS_CPP_INSTALL_INCLUDEDIR}>
     )
 
+if(${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
+    install(FILES ${NMOS_CPP_BOOST_THREAD_HEADERS} DESTINATION ${NMOS_CPP_INSTALL_INCLUDEDIR}/boost/thread)
+endif()
 install(FILES ${NMOS_CPP_BST_HEADERS} DESTINATION ${NMOS_CPP_INSTALL_INCLUDEDIR}/bst)
 install(FILES ${NMOS_CPP_CPPREST_HEADERS} DESTINATION ${NMOS_CPP_INSTALL_INCLUDEDIR}/cpprest)
 install(FILES ${NMOS_CPP_CPPREST_DETAILS_HEADERS} DESTINATION ${NMOS_CPP_INSTALL_INCLUDEDIR}/cpprest/details)

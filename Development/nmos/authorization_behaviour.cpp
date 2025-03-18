@@ -112,7 +112,7 @@ namespace nmos
                         auto lock = model.read_lock();
                         const auto random_backoff = std::uniform_real_distribution<>(0, discovery_backoff)(discovery_backoff_engine);
                         slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Waiting to retry Authorization API discovery for about " << std::fixed << std::setprecision(3) << random_backoff << " seconds (current backoff limit: " << discovery_backoff << " seconds)";
-                        model.wait_for(lock, std::chrono::milliseconds(std::chrono::milliseconds::rep(1000 * random_backoff)), [&] { return model.shutdown; });
+                        model.wait_for(lock, bst::chrono::milliseconds(bst::chrono::milliseconds::rep(1000 * random_backoff)), [&] { return model.shutdown; });
                         if (model.shutdown) break;
                     }
 

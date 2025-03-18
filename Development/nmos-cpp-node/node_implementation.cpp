@@ -287,10 +287,11 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
     // and that the the node behaviour thread be notified after doing so
     const auto insert_resource_after = [&model, &lock](unsigned int milliseconds, nmos::resources& resources, nmos::resource&& resource, slog::base_gate& gate)
     {
-        if (nmos::details::wait_for(model.shutdown_condition, lock, std::chrono::milliseconds(milliseconds), [&] { return model.shutdown; })) return false;
+        if (nmos::details::wait_for(model.shutdown_condition, lock, bst::chrono::milliseconds(milliseconds), [&] { return model.shutdown; })) return false;
 
+        const auto is_control_protocol_resource = [&resource]() { return nmos::types::all_nc.end() != std::find(nmos::types::all_nc.begin(), nmos::types::all_nc.end(), resource.type); };
         const std::pair<nmos::id, nmos::type> id_type{ resource.id, resource.type };
-        const bool success = insert_resource(resources, std::move(resource)).second;
+        const bool success = is_control_protocol_resource() ? insert_control_protocol_resource(resources, std::move(resource)).second : insert_resource(resources, std::move(resource)).second;
 
         if (success)
             slog::log<slog::severities::info>(gate, SLOG_FLF) << "Updated model with " << id_type;
@@ -316,6 +317,7 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
                 insert_resources(resources, resource_);
                 if (!insert_resource_after(milliseconds, resources, std::move(resource_), gate)) throw node_implementation_init_exception();
             }
+            resource.resources.clear();
         };
 
         auto& resources = model.control_protocol_resources;
