@@ -398,8 +398,7 @@ namespace nmos
                         // link NcReceiverMonitor method_ids with method functions
                         { nc_receiver_monitor_get_lost_packet_counters_method_id, details::make_nc_get_lost_packet_counters_handler(get_lost_packet_counters)},
                         { nc_receiver_monitor_get_late_packet_counters_method_id, details::make_nc_get_late_packet_counters_handler(get_late_packet_counters)},
-                        { nc_receiver_monitor_reset_packet_counters_method_id, details::make_nc_reset_packet_counters_handler(reset_packet_counters)},
-                        { nc_receiver_monitor_reset_synchonization_source_changes_method_id, details::make_nc_reset_synchronization_source_changes_handler(reset_packet_counters) }
+                        { nc_receiver_monitor_reset_counters_method_id, details::make_nc_reset_packet_counters_handler(reset_packet_counters)}
                     }),
                     // NcReceiverMonitor events
                     to_vector(make_nc_receiver_monitor_events())) }

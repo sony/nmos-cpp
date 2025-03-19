@@ -38,12 +38,10 @@ namespace nmos
         nc_synchronization_status::status synchronization_status = nc_synchronization_status::not_used,
         const utility::string_t& synchronization_status_message = U(""),
         const utility::string_t& synchronization_source_id = U(""),
-        uint64_t synchronization_source_changes = 0,
         nc_stream_status::status stream_status = nc_stream_status::inactive,
         const utility::string_t& stream_status_message = U(""),
         uint32_t status_reporting_delay = 3,
-        bool auto_reset_packet_counters = true,
-        bool auto_reset_synchronization_source_changes = true
+        bool auto_reset_counters = true
     );
 
     // Identification feature set control classes

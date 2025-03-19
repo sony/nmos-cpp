@@ -332,16 +332,18 @@ namespace nmos
             const web::json::field_as_string io_id{ U("ioId") };
             const web::json::field_as_integer connection_status{ U("connectionStatus") }; // NcConnectionStatus
             const web::json::field_as_string connection_status_message{ U("connectionStatusMessage") };
+            const web::json::field_as_integer connection_status_transition_counter{ U("connectionStatusTransitionCounter") };
             const web::json::field_as_integer link_status{ U("linkStatus") }; // NcLinkStatus
             const web::json::field_as_string link_status_message{ U("linkStatusMessage") };
-            const web::json::field_as_integer synchronization_status{ U("externalSynchronizationStatus") }; // NcSynchronizationStatus
-            const web::json::field_as_string synchronization_status_message{ U("externalSynchronizationStatusMessage") };
+            const web::json::field_as_integer link_status_transition_counter{ U("linkStatusTransitionCounter") };
+            const web::json::field_as_integer external_synchronization_status{ U("externalSynchronizationStatus") }; // NcSynchronizationStatus
+            const web::json::field_as_string external_synchronization_status_message{ U("externalSynchronizationStatusMessage") };
+            const web::json::field_as_integer external_synchronization_status_transition_counter{ U("externalSynchronizationStatusTransitionCounter") }; // NcSynchronizationStatus
             const web::json::field_as_string synchronization_source_id{ U("synchronizationSourceId") };
-            const web::json::field_as_integer synchronization_source_changes{ U("synchronizationSourceChanges") };
             const web::json::field_as_integer stream_status{ U("streamStatus") }; // NcStreamStatus
             const web::json::field_as_string stream_status_message{ U("streamStatusMessage") };
-            const web::json::field_as_bool auto_reset_packet_counters{ U("autoResetPacketCounters") };
-            const web::json::field_as_bool auto_reset_synchronization_source_changes{ U("autoResetSynchronizationSourceChanges") };
+            const web::json::field_as_integer stream_status_transition_counter{ U("streamStatusTransitionCounter") }; // NcStreamStatus
+            const web::json::field_as_bool auto_reset_counters{ U("autoResetCounters") };
             const web::json::field_as_bool active{ U("active") };
             const web::json::field_as_integer overall_status{ U("overallStatus") };
             const web::json::field_as_string overall_status_message{ U("overallStatusMessage") };
