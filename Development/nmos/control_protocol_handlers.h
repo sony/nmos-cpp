@@ -41,8 +41,7 @@ namespace nmos
     // these callbacks should not throw exceptions
     typedef std::function<web::json::value(void)> get_lost_packet_counters_handler;
     typedef std::function<web::json::value(void)> get_late_packet_counters_handler;
-    typedef std::function<web::json::value(void)> reset_packet_counters_handler;
-    typedef std::function<web::json::value(void)> reset_synchronization_source_changes_handler;
+    typedef std::function<web::json::value(void)> reset_counters_handler;
 
     namespace experimental
     {

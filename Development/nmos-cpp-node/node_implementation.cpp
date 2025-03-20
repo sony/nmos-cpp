@@ -1727,8 +1727,9 @@ nmos::get_lost_packet_counters_handler make_node_implementation_get_lost_packet_
     return [&]()
     {
         // Implement polling of lost packet count here
-        uint16_t lost_packet_count(0);
-        return nmos::details::make_nc_method_result({ nmos::nc_method_status::ok }, lost_packet_count);
+        web::json::value lost_packet_counters = web::json::value::array();
+
+        return nmos::details::make_nc_method_result({ nmos::nc_method_status::ok }, lost_packet_counters);
     };
 }
 
@@ -1738,29 +1739,20 @@ nmos::get_late_packet_counters_handler make_node_implementation_get_late_packet_
     return [&]()
     {
         // Implement polling of late packet count here
-        uint16_t late_packet_count(0);
-        return nmos::details::make_nc_method_result({ nmos::nc_method_status::ok }, late_packet_count);
+        web::json::value late_packet_counters = web::json::value::array();
+
+        return nmos::details::make_nc_method_result({ nmos::nc_method_status::ok }, late_packet_counters);
     };
 }
 
 // Example Receiver Status Monitor callback for reset_packet_counters method
-nmos::reset_packet_counters_handler make_node_implementation_reset_packet_counters_handler()
+nmos::reset_counters_handler make_node_implementation_reset_counters_handler()
 {
     return [&]()
     {
         // Implement reset of lost and late packet counters
         return nmos::details::make_nc_method_result({ nmos::nc_method_status::ok });
     };
-}
-
-// Example Receiver Status Monitor callback for reset_synchronization_source_changes method
-nmos::reset_synchronization_source_changes_handler make_reset_synchronization_source_changes_handler()
-{
-    return [&]()
-        {
-            // Implement reset of lost and late packet counters
-            return nmos::details::make_nc_method_result({ nmos::nc_method_status::ok });
-        };
 }
 
 namespace impl
@@ -1920,6 +1912,5 @@ nmos::experimental::node_implementation make_node_implementation(nmos::node_mode
         .on_control_protocol_property_changed(make_node_implementation_control_protocol_property_changed_handler(gate)) // may be omitted if IS-12 not required
         .on_get_lost_packet_counters(make_node_implementation_get_lost_packet_counters_handler())
         .on_get_late_packet_counters(make_node_implementation_get_late_packet_counters_handler())
-        .on_reset_packet_counters(make_node_implementation_reset_packet_counters_handler())
-        .on_reset_synchronization_source_changes(make_reset_synchronization_source_changes_handler());
+        .on_reset_counters(make_node_implementation_reset_counters_handler());
 }

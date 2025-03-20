@@ -100,4 +100,12 @@ namespace nmos
             }
         };
     }
+
+    control_protocol_set_receiver_monitor_link_status_handler make_control_protocol_set_receiver_monitor_link_status_handler(resources& resoures, ...)
+    {
+        return [](const nc_oid oid, nmos::nc_link_status::status link_status, const utility::string_t& link_status_message)
+        {
+            return false;
+        };
+    }
 }

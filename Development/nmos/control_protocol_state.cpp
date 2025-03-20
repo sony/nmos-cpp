@@ -219,16 +219,19 @@ namespace nmos
                     return result;
                 };
             }
-            nmos::experimental::control_protocol_method_handler make_nc_reset_packet_counters_handler(reset_packet_counters_handler reset_packet_counters)
+            nmos::experimental::control_protocol_method_handler make_nc_reset_counters_handler(get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, control_protocol_property_changed_handler property_changed, reset_counters_handler reset_counters_)
             {
-                return [reset_packet_counters](nmos::resources& resources, const nmos::resource& resource, const web::json::value& arguments, bool is_deprecated, slog::base_gate& gate)
+                return [reset_counters_, get_control_protocol_class_descriptor, property_changed](nmos::resources& resources, const nmos::resource& resource, const web::json::value& arguments, bool is_deprecated, slog::base_gate& gate)
                 {
                     // Delegate to user defined handler
                     auto result = nmos::details::make_nc_method_result_error({ nmos::nc_method_status::method_not_implemented }, U("not implemented"));
 
-                    if (reset_packet_counters)
+                    // Reset transition counters in Device Model
+                    auto result_ = reset_counters(resources, resource, arguments, is_deprecated, get_control_protocol_class_descriptor, property_changed, gate);
+
+                    if (reset_counters_)
                     {
-                        result = reset_packet_counters();
+                        result = reset_counters_();
 
                         const auto& status = nmos::fields::nc::status(result);
                         if (!web::http::is_error_status_code((web::http::status_code)status) && is_deprecated)
@@ -239,29 +242,9 @@ namespace nmos
                     return result;
                 };
             }
-            nmos::experimental::control_protocol_method_handler make_nc_reset_synchronization_source_changes_handler(reset_synchronization_source_changes_handler reset_synchonization_source_changes)
-            {
-                return [reset_synchonization_source_changes](nmos::resources& resources, const nmos::resource& resource, const web::json::value& arguments, bool is_deprecated, slog::base_gate& gate)
-                    {
-                        // Delegate to user defined handler
-                        auto result = nmos::details::make_nc_method_result_error({ nmos::nc_method_status::method_not_implemented }, U("not implemented"));
-
-                        if (reset_synchonization_source_changes)
-                        {
-                            result = reset_synchonization_source_changes();
-
-                            const auto& status = nmos::fields::nc::status(result);
-                            if (!web::http::is_error_status_code((web::http::status_code)status) && is_deprecated)
-                            {
-                                return nmos::details::make_nc_method_result({ nmos::nc_method_status::method_deprecated }, nmos::fields::nc::value(result));
-                            }
-                        }
-                        return result;
-                    };
-            }
         }
 
-        control_protocol_state::control_protocol_state(get_lost_packet_counters_handler get_lost_packet_counters, get_late_packet_counters_handler get_late_packet_counters, reset_packet_counters_handler reset_packet_counters, reset_synchronization_source_changes_handler reset_synchonization_source_changes, control_protocol_property_changed_handler property_changed)
+        control_protocol_state::control_protocol_state(get_lost_packet_counters_handler get_lost_packet_counters, get_late_packet_counters_handler get_late_packet_counters, reset_counters_handler reset_counters, control_protocol_property_changed_handler property_changed)
         {
             using web::json::value;
 
@@ -398,7 +381,7 @@ namespace nmos
                         // link NcReceiverMonitor method_ids with method functions
                         { nc_receiver_monitor_get_lost_packet_counters_method_id, details::make_nc_get_lost_packet_counters_handler(get_lost_packet_counters)},
                         { nc_receiver_monitor_get_late_packet_counters_method_id, details::make_nc_get_late_packet_counters_handler(get_late_packet_counters)},
-                        { nc_receiver_monitor_reset_counters_method_id, details::make_nc_reset_packet_counters_handler(reset_packet_counters)}
+                        { nc_receiver_monitor_reset_counters_method_id, details::make_nc_reset_counters_handler(get_control_protocol_class_descriptor, property_changed, reset_counters)}
                     }),
                     // NcReceiverMonitor events
                     to_vector(make_nc_receiver_monitor_events())) }

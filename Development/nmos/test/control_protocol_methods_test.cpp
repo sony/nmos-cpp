@@ -34,7 +34,7 @@ BST_TEST_CASE(testRemoveSequenceItem)
         property_changed_called = true;
     };
 
-    nmos::experimental::control_protocol_state control_protocol_state(nullptr, nullptr, nullptr, nullptr, property_changed);
+    nmos::experimental::control_protocol_state control_protocol_state(nullptr, nullptr, nullptr, property_changed);
     nmos::get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor = nmos::make_get_control_protocol_class_descriptor_handler(control_protocol_state);
 
 

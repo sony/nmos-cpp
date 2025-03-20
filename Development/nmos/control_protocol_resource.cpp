@@ -752,7 +752,7 @@ namespace nmos
         }
 
         // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/monitoring/#ncreceivermonitor
-        web::json::value make_receiver_monitor(const nc_class_id& class_id, nc_oid oid, bool constant_oid, nc_oid owner, const utility::string_t& role, const utility::string_t& user_label, const utility::string_t& description, const web::json::value& touchpoints, const web::json::value& runtime_property_constraints, bool enabled, nc_overall_status::status overall_status, const utility::string_t& overall_status_message, nc_link_status::status link_status, const utility::string_t& link_status_message, nc_connection_status::status connection_status, const utility::string_t& connection_status_message, nc_synchronization_status::status external_synchronization_status, const utility::string_t& external_synchronization_status_message, const utility::string_t& synchronization_source_id, nc_stream_status::status stream_status, const utility::string_t& stream_status_message, uint32_t status_reporting_delay, bool auto_reset_counters)
+        web::json::value make_receiver_monitor(const nc_class_id& class_id, nc_oid oid, bool constant_oid, nc_oid owner, const utility::string_t& role, const utility::string_t& user_label, const utility::string_t& description, const web::json::value& touchpoints, const web::json::value& runtime_property_constraints, bool enabled, nc_overall_status::status overall_status, const utility::string_t& overall_status_message, nc_link_status::status link_status, const utility::string_t& link_status_message, nc_connection_status::status connection_status, const utility::string_t& connection_status_message, nc_synchronization_status::status external_synchronization_status, const utility::string_t& external_synchronization_status_message, const web::json::value& synchronization_source_id, nc_stream_status::status stream_status, const utility::string_t& stream_status_message, uint32_t status_reporting_delay, bool auto_reset_counters)
         {
             using web::json::value;
 
@@ -767,7 +767,7 @@ namespace nmos
             data[nmos::fields::nc::external_synchronization_status] = value::number(external_synchronization_status);
             data[nmos::fields::nc::external_synchronization_status_message] = value::string(external_synchronization_status_message);
             data[nmos::fields::nc::external_synchronization_status_transition_counter] = value::number(0);
-            data[nmos::fields::nc::synchronization_source_id] = value::string(synchronization_source_id);
+            data[nmos::fields::nc::synchronization_source_id] = synchronization_source_id;
             data[nmos::fields::nc::stream_status] = value::number(stream_status);
             data[nmos::fields::nc::stream_status_message] = value::string(stream_status_message);
             data[nmos::fields::nc::stream_status_transition_counter] = value::number(0);

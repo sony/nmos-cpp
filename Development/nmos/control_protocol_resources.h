@@ -37,7 +37,7 @@ namespace nmos
         const utility::string_t& connection_status_message = U(""),
         nc_synchronization_status::status synchronization_status = nc_synchronization_status::not_used,
         const utility::string_t& synchronization_status_message = U(""),
-        const utility::string_t& synchronization_source_id = U(""),
+        const web::json::value& synchronization_source_id = web::json::value::null(),
         nc_stream_status::status stream_status = nc_stream_status::inactive,
         const utility::string_t& stream_status_message = U(""),
         uint32_t status_reporting_delay = 3,
