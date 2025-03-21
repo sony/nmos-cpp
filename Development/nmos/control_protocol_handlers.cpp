@@ -105,7 +105,7 @@ namespace nmos
     {
         return [&](nc_oid oid, const nc_property_id& property_id)
         {
-            return get_control_protocol_resource_property(resources, oid, property_id, control_protocol_state, get_control_protocol_class_descriptor, gate);
+            return get_control_protocol_property(resources, oid, property_id, control_protocol_state, get_control_protocol_class_descriptor, gate);
         };
     }
 
