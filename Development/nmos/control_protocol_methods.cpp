@@ -663,4 +663,37 @@ namespace nmos
 
         return details::make_nc_method_result_error({ nc_method_status::parameter_error }, U("name not found"));
     }
+
+    // NcReceiverMonitor methods
+    web::json::value reset_counters(nmos::resources& resources, const nmos::resource& resource, const web::json::value&, bool, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, control_protocol_property_changed_handler property_changed, slog::base_gate&)
+    {
+        // reset all counters
+        const std::vector<nc_property_id> transition_counters = {
+            nc_receiver_monitor_connection_status_transition_counter_property_id,
+            nc_receiver_monitor_external_synchronization_status_transition_counter_property_id,
+            nc_receiver_monitor_link_status_transition_counter_property_id,
+            nc_receiver_monitor_stream_status_transition_counter_property_id };
+
+        for (auto& property_id : transition_counters)
+        {
+            const auto& property = find_property_descriptor(property_id, details::parse_nc_class_id(nmos::fields::nc::class_id(resource.data)), get_control_protocol_class_descriptor);
+            if (!property.is_null())
+            {
+                // update property
+                modify_control_protocol_resource(resources, resource.id, [&](nmos::resource& resource)
+                    {
+                        resource.data[nmos::fields::nc::name(property)] = 0;
+
+                        // do notification that the specified property has changed
+                        if (property_changed)
+                        {
+                            property_changed(resource, nmos::fields::nc::name(property), -1);
+                        }
+
+                    }, make_property_changed_event(nmos::fields::nc::oid(resource.data), { { property_id, nc_property_change_type::type::value_changed, 0 } }));
+            }
+        }
+
+        return details::make_nc_method_result({ nc_method_status::ok });
+    }
 }

@@ -42,6 +42,10 @@ namespace nmos
     web::json::value get_control_class(nmos::resources&, const nmos::resource&, const web::json::value& arguments, bool is_deprecated, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, slog::base_gate& gate);
     // Get a single datatype descriptor
     web::json::value get_datatype(nmos::resources&, const nmos::resource&, const web::json::value& arguments, bool is_deprecated, get_control_protocol_datatype_descriptor_handler get_control_protocol_datatype, slog::base_gate& gate);
+
+    // NcReceiverMonitor methods implementation
+    // Resets the packet counters
+    web::json::value reset_counters(nmos::resources& resources, const nmos::resource& resource, const web::json::value&, bool, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, control_protocol_property_changed_handler property_changed, slog::base_gate&);
 }
 
 #endif

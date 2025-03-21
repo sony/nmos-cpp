@@ -80,24 +80,56 @@ namespace nmos
                 // update receiver-monitor's connectionStatus and payloadStatus properties
 
                 const auto active = nmos::fields::master_enable(nmos::fields::endpoint_active(connection_resource.data));
-                const web::json::value connection_status = active ? nc_connection_status::connected : nc_connection_status::disconnected;
-                const web::json::value payload_status = active ? nc_payload_status::payload_ok : nc_payload_status::undefined;
+                const web::json::value connection_status = active ? nc_connection_status::healthy : nc_connection_status::inactive;
+                const web::json::value stream_status = active ? nc_stream_status::healthy : nc_stream_status::inactive;
 
                 // hmm, maybe updating connectionStatusMessage and payloadStatusMessage too
 
                 const auto property_changed_event = make_property_changed_event(nmos::fields::nc::oid(found->data),
                 {
                     { nc_receiver_monitor_connection_status_property_id, nc_property_change_type::type::value_changed, connection_status },
-                    { nc_receiver_monitor_payload_status_property_id, nc_property_change_type::type::value_changed, payload_status }
+                    { nc_receiver_monitor_stream_status_property_id, nc_property_change_type::type::value_changed, stream_status }
                 });
 
                 modify_control_protocol_resource(resources, found->id, [&](nmos::resource& resource)
                 {
                     resource.data[nmos::fields::nc::connection_status] = connection_status;
-                    resource.data[nmos::fields::nc::payload_status] = payload_status;
+                    resource.data[nmos::fields::nc::stream_status] = stream_status;
 
                 }, property_changed_event);
             }
         };
     }
+
+    get_control_protocol_property_handler make_get_control_protocol_property_handler(const resources& resources, experimental::control_protocol_state& control_protocol_state, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, slog::base_gate& gate)
+    {
+        return [&](nc_oid oid, const nc_property_id& property_id)
+        {
+            return get_control_protocol_property(resources, oid, property_id, control_protocol_state, get_control_protocol_class_descriptor, gate);
+        };
+    }
+
+    set_control_protocol_property_handler make_set_control_protocol_property_handler(resources& resources, experimental::control_protocol_state& control_protocol_state, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, slog::base_gate& gate)
+    {
+        return [&](nc_oid oid, const nc_property_id& property_id, const web::json::value& value)
+        {
+            return set_control_protocol_property(resources, oid, property_id, value, control_protocol_state, get_control_protocol_class_descriptor, gate);
+        };
+    }
+
+    set_receiver_monitor_link_status_handler make_set_receiver_monitor_link_status_handler(resources& resources, experimental::control_protocol_state& control_protocol_state, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, slog::base_gate& gate)
+    {
+        return[&](nc_oid oid, nmos::nc_link_status::status link_status, const utility::string_t& link_status_message)
+        {
+            return set_receiver_monitor_link_status(resources, oid, link_status, link_status_message, control_protocol_state, get_control_protocol_class_descriptor, gate);
+        };
+    }
+
+    //control_protocol_set_receiver_monitor_link_status_handler make_control_protocol_set_receiver_monitor_link_status_handler(resources& resoures, ...)
+    //{
+    //    return [&](const nc_oid oid, nmos::nc_link_status::status link_status, const utility::string_t& link_status_message)
+    //    {
+    //        return false;
+    //    };
+    //}
 }
