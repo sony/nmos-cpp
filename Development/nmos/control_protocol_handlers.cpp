@@ -101,11 +101,35 @@ namespace nmos
         };
     }
 
-    control_protocol_set_receiver_monitor_link_status_handler make_control_protocol_set_receiver_monitor_link_status_handler(resources& resoures, ...)
+    get_control_protocol_property_handler make_get_control_protocol_property_handler(const resources& resources, experimental::control_protocol_state& control_protocol_state, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, slog::base_gate& gate)
     {
-        return [](const nc_oid oid, nmos::nc_link_status::status link_status, const utility::string_t& link_status_message)
+        return [&](nc_oid oid, const nc_property_id& property_id)
         {
-            return false;
+            return get_control_protocol_resource_property(resources, oid, property_id, control_protocol_state, get_control_protocol_class_descriptor, gate);
         };
     }
+
+    set_control_protocol_property_handler make_set_control_protocol_property_handler(resources& resources, experimental::control_protocol_state& control_protocol_state, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, slog::base_gate& gate)
+    {
+        return [&](nc_oid oid, const nc_property_id& property_id, const web::json::value& value)
+        {
+            return set_control_protocol_property(resources, oid, property_id, value, control_protocol_state, get_control_protocol_class_descriptor, gate);
+        };
+    }
+
+    set_receiver_monitor_link_status_handler make_set_receiver_monitor_link_status_handler(resources& resources, experimental::control_protocol_state& control_protocol_state, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, slog::base_gate& gate)
+    {
+        return[&](nc_oid oid, nmos::nc_link_status::status link_status, const utility::string_t& link_status_message)
+        {
+            return set_receiver_monitor_link_status(resources, oid, link_status, link_status_message, control_protocol_state, get_control_protocol_class_descriptor, gate);
+        };
+    }
+
+    //control_protocol_set_receiver_monitor_link_status_handler make_control_protocol_set_receiver_monitor_link_status_handler(resources& resoures, ...)
+    //{
+    //    return [&](const nc_oid oid, nmos::nc_link_status::status link_status, const utility::string_t& link_status_message)
+    //    {
+    //        return false;
+    //    };
+    //}
 }

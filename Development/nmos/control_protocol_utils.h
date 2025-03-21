@@ -88,6 +88,27 @@ namespace nmos
 
     // insert 'value changed', 'sequence item added', 'sequence item changed' or 'sequence item removed' notification events into all grains whose subscriptions match the specified version, type and "pre" or "post" values
     void insert_notification_events(resources& resources, const api_version& version, const api_version& downgrade_version, const type& type, const web::json::value& pre, const web::json::value& post, const web::json::value& event);
+
+    // get property value given oid and property_id
+    web::json::value get_control_protocol_resource_property(const resources& resources, nc_oid oid, const nc_property_id& property_id, experimental::control_protocol_state& control_protocol_state, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, slog::base_gate& gate);
+
+    // set property value given oid and property_id
+    bool set_control_protocol_property(resources& resources, nc_oid oid, const nc_property_id& property_id, const web::json::value& value, experimental::control_protocol_state& control_protocol_state, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, slog::base_gate& gate);
+
+    // Set link status and link status message
+    bool set_receiver_monitor_link_status(resources& resources, nc_oid oid, nmos::nc_link_status::status link_status, const utility::string_t& link_status_message, experimental::control_protocol_state& control_protocol_state, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, slog::base_gate& gate);
+
+    // Set connection status and connection status message
+    bool set_receiver_monitor_connection_status(const resources& resources, const resource& resource, nmos::nc_connection_status::status connection_status, const utility::string_t& connection_status_message);
+
+    // Set external synchronization status and external synchronization status message
+    bool set_receiver_monitor_external_synchronization_status(const resources& resources, const resource& resource, nmos::nc_synchronization_status::status synchronization_status, const utility::string_t& synchronization_status_message);
+
+    // Set synchronization source id
+    bool set_receiver_monitor_synchronization_source_id(const resources& resources, const resource& resource, const web::json::value& source_id);
+
+    // Set stream status and stream status message
+    bool set_receiver_monitor_stream_status(const resources& resources, const resource& resource, nmos::nc_stream_status::status stream_status, const utility::string_t& stream_status_message);
 }
 
 #endif

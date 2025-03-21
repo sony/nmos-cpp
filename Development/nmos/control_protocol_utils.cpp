@@ -334,6 +334,28 @@ namespace nmos
             // do level 1 property constraints & level 0 datatype constraints validation
             constraints_validation(data, value::null(), property_constraints, params);
         }
+
+        bool update_recevier_monitor_overall_status(resources& resources, nc_oid oid, experimental::control_protocol_state& control_protocol_state, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, slog::base_gate& gate)
+        {
+            // Update Overall Status
+            auto connection_status = get_control_protocol_resource_property(resources, oid, nc_receiver_monitor_connection_status_property_id, control_protocol_state, get_control_protocol_class_descriptor, gate);
+            auto stream_status = get_control_protocol_resource_property(resources, oid, nc_receiver_monitor_external_synchronization_status_property_id, control_protocol_state, get_control_protocol_class_descriptor, gate);
+
+            // if connection or stream status is Inactive
+            if (nc_connection_status::status::inactive == connection_status.as_integer() || nc_stream_status::status::inactive == stream_status.as_integer())
+            {
+                return set_control_protocol_property(resources, oid, nc_status_monitor_overall_status_property_id, nc_overall_status::status::inactive, control_protocol_state, get_control_protocol_class_descriptor, gate);
+            }
+
+            auto link_status = get_control_protocol_resource_property(resources, oid, nc_receiver_monitor_link_status_property_id, control_protocol_state, get_control_protocol_class_descriptor, gate);
+            auto external_synchronization_status = get_control_protocol_resource_property(resources, oid, nc_receiver_monitor_external_synchronization_status_property_id, control_protocol_state, get_control_protocol_class_descriptor, gate);
+
+            // otherwise take the least healthy status as the overall status
+            std::vector<int32_t> statuses = { link_status.as_integer(), connection_status.as_integer(), external_synchronization_status.as_integer(), stream_status.as_integer() };
+            auto overall_status = *std::max_element(statuses.begin(), statuses.end());
+
+            return set_control_protocol_property(resources, oid, nc_status_monitor_overall_status_property_id, web::json::value::number(overall_status), control_protocol_state, get_control_protocol_class_descriptor, gate);
+        }
     }
 
     // is the given class_id a NcBlock
@@ -710,5 +732,93 @@ namespace nmos
                 });
             }
         }
+    }
+
+    web::json::value get_control_protocol_resource_property(const resources& resources, nc_oid oid, const nc_property_id& property_id, experimental::control_protocol_state& control_protocol_state, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, slog::base_gate& gate)
+    {
+        auto lock = control_protocol_state.read_lock();
+
+        // get resource based on the oid
+        const auto& found = find_resource(resources, utility::s2us(std::to_string(oid)));
+        if (resources.end() != found)
+        {
+            // find the relevant nc_property_descriptor
+            const auto& property = find_property_descriptor(property_id, details::parse_nc_class_id(nmos::fields::nc::class_id(found->data)), get_control_protocol_class_descriptor);
+            if (!property.is_null())
+            {
+                return found->data.at(nmos::fields::nc::name(property));
+            }
+        }
+        // unknown property
+        slog::log<slog::severities::error>(gate, SLOG_FLF) << U("unknown property: {level=") << property_id.level << U(", index=") << property_id.index << U("} to do Get");
+        return web::json::value::null();
+    }
+
+    bool set_control_protocol_property(resources& resources, nc_oid oid, const nc_property_id& property_id, const web::json::value& value, experimental::control_protocol_state& control_protocol_state, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, slog::base_gate& gate)
+    {
+        auto lock = control_protocol_state.write_lock();
+
+        const auto& found = find_resource(resources, utility::s2us(std::to_string(oid)));
+        if (resources.end() != found)
+        {
+            const auto& property = find_property_descriptor(property_id, details::parse_nc_class_id(nmos::fields::nc::class_id(found->data)), get_control_protocol_class_descriptor);
+            if (!property.is_null())
+            {
+                try
+                {
+                    // update property
+                    modify_control_protocol_resource(resources, found->id, [&](nmos::resource& resource)
+                    {
+                        resource.data[nmos::fields::nc::name(property)] = value;
+
+                    }, make_property_changed_event(oid, { { property_id, nc_property_change_type::type::value_changed, value } }));
+
+                    return true;
+                }
+                catch (const nmos::control_protocol_exception& e)
+                {
+                    slog::log<slog::severities::error>(gate, SLOG_FLF) << "Set property: {level=" << property_id.level << ", index=" << property_id.index << "}  error: " << e.what();
+                    return false;
+                }
+            }
+
+            // unknown property
+            slog::log<slog::severities::error>(gate, SLOG_FLF) << "unknown property: {level=" << property_id.level << ", index=" << property_id.index << "}  to do Set.";
+            return false;
+        }
+    }
+
+    // Set link status and link status message
+    //bool set_receiver_monitor_link_status(const nc_oid oid, nmos::nc_link_status::status link_status, const utility::string_t& link_status_message)
+    bool set_receiver_monitor_link_status(resources& resources, nc_oid oid, nmos::nc_link_status::status link_status, const utility::string_t& link_status_message, experimental::control_protocol_state& control_protocol_state, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, slog::base_gate& gate)
+    {
+        set_control_protocol_property(resources, oid, nc_receiver_monitor_link_status_property_id, link_status, control_protocol_state, get_control_protocol_class_descriptor, gate);
+        set_control_protocol_property(resources, oid, nc_receiver_monitor_link_status_message_property_id, web::json::value::string(link_status_message), control_protocol_state, get_control_protocol_class_descriptor, gate);
+
+        return details::update_recevier_monitor_overall_status(resources, oid, control_protocol_state, get_control_protocol_class_descriptor, gate);
+    }
+
+    // Set connection status and connection status message
+    bool set_receiver_monitor_connection_status(const resources& resources, const resource& resource, nmos::nc_connection_status::status connection_status, const utility::string_t& connection_status_message)
+    {
+        return false;
+    }
+
+    // Set external synchronization status and external synchronization status message
+    bool set_receiver_monitor_external_synchronization_status(const resources& resources, const resource& resource, nmos::nc_synchronization_status::status synchronization_status, const utility::string_t& synchronization_status_message)
+    {
+        return false;
+    }
+
+    // Set synchronization source id
+    bool set_receiver_monitor_synchronization_source_id(const resources& resources, const resource& resource, const web::json::value& source_id)
+    {
+        return false;
+    }
+
+    // Set stream status and stream status message
+    bool set_receiver_monitor_stream_status(const resources& resources, const resource& resource, nmos::nc_stream_status::status stream_status, const utility::string_t& stream_status_message)
+    {
+        return false;
     }
 }
