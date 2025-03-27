@@ -191,6 +191,24 @@ namespace nmos
 
         // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncclassmanager
         web::json::value make_nc_class_manager(nc_oid oid, nc_oid owner, const web::json::value& user_label, const utility::string_t& description, const web::json::value& touchpoints, const web::json::value& runtime_property_constraints, const nmos::experimental::control_protocol_state& control_protocol_state);
+
+        // TODO: add link
+        web::json::value make_nc_bulk_properties_manager(nc_oid oid, nc_oid owner, const web::json::value& user_label, const utility::string_t& description, const web::json::value& touchpoints, const web::json::value& runtime_property_constraints);
+
+        // TODO: add link
+        web::json::value make_nc_bulk_values_holder(const utility::string_t& validation_fingerprint, const web::json::value& object_properties_holders);
+
+        // TODO: add link
+        web::json::value make_nc_property_value_holder(const nc_property_id& property_id, const nc_name& name, const utility::string_t& type_name, bool is_read_only, const web::json::value& property_value);
+
+        // TODO: add link
+        web::json::value make_nc_object_properties_holder(const web::json::array& role_path, const web::json::array& property_value_holders, bool is_rebuildable);
+
+        // TODO: add link
+        web::json::value make_nc_property_restore_notice(const nc_property_id& property_id, const nc_name& name, nc_property_restore_notice_type::type notice_type, const utility::string_t& notice_message);
+
+        // TODO: add link
+        web::json::value make_nc_object_properties_set_validation(const web::json::array& role_path, nc_restore_validation_status::status status, const web::json::array& notices, const web::json::value& status_message);
     }
 
     // command message response
@@ -280,6 +298,12 @@ namespace nmos
     web::json::value make_nc_ident_beacon_properties();
     web::json::value make_nc_ident_beacon_methods();
     web::json::value make_nc_ident_beacon_events();
+
+    // Device configuration classes
+    // TODO: add link
+    web::json::value make_nc_bulk_properties_manager_properties();
+    web::json::value make_nc_bulk_properties_manager_methods();
+    web::json::value make_nc_bulk_properties_manager_events();
 
     // Datatype models
     // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/models/datatypes/#datatype-models-for-branch-v10-dev
@@ -428,6 +452,29 @@ namespace nmos
     web::json::value make_nc_connection_status_datatype();
     // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/monitoring/#ncpayloadstatus
     web::json::value make_nc_payload_status_datatype();
+
+    // Device configuration feature set datatypes
+    // TODO: add link
+    //
+    web::json::value make_nc_restore_mode_datatype();
+    //
+    web::json::value make_nc_property_value_holder_datatype();
+    //
+    web::json::value make_nc_object_properties_holder_datatype();
+    //
+    web::json::value make_nc_bulk_values_holder_datatype();
+    //
+    web::json::value make_nc_restore_validation_status_datatype();
+    //
+    web::json::value make_nc_property_restore_notice_type_datatype();
+    //
+    web::json::value make_nc_property_restore_notice_datatype();
+    //
+    web::json::value make_nc_object_properties_set_validation_datatype();
+    //
+    web::json::value make_nc_method_result_bulk_values_holder_datatype();
+    //
+    web::json::value make_nc_method_result_object_properties_set_validation_datatype();
 }
 
 #endif
