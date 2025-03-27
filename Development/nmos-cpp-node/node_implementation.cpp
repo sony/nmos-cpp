@@ -1944,7 +1944,7 @@ nmos::modify_rebuildable_block_handler make_modify_rebuildable_block_handler(nmo
 
                 const auto& child_object_properties_holder = *filtered_child_object_properties_holders.begin();
 
-                const auto& oid_property_holder = nmos::get_property_value_holder(child_object_properties_holder, nmos::nc_property_id(1, 2));
+                const auto& oid_property_holder = nmos::get_property_value_holder(child_object_properties_holder, nmos::nc_object_oid_property_id);
 
                 if (oid_property_holder == web::json::value::null())
                 {
@@ -2008,7 +2008,7 @@ nmos::modify_rebuildable_block_handler make_modify_rebuildable_block_handler(nmo
 
                 auto receiver = nmos::make_receiver(touchpoint_uuid.as_string(), device_id, nmos::transports::rtp, interface_names, model.settings);
 
-                const auto& owner_property_holder = nmos::get_property_value_holder(child_object_properties_holder, nmos::nc_property_id(1, 4));
+                const auto& owner_property_holder = nmos::get_property_value_holder(child_object_properties_holder, nmos::nc_object_owner_property_id);
                 if (owner_property_holder == web::json::value::null())
                 {
                     auto status_message = U("Cannot find owner property value holder.");
@@ -2018,7 +2018,7 @@ nmos::modify_rebuildable_block_handler make_modify_rebuildable_block_handler(nmo
                     continue;
                 }
 
-                const auto& role_property_holder = nmos::get_property_value_holder(child_object_properties_holder, nmos::nc_property_id(1, 5));
+                const auto& role_property_holder = nmos::get_property_value_holder(child_object_properties_holder, nmos::nc_object_role_property_id);
                 if (role_property_holder == web::json::value::null())
                 {
                     auto status_message = U("Cannot find role property value holder.");
@@ -2068,11 +2068,11 @@ nmos::modify_rebuildable_block_handler make_modify_rebuildable_block_handler(nmo
                 web::json::push_back(modified_members, member);
             }
 
-            nmos::nc::modify_resource(resources, resource.id, [&](nmos::resource& resource)
-                {
-                    resource.data[nmos::fields::nc::members] = modified_members;
+            nmos::nc::modify_resource(control_protocol_resources, resource.id, [&](nmos::resource& resource)
+            {
+                resource.data[nmos::fields::nc::members] = modified_members;
 
-                }, nmos::make_property_changed_event(nmos::fields::nc::oid(resource.data), { { nmos::nc_property_id(2, 2), nmos::nc_property_change_type::type::value_changed, modified_members } }));
+            }, nmos::make_property_changed_event(nmos::fields::nc::oid(resource.data), { { nmos::nc_block_members_property_id, nmos::nc_property_change_type::type::value_changed, modified_members } }));
         }
 
         return object_properties_set_validations;
