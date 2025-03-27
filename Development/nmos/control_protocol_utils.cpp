@@ -622,7 +622,6 @@ namespace nmos
             return result;
         }
 
-
         // modify a control protocol resource, and insert notification event to all subscriptions
         bool modify_resource(resources& resources, const id& id, std::function<void(resource&)> modifier, const web::json::value& notification_event)
         {
