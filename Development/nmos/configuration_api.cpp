@@ -674,8 +674,6 @@ namespace nmos
                 }
                 return true;
             });
-
-            return pplx::task_from_result(true);
         });
 
         // PUT /rolePaths/{rolePath}/bulkProperties - invokes set_properties_by_path method
@@ -727,8 +725,6 @@ namespace nmos
 
                 return true;
             });
-
-            return pplx::task_from_result(true);
         });
 
         return configuration_api;
