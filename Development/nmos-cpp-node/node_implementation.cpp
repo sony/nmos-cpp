@@ -1776,14 +1776,15 @@ nmos::modify_rebuildable_block_handler make_modify_rebuildable_block_handler(nmo
     {
         auto object_properties_set_validations = web::json::value::array();
 
-        nmos::resources& resources = model.control_protocol_resources;
+        nmos::resources& control_protocol_resources = model.control_protocol_resources;
+        nmos::resources& node_resources = model.node_resources;
 
         slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::stash_category(impl::categories::node_implementation) << "Do modify_rebuildable_block";
 
         // Validate the object_properties_holder
 
         // Find object_properties_holder for resource
-        const auto& filtered_holders = nmos::get_object_properties_holder(object_properties_holders, nmos::get_role_path(resources, resource));
+        const auto& filtered_holders = nmos::get_object_properties_holder(object_properties_holders, nmos::get_role_path(control_protocol_resources, resource));
 
         if (filtered_holders.size() != 1)
         {
@@ -1802,9 +1803,10 @@ nmos::modify_rebuildable_block_handler make_modify_rebuildable_block_handler(nmo
 
             return object_properties_set_validations;
         }
+
         const auto& block_members_properties_holder = nmos::get_property_value_holder(*filtered_holders.begin(), nmos::nc_property_id(2, 2));
 
-        if (block_members_properties_holder == web::json::value::null())
+        if (block_members_properties_holder.is_null())
         {
             auto status_message = U("No NcBlockMembersPropertiesHolder found");
             auto object_properties_set_validation = nmos::make_object_properties_set_validation(target_role_path, nmos::nc_restore_validation_status::failed, status_message);
@@ -1835,25 +1837,26 @@ nmos::modify_rebuildable_block_handler make_modify_rebuildable_block_handler(nmo
             {
                 // can't find this oid in restore dataset, so member has been removed
                 // get the receiver monitor resource
-                auto found = nmos::find_resource(resources, utility::conversions::details::to_string_t(nmos::fields::nc::oid(reference_member)));
+                auto found = nmos::find_resource(control_protocol_resources, utility::conversions::details::to_string_t(nmos::fields::nc::oid(reference_member)));
 
-                const auto& touchpoint_resource = nmos::nc::find_touchpoint_resource(model.node_resources, *found);
+                const auto& touchpoint_resource = nmos::nc::find_touchpoint_resource(node_resources, *found);
 
-                if (touchpoint_resource != resources.end())
+                if (touchpoint_resource != control_protocol_resources.end())
                 {
-                    bool success = erase_resource(model.node_resources, nmos::fields::id(touchpoint_resource->data));
+                    const auto& id = nmos::fields::id(touchpoint_resource->data);
+                    auto erase_count = erase_resource(node_resources, id);
 
-                    if (!success)
+                    if (erase_count == 0)
                     {
-                        auto status_message = U("Unable to erase resource");
+                        auto status_message = U("Unable to erase node resource ") + id;
                         auto object_properties_set_validation = nmos::make_object_properties_set_validation(child_role_path.as_array(), nmos::nc_restore_validation_status::failed, status_message);
                         web::json::push_back(object_properties_set_validations, object_properties_set_validation);
 
                         continue;
                     }
                     const auto oid = nmos::fields::nc::oid(found->data);
-                    success = erase_resource(resources, found->id);
-                    if (success)
+                    erase_count = nmos::nc::erase_resource(control_protocol_resources, found->id);
+                    if (erase_count > 0)
                     {
                         members_to_remove.push_back(oid);
                         auto object_properties_set_validation = nmos::make_object_properties_set_validation(child_role_path.as_array(), nmos::nc_restore_validation_status::ok);
@@ -1910,9 +1913,9 @@ nmos::modify_rebuildable_block_handler make_modify_rebuildable_block_handler(nmo
                     continue;
                 }
                 const auto& example_monitor = *reference_members.begin();
-                const auto& found = nmos::find_resource(resources, utility::conversions::details::to_string_t(nmos::fields::nc::oid(example_monitor)));
-                const auto& touchpoint_resource = nmos::nc::find_touchpoint_resource(model.node_resources, *found);
-                if (touchpoint_resource == resources.end())
+                const auto& found = nmos::find_resource(control_protocol_resources, utility::conversions::details::to_string_t(nmos::fields::nc::oid(example_monitor)));
+                const auto& touchpoint_resource = nmos::nc::find_touchpoint_resource(node_resources, *found);
+                if (touchpoint_resource == control_protocol_resources.end())
                 {
                     auto status_message = U("Cannot duplicate resources when none exist");
                     auto object_properties_set_validation = nmos::make_object_properties_set_validation(child_role_path.as_array(), nmos::nc_restore_validation_status::failed, status_message);
@@ -2034,8 +2037,8 @@ nmos::modify_rebuildable_block_handler make_modify_rebuildable_block_handler(nmo
 
                 members_to_add.push_back(block_member_descriptor);
                 // insert resources
-                insert_resource(model.node_resources, std::move(receiver));
-                insert_resource(resources, std::move(receiver_monitor));
+                insert_resource(node_resources, std::move(receiver));
+                nmos::nc::insert_resource(control_protocol_resources, std::move(receiver_monitor));
 
                 auto object_properties_set_validation = nmos::make_object_properties_set_validation(child_role_path.as_array(), nmos::nc_restore_validation_status::ok);
                 web::json::push_back(object_properties_set_validations, object_properties_set_validation);
