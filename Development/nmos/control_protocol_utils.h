@@ -82,6 +82,9 @@ namespace nmos
         // modify a control protocol resource, and insert notification event to all subscriptions
         bool modify_resource(resources& resources, const id& id, std::function<void(resource&)> modifier, const web::json::value& notification_event);
 
+        // erase a control protocol resource
+        resources::size_type erase_resource(resources& resources, const id& id);
+
         // find the control protocol resource which is assoicated with the given IS-04/IS-05/IS-08 resource id
         resources::const_iterator find_resource(resources& resources, type type, const id& id);
 
