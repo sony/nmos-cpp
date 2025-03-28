@@ -192,7 +192,7 @@ namespace impl
 
 // forward declarations for node_implementation_thread
 void node_implementation_init(nmos::node_model& model, nmos::experimental::control_protocol_state& control_protocol_state, slog::base_gate& gate);
-void node_implementation_run(nmos::node_model& model, slog::base_gate& gate);
+void node_implementation_run(nmos::node_model& model, nmos::experimental::control_protocol_state& control_protocol_state, slog::base_gate& gate);
 nmos::connection_resource_auto_resolver make_node_implementation_auto_resolver(const nmos::settings& settings);
 nmos::connection_sender_transportfile_setter make_node_implementation_transportfile_setter(const nmos::resources& node_resources, const nmos::settings& settings);
 
@@ -208,7 +208,7 @@ void node_implementation_thread(nmos::node_model& model, nmos::experimental::con
     try
     {
         node_implementation_init(model, control_protocol_state, gate);
-        node_implementation_run(model, gate);
+        node_implementation_run(model, control_protocol_state, gate);
     }
     catch (const node_implementation_init_exception&)
     {
@@ -1292,7 +1292,7 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
     }
 }
 
-void node_implementation_run(nmos::node_model& model, slog::base_gate& gate)
+void node_implementation_run(nmos::node_model& model, nmos::experimental::control_protocol_state& control_protocol_state, slog::base_gate& gate)
 {
     auto lock = model.read_lock();
 
@@ -1300,6 +1300,10 @@ void node_implementation_run(nmos::node_model& model, slog::base_gate& gate)
     const auto how_many = impl::fields::how_many(model.settings);
     const auto sender_ports = impl::parse_ports(impl::fields::senders(model.settings));
     const auto ws_sender_ports = boost::copy_range<std::vector<impl::port>>(sender_ports | boost::adaptors::filtered(impl::is_ws_port));
+
+    const auto set_receiver_monitor_stream_status = nmos::make_set_receiver_monitor_stream_status_handler(model.control_protocol_resources, control_protocol_state, gate);
+    const auto set_receiver_monitor_connection_status = nmos::make_set_receiver_monitor_connection_status_handler(model.control_protocol_resources, control_protocol_state, gate);
+    const auto get_control_protocol_property = nmos::make_get_control_protocol_property_handler(model.control_protocol_resources, control_protocol_state, gate);
 
     // start background tasks to intermittently update the state of the event sources, to cause events to be emitted to connected receivers
 
@@ -1666,17 +1670,15 @@ nmos::connection_activation_handler make_node_implementation_connection_activati
     auto handle_events_ws_message = make_node_implementation_events_ws_message_handler(model, gate);
     auto handle_close = nmos::experimental::make_events_ws_close_handler(model, gate);
     auto connection_events_activation_handler = nmos::make_connection_events_websocket_activation_handler(handle_load_ca_certificates, handle_events_ws_message, handle_close, model.settings, gate);
-    // this example uses this callback to update IS-12 Receiver-Monitor connection status
-    auto receiver_monitor_connection_activation_handler = nmos::make_receiver_monitor_connection_activation_handler(model.control_protocol_resources);
 
-    return [connection_events_activation_handler, receiver_monitor_connection_activation_handler, &gate](const nmos::resource& resource, const nmos::resource& connection_resource)
+    return [connection_events_activation_handler, /*receiver_monitor_connection_activation_handler,*/ &gate](const nmos::resource& resource, const nmos::resource& connection_resource)
     {
         const std::pair<nmos::id, nmos::type> id_type{ resource.id, resource.type };
         slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::stash_category(impl::categories::node_implementation) << "Activating " << id_type;
 
         connection_events_activation_handler(resource, connection_resource);
 
-        receiver_monitor_connection_activation_handler(connection_resource);
+  //      receiver_monitor_connection_activation_handler(connection_resource);
     };
 }
 

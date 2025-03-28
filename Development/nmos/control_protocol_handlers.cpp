@@ -70,66 +70,110 @@ namespace nmos
     }
 
     // Example Receiver-Monitor Connection activation callback to perform application-specific operations to complete activation
-    control_protocol_connection_activation_handler make_receiver_monitor_connection_activation_handler(resources& resources)
+    control_protocol_connection_activation_handler make_receiver_monitor_connection_activation_handler(resources& resources, experimental::control_protocol_state& control_protocol_state, slog::base_gate& gate)
     {
-        return [&resources](const resource& connection_resource)
+        auto get_control_protocol_class_descriptor = nmos::make_get_control_protocol_class_descriptor_handler(control_protocol_state);
+        auto get_control_protocol_method_descriptor = nmos::make_get_control_protocol_method_descriptor_handler(control_protocol_state);
+
+        return [&resources, get_control_protocol_class_descriptor, get_control_protocol_method_descriptor, &gate](const nmos::resource& resource, const nmos::resource& connection_resource)
         {
+            if (nmos::types::receiver != resource.type) return;
+
+            const auto& endpoint_active = nmos::fields::endpoint_active(connection_resource.data);
+            const bool active = nmos::fields::master_enable(endpoint_active);
+
             auto found = find_control_protocol_resource(resources, nmos::types::nc_receiver_monitor, connection_resource.id);
             if (resources.end() != found && nc_receiver_monitor_class_id == details::parse_nc_class_id(nmos::fields::nc::class_id(found->data)))
             {
-                // update receiver-monitor's connectionStatus and payloadStatus properties
+                auto oid = nmos::fields::nc::oid(found->data);
 
-                const auto active = nmos::fields::master_enable(nmos::fields::endpoint_active(connection_resource.data));
-                const web::json::value connection_status = active ? nc_connection_status::healthy : nc_connection_status::inactive;
-                const web::json::value stream_status = active ? nc_stream_status::healthy : nc_stream_status::inactive;
-
-                // hmm, maybe updating connectionStatusMessage and payloadStatusMessage too
-
-                const auto property_changed_event = make_property_changed_event(nmos::fields::nc::oid(found->data),
+                if (active)
                 {
-                    { nc_receiver_monitor_connection_status_property_id, nc_property_change_type::type::value_changed, connection_status },
-                    { nc_receiver_monitor_stream_status_property_id, nc_property_change_type::type::value_changed, stream_status }
-                });
+                    // Activate receiver monitor handler
+                    activate_receiver_monitor(resources, oid, get_control_protocol_class_descriptor, get_control_protocol_method_descriptor, gate);
 
-                modify_control_protocol_resource(resources, found->id, [&](nmos::resource& resource)
+                    // For demonstration purposes, stream and connection are *actually* active, so reflect this in the streamand connection statuses
+                    set_receiver_monitor_stream_status(resources, oid, nmos::nc_stream_status::unhealthy, U("No stream detected"), get_control_protocol_class_descriptor, gate);
+                    set_receiver_monitor_connection_status(resources, oid, nmos::nc_connection_status::unhealthy, U("No connection detected"), get_control_protocol_class_descriptor, gate);
+                }
+                else
                 {
-                    resource.data[nmos::fields::nc::connection_status] = connection_status;
-                    resource.data[nmos::fields::nc::stream_status] = stream_status;
-
-                }, property_changed_event);
+                    deactivate_receiver_monitor(resources, oid, get_control_protocol_class_descriptor, gate);
+                }
             }
         };
     }
 
-    get_control_protocol_property_handler make_get_control_protocol_property_handler(const resources& resources, experimental::control_protocol_state& control_protocol_state, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, slog::base_gate& gate)
+    get_control_protocol_property_handler make_get_control_protocol_property_handler(const resources& resources, experimental::control_protocol_state& control_protocol_state, slog::base_gate& gate)
     {
-        return [&](nc_oid oid, const nc_property_id& property_id)
+        auto get_control_protocol_class_descriptor = nmos::make_get_control_protocol_class_descriptor_handler(control_protocol_state);
+
+        return [&resources, get_control_protocol_class_descriptor, &gate](nc_oid oid, const nc_property_id& property_id)
         {
-            return get_control_protocol_property(resources, oid, property_id, control_protocol_state, get_control_protocol_class_descriptor, gate);
+            return get_control_protocol_property(resources, oid, property_id, get_control_protocol_class_descriptor, gate);
         };
     }
 
-    set_control_protocol_property_handler make_set_control_protocol_property_handler(resources& resources, experimental::control_protocol_state& control_protocol_state, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, slog::base_gate& gate)
+    set_control_protocol_property_handler make_set_control_protocol_property_handler(resources& resources, experimental::control_protocol_state& control_protocol_state, slog::base_gate& gate)
     {
-        return [&](nc_oid oid, const nc_property_id& property_id, const web::json::value& value)
+        auto get_control_protocol_class_descriptor = nmos::make_get_control_protocol_class_descriptor_handler(control_protocol_state);
+
+        return [&resources, get_control_protocol_class_descriptor, &gate](nc_oid oid, const nc_property_id& property_id, const web::json::value& value)
         {
-            return set_control_protocol_property(resources, oid, property_id, value, control_protocol_state, get_control_protocol_class_descriptor, gate);
+            return set_control_protocol_property(resources, oid, property_id, value, get_control_protocol_class_descriptor, gate);
         };
     }
 
-    set_receiver_monitor_link_status_handler make_set_receiver_monitor_link_status_handler(resources& resources, experimental::control_protocol_state& control_protocol_state, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, slog::base_gate& gate)
+    set_receiver_monitor_link_status_handler make_set_receiver_monitor_link_status_handler(resources& resources, experimental::control_protocol_state& control_protocol_state, slog::base_gate& gate)
     {
-        return[&](nc_oid oid, nmos::nc_link_status::status link_status, const utility::string_t& link_status_message)
+        auto get_control_protocol_class_descriptor = nmos::make_get_control_protocol_class_descriptor_handler(control_protocol_state);
+
+        return [&resources, get_control_protocol_class_descriptor, &gate](nc_oid oid, nmos::nc_link_status::status link_status, const utility::string_t& link_status_message)
         {
-            return set_receiver_monitor_link_status(resources, oid, link_status, link_status_message, control_protocol_state, get_control_protocol_class_descriptor, gate);
+            return set_receiver_monitor_link_status(resources, oid, link_status, link_status_message, get_control_protocol_class_descriptor, gate);
         };
     }
 
-    //control_protocol_set_receiver_monitor_link_status_handler make_control_protocol_set_receiver_monitor_link_status_handler(resources& resoures, ...)
-    //{
-    //    return [&](const nc_oid oid, nmos::nc_link_status::status link_status, const utility::string_t& link_status_message)
-    //    {
-    //        return false;
-    //    };
-    //}
+    set_receiver_monitor_connection_status_handler make_set_receiver_monitor_connection_status_handler(resources& resources, experimental::control_protocol_state& control_protocol_state, slog::base_gate& gate)
+    {
+        auto get_control_protocol_class_descriptor = nmos::make_get_control_protocol_class_descriptor_handler(control_protocol_state);
+
+        return [&resources, get_control_protocol_class_descriptor, &gate](nc_oid oid, nmos::nc_connection_status::status connection_status, const utility::string_t& connection_status_message)
+        {
+            return set_receiver_monitor_connection_status(resources, oid, connection_status, connection_status_message, get_control_protocol_class_descriptor, gate);
+        };
+    }
+
+    // Set external synchronization status and external synchronization status message
+    set_receiver_monitor_external_synchronization_status_handler make_set_receiver_monitor_external_synchronization_status_handler(resources& resources, experimental::control_protocol_state& control_protocol_state, slog::base_gate& gate)
+    {
+        auto get_control_protocol_class_descriptor = nmos::make_get_control_protocol_class_descriptor_handler(control_protocol_state);
+
+        return [&resources, get_control_protocol_class_descriptor, &gate](nc_oid oid, nmos::nc_synchronization_status::status external_synchronization_status, const utility::string_t& external_synchronization_status_message)
+        {
+            return set_receiver_monitor_external_synchronization_status(resources, oid, external_synchronization_status, external_synchronization_status_message, get_control_protocol_class_descriptor, gate);
+        };
+    }
+
+    // Set stream status and stream status message
+    set_receiver_monitor_stream_status_handler make_set_receiver_monitor_stream_status_handler(resources& resources, experimental::control_protocol_state& control_protocol_state, slog::base_gate& gate)
+    {
+        auto get_control_protocol_class_descriptor = nmos::make_get_control_protocol_class_descriptor_handler(control_protocol_state);
+
+        return [&resources, get_control_protocol_class_descriptor, &gate](nc_oid oid, nmos::nc_stream_status::status stream_status, const utility::string_t& stream_status_message)
+        {
+            return set_receiver_monitor_stream_status(resources, oid, stream_status, stream_status_message, get_control_protocol_class_descriptor, gate);
+        };
+    }
+
+    // Set synchronization source id
+    set_receiver_monitor_synchronization_source_id_handler make_set_receiver_monitor_synchronization_source_id_handler(resources& resources, experimental::control_protocol_state& control_protocol_state, slog::base_gate& gate)
+    {
+        auto get_control_protocol_class_descriptor = nmos::make_get_control_protocol_class_descriptor_handler(control_protocol_state);
+
+        return [&resources, get_control_protocol_class_descriptor, &gate](nc_oid oid, const utility::string_t& source_id)
+        {
+            return set_receiver_monitor_synchronization_source_id(resources, oid, source_id, get_control_protocol_class_descriptor, gate);
+        };
+    }
 }

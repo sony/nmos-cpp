@@ -82,6 +82,7 @@ namespace nmos
             node_implementation& on_get_control_datatype_descriptor(nmos::get_control_protocol_datatype_descriptor_handler get_control_protocol_datatype_descriptor) { this->get_control_protocol_datatype_descriptor = std::move(get_control_protocol_datatype_descriptor); return *this; }
             node_implementation& on_get_control_protocol_method_descriptor(nmos::get_control_protocol_method_descriptor_handler get_control_protocol_method_descriptor) { this->get_control_protocol_method_descriptor = std::move(get_control_protocol_method_descriptor); return *this; }
             node_implementation& on_control_protocol_property_changed(nmos::control_protocol_property_changed_handler control_protocol_property_changed) { this->control_protocol_property_changed = std::move(control_protocol_property_changed); return *this; }
+            node_implementation& on_receiver_monitor_activation(nmos::control_protocol_connection_activation_handler control_protocol_connection_activation) { this->control_protocol_connection_activation = std::move(control_protocol_connection_activation); return *this; }
             node_implementation& on_get_lost_packet_counters(nmos::get_lost_packet_counters_handler get_lost_packet_counters) { this->get_lost_packet_counters = std::move(get_lost_packet_counters); return *this; }
             node_implementation& on_get_late_packet_counters(nmos::get_late_packet_counters_handler get_late_packet_counters) { this->get_late_packet_counters = std::move(get_late_packet_counters); return *this; }
             node_implementation& on_reset_counters(nmos::reset_counters_handler reset_counters) { this->reset_counters = std::move(reset_counters); return *this; }
@@ -127,6 +128,7 @@ namespace nmos
             nmos::get_control_protocol_datatype_descriptor_handler get_control_protocol_datatype_descriptor;
             nmos::get_control_protocol_method_descriptor_handler get_control_protocol_method_descriptor;
             nmos::control_protocol_property_changed_handler control_protocol_property_changed;
+            nmos::control_protocol_connection_activation_handler control_protocol_connection_activation;
             nmos::get_lost_packet_counters_handler get_lost_packet_counters;
             nmos::get_late_packet_counters_handler get_late_packet_counters;
             nmos::reset_counters_handler reset_counters;

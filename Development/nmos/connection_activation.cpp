@@ -9,7 +9,7 @@
 
 namespace nmos
 {
-    void connection_activation_thread(nmos::node_model& model, connection_resource_auto_resolver resolve_auto, connection_sender_transportfile_setter set_transportfile, connection_activation_handler connection_activated, slog::base_gate& gate)
+    void connection_activation_thread(nmos::node_model& model, connection_resource_auto_resolver resolve_auto, connection_sender_transportfile_setter set_transportfile, connection_activation_handler connection_activated, control_protocol_connection_activation_handler control_protocol_connection_activated, slog::base_gate& gate)
     {
         auto lock = model.write_lock(); // in order to update the resources
 
@@ -181,6 +181,11 @@ namespace nmos
                     {
                         // this callback should not throw exceptions, as the active transport parameters will already have been changed and those changes will not be rolled back
                         connection_activated(*matching_resource, resource);
+                    }
+
+                    if (control_protocol_connection_activated)
+                    {
+                        control_protocol_connection_activated(*matching_resource, resource);
                     }
                 }
                 catch (...)

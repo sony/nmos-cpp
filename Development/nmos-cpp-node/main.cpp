@@ -144,7 +144,8 @@ int main(int argc, char* argv[])
             node_implementation
                 .on_get_control_class_descriptor(nmos::make_get_control_protocol_class_descriptor_handler(control_protocol_state))
                 .on_get_control_datatype_descriptor(nmos::make_get_control_protocol_datatype_descriptor_handler(control_protocol_state))
-                .on_get_control_protocol_method_descriptor(nmos::make_get_control_protocol_method_descriptor_handler(control_protocol_state));
+                .on_get_control_protocol_method_descriptor(nmos::make_get_control_protocol_method_descriptor_handler(control_protocol_state))
+                .on_receiver_monitor_activation(nmos::make_receiver_monitor_connection_activation_handler(node_model.control_protocol_resources, control_protocol_state, gate));
         }
 
         // Set up the node server

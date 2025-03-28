@@ -665,7 +665,7 @@ namespace nmos
     }
 
     // NcReceiverMonitor methods
-    web::json::value reset_counters(nmos::resources& resources, const nmos::resource& resource, const web::json::value&, bool, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, control_protocol_property_changed_handler property_changed, slog::base_gate&)
+    web::json::value reset_counters(nmos::resources& resources, const nmos::resource& resource, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, control_protocol_property_changed_handler property_changed, slog::base_gate&)
     {
         // reset all counters
         const std::vector<nc_property_id> transition_counters = {

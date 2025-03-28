@@ -2,6 +2,7 @@
 #define NMOS_CONTROL_PROTOCOL_HANDLERS_H
 
 #include <functional>
+#include "nmos/connection_activation.h"
 #include "nmos/control_protocol_typedefs.h"
 #include "nmos/resources.h"
 
@@ -72,21 +73,34 @@ namespace nmos
 
     // a control_protocol_connection_activation_handler is a notification that the active parameters for the specified (IS-05) sender/connection_sender or receiver/connection_receiver have changed
     // this callback should not throw exceptions
-    typedef std::function<void(const nmos::resource& connection_resource)> control_protocol_connection_activation_handler;
+    //typedef std::function<void(const nmos::resource& resource, const nmos::resource& connection_resource)> control_protocol_connection_activation_handler;
 
     // construct callback for receiver monitor to process connection (de)activation
-    control_protocol_connection_activation_handler make_receiver_monitor_connection_activation_handler(nmos::resources& resources);
+    control_protocol_connection_activation_handler make_receiver_monitor_connection_activation_handler(resources& resources, experimental::control_protocol_state& control_protocol_state, slog::base_gate& gate);
 
     // construct callback to get values from device model
     typedef std::function<web::json::value(nmos::nc_oid oid, const nmos::nc_property_id& property_id)> get_control_protocol_property_handler;
-    get_control_protocol_property_handler make_get_control_protocol_property_handler(const resources& resources, experimental::control_protocol_state& control_protocol_state, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, slog::base_gate& gate);
+    get_control_protocol_property_handler make_get_control_protocol_property_handler(const resources& resources, experimental::control_protocol_state& control_protocol_state, slog::base_gate& gate);
 
     // construct callback to set values on device model
     typedef std::function<bool(nc_oid oid, const nc_property_id& property_id, const web::json::value& value)> set_control_protocol_property_handler;
-    set_control_protocol_property_handler make_set_control_protocol_property_handler(resources& resources, experimental::control_protocol_state& control_protocol_state, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, slog::base_gate& gate);
+    set_control_protocol_property_handler make_set_control_protocol_property_handler(resources& resources, experimental::control_protocol_state& control_protocol_state, slog::base_gate& gate);
 
-    typedef std::function<bool(nc_oid oid, nmos::nc_link_status::status link_status, const utility::string_t& link_status_message)>  set_receiver_monitor_link_status_handler;
-    set_receiver_monitor_link_status_handler make_set_receiver_monitor_link_status_handler(resources& resources, experimental::control_protocol_state& control_protocol_state, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, slog::base_gate& gate);
+    // NcReceiverMonitor handlers
+    typedef std::function<bool(nc_oid oid, nmos::nc_link_status::status link_status, const utility::string_t& link_status_message)> set_receiver_monitor_link_status_handler;
+    set_receiver_monitor_link_status_handler make_set_receiver_monitor_link_status_handler(resources& resources, experimental::control_protocol_state& control_protocol_state, slog::base_gate& gate);
+
+    typedef std::function<bool(nc_oid oid, nmos::nc_connection_status::status connection_status, const utility::string_t& connection_status_message)> set_receiver_monitor_connection_status_handler;
+    set_receiver_monitor_connection_status_handler make_set_receiver_monitor_connection_status_handler(resources& resources, experimental::control_protocol_state& control_protocol_state, slog::base_gate& gate);
+
+    typedef std::function<bool(nc_oid oid, nmos::nc_synchronization_status::status external_synchronization_status, const utility::string_t& external_synchronization_status_message)> set_receiver_monitor_external_synchronization_status_handler;
+    set_receiver_monitor_external_synchronization_status_handler make_set_receiver_monitor_external_synchronization_status_handler(resources& resources, experimental::control_protocol_state& control_protocol_state, slog::base_gate& gate);
+
+    typedef std::function<bool(nc_oid oid, nmos::nc_stream_status::status stream_status, const utility::string_t& stream_status_message)> set_receiver_monitor_stream_status_handler;
+    set_receiver_monitor_stream_status_handler make_set_receiver_monitor_stream_status_handler(resources& resources, experimental::control_protocol_state& control_protocol_state, slog::base_gate& gate);
+
+    typedef std::function<bool(nc_oid oid, const utility::string_t& source_id)> set_receiver_monitor_synchronization_source_id_handler;
+    set_receiver_monitor_synchronization_source_id_handler make_set_receiver_monitor_synchronization_source_id_handler(resources& resources, experimental::control_protocol_state& control_protocol_state, slog::base_gate& gate);
 }
 
 #endif

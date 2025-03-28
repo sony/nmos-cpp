@@ -227,7 +227,7 @@ namespace nmos
                     auto result = nmos::details::make_nc_method_result_error({ nmos::nc_method_status::method_not_implemented }, U("not implemented"));
 
                     // Reset transition counters in Device Model
-                    auto result_ = reset_counters(resources, resource, arguments, is_deprecated, get_control_protocol_class_descriptor, property_changed, gate);
+                    auto result_ = reset_counters(resources, resource, get_control_protocol_class_descriptor, property_changed, gate);
 
                     if (reset_counters_)
                     {
