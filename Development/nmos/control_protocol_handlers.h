@@ -38,11 +38,19 @@ namespace nmos
     // this callback should not throw exceptions, as the relevant property will already has been changed and those changes will not be rolled back
     typedef std::function<void(const nmos::resource& resource, const utility::string_t& property_name, int index)> control_protocol_property_changed_handler;
 
-    // Receiver status callbacks
+    // Receiver Monitor status callbacks
     // these callbacks should not throw exceptions
-    typedef std::function<web::json::value(void)> get_lost_packet_counters_handler;
-    typedef std::function<web::json::value(void)> get_late_packet_counters_handler;
-    typedef std::function<web::json::value(void)> reset_counters_handler;
+    namespace nc
+    {
+        struct counter
+        {
+            utility::string_t name;
+            uint64_t value{0};
+            utility::string_t description;
+        };
+    }
+    typedef std::function<std::vector<nc::counter>(void)> get_packet_counters_handler;
+    typedef std::function<void(void)> reset_counters_handler;
 
     namespace experimental
     {

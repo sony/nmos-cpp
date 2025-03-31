@@ -438,9 +438,9 @@ namespace nmos
     // TODO: link
     web::json::value make_nc_counter_datatype();
     // TODO: link
-    web::json::value make_nc_method_result_counters_datatype();
-    // TODO: link
     web::json::value make_nc_transmission_status_datatype();
+    // TODO: link
+    web::json::value make_nc_method_result_counters_datatype();
 }
 
 #endif

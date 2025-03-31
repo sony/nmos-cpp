@@ -179,72 +179,30 @@ namespace nmos
                     return get_datatype(resources, resource, arguments, is_deprecated, get_control_protocol_datatype_descriptor, gate);
                 };
             }
-            nmos::experimental::control_protocol_method_handler make_nc_get_lost_packet_counters_handler(get_lost_packet_counters_handler get_lost_packet_counters)
+            nmos::experimental::control_protocol_method_handler make_nc_get_lost_packet_counters_handler(get_packet_counters_handler get_lost_packet_counters)
             {
                 return [get_lost_packet_counters](nmos::resources& resources, const nmos::resource& resource, const web::json::value& arguments, bool is_deprecated, slog::base_gate& gate)
                 {
-                    // Delegate to user defined handler
-                    auto result = nmos::details::make_nc_method_result_error({ nmos::nc_method_status::method_not_implemented }, U("not implemented"));
-
-                    if (get_lost_packet_counters)
-                    {
-                        result = get_lost_packet_counters();
-
-                        const auto& status = nmos::fields::nc::status(result);
-                        if (!web::http::is_error_status_code((web::http::status_code)status) && is_deprecated)
-                        {
-                            return nmos::details::make_nc_method_result({ nmos::nc_method_status::method_deprecated }, nmos::fields::nc::value(result));
-                        }
-                    }
-                    return result;
+                    return nmos::get_lost_packet_counters(resources, resource, arguments, is_deprecated, get_lost_packet_counters, gate);
                 };
             }
-            nmos::experimental::control_protocol_method_handler make_nc_get_late_packet_counters_handler(get_late_packet_counters_handler get_late_packet_counters)
+            nmos::experimental::control_protocol_method_handler make_nc_get_late_packet_counters_handler(get_packet_counters_handler get_late_packet_counters)
             {
                 return [get_late_packet_counters](nmos::resources& resources, const nmos::resource& resource, const web::json::value& arguments, bool is_deprecated, slog::base_gate& gate)
                 {
-                    // Delegate to user defined handler
-                    auto result = nmos::details::make_nc_method_result_error({ nmos::nc_method_status::method_not_implemented }, U("not implemented"));
-
-                    if (get_late_packet_counters)
-                    {
-                        result = get_late_packet_counters();
-
-                        const auto& status = nmos::fields::nc::status(result);
-                        if (!web::http::is_error_status_code((web::http::status_code)status) && is_deprecated)
-                        {
-                            return nmos::details::make_nc_method_result({ nmos::nc_method_status::method_deprecated }, nmos::fields::nc::value(result));
-                        }
-                    }
-                    return result;
+                    return nmos::get_late_packet_counters(resources, resource, arguments, is_deprecated, get_late_packet_counters, gate);
                 };
             }
-            nmos::experimental::control_protocol_method_handler make_nc_reset_counters_handler(get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, control_protocol_property_changed_handler property_changed, reset_counters_handler reset_counters_)
+            nmos::experimental::control_protocol_method_handler make_nc_reset_counters_handler(get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, control_protocol_property_changed_handler property_changed, reset_counters_handler reset_counters)
             {
-                return [reset_counters_, get_control_protocol_class_descriptor, property_changed](nmos::resources& resources, const nmos::resource& resource, const web::json::value& arguments, bool is_deprecated, slog::base_gate& gate)
+                return [get_control_protocol_class_descriptor, property_changed, reset_counters](nmos::resources& resources, const nmos::resource& resource, const web::json::value& arguments, bool is_deprecated, slog::base_gate& gate)
                 {
-                    // Delegate to user defined handler
-                    auto result = nmos::details::make_nc_method_result_error({ nmos::nc_method_status::method_not_implemented }, U("not implemented"));
-
-                    // Reset transition counters in Device Model
-                    auto result_ = reset_counters(resources, resource, get_control_protocol_class_descriptor, property_changed, gate);
-
-                    if (reset_counters_)
-                    {
-                        result = reset_counters_();
-
-                        const auto& status = nmos::fields::nc::status(result);
-                        if (!web::http::is_error_status_code((web::http::status_code)status) && is_deprecated)
-                        {
-                            return nmos::details::make_nc_method_result({ nmos::nc_method_status::method_deprecated }, nmos::fields::nc::value(result));
-                        }
-                    }
-                    return result;
+                    return nmos::reset_counters(resources, resource, arguments, is_deprecated, get_control_protocol_class_descriptor, property_changed, reset_counters, gate);
                 };
             }
         }
 
-        control_protocol_state::control_protocol_state(get_lost_packet_counters_handler get_lost_packet_counters, get_late_packet_counters_handler get_late_packet_counters, reset_counters_handler reset_counters, control_protocol_property_changed_handler property_changed)
+        control_protocol_state::control_protocol_state(get_packet_counters_handler get_lost_packet_counters, get_packet_counters_handler get_late_packet_counters, reset_counters_handler reset_counters, control_protocol_property_changed_handler property_changed)
         {
             using web::json::value;
 

@@ -44,8 +44,12 @@ namespace nmos
     web::json::value get_datatype(nmos::resources&, const nmos::resource&, const web::json::value& arguments, bool is_deprecated, get_control_protocol_datatype_descriptor_handler get_control_protocol_datatype, slog::base_gate& gate);
 
     // NcReceiverMonitor methods implementation
+    // Gets the lost packet counters
+    web::json::value get_lost_packet_counters(nmos::resources& resources, const nmos::resource& resource, const web::json::value& arguments, bool is_deprecated, get_packet_counters_handler get_lost_packet_counters, slog::base_gate& gate);
+    // Gets the last packet counters
+    web::json::value get_late_packet_counters(nmos::resources& resources, const nmos::resource& resource, const web::json::value& arguments, bool is_deprecated, get_packet_counters_handler get_last_packet_counters, slog::base_gate& gate);
     // Resets the packet counters
-    web::json::value reset_counters(nmos::resources& resources, const nmos::resource& resource, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, control_protocol_property_changed_handler property_changed, slog::base_gate&);
+    web::json::value reset_counters(nmos::resources& resources, const nmos::resource& resource, const web::json::value&, bool is_deprecated, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, control_protocol_property_changed_handler property_changed, reset_counters_handler reset_counters, slog::base_gate& gate);
 }
 
 #endif

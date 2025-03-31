@@ -188,6 +188,14 @@ namespace impl
     const auto temperature_Celsius = nmos::event_types::measurement(U("temperature"), U("C"));
     const auto temperature_wildcard = nmos::event_types::measurement(U("temperature"), nmos::event_types::wildcard);
     const auto catcall = nmos::event_types::named_enum(nmos::event_types::number, U("caterwaul"));
+
+    // packet counters for the network interface controller
+    struct nic_packet_counter
+    {
+        nmos::nc::counter lost_packet_counter;
+        nmos::nc::counter late_packet_counter;
+    };
+    std::vector<nic_packet_counter> nic_packet_counters;
 }
 
 // forward declarations for node_implementation_thread
@@ -1290,6 +1298,15 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
         // insert control protocol resources to model
         insert_root_after(delay_millis, root_block, gate);
     }
+
+    // create the list of network interface controller packet counters
+    impl::nic_packet_counters = boost::copy_range<std::vector<impl::nic_packet_counter>>(host_interfaces | boost::adaptors::transformed([](const web::hosts::experimental::host_interface& interface)
+    {
+        return impl::nic_packet_counter{
+            {interface.name, 0, U(" total number of lost pocket counter")},
+            {interface.name, 0, U(" total number of late pocket counter")}
+        };
+    }));
 }
 
 void node_implementation_run(nmos::node_model& model, nmos::experimental::control_protocol_state& control_protocol_state, slog::base_gate& gate)
@@ -1385,6 +1402,14 @@ void node_implementation_run(nmos::node_model& model, nmos::experimental::contro
             }
 
             slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Temperature updated: " << temp.scaled_value() << " (" << impl::temperature_Celsius.name << ")";
+
+
+            // increment nic packet counters
+            for (auto& counter : impl::nic_packet_counters)
+            {
+                if (counter.lost_packet_counter.value < std::numeric_limits<uint64_t>::max()) ++counter.lost_packet_counter.value;
+                if (counter.late_packet_counter.value < std::numeric_limits<uint64_t>::max()) ++counter.late_packet_counter.value;
+            }
 
             model.notify();
 
@@ -1723,37 +1748,40 @@ nmos::control_protocol_property_changed_handler make_node_implementation_control
     };
 }
 
-// Example Receiver Status Monitor callback for get_lost_packets method
-nmos::get_lost_packet_counters_handler make_node_implementation_get_lost_packet_counters_handler()
+// Example Control Protocol WebSocket API Receiver Status Monitor callback to get network interface controller lost packet counters
+nmos::get_packet_counters_handler make_node_implementation_get_lost_packet_counters_handler()
 {
     return [&]()
     {
-        // Implement polling of lost packet count here
-        web::json::value lost_packet_counters = web::json::value::array();
-
-        return nmos::details::make_nc_method_result({ nmos::nc_method_status::ok }, lost_packet_counters);
+        return boost::copy_range<std::vector<nmos::nc::counter>>(impl::nic_packet_counters | boost::adaptors::transformed([](const impl::nic_packet_counter& counter)
+        {
+            return nmos::nc::counter{ counter.lost_packet_counter.name, counter.lost_packet_counter.value, counter.lost_packet_counter.description };
+        }));
     };
 }
 
-// Example Receiver Status Monitor callback for get_late_packets method
-nmos::get_late_packet_counters_handler make_node_implementation_get_late_packet_counters_handler()
+// Example Control Protocol WebSocket API Receiver Status Monitor callback to get network interface controller late packet counters
+nmos::get_packet_counters_handler make_node_implementation_get_late_packet_counters_handler()
 {
     return [&]()
     {
-        // Implement polling of late packet count here
-        web::json::value late_packet_counters = web::json::value::array();
-
-        return nmos::details::make_nc_method_result({ nmos::nc_method_status::ok }, late_packet_counters);
+        return boost::copy_range<std::vector<nmos::nc::counter>>(impl::nic_packet_counters | boost::adaptors::transformed([](const impl::nic_packet_counter& counter)
+        {
+            return nmos::nc::counter{ counter.late_packet_counter.name, counter.late_packet_counter.value, counter.late_packet_counter.description };
+        }));
     };
 }
 
-// Example Receiver Status Monitor callback for reset_packet_counters method
+// Example Control Protocol WebSocket API Receiver Status Monitor callback to reset network interface controller packet counters
 nmos::reset_counters_handler make_node_implementation_reset_counters_handler()
 {
     return [&]()
     {
-        // Implement reset of lost and late packet counters
-        return nmos::details::make_nc_method_result({ nmos::nc_method_status::ok });
+        for (auto& counter : impl::nic_packet_counters)
+        {
+            counter.lost_packet_counter.value = 0;
+            counter.late_packet_counter.value = 0;
+        }
     };
 }
 
@@ -1912,7 +1940,7 @@ nmos::experimental::node_implementation make_node_implementation(nmos::node_mode
         .on_validate_channelmapping_output_map(make_node_implementation_map_validator()) // may be omitted if not required
         .on_channelmapping_activated(make_node_implementation_channelmapping_activation_handler(gate))
         .on_control_protocol_property_changed(make_node_implementation_control_protocol_property_changed_handler(gate)) // may be omitted if IS-12 not required
-        .on_get_lost_packet_counters(make_node_implementation_get_lost_packet_counters_handler())
-        .on_get_late_packet_counters(make_node_implementation_get_late_packet_counters_handler())
-        .on_reset_counters(make_node_implementation_reset_counters_handler());
+        .on_get_lost_packet_counters(make_node_implementation_get_lost_packet_counters_handler()) // may be omitted if IS-12/BCP-008-1 not required
+        .on_get_late_packet_counters(make_node_implementation_get_late_packet_counters_handler()) // may be omitted if IS-12/BCP-008-1 not required
+        .on_reset_counters(make_node_implementation_reset_counters_handler()); // may be omitted if IS-12/BCP-008-1 not required
 }

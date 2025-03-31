@@ -27,7 +27,7 @@ namespace nmos
         // underlying implementation into the server instance for the NMOS Node
         struct node_implementation
         {
-            node_implementation(nmos::load_server_certificates_handler load_server_certificates, nmos::load_dh_param_handler load_dh_param, nmos::load_ca_certificates_handler load_ca_certificates, nmos::system_global_handler system_changed, nmos::registration_handler registration_changed, nmos::transport_file_parser parse_transport_file, nmos::details::connection_resource_patch_validator validate_staged, nmos::connection_resource_auto_resolver resolve_auto, nmos::connection_sender_transportfile_setter set_transportfile, nmos::connection_activation_handler connection_activated, nmos::ocsp_response_handler get_ocsp_response, get_authorization_bearer_token_handler get_authorization_bearer_token, validate_authorization_handler validate_authorization, ws_validate_authorization_handler ws_validate_authorization, nmos::load_rsa_private_keys_handler load_rsa_private_keys, load_authorization_clients_handler load_authorization_clients, save_authorization_client_handler save_authorization_client, request_authorization_code_handler request_authorization_code, nmos::get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, nmos::get_control_protocol_datatype_descriptor_handler get_control_protocol_datatype_descriptor, nmos::get_control_protocol_method_descriptor_handler get_control_protocol_method_descriptor, nmos::control_protocol_property_changed_handler control_protocol_property_changed)
+            node_implementation(nmos::load_server_certificates_handler load_server_certificates, nmos::load_dh_param_handler load_dh_param, nmos::load_ca_certificates_handler load_ca_certificates, nmos::system_global_handler system_changed, nmos::registration_handler registration_changed, nmos::transport_file_parser parse_transport_file, nmos::details::connection_resource_patch_validator validate_staged, nmos::connection_resource_auto_resolver resolve_auto, nmos::connection_sender_transportfile_setter set_transportfile, nmos::connection_activation_handler connection_activated, nmos::ocsp_response_handler get_ocsp_response, get_authorization_bearer_token_handler get_authorization_bearer_token, validate_authorization_handler validate_authorization, ws_validate_authorization_handler ws_validate_authorization, nmos::load_rsa_private_keys_handler load_rsa_private_keys, load_authorization_clients_handler load_authorization_clients, save_authorization_client_handler save_authorization_client, request_authorization_code_handler request_authorization_code, nmos::get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, nmos::get_control_protocol_datatype_descriptor_handler get_control_protocol_datatype_descriptor, nmos::get_control_protocol_method_descriptor_handler get_control_protocol_method_descriptor, nmos::control_protocol_property_changed_handler control_protocol_property_changed, nmos::control_protocol_connection_activation_handler control_protocol_connection_activation, nmos::get_packet_counters_handler get_lost_packet_counters, nmos::get_packet_counters_handler get_late_packet_counters, nmos::reset_counters_handler reset_counters)
                 : load_server_certificates(std::move(load_server_certificates))
                 , load_dh_param(std::move(load_dh_param))
                 , load_ca_certificates(std::move(load_ca_certificates))
@@ -50,6 +50,10 @@ namespace nmos
                 , get_control_protocol_datatype_descriptor(std::move(get_control_protocol_datatype_descriptor))
                 , get_control_protocol_method_descriptor(std::move(get_control_protocol_method_descriptor))
                 , control_protocol_property_changed(std::move(control_protocol_property_changed))
+                , control_protocol_connection_activation(std::move(control_protocol_connection_activation))
+                , get_lost_packet_counters(std::move(get_lost_packet_counters))
+                , get_late_packet_counters(std::move(get_late_packet_counters))
+                , reset_counters(std::move(reset_counters))
             {}
 
             // use the default constructor and chaining member functions for fluent initialization
@@ -83,8 +87,8 @@ namespace nmos
             node_implementation& on_get_control_protocol_method_descriptor(nmos::get_control_protocol_method_descriptor_handler get_control_protocol_method_descriptor) { this->get_control_protocol_method_descriptor = std::move(get_control_protocol_method_descriptor); return *this; }
             node_implementation& on_control_protocol_property_changed(nmos::control_protocol_property_changed_handler control_protocol_property_changed) { this->control_protocol_property_changed = std::move(control_protocol_property_changed); return *this; }
             node_implementation& on_receiver_monitor_activation(nmos::control_protocol_connection_activation_handler control_protocol_connection_activation) { this->control_protocol_connection_activation = std::move(control_protocol_connection_activation); return *this; }
-            node_implementation& on_get_lost_packet_counters(nmos::get_lost_packet_counters_handler get_lost_packet_counters) { this->get_lost_packet_counters = std::move(get_lost_packet_counters); return *this; }
-            node_implementation& on_get_late_packet_counters(nmos::get_late_packet_counters_handler get_late_packet_counters) { this->get_late_packet_counters = std::move(get_late_packet_counters); return *this; }
+            node_implementation& on_get_lost_packet_counters(nmos::get_packet_counters_handler get_lost_packet_counters) { this->get_lost_packet_counters = std::move(get_lost_packet_counters); return *this; }
+            node_implementation& on_get_late_packet_counters(nmos::get_packet_counters_handler get_late_packet_counters) { this->get_late_packet_counters = std::move(get_late_packet_counters); return *this; }
             node_implementation& on_reset_counters(nmos::reset_counters_handler reset_counters) { this->reset_counters = std::move(reset_counters); return *this; }
 
             // deprecated, use on_validate_connection_resource_patch
@@ -129,8 +133,8 @@ namespace nmos
             nmos::get_control_protocol_method_descriptor_handler get_control_protocol_method_descriptor;
             nmos::control_protocol_property_changed_handler control_protocol_property_changed;
             nmos::control_protocol_connection_activation_handler control_protocol_connection_activation;
-            nmos::get_lost_packet_counters_handler get_lost_packet_counters;
-            nmos::get_late_packet_counters_handler get_late_packet_counters;
+            nmos::get_packet_counters_handler get_lost_packet_counters;
+            nmos::get_packet_counters_handler get_late_packet_counters;
             nmos::reset_counters_handler reset_counters;
         };
 
