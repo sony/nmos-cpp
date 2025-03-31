@@ -138,6 +138,9 @@ int main(int argc, char* argv[])
                 .on_request_authorization_code(nmos::experimental::make_request_authorization_code_handler(gate)); // may be omitted, only required for OAuth client which is using the Authorization Code Flow to obtain the access token
         }
 
+        // only configure the following callbacks if IS-12/BCP-008-01 is required
+        // Note:
+        // the get_control_class_descriptor, get_control_datatype_descriptor and get_control_protocol_method_descriptor callbacks must be set up before executing the make_node_server
         nmos::experimental::control_protocol_state control_protocol_state(node_implementation.get_lost_packet_counters, node_implementation.get_late_packet_counters, node_implementation.reset_counters, node_implementation.control_protocol_property_changed);
         if (0 <= nmos::fields::control_protocol_ws_port(node_model.settings))
         {

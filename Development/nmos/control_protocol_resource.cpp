@@ -2125,7 +2125,7 @@ namespace nmos
         web::json::push_back(items, details::make_nc_enum_item_descriptor(U("The overall status is unhealthy"), U("Unhealthy"), nc_overall_status::status::unhealthy));
         return details::make_nc_datatype_descriptor_enum(U("Overall status enum data type"), U("NcOverallStatus"), items, value::null());
     }
-    // TOO: link
+    // TODO: link
     web::json::value make_nc_synchronization_status_datatype()
     {
         using web::json::value;
@@ -2137,7 +2137,7 @@ namespace nmos
         web::json::push_back(items, details::make_nc_enum_item_descriptor(U("Not locked to a synchronization source"), U("Unhealthy"), nc_synchronization_status::status::unhealthy));
         return details::make_nc_datatype_descriptor_enum(U("Synchronization status enum data type"), U("NcSynchronizationStatus"), items, value::null());
     }
-    // TOO: link
+    // TODO: link
     web::json::value make_nc_stream_status_datatype()
     {
         using web::json::value;
