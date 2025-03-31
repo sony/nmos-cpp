@@ -2156,9 +2156,9 @@ namespace nmos
 
         auto items = value::array();
         web::json::push_back(items, details::make_nc_enum_item_descriptor(U("Inactive"), U("Inactive"), nc_transmission_status::status::inactive));
-        web::json::push_back(items, details::make_nc_enum_item_descriptor(U("The overall status is healthy"), U("Healthy"), nc_transmission_status::status::healthy));
-        web::json::push_back(items, details::make_nc_enum_item_descriptor(U("The overall status is partially healthy"), U("PartiallyHealthy"), nc_transmission_status::status::partially_healthy));
-        web::json::push_back(items, details::make_nc_enum_item_descriptor(U("The overall status is unhealthy"), U("Unhealthy"), nc_transmission_status::status::unhealthy));
+        web::json::push_back(items, details::make_nc_enum_item_descriptor(U("Active and healthy"), U("Healthy"), nc_transmission_status::status::healthy));
+        web::json::push_back(items, details::make_nc_enum_item_descriptor(U("Active and partially healthy"), U("PartiallyHealthy"), nc_transmission_status::status::partially_healthy));
+        web::json::push_back(items, details::make_nc_enum_item_descriptor(U("Active and unhealthy"), U("Unhealthy"), nc_transmission_status::status::unhealthy));
         return details::make_nc_datatype_descriptor_enum(U("Transmission status enum data type"), U("NcTransmissionStatus"), items, value::null());
     }
     // TOO: link
