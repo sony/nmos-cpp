@@ -174,37 +174,37 @@ namespace nmos
                     if (datatype_constraints.is_null())
                     {
                         auto primitive_validation = [](const nc_name& name, const web::json::value& value)
+                        {
+                            auto is_int16 = [](int32_t value)
                             {
-                                auto is_int16 = [](int32_t value)
-                                    {
-                                        return value >= (std::numeric_limits<int16_t>::min)()
-                                            && value <= (std::numeric_limits<int16_t>::max)();
-                                    };
-                                auto is_uint16 = [](uint32_t value)
-                                    {
-                                        return value >= (std::numeric_limits<uint16_t>::min)()
-                                            && value <= (std::numeric_limits<uint16_t>::max)();
-                                    };
-                                auto is_float32 = [](double value)
-                                    {
-                                        return value >= (std::numeric_limits<float_t>::lowest)()
-                                            && value <= (std::numeric_limits<float_t>::max)();
-                                    };
-
-                                if (U("NcBoolean") == name) { return value.is_boolean(); }
-                                if (U("NcInt16") == name && value.is_number()) { return is_int16(value.as_number().to_int32()); }
-                                if (U("NcInt32") == name && value.is_number()) { return value.as_number().is_int32(); }
-                                if (U("NcInt64") == name && value.is_number()) { return value.as_number().is_int64(); }
-                                if (U("NcUint16") == name && value.is_number()) { return is_uint16(value.as_number().to_uint32()); }
-                                if (U("NcUint32") == name && value.is_number()) { return value.as_number().is_uint32(); }
-                                if (U("NcUint64") == name && value.is_number()) { return value.as_number().is_uint64(); }
-                                if (U("NcFloat32") == name && value.is_number()) { return is_float32(value.as_number().to_double()); }
-                                if (U("NcFloat64") == name && value.is_number()) { return !value.as_number().is_integral(); }
-                                if (U("NcString") == name) { return value.is_string(); }
-
-                                // invalid primitive type
-                                return false;
+                                return value >= (std::numeric_limits<int16_t>::min)()
+                                    && value <= (std::numeric_limits<int16_t>::max)();
                             };
+                            auto is_uint16 = [](uint32_t value)
+                            {
+                                return value >= (std::numeric_limits<uint16_t>::min)()
+                                    && value <= (std::numeric_limits<uint16_t>::max)();
+                            };
+                            auto is_float32 = [](double value)
+                            {
+                                return value >= (std::numeric_limits<float_t>::lowest)()
+                                    && value <= (std::numeric_limits<float_t>::max)();
+                            };
+
+                            if (U("NcBoolean") == name) { return value.is_boolean(); }
+                            if (U("NcInt16") == name && value.is_number()) { return is_int16(value.as_number().to_int32()); }
+                            if (U("NcInt32") == name && value.is_number()) { return value.as_number().is_int32(); }
+                            if (U("NcInt64") == name && value.is_number()) { return value.as_number().is_int64(); }
+                            if (U("NcUint16") == name && value.is_number()) { return is_uint16(value.as_number().to_uint32()); }
+                            if (U("NcUint32") == name && value.is_number()) { return value.as_number().is_uint32(); }
+                            if (U("NcUint64") == name && value.is_number()) { return value.as_number().is_uint64(); }
+                            if (U("NcFloat32") == name && value.is_number()) { return is_float32(value.as_number().to_double()); }
+                            if (U("NcFloat64") == name && value.is_number()) { return !value.as_number().is_integral(); }
+                            if (U("NcString") == name) { return value.is_string(); }
+
+                            // invalid primitive type
+                            return false;
+                        };
 
                         // do primitive type constraints validation
                         const auto& name = nmos::fields::nc::name(params.datatype_descriptor);
@@ -551,13 +551,31 @@ namespace nmos
         web::json::push_back(parent[nmos::fields::nc::members],
             details::make_nc_block_member_descriptor(nmos::fields::description(child), nmos::fields::nc::role(child), nmos::fields::nc::oid(child), nmos::fields::nc::constant_oid(child), details::parse_nc_class_id(nmos::fields::nc::class_id(child)), nmos::fields::nc::user_label(child), nmos::fields::nc::oid(parent)));
 
+        // add to temporary storage until they are moved to the model resources
         nc_block_resource.resources.push_back(resource);
+    }
+
+    // insert a control protocol resource
+    std::pair<resources::iterator, bool> insert_control_protocol_resource(resources& resources, resource&& resource)
+    {
+        // set the creation and update timestamps, before inserting the resource
+        resource.updated = resource.created = nmos::strictly_increasing_update(resources);
+
+        auto result = resources.insert(std::move(resource));
+        // replacement of a deleted or expired resource is also allowed
+        // (currently, with no further checks on api_version, type, etc.)
+        if (!result.second && !result.first->has_data())
+        {
+            // if the insertion was banned, resource has not been moved from
+            result.second = resources.replace(result.first, std::move(resource));
+        }
+        return result;
     }
 
     // modify a control protocol resource, and insert notification event to all subscriptions
     bool modify_control_protocol_resource(resources& resources, const id& id, std::function<void(resource&)> modifier, const web::json::value& notification_event)
     {
-        // note, model write lock should aleady be applied by the outer function, so access to control_protocol_resources is OK...
+        // note, model write lock should already be applied by the outer function, so access to control_protocol_resources is OK...
 
         auto found = resources.find(id);
         if (resources.end() == found || !found->has_data()) return false;
@@ -589,7 +607,6 @@ namespace nmos
         if (result)
         {
             auto& modified = *found;
-
             insert_notification_events(resources, modified.version, modified.downgrade_version, modified.type, pre, modified.data, notification_event);
         }
 
@@ -599,6 +616,20 @@ namespace nmos
         }
 
         return result;
+    }
+
+    // erase a control protocol resource
+    resources::size_type erase_control_protocol_resource(resources& resources, const id& id)
+    {
+        // hmm, may be also erasing all it's member blocks?
+        resources::size_type count = 0;
+        auto found = resources.find(id);
+        if (resources.end() != found && found->has_data())
+        {
+            resources.erase(found);
+            ++count;
+        }
+        return count;
     }
 
     // find the control protocol resource which is assoicated with the given IS-04/IS-05/IS-08 resource id
@@ -613,8 +644,7 @@ namespace nmos
                 auto found_tp = std::find_if(tps.begin(), tps.end(), [resource_id](const web::json::value& touchpoint)
                 {
                     auto& resource = nmos::fields::nc::resource(touchpoint);
-                    return (resource_id == nmos::fields::nc::id(resource).as_string()
-                        && nmos::ncp_nmos_resource_types::receiver.name == nmos::fields::nc::resource_type(resource));
+                    return (resource_id == nmos::fields::nc::id(resource).as_string());
                 });
                 return (tps.end() != found_tp);
             }
@@ -636,6 +666,49 @@ namespace nmos
                 throw control_protocol_exception("missing argument parameter " + utility::us2s(name));
             }
             details::method_parameter_constraints_validation(arguments.at(name), constraints, { nmos::details::get_datatype_descriptor(type_name, get_control_protocol_datatype_descriptor), get_control_protocol_datatype_descriptor });
+        }
+    }
+
+    // insert 'value changed', 'sequence item added', 'sequence item changed' or 'sequence item removed' notification events into all grains whose subscriptions match the specified version, type and "pre" or "post" values
+    // this is used for the IS-12 propertry changed event
+    void insert_notification_events(nmos::resources& resources, const nmos::api_version& version, const nmos::api_version& downgrade_version, const nmos::type& type, const web::json::value& pre, const web::json::value& post, const web::json::value& event)
+    {
+        using web::json::value;
+
+        if (pre == post) return;
+
+        auto& by_type = resources.get<tags::type>();
+        const auto subscriptions = by_type.equal_range(details::has_data(nmos::types::subscription));
+
+        for (auto it = subscriptions.first; subscriptions.second != it; ++it)
+        {
+            // for each subscription
+            const auto& subscription = *it;
+
+            // check whether the resource_path matches the resource type and the query parameters match either the "pre" or "post" resource
+
+            const auto resource_path = nmos::fields::resource_path(subscription.data);
+            const resource_query match(subscription.version, resource_path, nmos::fields::params(subscription.data));
+
+            const bool pre_match = match(version, downgrade_version, type, pre, resources);
+            const bool post_match = match(version, downgrade_version, type, post, resources);
+
+            if (!pre_match && !post_match) continue;
+
+            // add the event to the grain for each websocket connection to this subscription
+
+            for (const auto& id : subscription.sub_resources)
+            {
+                auto grain = find_resource(resources, { id, nmos::types::grain });
+                if (resources.end() == grain) continue; // check websocket connection is still open
+
+                resources.modify(grain, [&resources, &event](nmos::resource& grain)
+                {
+                    auto& events = nmos::fields::message_grain_data(grain.data);
+                    web::json::push_back(events, event);
+                    grain.updated = strictly_increasing_update(resources);
+                });
+            }
         }
     }
 }

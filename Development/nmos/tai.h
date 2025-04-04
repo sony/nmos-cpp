@@ -1,9 +1,10 @@
 #ifndef NMOS_TAI_H
 #define NMOS_TAI_H
 
-#include <chrono>
 #include <cstdint>
 #include <tuple>
+#include "bst/shared_mutex.h" // for bst::nano
+#include "slog/all_in_one.h" // for bst::chrono
 
 namespace nmos
 {
@@ -31,19 +32,19 @@ namespace nmos
     struct tai_clock
     {
         // "It is suggested (although not mandated) that these timestamps are stored with nanosecond resolution."
-        typedef std::nano period;
+        typedef bst::nano period;
 
         // Given this rep, this clock has a future range of only 292 years. Good enough.
         typedef int64_t rep;
 
-        typedef std::chrono::duration<rep, period> duration;
-        typedef std::chrono::time_point<tai_clock, duration> time_point;
+        typedef bst::chrono::duration<rep, period> duration;
+        typedef bst::chrono::time_point<tai_clock, duration> time_point;
 
         // "It is important that there are no duplicate creation or update timestamps stored against resources."
         // See https://specs.amwa.tv/is-04/releases/v1.2.0/docs/2.5._APIs_-_Query_Parameters.html#pagination
         // Unfortunately, this clock is based on the system_clock, so may not produce monotonically increasing
         // time points; nmos::strictly_increasing_update is used to prevent duplicate values in nmos::resources
-        static const bool is_steady = std::chrono::system_clock::is_steady;
+        static const bool is_steady = bst::chrono::system_clock::is_steady;
 
         static time_point now()
         {
@@ -70,16 +71,16 @@ namespace nmos
             // and https://cr.yp.to/proto/utctai.html
             // and https://www.iers.org/SharedDocs/News/EN/BulletinC.html
             // and https://www.ietf.org/timezones/data/leap-seconds.list
-            static const duration tai_offset = std::chrono::seconds(37);
+            static const duration tai_offset = bst::chrono::seconds(37);
 
-            return time_point(tai_offset + std::chrono::system_clock::now().time_since_epoch());
+            return time_point(tai_offset + bst::chrono::system_clock::now().time_since_epoch());
         }
     };
 
     inline tai tai_from_duration(const tai_clock::duration& d)
     {
-        const auto sec = std::chrono::duration_cast<std::chrono::seconds>(d);
-        const auto nan = std::chrono::duration_cast<std::chrono::nanoseconds>(d) - sec;
+        const auto sec = bst::chrono::duration_cast<bst::chrono::seconds>(d);
+        const auto nan = bst::chrono::duration_cast<bst::chrono::nanoseconds>(d) - sec;
 
         return{ sec.count(), nan.count() };
     }
@@ -91,9 +92,9 @@ namespace nmos
 
     inline tai_clock::duration duration_from_tai(const tai& tai)
     {
-        const auto sec = std::chrono::seconds(tai.seconds);
-        const auto nan = std::chrono::nanoseconds(tai.nanoseconds);
-        return std::chrono::duration_cast<tai_clock::duration>(sec + nan);
+        const auto sec = bst::chrono::seconds(tai.seconds);
+        const auto nan = bst::chrono::nanoseconds(tai.nanoseconds);
+        return bst::chrono::duration_cast<tai_clock::duration>(sec + nan);
     }
 
     inline tai_clock::time_point time_point_from_tai(const tai& tai)
