@@ -351,9 +351,9 @@ namespace nmos
             // Cancel any pending status updates
             set_control_protocol_property(resources, oid, status_pending_received_time_field_name, web::json::value::number(0), gate);
 
-            if (status < current_connection_status.as_integer())
+            if (status > 1 && status > current_connection_status.as_integer())
             {
-                // If getting less healthy increment transition counter
+                // if status is "partially unhealthy" (3) or "unhealthy" (4) and less healthy than current state
                 auto transition_counter = get_control_protocol_property(resources, oid, status_transition_counter_property_id, get_control_protocol_class_descriptor, gate).as_integer();
                 set_control_protocol_property(resources, oid, status_transition_counter_property_id, ++transition_counter, get_control_protocol_class_descriptor, gate);
             }
