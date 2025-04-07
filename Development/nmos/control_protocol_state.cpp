@@ -203,6 +203,7 @@ namespace nmos
         }
 
         control_protocol_state::control_protocol_state(get_packet_counters_handler get_lost_packet_counters, get_packet_counters_handler get_late_packet_counters, reset_counters_handler reset_counters, control_protocol_property_changed_handler property_changed)
+        : receiver_monitor_status_pending(false)
         {
             using web::json::value;
 

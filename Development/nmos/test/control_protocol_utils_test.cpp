@@ -94,10 +94,10 @@ BST_TEST_CASE(testSetReceiverMonitorStatuses)
         auto stream_status = nmos::nc_stream_status::status::inactive;
         auto stream_status_message = U("Stream status healthy");
 
-        BST_REQUIRE(set_receiver_monitor_link_status(resources, monitor_oid, link_status, link_status_message, get_control_protocol_class_descriptor, gate));
-        BST_REQUIRE(set_receiver_monitor_connection_status(resources, monitor_oid, connection_status, connection_status_message, get_control_protocol_class_descriptor, gate));
-        BST_REQUIRE(set_receiver_monitor_external_synchronization_status(resources, monitor_oid, external_synchronization_status, external_synchronization_status_message, get_control_protocol_class_descriptor, gate));
-        BST_REQUIRE(set_receiver_monitor_stream_status(resources, monitor_oid, stream_status, stream_status_message, get_control_protocol_class_descriptor, gate));
+        BST_REQUIRE(set_receiver_monitor_link_status(resources, monitor_oid, link_status, link_status_message, control_protocol_state, get_control_protocol_class_descriptor, gate));
+        BST_REQUIRE(set_receiver_monitor_connection_status(resources, monitor_oid, connection_status, connection_status_message, control_protocol_state, get_control_protocol_class_descriptor, gate));
+        BST_REQUIRE(set_receiver_monitor_external_synchronization_status(resources, monitor_oid, external_synchronization_status, external_synchronization_status_message, control_protocol_state, get_control_protocol_class_descriptor, gate));
+        BST_REQUIRE(set_receiver_monitor_stream_status(resources, monitor_oid, stream_status, stream_status_message, control_protocol_state, get_control_protocol_class_descriptor, gate));
 
         auto actual_link_status = get_control_protocol_property(resources, monitor_oid, nmos::nc_receiver_monitor_link_status_property_id, get_control_protocol_class_descriptor, gate);
         BST_CHECK_EQUAL(link_status, actual_link_status.as_integer());
@@ -129,10 +129,10 @@ BST_TEST_CASE(testSetReceiverMonitorStatuses)
         auto stream_status = nmos::nc_stream_status::status::healthy;
         auto stream_status_message = U("Stream status healthy");
 
-        BST_REQUIRE(set_receiver_monitor_link_status(resources, monitor_oid, link_status, link_status_message, get_control_protocol_class_descriptor, gate));
-        BST_REQUIRE(set_receiver_monitor_connection_status(resources, monitor_oid, connection_status, connection_status_message, get_control_protocol_class_descriptor, gate));
-        BST_REQUIRE(set_receiver_monitor_external_synchronization_status(resources, monitor_oid, external_synchronization_status, external_synchronization_status_message, get_control_protocol_class_descriptor, gate));
-        BST_REQUIRE(set_receiver_monitor_stream_status(resources, monitor_oid, stream_status, stream_status_message, get_control_protocol_class_descriptor, gate));
+        BST_REQUIRE(set_receiver_monitor_link_status(resources, monitor_oid, link_status, link_status_message, control_protocol_state, get_control_protocol_class_descriptor, gate));
+        BST_REQUIRE(set_receiver_monitor_connection_status(resources, monitor_oid, connection_status, connection_status_message, control_protocol_state, get_control_protocol_class_descriptor, gate));
+        BST_REQUIRE(set_receiver_monitor_external_synchronization_status(resources, monitor_oid, external_synchronization_status, external_synchronization_status_message, control_protocol_state, get_control_protocol_class_descriptor, gate));
+        BST_REQUIRE(set_receiver_monitor_stream_status(resources, monitor_oid, stream_status, stream_status_message, control_protocol_state, get_control_protocol_class_descriptor, gate));
 
         auto actual_link_status = get_control_protocol_property(resources, monitor_oid, nmos::nc_receiver_monitor_link_status_property_id, get_control_protocol_class_descriptor, gate);
         BST_CHECK_EQUAL(link_status, actual_link_status.as_integer());
@@ -164,10 +164,10 @@ BST_TEST_CASE(testSetReceiverMonitorStatuses)
         auto stream_status = nmos::nc_stream_status::status::partially_healthy;
         auto stream_status_message = U("Stream status healthy");
 
-        BST_REQUIRE(set_receiver_monitor_link_status(resources, monitor_oid, link_status, link_status_message, get_control_protocol_class_descriptor, gate));
-        BST_REQUIRE(set_receiver_monitor_connection_status(resources, monitor_oid, connection_status, connection_status_message, get_control_protocol_class_descriptor, gate));
-        BST_REQUIRE(set_receiver_monitor_external_synchronization_status(resources, monitor_oid, external_synchronization_status, external_synchronization_status_message, get_control_protocol_class_descriptor, gate));
-        BST_REQUIRE(set_receiver_monitor_stream_status(resources, monitor_oid, stream_status, stream_status_message, get_control_protocol_class_descriptor, gate));
+        BST_REQUIRE(set_receiver_monitor_link_status(resources, monitor_oid, link_status, link_status_message, control_protocol_state, get_control_protocol_class_descriptor, gate));
+        BST_REQUIRE(set_receiver_monitor_connection_status(resources, monitor_oid, connection_status, connection_status_message, control_protocol_state, get_control_protocol_class_descriptor, gate));
+        BST_REQUIRE(set_receiver_monitor_external_synchronization_status(resources, monitor_oid, external_synchronization_status, external_synchronization_status_message, control_protocol_state, get_control_protocol_class_descriptor, gate));
+        BST_REQUIRE(set_receiver_monitor_stream_status(resources, monitor_oid, stream_status, stream_status_message, control_protocol_state, get_control_protocol_class_descriptor, gate));
 
         auto actual_link_status = get_control_protocol_property(resources, monitor_oid, nmos::nc_receiver_monitor_link_status_property_id, get_control_protocol_class_descriptor, gate);
         BST_CHECK_EQUAL(link_status, actual_link_status.as_integer());
@@ -199,10 +199,10 @@ BST_TEST_CASE(testSetReceiverMonitorStatuses)
         auto stream_status = nmos::nc_stream_status::status::partially_healthy;
         auto stream_status_message = U("Stream status healthy");
 
-        BST_REQUIRE(set_receiver_monitor_link_status(resources, monitor_oid, link_status, link_status_message, get_control_protocol_class_descriptor, gate));
-        BST_REQUIRE(set_receiver_monitor_connection_status(resources, monitor_oid, connection_status, connection_status_message, get_control_protocol_class_descriptor, gate));
-        BST_REQUIRE(set_receiver_monitor_external_synchronization_status(resources, monitor_oid, external_synchronization_status, external_synchronization_status_message, get_control_protocol_class_descriptor, gate));
-        BST_REQUIRE(set_receiver_monitor_stream_status(resources, monitor_oid, stream_status, stream_status_message, get_control_protocol_class_descriptor, gate));
+        BST_REQUIRE(set_receiver_monitor_link_status(resources, monitor_oid, link_status, link_status_message, control_protocol_state, get_control_protocol_class_descriptor, gate));
+        BST_REQUIRE(set_receiver_monitor_connection_status(resources, monitor_oid, connection_status, connection_status_message, control_protocol_state, get_control_protocol_class_descriptor, gate));
+        BST_REQUIRE(set_receiver_monitor_external_synchronization_status(resources, monitor_oid, external_synchronization_status, external_synchronization_status_message, control_protocol_state, get_control_protocol_class_descriptor, gate));
+        BST_REQUIRE(set_receiver_monitor_stream_status(resources, monitor_oid, stream_status, stream_status_message, control_protocol_state, get_control_protocol_class_descriptor, gate));
 
         auto actual_link_status = get_control_protocol_property(resources, monitor_oid, nmos::nc_receiver_monitor_link_status_property_id, get_control_protocol_class_descriptor, gate);
         BST_CHECK_EQUAL(link_status, actual_link_status.as_integer());
@@ -322,7 +322,7 @@ BST_TEST_CASE(testActivateDeactivateReceiverMonitor)
         nmos::set_control_protocol_property(resources, monitor_oid, nmos::nc_receiver_monitor_stream_status_transition_counter_property_id, web::json::value::number(transition_count), get_control_protocol_class_descriptor, gate);
 
         // Do activatation
-        nmos::activate_receiver_monitor(resources, monitor_oid, get_control_protocol_class_descriptor, get_control_protocol_method_descriptor, gate);
+        nmos::activate_receiver_monitor(resources, monitor_oid, control_protocol_state, get_control_protocol_class_descriptor, get_control_protocol_method_descriptor, gate);
 
         // Check statuses
         auto actual_stream_status = nmos::get_control_protocol_property(resources, monitor_oid, nmos::nc_receiver_monitor_stream_status_property_id, get_control_protocol_class_descriptor, gate);
@@ -347,7 +347,7 @@ BST_TEST_CASE(testActivateDeactivateReceiverMonitor)
     }
     {
         // Do deactivation
-        nmos::deactivate_receiver_monitor(resources, monitor_oid, get_control_protocol_class_descriptor, gate);
+        nmos::deactivate_receiver_monitor(resources, monitor_oid, control_protocol_state, get_control_protocol_class_descriptor, gate);
 
         // Check statuses
         auto actual_stream_status = nmos::get_control_protocol_property(resources, monitor_oid, nmos::nc_receiver_monitor_stream_status_property_id, get_control_protocol_class_descriptor, gate);
@@ -363,7 +363,7 @@ BST_TEST_CASE(testActivateDeactivateReceiverMonitor)
         // disable autoResetCounter
         nmos::set_control_protocol_property(resources, monitor_oid, nmos::nc_receiver_monitor_auto_reset_counters_property_id, web::json::value::boolean(false), get_control_protocol_class_descriptor, gate);
 
-        uint32_t transition_count = 10;
+        int32_t transition_count = 10;
         // set transition counters
         nmos::set_control_protocol_property(resources, monitor_oid, nmos::nc_receiver_monitor_link_status_transition_counter_property_id, web::json::value::number(transition_count), get_control_protocol_class_descriptor, gate);
         nmos::set_control_protocol_property(resources, monitor_oid, nmos::nc_receiver_monitor_connection_status_transition_counter_property_id, web::json::value::number(transition_count), get_control_protocol_class_descriptor, gate);
@@ -371,7 +371,7 @@ BST_TEST_CASE(testActivateDeactivateReceiverMonitor)
         nmos::set_control_protocol_property(resources, monitor_oid, nmos::nc_receiver_monitor_stream_status_transition_counter_property_id, web::json::value::number(transition_count), get_control_protocol_class_descriptor, gate);
 
         // Do activatation
-        nmos::activate_receiver_monitor(resources, monitor_oid, get_control_protocol_class_descriptor, get_control_protocol_method_descriptor, gate);
+        nmos::activate_receiver_monitor(resources, monitor_oid, control_protocol_state, get_control_protocol_class_descriptor, get_control_protocol_method_descriptor, gate);
 
         // Check statuses
         auto actual_stream_status = nmos::get_control_protocol_property(resources, monitor_oid, nmos::nc_receiver_monitor_stream_status_property_id, get_control_protocol_class_descriptor, gate);
@@ -396,7 +396,7 @@ BST_TEST_CASE(testActivateDeactivateReceiverMonitor)
     }
     {
         // Do deactivation
-        nmos::deactivate_receiver_monitor(resources, monitor_oid, get_control_protocol_class_descriptor, gate);
+        nmos::deactivate_receiver_monitor(resources, monitor_oid, control_protocol_state, get_control_protocol_class_descriptor, gate);
 
         // Check statuses
         auto actual_stream_status = nmos::get_control_protocol_property(resources, monitor_oid, nmos::nc_receiver_monitor_stream_status_property_id, get_control_protocol_class_descriptor, gate);

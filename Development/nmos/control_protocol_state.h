@@ -52,6 +52,8 @@ namespace nmos
             // mutex to be used to protect the members from simultaneous access by multiple threads
             mutable nmos::mutex mutex;
 
+            bool receiver_monitor_status_pending;
+
             experimental::control_class_descriptors control_class_descriptors;
             experimental::datatype_descriptors datatype_descriptors;
 

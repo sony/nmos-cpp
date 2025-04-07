@@ -75,7 +75,7 @@ namespace nmos
         auto get_control_protocol_class_descriptor = nmos::make_get_control_protocol_class_descriptor_handler(control_protocol_state);
         auto get_control_protocol_method_descriptor = nmos::make_get_control_protocol_method_descriptor_handler(control_protocol_state);
 
-        return [&resources, get_control_protocol_class_descriptor, get_control_protocol_method_descriptor, &gate](const nmos::resource& resource, const nmos::resource& connection_resource)
+        return [&resources, &control_protocol_state, get_control_protocol_class_descriptor, get_control_protocol_method_descriptor, &gate](const nmos::resource& resource, const nmos::resource& connection_resource)
         {
             if (nmos::types::receiver != resource.type) return;
 
@@ -90,15 +90,15 @@ namespace nmos
                 if (active)
                 {
                     // Activate receiver monitor handler
-                    activate_receiver_monitor(resources, oid, get_control_protocol_class_descriptor, get_control_protocol_method_descriptor, gate);
+                    activate_receiver_monitor(resources, oid, control_protocol_state, get_control_protocol_class_descriptor, get_control_protocol_method_descriptor, gate);
 
-                    // For demonstration purposes, stream and connection are *actually* active, so reflect this in the streamand connection statuses
-                    set_receiver_monitor_stream_status(resources, oid, nmos::nc_stream_status::unhealthy, U("No stream detected"), get_control_protocol_class_descriptor, gate);
-                    set_receiver_monitor_connection_status(resources, oid, nmos::nc_connection_status::unhealthy, U("No connection detected"), get_control_protocol_class_descriptor, gate);
+                    // For demonstration purposes, stream and connection are *actually* not active, so reflect this in the stream and connection statuses
+                    set_receiver_monitor_stream_status_with_delay(resources, oid, nmos::nc_stream_status::unhealthy, U("No stream detected"), control_protocol_state, get_control_protocol_class_descriptor, gate);
+                    set_receiver_monitor_connection_status_with_delay(resources, oid, nmos::nc_connection_status::unhealthy, U("No connection detected"), control_protocol_state, get_control_protocol_class_descriptor, gate);
                 }
                 else
                 {
-                    deactivate_receiver_monitor(resources, oid, get_control_protocol_class_descriptor, gate);
+                    deactivate_receiver_monitor(resources, oid, control_protocol_state, get_control_protocol_class_descriptor, gate);
                 }
             }
         };
@@ -128,9 +128,9 @@ namespace nmos
     {
         auto get_control_protocol_class_descriptor = nmos::make_get_control_protocol_class_descriptor_handler(control_protocol_state);
 
-        return [&resources, get_control_protocol_class_descriptor, &gate](nc_oid oid, nmos::nc_link_status::status link_status, const utility::string_t& link_status_message)
+        return [&resources, &control_protocol_state, get_control_protocol_class_descriptor, &gate](nc_oid oid, nmos::nc_link_status::status link_status, const utility::string_t& link_status_message)
         {
-            return set_receiver_monitor_link_status(resources, oid, link_status, link_status_message, get_control_protocol_class_descriptor, gate);
+            return set_receiver_monitor_link_status_with_delay(resources, oid, link_status, link_status_message, control_protocol_state, get_control_protocol_class_descriptor, gate);
         };
     }
 
@@ -138,9 +138,9 @@ namespace nmos
     {
         auto get_control_protocol_class_descriptor = nmos::make_get_control_protocol_class_descriptor_handler(control_protocol_state);
 
-        return [&resources, get_control_protocol_class_descriptor, &gate](nc_oid oid, nmos::nc_connection_status::status connection_status, const utility::string_t& connection_status_message)
+        return [&resources, &control_protocol_state, get_control_protocol_class_descriptor, &gate](nc_oid oid, nmos::nc_connection_status::status connection_status, const utility::string_t& connection_status_message)
         {
-            return set_receiver_monitor_connection_status(resources, oid, connection_status, connection_status_message, get_control_protocol_class_descriptor, gate);
+            return set_receiver_monitor_connection_status_with_delay(resources, oid, connection_status, connection_status_message, control_protocol_state, get_control_protocol_class_descriptor, gate);
         };
     }
 
@@ -149,9 +149,9 @@ namespace nmos
     {
         auto get_control_protocol_class_descriptor = nmos::make_get_control_protocol_class_descriptor_handler(control_protocol_state);
 
-        return [&resources, get_control_protocol_class_descriptor, &gate](nc_oid oid, nmos::nc_synchronization_status::status external_synchronization_status, const utility::string_t& external_synchronization_status_message)
+        return [&resources, &control_protocol_state, get_control_protocol_class_descriptor, &gate](nc_oid oid, nmos::nc_synchronization_status::status external_synchronization_status, const utility::string_t& external_synchronization_status_message)
         {
-            return set_receiver_monitor_external_synchronization_status(resources, oid, external_synchronization_status, external_synchronization_status_message, get_control_protocol_class_descriptor, gate);
+            return set_receiver_monitor_external_synchronization_status_with_delay(resources, oid, external_synchronization_status, external_synchronization_status_message, control_protocol_state, get_control_protocol_class_descriptor, gate);
         };
     }
 
@@ -160,9 +160,9 @@ namespace nmos
     {
         auto get_control_protocol_class_descriptor = nmos::make_get_control_protocol_class_descriptor_handler(control_protocol_state);
 
-        return [&resources, get_control_protocol_class_descriptor, &gate](nc_oid oid, nmos::nc_stream_status::status stream_status, const utility::string_t& stream_status_message)
+        return [&resources, &control_protocol_state, get_control_protocol_class_descriptor, &gate](nc_oid oid, nmos::nc_stream_status::status stream_status, const utility::string_t& stream_status_message)
         {
-            return set_receiver_monitor_stream_status(resources, oid, stream_status, stream_status_message, get_control_protocol_class_descriptor, gate);
+            return set_receiver_monitor_stream_status_with_delay(resources, oid, stream_status, stream_status_message, control_protocol_state, get_control_protocol_class_descriptor, gate);
         };
     }
 

@@ -773,6 +773,21 @@ namespace nmos
             data[nmos::fields::nc::stream_status_transition_counter] = value::number(0);
             data[nmos::fields::nc::auto_reset_counters] = value::boolean(auto_reset_counters);
 
+            // Pending status updates
+            data[nmos::fields::nc::receiver_monitor_activation_time] = value::number(0);
+            data[nmos::fields::nc::link_status_pending] = value::number(link_status);
+            data[nmos::fields::nc::link_status_message_pending] = value::string(link_status_message);
+            data[nmos::fields::nc::link_status_pending_received_time] = value::number(0);
+            data[nmos::fields::nc::connection_status_pending] = value::number(connection_status);
+            data[nmos::fields::nc::connection_status_message_pending] = value::string(connection_status_message);
+            data[nmos::fields::nc::connection_status_pending_received_time] = value::number(0);
+            data[nmos::fields::nc::external_synchronization_status_pending] = value::number(external_synchronization_status);
+            data[nmos::fields::nc::external_synchronization_status_message_pending] = value::string(external_synchronization_status_message);
+            data[nmos::fields::nc::external_synchronization_status_pending_received_time] = value::number(0);
+            data[nmos::fields::nc::stream_status_pending] = value::number(stream_status);
+            data[nmos::fields::nc::stream_status_message_pending] = value::string(stream_status_message);
+            data[nmos::fields::nc::stream_status_pending_received_time] = value::number(0);
+
             return data;
         }
 

@@ -727,7 +727,7 @@ namespace nmos
                 // update property
                 modify_control_protocol_resource(resources, resource.id, [&](nmos::resource& resource)
                 {
-                    resource.data[nmos::fields::nc::name(property)] = 0;
+                    resource.data[nmos::fields::nc::name(property)] = web::json::value::number(0);
 
                     // do notification that the specified property has changed
                     if (property_changed)
@@ -735,7 +735,7 @@ namespace nmos
                         property_changed(resource, nmos::fields::nc::name(property), -1);
                     }
 
-                }, make_property_changed_event(nmos::fields::nc::oid(resource.data), { { property_id, nc_property_change_type::type::value_changed, 0 } }));
+                }, make_property_changed_event(nmos::fields::nc::oid(resource.data), { { property_id, nc_property_change_type::type::value_changed, web::json::value::number(0) } }));
             }
         }
 

@@ -7,6 +7,7 @@
 #include "nmos/authorization_redirect_api.h"
 #include "nmos/authorization_state.h"
 #include "nmos/control_protocol_state.h"
+#include "nmos/control_protocol_behaviour.h"
 #include "nmos/jwks_uri_api.h"
 #include "nmos/log_gate.h"
 #include "nmos/model.h"
@@ -159,6 +160,11 @@ int main(int argc, char* argv[])
 
         node_server.thread_functions.push_back([&] { node_implementation_thread(node_model, control_protocol_state, gate); });
 
+        // only configure receiver monitor behaviour thread if supporting control protocol
+        if (0 <= nmos::fields::control_protocol_ws_port(node_model.settings))
+        {
+            node_server.thread_functions.push_back([&] { control_protocol_behaviour_thread(node_model, control_protocol_state, gate); });
+        }
 // only implement communication with OCSP server if http_listener supports OCSP stapling
 // cf. preprocessor conditions in nmos::make_http_listener_config
 #if !defined(_WIN32) || defined(CPPREST_FORCE_HTTP_LISTENER_ASIO)
