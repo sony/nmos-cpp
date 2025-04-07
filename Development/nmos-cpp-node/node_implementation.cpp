@@ -1404,11 +1404,11 @@ void node_implementation_run(nmos::node_model& model, nmos::experimental::contro
             slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Temperature updated: " << temp.scaled_value() << " (" << impl::temperature_Celsius.name << ")";
 
             // increment nic packet counters
-            //for (auto& counter : impl::nic_packet_counters)
-            //{
-            //    if (counter.lost_packet_counter.value < std::numeric_limits<uint64_t>::max()) ++counter.lost_packet_counter.value;
-            //    if (counter.late_packet_counter.value < std::numeric_limits<uint64_t>::max()) ++counter.late_packet_counter.value;
-            //}
+            for (auto& counter : impl::nic_packet_counters)
+            {
+                if (counter.lost_packet_counter.value < std::numeric_limits<uint64_t>::max()) ++counter.lost_packet_counter.value;
+                if (counter.late_packet_counter.value < std::numeric_limits<uint64_t>::max()) ++counter.late_packet_counter.value;
+            }
 
             model.notify();
 
