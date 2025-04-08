@@ -5,6 +5,7 @@
 #include "bst/regex.h"
 #include "cpprest/basic_utils.h"
 #include "cpprest/json_visit.h"
+#include "nmos/sdp_utils.h"
 #include "sdp/json.h"
 
 namespace sdp
@@ -75,8 +76,16 @@ namespace sdp
         }
         inline web::json::value digits2jns(const std::string& s)
         {
-            if (!std::all_of(s.begin(), s.end(), ::isdigit)) throw sdp_parse_error("expected a sequence of digits");
-            return s2js(s);
+            utility::string_t numeric_string;
+            try
+            {
+                numeric_string = nmos::valid_numeric_string(utility::s2us(s));
+            }
+            catch (...)
+            {
+                throw sdp_parse_error("expected a sequence of digits");
+            }
+            return s2js(utility::us2s(numeric_string));
         }
 
         // find the first delimiter in str, beginning at pos, and return the substring from pos to the delimiter (or end)
@@ -107,7 +116,7 @@ namespace sdp
 
         const converter digits_converter{ jn2s, digits2jn };
 
-        const converter long_digits_converter{ jns2s, digits2jns };
+        const converter big_digits_converter{ jns2s, digits2jns };
 
         // <key>[<separator><value>]
         converter key_value_converter(char separator, const std::pair<utility::string_t, converter>& key_converter, const std::pair<utility::string_t, converter>& value_converter)
@@ -303,8 +312,8 @@ namespace sdp
             'o',
             object_converter({
                 { sdp::fields::user_name, string_converter },
-                { sdp::fields::session_id, long_digits_converter },
-                { sdp::fields::session_version, long_digits_converter },
+                { sdp::fields::session_id, big_digits_converter },
+                { sdp::fields::session_version, big_digits_converter },
                 { sdp::fields::network_type, string_converter },
                 { sdp::fields::address_type, string_converter },
                 { sdp::fields::unicast_address, string_converter }
