@@ -1628,7 +1628,7 @@ namespace nmos
     // Validate the numeric string
     const utility::string_t& valid_numeric_string(const utility::string_t& s)
     {
-        if (!std::all_of(s.begin(), s.end(), ::isdigit))
+        if (!std::all_of(s.begin(), s.end(), [](utility::char_t c) { return std::isdigit(c); }))
         {
             throw std::invalid_argument("not a numeric string");
         }
