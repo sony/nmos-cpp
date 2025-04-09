@@ -188,11 +188,19 @@ namespace impl
     const auto temperature_Celsius = nmos::event_types::measurement(U("temperature"), U("C"));
     const auto temperature_wildcard = nmos::event_types::measurement(U("temperature"), nmos::event_types::wildcard);
     const auto catcall = nmos::event_types::named_enum(nmos::event_types::number, U("caterwaul"));
+
+    // packet counters for the network interface controller
+    struct nic_packet_counter
+    {
+        nmos::nc::counter lost_packet_counter;
+        nmos::nc::counter late_packet_counter;
+    };
+    std::vector<nic_packet_counter> nic_packet_counters;
 }
 
 // forward declarations for node_implementation_thread
 void node_implementation_init(nmos::node_model& model, nmos::experimental::control_protocol_state& control_protocol_state, slog::base_gate& gate);
-void node_implementation_run(nmos::node_model& model, slog::base_gate& gate);
+void node_implementation_run(nmos::node_model& model, nmos::experimental::control_protocol_state& control_protocol_state, slog::base_gate& gate);
 nmos::connection_resource_auto_resolver make_node_implementation_auto_resolver(const nmos::settings& settings);
 nmos::connection_sender_transportfile_setter make_node_implementation_transportfile_setter(const nmos::resources& node_resources, const nmos::settings& settings);
 
@@ -208,7 +216,7 @@ void node_implementation_thread(nmos::node_model& model, nmos::experimental::con
     try
     {
         node_implementation_init(model, control_protocol_state, gate);
-        node_implementation_run(model, gate);
+        node_implementation_run(model, control_protocol_state, gate);
     }
     catch (const node_implementation_init_exception&)
     {
@@ -1290,9 +1298,18 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
         // insert control protocol resources to model
         insert_root_after(delay_millis, root_block, gate);
     }
+
+    // create the list of network interface controller packet counters
+    impl::nic_packet_counters = boost::copy_range<std::vector<impl::nic_packet_counter>>(host_interfaces | boost::adaptors::transformed([](const web::hosts::experimental::host_interface& interface)
+    {
+        return impl::nic_packet_counter{
+            {interface.name, 5, U(" total number of lost pocket counter")},
+            {interface.name, 6, U(" total number of late pocket counter")}
+        };
+    }));
 }
 
-void node_implementation_run(nmos::node_model& model, slog::base_gate& gate)
+void node_implementation_run(nmos::node_model& model, nmos::experimental::control_protocol_state& control_protocol_state, slog::base_gate& gate)
 {
     auto lock = model.read_lock();
 
@@ -1300,6 +1317,10 @@ void node_implementation_run(nmos::node_model& model, slog::base_gate& gate)
     const auto how_many = impl::fields::how_many(model.settings);
     const auto sender_ports = impl::parse_ports(impl::fields::senders(model.settings));
     const auto ws_sender_ports = boost::copy_range<std::vector<impl::port>>(sender_ports | boost::adaptors::filtered(impl::is_ws_port));
+
+    const auto set_receiver_monitor_stream_status = nmos::make_set_receiver_monitor_stream_status_handler(model.control_protocol_resources, control_protocol_state, gate);
+    const auto set_receiver_monitor_connection_status = nmos::make_set_receiver_monitor_connection_status_handler(model.control_protocol_resources, control_protocol_state, gate);
+    const auto get_control_protocol_property = nmos::make_get_control_protocol_property_handler(model.control_protocol_resources, control_protocol_state, gate);
 
     // start background tasks to intermittently update the state of the event sources, to cause events to be emitted to connected receivers
 
@@ -1381,6 +1402,13 @@ void node_implementation_run(nmos::node_model& model, slog::base_gate& gate)
             }
 
             slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Temperature updated: " << temp.scaled_value() << " (" << impl::temperature_Celsius.name << ")";
+
+            // increment nic packet counters
+            for (auto& counter : impl::nic_packet_counters)
+            {
+                if (counter.lost_packet_counter.value < std::numeric_limits<uint64_t>::max()) ++counter.lost_packet_counter.value;
+                if (counter.late_packet_counter.value < std::numeric_limits<uint64_t>::max()) ++counter.late_packet_counter.value;
+            }
 
             model.notify();
 
@@ -1666,17 +1694,15 @@ nmos::connection_activation_handler make_node_implementation_connection_activati
     auto handle_events_ws_message = make_node_implementation_events_ws_message_handler(model, gate);
     auto handle_close = nmos::experimental::make_events_ws_close_handler(model, gate);
     auto connection_events_activation_handler = nmos::make_connection_events_websocket_activation_handler(handle_load_ca_certificates, handle_events_ws_message, handle_close, model.settings, gate);
-    // this example uses this callback to update IS-12 Receiver-Monitor connection status
-    auto receiver_monitor_connection_activation_handler = nmos::make_receiver_monitor_connection_activation_handler(model.control_protocol_resources);
 
-    return [connection_events_activation_handler, receiver_monitor_connection_activation_handler, &gate](const nmos::resource& resource, const nmos::resource& connection_resource)
+    return [connection_events_activation_handler, /*receiver_monitor_connection_activation_handler,*/ &gate](const nmos::resource& resource, const nmos::resource& connection_resource)
     {
         const std::pair<nmos::id, nmos::type> id_type{ resource.id, resource.type };
         slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::stash_category(impl::categories::node_implementation) << "Activating " << id_type;
 
         connection_events_activation_handler(resource, connection_resource);
 
-        receiver_monitor_connection_activation_handler(connection_resource);
+  //      receiver_monitor_connection_activation_handler(connection_resource);
     };
 }
 
@@ -1717,6 +1743,43 @@ nmos::control_protocol_property_changed_handler make_node_implementation_control
         {
             // sequence property removed
             slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::stash_category(impl::categories::node_implementation) << "Property: " << property_name << " has sequence item removed. Value changed to " << resource.data.at(property_name).serialize();
+        }
+    };
+}
+
+// Example Control Protocol WebSocket API Receiver Status Monitor callback to get network interface controller lost packet counters
+nmos::get_packet_counters_handler make_node_implementation_get_lost_packet_counters_handler()
+{
+    return [&]()
+    {
+        return boost::copy_range<std::vector<nmos::nc::counter>>(impl::nic_packet_counters | boost::adaptors::transformed([](const impl::nic_packet_counter& counter)
+        {
+            return nmos::nc::counter{ counter.lost_packet_counter.name, counter.lost_packet_counter.value, counter.lost_packet_counter.description };
+        }));
+    };
+}
+
+// Example Control Protocol WebSocket API Receiver Status Monitor callback to get network interface controller late packet counters
+nmos::get_packet_counters_handler make_node_implementation_get_late_packet_counters_handler()
+{
+    return [&]()
+    {
+        return boost::copy_range<std::vector<nmos::nc::counter>>(impl::nic_packet_counters | boost::adaptors::transformed([](const impl::nic_packet_counter& counter)
+        {
+            return nmos::nc::counter{ counter.late_packet_counter.name, counter.late_packet_counter.value, counter.late_packet_counter.description };
+        }));
+    };
+}
+
+// Example Control Protocol WebSocket API Receiver Status Monitor callback to reset network interface controller packet counters
+nmos::reset_counters_handler make_node_implementation_reset_counters_handler()
+{
+    return [&]()
+    {
+        for (auto& counter : impl::nic_packet_counters)
+        {
+            counter.lost_packet_counter.value = 0;
+            counter.late_packet_counter.value = 0;
         }
     };
 }
@@ -1875,5 +1938,8 @@ nmos::experimental::node_implementation make_node_implementation(nmos::node_mode
         .on_connection_activated(make_node_implementation_connection_activation_handler(model, gate))
         .on_validate_channelmapping_output_map(make_node_implementation_map_validator()) // may be omitted if not required
         .on_channelmapping_activated(make_node_implementation_channelmapping_activation_handler(gate))
-        .on_control_protocol_property_changed(make_node_implementation_control_protocol_property_changed_handler(gate)); // may be omitted if IS-12 not required
+        .on_control_protocol_property_changed(make_node_implementation_control_protocol_property_changed_handler(gate)) // may be omitted if IS-12 not required
+        .on_get_lost_packet_counters(make_node_implementation_get_lost_packet_counters_handler()) // may be omitted if IS-12/BCP-008-1 not required
+        .on_get_late_packet_counters(make_node_implementation_get_late_packet_counters_handler()) // may be omitted if IS-12/BCP-008-1 not required
+        .on_reset_counters(make_node_implementation_reset_counters_handler()); // may be omitted if IS-12/BCP-008-1 not required
 }
