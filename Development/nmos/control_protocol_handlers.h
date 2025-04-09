@@ -79,11 +79,7 @@ namespace nmos
     // construct callback to retrieve a specific method
     get_control_protocol_method_descriptor_handler make_get_control_protocol_method_descriptor_handler(experimental::control_protocol_state& control_protocol_state);
 
-    // a control_protocol_connection_activation_handler is a notification that the active parameters for the specified (IS-05) sender/connection_sender or receiver/connection_receiver have changed
-    // this callback should not throw exceptions
-    //typedef std::function<void(const nmos::resource& resource, const nmos::resource& connection_resource)> control_protocol_connection_activation_handler;
-
-    // construct callback for receiver monitor to process connection (de)activation
+    // control_protocol_connection_activation_handler notifies that the active parameters for the specified (IS-05) sender/connection_sender or receiver/connection_receiver have changed
     control_protocol_connection_activation_handler make_receiver_monitor_connection_activation_handler(resources& resources, experimental::control_protocol_state& control_protocol_state, slog::base_gate& gate);
 
     // construct callback to get values from device model
@@ -95,6 +91,12 @@ namespace nmos
     set_control_protocol_property_handler make_set_control_protocol_property_handler(resources& resources, experimental::control_protocol_state& control_protocol_state, slog::base_gate& gate);
 
     // NcReceiverMonitor handlers
+    typedef std::function<web::json::value(nmos::nc_oid oid)> activate_receiver_monitor_handler;
+    activate_receiver_monitor_handler make_activate_receiver_monitor_handler(resources& resources, experimental::control_protocol_state& control_protocol_state, slog::base_gate& gate);
+
+    typedef std::function<web::json::value(nmos::nc_oid oid)> deactivate_receiver_monitor_handler;
+    deactivate_receiver_monitor_handler make_deactivate_receiver_monitor_handler(resources& resources, experimental::control_protocol_state& control_protocol_state, slog::base_gate& gate);
+
     typedef std::function<bool(nc_oid oid, nmos::nc_link_status::status link_status, const utility::string_t& link_status_message)> set_receiver_monitor_link_status_handler;
     set_receiver_monitor_link_status_handler make_set_receiver_monitor_link_status_handler(resources& resources, experimental::control_protocol_state& control_protocol_state, slog::base_gate& gate);
 
