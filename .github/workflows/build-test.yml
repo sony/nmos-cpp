@@ -406,6 +406,10 @@ jobs:
           printf 'CONFIG.ENABLE_AUTH = False\n' >> nmostesting/UserConfig.py
         fi
 
+        # Set config for control protocol testing
+        printf 'CONFIG.MS05_INVASIVE_TESTING = True\n' >> nmostesting/UserConfig.py
+        printf 'CONFIG.MAX_TEST_ITERATIONS = 2\n' >> nmostesting/UserConfig.py
+
         # Download testssl
         cd testssl
         curl -L https://github.com/drwetter/testssl.sh/archive/v3.0.7.tar.gz -s | tar -xvzf - --strip-components=1 > /dev/null
