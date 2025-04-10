@@ -63,6 +63,11 @@ namespace nmos
     // Validate the SDP parameters against a receiver for "video/raw", "audio/L", "video/smpte291" or "video/SMPTE2022-6"
     void validate_sdp_parameters(const web::json::value& receiver, const sdp_parameters& sdp_params);
 
+    // sdp_parameters helper functions
+
+    // Validate the numeric string
+    const utility::string_t& valid_numeric_string(const utility::string_t& s);
+
     // Format-specific types
 
     struct video_raw_parameters;
@@ -82,19 +87,22 @@ namespace nmos
         struct origin_t
         {
             utility::string_t user_name;
-            uint64_t session_id;
-            uint64_t session_version;
+            utility::string_t session_id;
+            utility::string_t session_version;
 
-            origin_t() : session_id(), session_version() {}
+            origin_t() {}
             origin_t(const utility::string_t& user_name, uint64_t session_id, uint64_t session_version)
                 : user_name(user_name)
-                , session_id(session_id)
-                , session_version(session_version)
+                , session_id(utility::conversions::details::to_string_t(session_id))
+                , session_version(utility::conversions::details::to_string_t(session_version))
+            {}
+            origin_t(const utility::string_t& user_name, const utility::string_t& session_id, const utility::string_t& session_version)
+                : user_name(user_name)
+                , session_id(valid_numeric_string(session_id))
+                , session_version(valid_numeric_string(session_version))
             {}
             origin_t(const utility::string_t& user_name, uint64_t session_id_version)
-                : user_name(user_name)
-                , session_id(session_id_version)
-                , session_version(session_id_version)
+                : origin_t{ user_name, session_id_version, session_id_version }
             {}
         } origin;
 
