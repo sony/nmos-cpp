@@ -64,11 +64,11 @@ The following configurations, defined by the [build-test](.github/workflows/src/
 
 | Platform | Version                   | Build Options                      | Test Options                                                       |
 |----------|---------------------------|------------------------------------|--------------------------------------------------------------------|
-| Linux    | Ubuntu 22.04 (GCC 11.2.0) | Avahi                              | Secure Communications<br/>Multicast DNS-SD                         |
+| Linux    | Ubuntu 24.04 (GCC 13.2.0) | Avahi                              | Secure Communications<br/>Multicast DNS-SD                         |
+| Linux    | Ubuntu 24.04 (GCC 13.2.0) | Avahi                              | Secure Communications<br/>IS-10 Authorization<br/>Multicast DNS-SD |
 | Linux    | Ubuntu 22.04 (GCC 11.2.0) | Avahi                              | Secure Communications<br/>IS-10 Authorization<br/>Multicast DNS-SD |
-| Linux    | Ubuntu 20.04 (GCC 9.4.0)  | Avahi                              | Secure Communications<br/>IS-10 Authorization<br/>Multicast DNS-SD |
-| Linux    | Ubuntu 20.04 (GCC 9.4.0)  | Avahi                              | Secure Communications<br/>IS-10 Authorization<br/>Unicast DNS-SD   |
-| Linux    | Ubuntu 20.04 (GCC 9.4.0)  | mDNSResponder                      | Secure Communications<br/>IS-10 Authorization<br/>Multicast DNS-SD |
+| Linux    | Ubuntu 22.04 (GCC 11.2.0) | Avahi                              | Secure Communications<br/>IS-10 Authorization<br/>Unicast DNS-SD   |
+| Linux    | Ubuntu 22.04 (GCC 11.2.0) | mDNSResponder                      | Secure Communications<br/>IS-10 Authorization<br/>Multicast DNS-SD |
 | Linux    | Ubuntu 14.04 (GCC 4.8.4)  | mDNSResponder, not using Conan     | Secure Communications<br/>IS-10 Authorization<br/>Multicast DNS-SD |
 | Windows  | Server 2019 (VS 2019)     | Bonjour (mDNSResponder), WinHTTP   | Secure Communications<br/>IS-10 Authorization<br/>Multicast DNS-SD |
 | Windows  | Server 2022 (VS 2022)     | Bonjour (mDNSResponder), ASIO      | Secure Communications<br/>Multicast DNS-SD                         |
