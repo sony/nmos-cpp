@@ -1259,6 +1259,46 @@ namespace nmos
         return value::array();
     }
 
+    // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/monitoring/#ncsendermonitor
+    web::json::value make_nc_sender_monitor_properties()
+    {
+        using web::json::value;
+
+        auto properties = value::array();
+        web::json::push_back(properties, details::make_nc_property_descriptor(U("Link status property"), nc_sender_monitor_link_status_property_id, nmos::fields::nc::link_status, U("NcLinkStatus"), true, false, false, false, value::null()));
+        web::json::push_back(properties, details::make_nc_property_descriptor(U("Link status message property"), nc_sender_monitor_link_status_message_property_id, nmos::fields::nc::link_status_message, U("NcString"), true, true, false, false, value::null()));
+        web::json::push_back(properties, details::make_nc_property_descriptor(U("Link status transition counter property"), nc_sender_monitor_link_status_transition_counter_property_id, nmos::fields::nc::link_status_transition_counter, U("NcUint64"), true, false, false, false, value::null()));
+        web::json::push_back(properties, details::make_nc_property_descriptor(U("Transmission status property"), nc_sender_monitor_transmission_status_property_id, nmos::fields::nc::transmission_status, U("NcTransmissionStatus"), true, false, false, false, value::null()));
+        web::json::push_back(properties, details::make_nc_property_descriptor(U("Transmission status message property"), nc_sender_monitor_transmission_status_message_property_id, nmos::fields::nc::transmission_status_message, U("NcString"), true, true, false, false, value::null()));
+        web::json::push_back(properties, details::make_nc_property_descriptor(U("Transmission status transition counter property"), nc_sender_monitor_transmission_status_transition_counter_property_id, nmos::fields::nc::transmission_status_transition_counter, U("NcUint64"), true, false, false, false, value::null()));
+        web::json::push_back(properties, details::make_nc_property_descriptor(U("External synchronization status property"), nc_sender_monitor_external_synchronization_status_property_id, nmos::fields::nc::external_synchronization_status, U("NcSynchronizationStatus"), true, false, false, false, value::null()));
+        web::json::push_back(properties, details::make_nc_property_descriptor(U("External synchronization status message property"), nc_sender_monitor_external_synchronization_status_message_property_id, nmos::fields::nc::external_synchronization_status_message, U("NcString"), true, true, false, false, value::null()));
+        web::json::push_back(properties, details::make_nc_property_descriptor(U("External synchronization status transition counter property"), nc_sender_monitor_external_synchronization_status_transition_counter_property_id, nmos::fields::nc::external_synchronization_status_transition_counter, U("NcUint64"), true, false, false, false, value::null()));
+        web::json::push_back(properties, details::make_nc_property_descriptor(U("Synchronization source id property"), nc_sender_monitor_synchronization_source_id_property_id, nmos::fields::nc::synchronization_source_id, U("NcString"), true, true, false, false, value::null()));
+        web::json::push_back(properties, details::make_nc_property_descriptor(U("Essence status property"), nc_sender_monitor_essence_status_property_id, nmos::fields::nc::essence_status, U("NcEssenceStatus"), true, false, false, false, value::null()));
+        web::json::push_back(properties, details::make_nc_property_descriptor(U("Essence status message property"), nc_sender_monitor_essence_status_message_property_id, nmos::fields::nc::essence_status_message, U("NcString"), true, true, false, false, value::null()));
+        web::json::push_back(properties, details::make_nc_property_descriptor(U("Essence status property transition counters"), nc_sender_monitor_essence_status_transition_counter_property_id, nmos::fields::nc::essence_status_transition_counter, U("NcUint64"), true, false, false, false, value::null()));
+        web::json::push_back(properties, details::make_nc_property_descriptor(U("Automatic reset counters property (default: true)"), nc_sender_monitor_auto_reset_counters_property_id, nmos::fields::nc::auto_reset_counters, U("NcBoolean"), false, false, false, false, value::null()));
+
+        return properties;
+    }
+    web::json::value make_nc_sender_monitor_methods()
+    {
+        using web::json::value;
+
+        auto methods = value::array();
+        web::json::push_back(methods, details::make_nc_method_descriptor(U("Gets the transmission error counters"), nc_sender_monitor_get_transmission_error_counters_method_id, U("GetTransmissionErrorCounters"), U("NcMethodResultCounters"), value::array(), false));
+        web::json::push_back(methods, details::make_nc_method_descriptor(U("Resets ALL counters"), nc_sender_monitor_reset_counters_method_id, U("ResetCounters"), U("NcMethodResult"), value::array(), false));
+
+        return methods;
+    }
+    web::json::value make_nc_sender_monitor_events()
+    {
+        using web::json::value;
+
+        return value::array();
+    }
+
     // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/identification/#ncidentbeacon
     web::json::value make_nc_ident_beacon_properties()
     {
@@ -1354,6 +1394,14 @@ namespace nmos
         using web::json::value;
 
         return details::make_nc_class_descriptor(U("NcReceiverMonitor class descriptor"), nc_receiver_monitor_class_id, U("NcReceiverMonitor"), make_nc_receiver_monitor_properties(), make_nc_receiver_monitor_methods(), make_nc_receiver_monitor_events());
+    }
+
+    // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/monitoring/#ncsendermonitor
+    web::json::value make_nc_sender_monitor_class()
+    {
+        using web::json::value;
+
+        return details::make_nc_class_descriptor(U("NcSenderMonitor class descriptor"), nc_sender_monitor_class_id, U("NcSenderMonitor"), make_nc_sender_monitor_properties(), make_nc_sender_monitor_methods(), make_nc_sender_monitor_events());
     }
 
     // Primitive datatypes

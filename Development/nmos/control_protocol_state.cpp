@@ -343,7 +343,22 @@ namespace nmos
                         { nc_receiver_monitor_reset_counters_method_id, details::make_nc_reset_counters_handler(get_control_protocol_class_descriptor, property_changed, reset_counters)}
                     }),
                     // NcReceiverMonitor events
-                    to_vector(make_nc_receiver_monitor_events())) }
+                    to_vector(make_nc_receiver_monitor_events())) },
+                // NcSenderMonitor
+                { nc_sender_monitor_class_id, make_control_class_descriptor(U("NcSenderMonitor class descriptor"), nc_sender_monitor_class_id, U("NcSenderMonitor"),
+                    // NcSenderMonitor properties
+                    to_vector(make_nc_sender_monitor_properties()),
+                    // NcSenderMonitor methods
+                    to_methods_vector(make_nc_sender_monitor_methods(),
+                    {
+                        // link NcSenderMonitor method_ids with method functions
+                        // TODO: implement actual GetTransmissionError and ResetCounters function
+                        { nc_sender_monitor_get_transmission_error_counters_method_id, details::make_nc_get_lost_packet_counters_handler(get_lost_packet_counters)},
+                        { nc_sender_monitor_reset_counters_method_id, details::make_nc_reset_counters_handler(get_control_protocol_class_descriptor, property_changed, reset_counters)}
+                    }),
+                    // NcSenderMonitor events
+                    to_vector(make_nc_sender_monitor_events()))
+                }
             };
 
             // setup the standard datatypes

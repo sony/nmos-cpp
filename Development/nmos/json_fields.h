@@ -356,6 +356,12 @@ namespace nmos
             const web::json::field_as_integer stream_status_pending{ U("streamStatusPending") };
             const web::json::field_as_string stream_status_message_pending{ U("streamStatusMessagePending") };
             const web::json::field_as_integer stream_status_pending_received_time{ U("streamStatusPendingReceivedTime") };
+            const web::json::field_as_integer transmission_status{ U("transmissionStatus") }; // NcTransmissionStatus
+            const web::json::field_as_string transmission_status_message{ U("transmissionStatusMessage") };
+            const web::json::field_as_integer transmission_status_transition_counter{ U("transmissionStatusTransitionCounter") };
+            const web::json::field_as_integer essence_status{ U("essenceStatus") }; // NcEssenceStatus
+            const web::json::field_as_string essence_status_message{ U("essenceStatusMessage") };
+            const web::json::field_as_integer essence_status_transition_counter{ U("essenceStatusTransitionCounter") };
             const web::json::field_as_bool auto_reset_counters{ U("autoResetCounters") };
             const web::json::field_as_bool active{ U("active") };
             const web::json::field_as_integer overall_status{ U("overallStatus") };

@@ -242,6 +242,10 @@ namespace nmos
     const nc_method_id nc_receiver_monitor_get_lost_packet_counters_method_id(4, 1);
     const nc_method_id nc_receiver_monitor_get_late_packet_counters_method_id(4, 2);
     const nc_method_id nc_receiver_monitor_reset_counters_method_id(4, 3);
+    // NcMethodIds for NcSenderMonitor
+    // TODO: link
+    const nc_method_id nc_sender_monitor_get_transmission_error_counters_method_id(4, 1);
+    const nc_method_id nc_sender_monitor_reset_counters_method_id(4, 2);
 
     // NcPropertyId
     // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncpropertyid
@@ -283,7 +287,7 @@ namespace nmos
     const nc_property_id nc_status_monitor_overall_status_property_id(3, 1);
     const nc_property_id nc_status_monitor_overall_status_message_property_id(3, 2);
     const nc_property_id nc_status_monitor_status_reporting_delay(3, 3);
-    // NcPropertyids for NcReceiverMonitor
+    // NcPropertyIds for NcReceiverMonitor
     // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/monitoring/#ncreceivermonitor
     const nc_property_id nc_receiver_monitor_link_status_property_id(4, 1);
     const nc_property_id nc_receiver_monitor_link_status_message_property_id(4, 2);
@@ -299,6 +303,22 @@ namespace nmos
     const nc_property_id nc_receiver_monitor_stream_status_message_property_id(4, 12);
     const nc_property_id nc_receiver_monitor_stream_status_transition_counter_property_id(4, 13);
     const nc_property_id nc_receiver_monitor_auto_reset_counters_property_id(4, 14);
+    // NcPropertyIds for NcSenderMonitor
+    // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/monitoring/#ncsendermonitor
+    const nc_property_id nc_sender_monitor_link_status_property_id(4, 1);
+    const nc_property_id nc_sender_monitor_link_status_message_property_id(4, 2);
+    const nc_property_id nc_sender_monitor_link_status_transition_counter_property_id(4, 3);
+    const nc_property_id nc_sender_monitor_transmission_status_property_id(4, 4);
+    const nc_property_id nc_sender_monitor_transmission_status_message_property_id(4, 5);
+    const nc_property_id nc_sender_monitor_transmission_status_transition_counter_property_id(4, 6);
+    const nc_property_id nc_sender_monitor_external_synchronization_status_property_id(4, 7);
+    const nc_property_id nc_sender_monitor_external_synchronization_status_message_property_id(4, 8);
+    const nc_property_id nc_sender_monitor_external_synchronization_status_transition_counter_property_id(4, 9);
+    const nc_property_id nc_sender_monitor_synchronization_source_id_property_id(4, 10);
+    const nc_property_id nc_sender_monitor_essence_status_property_id(4, 11);
+    const nc_property_id nc_sender_monitor_essence_status_message_property_id(4, 12);
+    const nc_property_id nc_sender_monitor_essence_status_transition_counter_property_id(4, 13);
+    const nc_property_id nc_sender_monitor_auto_reset_counters_property_id(4, 14);
     // NcPropertyids for NcIdentBeacon
     // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/identification/#ncidentbeacon
     const nc_property_id nc_ident_beacon_active_property_id(3, 1);
@@ -354,6 +374,8 @@ namespace nmos
     const nc_class_id nc_status_monitor_class_id({ 1, 2, 2 });
     // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/monitoring/#ncreceivermonitor
     const nc_class_id nc_receiver_monitor_class_id({ 1, 2, 2, 1 });
+    // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/monitoring/#ncsendermonitor
+    const nc_class_id nc_sender_monitor_class_id({ 1, 2, 2, 2 });
 
     // NcTouchpoint
     // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#nctouchpoint
