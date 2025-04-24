@@ -1303,8 +1303,8 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
     impl::nic_packet_counters = boost::copy_range<std::vector<impl::nic_packet_counter>>(host_interfaces | boost::adaptors::transformed([](const web::hosts::experimental::host_interface& interface)
     {
         return impl::nic_packet_counter{
-            {interface.name, 5, U(" total number of lost pocket counter")},
-            {interface.name, 6, U(" total number of late pocket counter")}
+            {interface.name, 0, U("total number of lost pockets")},
+            {interface.name, 0, U("total number of late pockets")}
         };
     }));
 }
