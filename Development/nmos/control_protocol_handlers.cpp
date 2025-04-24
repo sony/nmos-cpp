@@ -90,7 +90,7 @@ namespace nmos
                 if (active)
                 {
                     // Activate receiver monitor handler
-                    activate_receiver_monitor(resources, oid, control_protocol_state, get_control_protocol_class_descriptor, get_control_protocol_method_descriptor, gate);
+                    activate_receiver_monitor(resources, oid, get_control_protocol_class_descriptor, get_control_protocol_method_descriptor, gate);
 
                     // For demonstration purposes, stream and connection are *actually* not active, so reflect this in the stream and connection statuses
                     set_receiver_monitor_stream_status_with_delay(resources, oid, nmos::nc_stream_status::unhealthy, U("No stream detected"), control_protocol_state, get_control_protocol_class_descriptor, gate);
@@ -98,7 +98,7 @@ namespace nmos
                 }
                 else
                 {
-                    deactivate_receiver_monitor(resources, oid, control_protocol_state, get_control_protocol_class_descriptor, gate);
+                    deactivate_receiver_monitor(resources, oid, get_control_protocol_class_descriptor, gate);
                 }
             }
         };
