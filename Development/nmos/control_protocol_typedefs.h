@@ -91,10 +91,10 @@ namespace nmos
         {
             unknown = 0,            // Unknown
             power_on = 1,           // Power on
-            internal_error = 2,      // Internal error
+            internal_error = 2,     // Internal error
             upgrade = 3,            // Upgrade
             controller_request = 4, // Controller request
-            manual_reset = 5         // Manual request from the front panel
+            manual_reset = 5        // Manual request from the front panel
         };
     }
 
@@ -146,7 +146,7 @@ namespace nmos
         {
             inactive = 0,           // Inactive
             healthy = 1,            // The overall status is healthy
-            partially_healthy = 2,// The overall status is partially healthy
+            partially_healthy = 2,  // The overall status is partially healthy
             unhealthy = 3           // The overall status is unhealthy
         };
     }

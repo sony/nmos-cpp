@@ -933,7 +933,7 @@ set(NMOS_CPP_NMOS_SOURCES
     nmos/connection_events_activation.cpp
     nmos/connection_resources.cpp
     nmos/control_protocol_behaviour.cpp
-	nmos/control_protocol_handlers.cpp
+    nmos/control_protocol_handlers.cpp
     nmos/control_protocol_methods.cpp
     nmos/control_protocol_resource.cpp
     nmos/control_protocol_resources.cpp
@@ -1026,7 +1026,7 @@ set(NMOS_CPP_NMOS_HEADERS
     nmos/connection_api.h
     nmos/connection_events_activation.h
     nmos/connection_resources.h
-	nmos/control_protocol_behaviour.h
+    nmos/control_protocol_behaviour.h
     nmos/control_protocol_handlers.h
     nmos/control_protocol_methods.h
     nmos/control_protocol_nmos_channel_mapping_resource_type.h
