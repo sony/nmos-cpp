@@ -1,7 +1,7 @@
 #ifndef NMOS_MUTEX_H
 #define NMOS_MUTEX_H
 
-#include <condition_variable>
+#include <mutex> //for std::unique_lock
 #include "bst/shared_mutex.h"
 
 namespace nmos
