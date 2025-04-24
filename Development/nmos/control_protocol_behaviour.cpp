@@ -41,78 +41,83 @@ namespace nmos
             domain_statuses.push_back(domain_status_properties(nc_receiver_monitor_link_status_property_id, nc_receiver_monitor_link_status_message_property_id, nc_receiver_monitor_link_status_transition_counter_property_id, nmos::fields::nc::link_status_pending, nmos::fields::nc::link_status_message_pending, nmos::fields::nc::link_status_pending_received_time));
             domain_statuses.push_back(domain_status_properties(nc_receiver_monitor_external_synchronization_status_property_id, nc_receiver_monitor_external_synchronization_status_message_property_id, nc_receiver_monitor_external_synchronization_status_transition_counter_property_id, nmos::fields::nc::external_synchronization_status_pending, nmos::fields::nc::external_synchronization_status_message_pending, nmos::fields::nc::external_synchronization_status_pending_received_time));
 
-            auto lock = model.read_lock();
+            auto lock = model.write_lock();
             auto& condition = model.condition;
+            auto& shutdown = model.shutdown;
+            auto& control_protocol_resources = model.control_protocol_resources;
 
             auto get_control_protocol_class_descriptor = nmos::make_get_control_protocol_class_descriptor_handler(state);
             // continue until the server is being shut down
             for (;;)
             {
-                condition.wait(lock, [&] { return model.shutdown || state.receiver_monitor_status_pending; });
+                condition.wait(lock, [&] { return shutdown || nmos::with_read_lock(state.mutex, [&] { return state.receiver_monitor_status_pending; }); });
 
-                if (model.shutdown) break;
+                if (shutdown) break;
 
                 slog::log<slog::severities::info>(gate, SLOG_FLF) << "Receiver monitor status pending";
 
                 // Check statuses of receivers
                 // Get root block
-                auto found = nmos::find_resource_if(model.control_protocol_resources, nmos::types::nc_block, [&](const nmos::resource& resource)
-                    {
-                        return nmos::root_block_oid == nmos::fields::nc::oid(resource.data);
-                    });
-
-                // Get all receiver monitors
-                auto descriptors = web::json::value::array();
-                nmos::find_members_by_class_id(model.control_protocol_resources, *found, nmos::nc_receiver_monitor_class_id, true, true, descriptors.as_array());
+                const auto found = nmos::find_resource_if(control_protocol_resources, nmos::types::nc_block, [&](const nmos::resource& resource)
+                {
+                    return nmos::root_block_oid == nmos::fields::nc::oid(resource.data);
+                });
 
                 bool receiver_monitors_updates_pending = false;
-
-                auto current_time = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
-
-                for (const auto& descriptor : descriptors.as_array())
+                if (control_protocol_resources.end() != found) // ensure root block is presented
                 {
-                    auto oid = nmos::fields::nc::oid(descriptor);
+                    // Get all receiver monitors
+                    auto descriptors = web::json::value::array();
+                    nmos::find_members_by_class_id(control_protocol_resources, *found, nmos::nc_receiver_monitor_class_id, true, true, descriptors.as_array());
 
-                    auto status_reporting_delay = get_control_protocol_property(model.control_protocol_resources, oid, nc_status_monitor_status_reporting_delay, get_control_protocol_class_descriptor, gate);
+                    auto current_time = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
 
-                    for (const auto& domain_status : domain_statuses)
+                    for (const auto& descriptor : descriptors.as_array())
                     {
-                        auto received_time = get_control_protocol_property(model.control_protocol_resources, oid, domain_status.status_pending_received_time_field_name, gate);
+                        auto oid = nmos::fields::nc::oid(descriptor);
 
-                        if (received_time.as_integer() > 0)
+                        auto status_reporting_delay = get_control_protocol_property(control_protocol_resources, oid, nc_status_monitor_status_reporting_delay, get_control_protocol_class_descriptor, gate);
+
+                        for (const auto& domain_status : domain_statuses)
                         {
-                            auto threshold_time = static_cast<long long>(received_time.as_integer()) + status_reporting_delay.as_integer();
+                            auto received_time = get_control_protocol_property(control_protocol_resources, oid, domain_status.status_pending_received_time_field_name, gate);
 
-                            if (current_time > threshold_time)
+                            if (received_time.as_integer() > 0)
                             {
-                                // copy pending status to status property
-                                auto status = get_control_protocol_property(model.control_protocol_resources, oid, domain_status.status_pending_field_name, gate);
-                                auto status_message = get_control_protocol_property(model.control_protocol_resources, oid, domain_status.status_message_pending_field_name, gate);
+                                auto threshold_time = static_cast<long long>(received_time.as_integer()) + status_reporting_delay.as_integer();
 
-                                details::set_receiver_monitor_status(model.control_protocol_resources, oid, status, status_message.as_string(),
-                                    domain_status.status_property_id,
-                                    domain_status.status_message_property_id,
-                                    domain_status.status_transition_counter_property_id,
-                                    domain_status.status_pending_received_time_field_name,
-                                    state, get_control_protocol_class_descriptor, gate);
+                                if (current_time > threshold_time)
+                                {
+                                    // copy pending status to status property
+                                    auto status = get_control_protocol_property(control_protocol_resources, oid, domain_status.status_pending_field_name, gate);
+                                    auto status_message = get_control_protocol_property(control_protocol_resources, oid, domain_status.status_message_pending_field_name, gate);
 
-                                model.notify();
-                            }
-                            else
-                            {
-                                receiver_monitors_updates_pending = true;
+                                    details::set_receiver_monitor_status(control_protocol_resources, oid, status, status_message.as_string(),
+                                        domain_status.status_property_id,
+                                        domain_status.status_message_property_id,
+                                        domain_status.status_transition_counter_property_id,
+                                        domain_status.status_pending_received_time_field_name,
+                                        get_control_protocol_class_descriptor,
+                                        gate);
+
+                                    model.notify();
+                                }
+                                else
+                                {
+                                    receiver_monitors_updates_pending = true;
+                                }
                             }
                         }
                     }
                 }
+
+                if (!receiver_monitors_updates_pending)
                 {
                     auto lock = state.write_lock();
-                    if (!receiver_monitors_updates_pending)
-                    {
-                        state.receiver_monitor_status_pending = false;
-                    }
+                    state.receiver_monitor_status_pending = false;
                 }
-                model.wait_for(lock, bst::chrono::milliseconds(bst::chrono::milliseconds::rep(1000)), [&] { return model.shutdown; });
+
+                model.wait_for(lock, bst::chrono::milliseconds(bst::chrono::milliseconds::rep(1000)), [&] { return shutdown; });
             }
         }
     }
