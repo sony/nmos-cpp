@@ -16,6 +16,9 @@ namespace nmos
     // create block resource
     control_protocol_resource make_block(nc_oid oid, nc_oid owner, const utility::string_t& role, const utility::string_t& user_label, const utility::string_t& description, const web::json::value& touchpoints = web::json::value::null(), const web::json::value& runtime_property_constraints = web::json::value::null(), const web::json::value& members = web::json::value::array());
 
+    // make object rebuildable - for IS-14 dynamic configuration of Device Model
+    control_protocol_resource make_rebuildable(control_protocol_resource& control_protocol_resource);
+
     // create Root block resource
     control_protocol_resource make_root_block();
 
@@ -49,6 +52,11 @@ namespace nmos
     control_protocol_resource make_ident_beacon(nc_oid oid, bool constant_oid, nc_oid owner, const utility::string_t& role, const utility::string_t& user_label, const utility::string_t& description, const web::json::value& touchpoints = web::json::value::null(), const web::json::value& runtime_property_constraints = web::json::value::null(), bool enabled = true,
         bool active = false
     );
+
+    // Device Configuration feature set control classes
+    //
+    // create Bulk Properties Manager resource
+    control_protocol_resource make_bulk_properties_manager(nc_oid oid);
 }
 
 #endif

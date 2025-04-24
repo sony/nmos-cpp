@@ -336,6 +336,15 @@ namespace nmos
             const web::json::field_as_string payload_status_message{ U("payloadStatusMessage") };
             const web::json::field_as_bool signal_protection_status{ U("signalProtectionStatus") };
             const web::json::field_as_bool active{ U("active") };
+            const web::json::field_as_array values{ U("values") };
+            const web::json::field_as_string validation_fingerprint{ U("validationFingerprint") };
+            const web::json::field_as_value status_message{ U("statusMessage") };
+            const web::json::field_as_value data_set{ U("dataSet") }; // NcBulkValuesHolder
+            const web::json::field_as_bool is_rebuildable{ U("isRebuildable") };
+            const web::json::field_as_integer notice_type{ U("noticeType") };
+            const web::json::field_as_string notice_message{ U("noticeMessage") };
+            const web::json::field_as_array notices{ U("notices") };
+            const web::json::field_as_integer restore_mode{ U("restoreMode") };
         }
 
         // NMOS Parameter Registers
