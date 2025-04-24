@@ -330,7 +330,7 @@ namespace nmos
             { nmos::caps::format::transfer_characteristic, [](CAPS_ARGS) { auto jxsv = get_jxsv(&format); return jxsv && (jxsv->tcs.empty() || nmos::match_string_constraint(jxsv->tcs.name, con)); } },
             { nmos::caps::format::component_depth, [](CAPS_ARGS) { auto jxsv = get_jxsv(&format); return jxsv && (0 == jxsv->depth || nmos::match_integer_constraint(jxsv->depth, con)); } },
             { nmos::caps::transport::packet_transmission_mode, [](CAPS_ARGS) { auto jxsv = get_jxsv(&format); return jxsv && nmos::match_string_constraint(nmos::parse_packet_transmission_mode(jxsv->packetmode, jxsv->transmode).name, con); } },
-            { nmos::caps::transport::st2110_21_sender_type, [](CAPS_ARGS) { auto jxsv = get_jxsv(&format); return nmos::match_string_constraint(jxsv->tp.name, con); } },
+            { nmos::caps::transport::st2110_21_sender_type, [](CAPS_ARGS) { auto jxsv = get_jxsv(&format); return jxsv && nmos::match_string_constraint(jxsv->tp.name, con); } },
             { nmos::caps::transport::bit_rate, [](CAPS_ARGS) { auto jxsv = get_jxsv(&format); return jxsv && (0 == jxsv->bit_rate || nmos::match_integer_constraint(jxsv->bit_rate, con)); } }
         };
 #undef CAPS_ARGS
