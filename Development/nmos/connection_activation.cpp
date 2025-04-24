@@ -185,6 +185,7 @@ namespace nmos
 
                     if (control_protocol_connection_activated)
                     {
+                        // this callback should not throw exceptions
                         control_protocol_connection_activated(*matching_resource, resource);
                     }
                 }

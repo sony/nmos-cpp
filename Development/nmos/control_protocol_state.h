@@ -52,6 +52,8 @@ namespace nmos
             // mutex to be used to protect the members from simultaneous access by multiple threads
             mutable nmos::mutex mutex;
 
+            // true : at least one of the receiver monitors statuses is pending
+            // false: no more receiver monitors statuses are pending
             bool receiver_monitor_status_pending;
 
             experimental::control_class_descriptors control_class_descriptors;
