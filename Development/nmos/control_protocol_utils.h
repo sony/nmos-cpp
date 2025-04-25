@@ -107,9 +107,6 @@ namespace nmos
     // set property value given oid and property_id
     bool set_control_protocol_property(resources& resources, nc_oid oid, const nc_property_id& property_id, const web::json::value& value, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, slog::base_gate& gate);
 
-    // generic status and status message set with status reporting delay applied
-    //bool set_receiver_monitor_status_with_delay(resources& resources, nc_oid oid, const web::json::value& status, const utility::string_t& status_message, const nc_property_id& status_property_id, const nc_property_id& status_message_property_id, const nc_property_id& status_transition_counter_property_id, const utility::string_t& status_pending_field_name, const utility::string_t& status_message_pending_time_field_name, const utility::string_t& status_pending_received_time_field_name, experimental::control_protocol_state& control_protocol_state, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, slog::base_gate& gate);
-
     // Set link status and link status message
     bool set_receiver_monitor_link_status(resources& resources, nc_oid oid, nmos::nc_link_status::status link_status, const utility::string_t& link_status_message, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, slog::base_gate& gate);
 

@@ -359,6 +359,16 @@ namespace nmos
             return details::update_receiver_monitor_overall_status(resources, oid, get_control_protocol_class_descriptor, gate);
         }
 
+        typedef std::function<void(void)> receiver_monitor_status_pending_handler;
+        receiver_monitor_status_pending_handler make_receiver_monitor_status_pending_handler(experimental::control_protocol_state& control_protocol_state)
+        {
+            return [&control_protocol_state]()
+            {
+                auto lock = control_protocol_state.write_lock();
+                control_protocol_state.receiver_monitor_status_pending = true;
+            };
+        }
+
         // Set status and status message
         bool set_receiver_monitor_status_with_delay(resources& resources, nc_oid oid, const web::json::value& status, const utility::string_t& status_message,
             const nc_property_id& status_property_id,
@@ -367,7 +377,7 @@ namespace nmos
             const utility::string_t& status_pending_field_name,
             const utility::string_t& status_message_pending_time_field_name,
             const utility::string_t& status_pending_received_time_field_name,
-            experimental::control_protocol_state& control_protocol_state, // hmm, maybe better to past in a handle to set the receiver_monitor_status_pending
+            receiver_monitor_status_pending_handler receiver_monitor_status_pending, // hmm, maybe better to past in a handle to set the receiver_monitor_status_pending
             get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor,
             slog::base_gate& gate)
         {
@@ -394,8 +404,7 @@ namespace nmos
                     // check current pending received time to make sure not already set
                     auto received_time = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
                     set_control_protocol_property(resources, oid, status_pending_received_time_field_name, received_time, gate);
-                    auto lock = control_protocol_state.write_lock();
-                    control_protocol_state.receiver_monitor_status_pending = true;
+                    receiver_monitor_status_pending();
                 }
             }
 
@@ -430,6 +439,7 @@ namespace nmos
 
             return set_control_protocol_property(resources, oid, nc_status_monitor_overall_status_property_id, web::json::value::number(overall_status), get_control_protocol_class_descriptor, gate);
         }
+
     }
 
     // is the given class_id a NcBlock
@@ -966,7 +976,7 @@ namespace nmos
             nmos::fields::nc::link_status_pending,
             nmos::fields::nc::link_status_message_pending,
             nmos::fields::nc::link_status_pending_received_time,
-            control_protocol_state,
+            details::make_receiver_monitor_status_pending_handler(control_protocol_state),
             get_control_protocol_class_descriptor,
             gate);
     }
@@ -991,7 +1001,7 @@ namespace nmos
             nmos::fields::nc::connection_status_pending,
             nmos::fields::nc::connection_status_message_pending,
             nmos::fields::nc::connection_status_pending_received_time,
-            control_protocol_state,
+            details::make_receiver_monitor_status_pending_handler(control_protocol_state),
             get_control_protocol_class_descriptor,
             gate);
     }
@@ -1017,7 +1027,7 @@ namespace nmos
             nmos::fields::nc::external_synchronization_status_pending,
             nmos::fields::nc::external_synchronization_status_message_pending,
             nmos::fields::nc::external_synchronization_status_pending_received_time,
-            control_protocol_state,
+            details::make_receiver_monitor_status_pending_handler(control_protocol_state),
             get_control_protocol_class_descriptor,
             gate);
     }
@@ -1043,7 +1053,7 @@ namespace nmos
             nmos::fields::nc::stream_status_pending,
             nmos::fields::nc::stream_status_message_pending,
             nmos::fields::nc::stream_status_pending_received_time,
-            control_protocol_state,
+            details::make_receiver_monitor_status_pending_handler(control_protocol_state),
             get_control_protocol_class_descriptor,
             gate);
     }
