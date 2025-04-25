@@ -62,9 +62,20 @@ namespace nmos
                 || (val.is_array() && !nmos::fields::nc::is_sequence(property)))
             {
                 utility::ostringstream_t ss;
-                ss << U("parameter error: can not set value: ") << val.serialize() << U(" on property: ") << property_id.serialize();
+                ss << U("parameter error: cannot set value: ") << val.serialize() << U(" on property: ") << property_id.serialize();
                 slog::log<slog::severities::error>(gate, SLOG_FLF) << ss.str();
                 return details::make_nc_method_result_error({ nc_method_status::parameter_error }, ss.str());
+            }
+
+            // Special case for BCP-008-01/02 where it specifies that status monitors cannot be disabled
+            if (nmos::fields::nc::name(property).c_str() == nmos::fields::nc::enabled.key
+                && is_nc_status_monitor(details::parse_nc_class_id(nmos::fields::nc::class_id(resource.data)))
+                && !val.as_bool())
+            {
+                utility::ostringstream_t ss;
+                ss << U("invalid request: cannot disable NcStatusMonitors");
+                slog::log<slog::severities::error>(gate, SLOG_FLF) << ss.str();
+                return details::make_nc_method_result_error({ nc_method_status::invalid_request }, ss.str());
             }
 
             try

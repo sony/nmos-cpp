@@ -61,6 +61,9 @@ namespace nmos
     // is the given class_id a NcClassManager
     bool is_nc_class_manager(const nc_class_id& class_id);
 
+    // is the given class_id a NcStatusMonitor
+    bool is_nc_status_monitor(const nc_class_id& class_id);
+
     // construct NcClassId
     nc_class_id make_nc_class_id(const nc_class_id& prefix, int32_t authority_key, const std::vector<int32_t>& suffix);
     nc_class_id make_nc_class_id(const nc_class_id& prefix, const std::vector<int32_t>& suffix); // using default authority_key 0
