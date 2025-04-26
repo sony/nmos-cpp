@@ -1,0 +1,16 @@
+# .github/workflows/hello-world-pull-request.yml
+
+name: Hello World on Pull Request
+
+on:
+  pull_request:
+
+jobs:
+  hello_world:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Say Hello World
+        run: echo "Hello World"
