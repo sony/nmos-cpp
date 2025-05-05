@@ -1,0 +1,27 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "description": "Describes the standard error response which is returned with HTTP codes 400 and above",
+  "title": "Error response",
+  "required": [
+    "code",
+    "error",
+    "debug"
+  ],
+  "properties": {
+    "code": {
+      "description": "HTTP error code",
+      "type": "integer",
+      "minimum": 400,
+      "maximum": 599
+    },
+    "error": {
+      "description": "Human readable message which is suitable for user interface display, and helpful to the user",
+      "type": "string"
+    },
+    "debug": {
+      "description": "Debug information which may assist a programmer working with the API",
+      "type": ["null", "string"]
+    }
+  }
+}
