@@ -90,6 +90,7 @@ The [AMWA NMOS API Testing Tool](https://github.com/AMWA-TV/nmos-testing) is aut
 [![IS-08-02][IS-08-02-badge]][IS-08-02-sheet]
 [![IS-09-01][IS-09-01-badge]][IS-09-01-sheet]
 [![IS-09-02][IS-09-02-badge]][IS-09-02-sheet]
+[![IS-12-01][IS-12-01-badge]][IS-12-01-sheet]
 
 [BCP-003-01-badge]: https://raw.githubusercontent.com/sony/nmos-cpp/badges/BCP-003-01.svg
 [IS-04-01-badge]: https://raw.githubusercontent.com/sony/nmos-cpp/badges/IS-04-01.svg
