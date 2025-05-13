@@ -1100,12 +1100,15 @@ namespace nmos
                     {
                         auto method_result = reset_counters(resources, *found, web::json::value::null(), nmos::fields::nc::is_deprecated(nc_method_descriptor), gate);
 
-                        // Log error?
+                        if (nmos::fields::nc::status(method_result) != nmos::nc_method_status::ok)
+                        {
+                            slog::log<slog::severities::error>(gate, SLOG_FLF) << U("error calling reset_counters: status=") << nmos::fields::nc::status(method_result) << U(", message=") << nmos::fields::nc::error_message(method_result).c_str();
+                        }
                     }
                 }
                 catch (const nmos::control_protocol_exception& e)
                 {
-                    // Log error?
+                    slog::log<slog::severities::error>(gate, SLOG_FLF) << U("control_protocol_exception: ") << e.what();
                 }
             }
         }
