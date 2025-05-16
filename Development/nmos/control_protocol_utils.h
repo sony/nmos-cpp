@@ -35,6 +35,15 @@ namespace nmos
 
         // method parameter constraints validation, may throw nmos::control_protocol_exception
         void method_parameter_constraints_validation(const web::json::value& data, const web::json::value& property_constraints, const datatype_constraints_validation_parameters& params);
+
+        bool set_receiver_monitor_status(resources& resources, nc_oid oid, const web::json::value& status, const utility::string_t& status_message, const nc_property_id& status_property_id,
+            const nc_property_id& status_message_property_id,
+            const nc_property_id& status_transition_counter_property_id,
+            const utility::string_t& status_pending_received_time_field_name,
+            get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor,
+            slog::base_gate& gate);
+
+        bool update_receiver_monitor_overall_status(resources& resources, nc_oid oid, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, slog::base_gate& gate);
     }
 
     // is the given class_id a NcBlock
@@ -51,6 +60,9 @@ namespace nmos
 
     // is the given class_id a NcClassManager
     bool is_nc_class_manager(const nc_class_id& class_id);
+
+    // is the given class_id a NcStatusMonitor
+    bool is_nc_status_monitor(const nc_class_id& class_id);
 
     // construct NcClassId
     nc_class_id make_nc_class_id(const nc_class_id& prefix, int32_t authority_key, const std::vector<int32_t>& suffix);
@@ -88,6 +100,51 @@ namespace nmos
 
     // insert 'value changed', 'sequence item added', 'sequence item changed' or 'sequence item removed' notification events into all grains whose subscriptions match the specified version, type and "pre" or "post" values
     void insert_notification_events(resources& resources, const api_version& version, const api_version& downgrade_version, const type& type, const web::json::value& pre, const web::json::value& post, const web::json::value& event);
+
+    // get property value given oid and property_id
+    web::json::value get_control_protocol_property(const resources& resources, nc_oid oid, const nc_property_id& property_id, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, slog::base_gate& gate);
+
+    // set property value given oid and property_id
+    bool set_control_protocol_property(resources& resources, nc_oid oid, const nc_property_id& property_id, const web::json::value& value, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, slog::base_gate& gate);
+
+    // Set link status and link status message
+    bool set_receiver_monitor_link_status(resources& resources, nc_oid oid, nmos::nc_link_status::status link_status, const utility::string_t& link_status_message, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, slog::base_gate& gate);
+
+    // Set link status and status message and apply status reporting delay
+    bool set_receiver_monitor_link_status_with_delay(resources& resources, nc_oid oid, nmos::nc_link_status::status link_status, const utility::string_t& link_status_message, experimental::control_protocol_state& control_protocol_state, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, slog::base_gate& gate);
+
+    // Set connection status and connection status message
+    bool set_receiver_monitor_connection_status(resources& resources, nc_oid oid, const web::json::value& connection_status, const utility::string_t& connection_status_message, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, slog::base_gate& gate);
+
+    // Set connection status and status message and apply status reporting delay
+    bool set_receiver_monitor_connection_status_with_delay(resources& resources, nc_oid oid, nmos::nc_connection_status::status connection_status, const utility::string_t& connection_status_message, experimental::control_protocol_state& control_protocol_state, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, slog::base_gate& gate);
+
+    // Set external synchronization status and external synchronization status message
+    bool set_receiver_monitor_external_synchronization_status(resources& resources, nc_oid oid, nmos::nc_synchronization_status::status external_synchronization_status, const utility::string_t& external_synchronization_status_message, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, slog::base_gate& gate);
+
+    // Set external synchronization status and status message and apply status reporting delay
+    bool set_receiver_monitor_external_synchronization_status_with_delay(resources& resources, nc_oid oid, nmos::nc_synchronization_status::status external_synchronization_status, const utility::string_t& external_synchronization_status_message, experimental::control_protocol_state& control_protocol_state, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, slog::base_gate& gate);
+
+    // Set stream status and stream status message
+    bool set_receiver_monitor_stream_status(resources& resources, nc_oid oid, nmos::nc_stream_status::status stream_status, const utility::string_t& stream_status_message, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, slog::base_gate& gate);
+
+    // Set stream status and status message and apply status reporting delay
+    bool set_receiver_monitor_stream_status_with_delay(resources& resources, nc_oid oid, nmos::nc_stream_status::status stream_status, const utility::string_t& stream_status_message, experimental::control_protocol_state& control_protocol_state, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, slog::base_gate& gate);
+
+    // Set synchronization source id
+    bool set_receiver_monitor_synchronization_source_id(resources& resources, nc_oid oid, const utility::string_t& source_id_, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, slog::base_gate& gate);
+
+    // Call when receiver is activated
+    bool activate_receiver_monitor(resources& resources, nc_oid oid, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, nmos::get_control_protocol_method_descriptor_handler get_control_protocol_method_descriptor, slog::base_gate& gate);
+
+    // Call when receiver is deactivated
+    bool deactivate_receiver_monitor(resources& resources, nc_oid oid, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, slog::base_gate& gate);
+
+    // Used to set "hidden" resource properties
+    bool set_control_protocol_property(resources& resources, nc_oid oid, const utility::string_t& property_name, const web::json::value& value, slog::base_gate& gate);
+
+    // Used to get "hidden" resource properties
+    web::json::value get_control_protocol_property(const resources& resources, nc_oid oid, const utility::string_t& property_name, slog::base_gate& gate);
 }
 
 #endif
