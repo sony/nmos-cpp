@@ -871,12 +871,14 @@ namespace nmos
         }
 
         // TODO: add link
-        web::json::value make_nc_object_properties_holder(const web::json::array& role_path, const web::json::array& property_value_holders, bool is_rebuildable)
+        web::json::value make_nc_object_properties_holder(const web::json::array& role_path, const web::json::array& property_value_holders, const web::json::array& dependency_paths, const web::json::array& allowed_members_classes, bool is_rebuildable)
         {
             using web::json::value_of;
 
             return value_of({
                 { nmos::fields::nc::path, web::json::value_from_elements(role_path)},
+                { nmos::fields::nc::dependency_paths, web::json::value_from_elements(dependency_paths)},
+                { nmos::fields::nc::allowed_members_classes, web::json::value_from_elements(allowed_members_classes)},
                 { nmos::fields::nc::values, web::json::value_from_elements(property_value_holders)},
                 { nmos::fields::nc::is_rebuildable, is_rebuildable}
                 }, true
@@ -2222,6 +2224,8 @@ namespace nmos
 
         auto fields = value::array();
         web::json::push_back(fields, details::make_nc_field_descriptor(U("Object role path"), nmos::fields::nc::path, U("NcRolePath"), false, false, value::null()));
+        web::json::push_back(fields, details::make_nc_field_descriptor(U("Sequence of role paths which are a dependency for this object"), nmos::fields::nc::dependency_paths, U("NcRolePath"), false, true, value::null()));
+        web::json::push_back(fields, details::make_nc_field_descriptor(U("Sequence of class ids allowed as members of the block"), nmos::fields::nc::allowed_members_classes, U("NcClassId"), false, true, value::null()));
         web::json::push_back(fields, details::make_nc_field_descriptor(U("Object properties values"), nmos::fields::nc::values, U("NcPropertyValueHolder"), false, true, value::null()));
         web::json::push_back(fields, details::make_nc_field_descriptor(U("Describes if the object is rebuildable"), nmos::fields::nc::is_rebuildable, U("NcBoolean"), false, false, value::null()));
 

@@ -92,7 +92,7 @@ BST_TEST_CASE(testIsBlockModified)
         const nmos::nc_property_id property_id(2, 2); // block members
         const auto property_value_holder = nmos::details::make_nc_property_value_holder(property_id, U("members"), U("NcBlockMemberDescriptor"), false, members);
         web::json::push_back(property_value_holders, property_value_holder);
-        const auto object_properties_holder = nmos::details::make_nc_object_properties_holder(role_path.as_array(), property_value_holders.as_array(), false);
+        const auto object_properties_holder = nmos::details::make_nc_object_properties_holder(role_path.as_array(), property_value_holders.as_array(), value::array().as_array(), value::array().as_array(), false);
 
         BST_CHECK(!nmos::is_block_modified(receivers, object_properties_holder));
     }
@@ -108,7 +108,7 @@ BST_TEST_CASE(testIsBlockModified)
         const nmos::nc_property_id property_id(2, 2); // block members
         const auto property_value_holder = nmos::details::make_nc_property_value_holder(property_id, U("members"), U("NcBlockMemberDescriptor"), false, members);
         web::json::push_back(property_value_holders, property_value_holder);
-        const auto object_properties_holder = nmos::details::make_nc_object_properties_holder(role_path.as_array(), property_value_holders.as_array(), false);
+        const auto object_properties_holder = nmos::details::make_nc_object_properties_holder(role_path.as_array(), property_value_holders.as_array(), value::array().as_array(), value::array().as_array(), false);
 
         BST_CHECK(nmos::is_block_modified(receivers, object_properties_holder));
     }
@@ -130,7 +130,7 @@ BST_TEST_CASE(testIsBlockModified)
         const nmos::nc_property_id property_id(2, 2); // block members
         const auto property_value_holder = nmos::details::make_nc_property_value_holder(property_id, U("members"), U("NcBlockMemberDescriptor"), false, members);
         web::json::push_back(property_value_holders, property_value_holder);
-        const auto object_properties_holder = nmos::details::make_nc_object_properties_holder(role_path.as_array(), property_value_holders.as_array(), false);
+        const auto object_properties_holder = nmos::details::make_nc_object_properties_holder(role_path.as_array(), property_value_holders.as_array(), value::array().as_array(), value::array().as_array(), false);
 
         BST_CHECK(nmos::is_block_modified(receivers, object_properties_holder));
     }
@@ -152,7 +152,7 @@ BST_TEST_CASE(testIsBlockModified)
         const nmos::nc_property_id property_id(2, 2); // block members
         const auto property_value_holder = nmos::details::make_nc_property_value_holder(property_id, U("members"), U("NcBlockMemberDescriptor"), false, members);
         web::json::push_back(property_value_holders, property_value_holder);
-        const auto object_properties_holder = nmos::details::make_nc_object_properties_holder(role_path.as_array(), property_value_holders.as_array(), false);
+        const auto object_properties_holder = nmos::details::make_nc_object_properties_holder(role_path.as_array(), property_value_holders.as_array(), value::array().as_array(), value::array().as_array(), false);
 
         BST_CHECK(nmos::is_block_modified(receivers, object_properties_holder));
     }
@@ -174,7 +174,7 @@ BST_TEST_CASE(testIsBlockModified)
         const nmos::nc_property_id property_id(2, 2); // block members
         const auto property_value_holder = nmos::details::make_nc_property_value_holder(property_id, U("members"), U("NcBlockMemberDescriptor"), false, members);
         web::json::push_back(property_value_holders, property_value_holder);
-        const auto object_properties_holder = nmos::details::make_nc_object_properties_holder(role_path.as_array(), property_value_holders.as_array(), false);
+        const auto object_properties_holder = nmos::details::make_nc_object_properties_holder(role_path.as_array(), property_value_holders.as_array(), value::array().as_array(), value::array().as_array(), false);
 
         BST_CHECK(nmos::is_block_modified(receivers, object_properties_holder));
     }
@@ -196,7 +196,7 @@ BST_TEST_CASE(testIsBlockModified)
         const nmos::nc_property_id property_id(2, 2); // block members
         const auto property_value_holder = nmos::details::make_nc_property_value_holder(property_id, U("members"), U("NcBlockMemberDescriptor"), false, members);
         web::json::push_back(property_value_holders, property_value_holder);
-        const auto object_properties_holder = nmos::details::make_nc_object_properties_holder(role_path.as_array(), property_value_holders.as_array(), false);
+        const auto object_properties_holder = nmos::details::make_nc_object_properties_holder(role_path.as_array(), property_value_holders.as_array(), value::array().as_array(), value::array().as_array(), false);
 
         BST_CHECK(nmos::is_block_modified(receivers, object_properties_holder));
     }
@@ -218,7 +218,7 @@ BST_TEST_CASE(testIsBlockModified)
         const nmos::nc_property_id property_id(2, 2); // block members
         const auto property_value_holder = nmos::details::make_nc_property_value_holder(property_id, U("members"), U("NcBlockMemberDescriptor"), false, members);
         web::json::push_back(property_value_holders, property_value_holder);
-        const auto object_properties_holder = nmos::details::make_nc_object_properties_holder(role_path.as_array(), property_value_holders.as_array(), false);
+        const auto object_properties_holder = nmos::details::make_nc_object_properties_holder(role_path.as_array(), property_value_holders.as_array(), value::array().as_array(), value::array().as_array(), false);
 
         BST_CHECK(nmos::is_block_modified(receivers, object_properties_holder));
     }
@@ -238,7 +238,7 @@ BST_TEST_CASE(testGetObjectPropertiesHolder)
         auto property_value_holders = value::array();
         const auto property_value_holder = nmos::details::make_nc_property_value_holder(nmos::nc_property_id(2, 1), U("enabled"), U("NcBoolean"), false, value::boolean(false));
         push_back(property_value_holders, property_value_holder);
-        const auto object_properties_holder = nmos::details::make_nc_object_properties_holder(role_path.as_array(), property_value_holders.as_array(), false);
+        const auto object_properties_holder = nmos::details::make_nc_object_properties_holder(role_path.as_array(), property_value_holders.as_array(), value::array().as_array(), value::array().as_array(), false);
         push_back(object_properties_holders, object_properties_holder);
     }
     {
@@ -246,7 +246,7 @@ BST_TEST_CASE(testGetObjectPropertiesHolder)
         auto property_value_holders = value::array();
         const auto property_value_holder = nmos::details::make_nc_property_value_holder(nmos::nc_property_id(2, 1), U("enabled"), U("NcBoolean"), false, value::boolean(false));
         push_back(property_value_holders, property_value_holder);
-        const auto object_properties_holder = nmos::details::make_nc_object_properties_holder(role_path.as_array(), property_value_holders.as_array(), false);
+        const auto object_properties_holder = nmos::details::make_nc_object_properties_holder(role_path.as_array(), property_value_holders.as_array(), value::array().as_array(), value::array().as_array(), false);
         push_back(object_properties_holders, object_properties_holder);
     }
     {
@@ -254,7 +254,7 @@ BST_TEST_CASE(testGetObjectPropertiesHolder)
         auto property_value_holders = value::array();
         const auto property_value_holder = nmos::details::make_nc_property_value_holder(nmos::nc_property_id(2, 1), U("enabled"), U("NcBoolean"), false, value::boolean(false));
         push_back(property_value_holders, property_value_holder);
-        const auto object_properties_holder = nmos::details::make_nc_object_properties_holder(role_path.as_array(), property_value_holders.as_array(), false);
+        const auto object_properties_holder = nmos::details::make_nc_object_properties_holder(role_path.as_array(), property_value_holders.as_array(), value::array().as_array(), value::array().as_array(), false);
         push_back(object_properties_holders, object_properties_holder);
     }
 
@@ -296,7 +296,7 @@ BST_TEST_CASE(testGetChildObjectPropertiesHolders)
         auto property_value_holders = value::array();
         const auto property_value_holder = nmos::details::make_nc_property_value_holder(nmos::nc_property_id(2, 1), U("enabled"), U("NcBoolean"), false, value::boolean(false));
         push_back(property_value_holders, property_value_holder);
-        const auto object_properties_holder = nmos::details::make_nc_object_properties_holder(role_path.as_array(), property_value_holders.as_array(), false);
+        const auto object_properties_holder = nmos::details::make_nc_object_properties_holder(role_path.as_array(), property_value_holders.as_array(), value::array().as_array(), value::array().as_array(), false);
         push_back(object_properties_holders, object_properties_holder);
     }
     {
@@ -304,7 +304,7 @@ BST_TEST_CASE(testGetChildObjectPropertiesHolders)
         auto property_value_holders = value::array();
         const auto property_value_holder = nmos::details::make_nc_property_value_holder(nmos::nc_property_id(2, 1), U("enabled"), U("NcBoolean"), false, value::boolean(false));
         push_back(property_value_holders, property_value_holder);
-        const auto object_properties_holder = nmos::details::make_nc_object_properties_holder(role_path.as_array(), property_value_holders.as_array(), false);
+        const auto object_properties_holder = nmos::details::make_nc_object_properties_holder(role_path.as_array(), property_value_holders.as_array(), value::array().as_array(), value::array().as_array(), false);
         push_back(object_properties_holders, object_properties_holder);
     }
     {
@@ -312,7 +312,7 @@ BST_TEST_CASE(testGetChildObjectPropertiesHolders)
         auto property_value_holders = value::array();
         const auto property_value_holder = nmos::details::make_nc_property_value_holder(nmos::nc_property_id(2, 1), U("enabled"), U("NcBoolean"), false, value::boolean(false));
         push_back(property_value_holders, property_value_holder);
-        const auto object_properties_holder = nmos::details::make_nc_object_properties_holder(role_path.as_array(), property_value_holders.as_array(), false);
+        const auto object_properties_holder = nmos::details::make_nc_object_properties_holder(role_path.as_array(), property_value_holders.as_array(), value::array().as_array(), value::array().as_array(), false);
         push_back(object_properties_holders, object_properties_holder);
     }
 
@@ -475,7 +475,7 @@ BST_TEST_CASE(testApplyBackupDataSet)
         auto property_value_holders = value::array();
         const auto property_value_holder = nmos::details::make_nc_property_value_holder(nmos::nc_property_id(2, 1), U("enabled"), U("NcBoolean"), false, value::boolean(false));
         push_back(property_value_holders, property_value_holder);
-        const auto object_properties_holder = nmos::details::make_nc_object_properties_holder(role_path.as_array(), property_value_holders.as_array(), false);
+        const auto object_properties_holder = nmos::details::make_nc_object_properties_holder(role_path.as_array(), property_value_holders.as_array(), value::array().as_array(), value::array().as_array(), false);
         push_back(object_properties_holders, object_properties_holder);
         const auto target_role_path = value_of({ U("root"), U("receivers")});
         bool recurse = true;
@@ -511,7 +511,7 @@ BST_TEST_CASE(testApplyBackupDataSet)
         // This is a read only property
         const auto property_value_holder = nmos::details::make_nc_property_value_holder(nmos::nc_property_id(3, 2), U("connectionStatusMessage"), U("NcString"), false, value("change this value"));
         push_back(property_value_holders, property_value_holder);
-        const auto object_properties_holder = nmos::details::make_nc_object_properties_holder(role_path.as_array(), property_value_holders.as_array(), false);
+        const auto object_properties_holder = nmos::details::make_nc_object_properties_holder(role_path.as_array(), property_value_holders.as_array(), value::array().as_array(), value::array().as_array(), false);
         push_back(object_properties_holders, object_properties_holder);
         // must be a more efficient way of initializing these role paths
         const auto target_role_path = value_of({ U("root"), U("receivers") });
@@ -549,7 +549,7 @@ BST_TEST_CASE(testApplyBackupDataSet)
         // This is a read only property
         const auto property_value_holder = nmos::details::make_nc_property_value_holder(nmos::nc_property_id(3, 2), U("connectionStatusMessage"), U("NcString"), false, value("change this value"));
         push_back(property_value_holders, property_value_holder);
-        const auto object_properties_holder = nmos::details::make_nc_object_properties_holder(role_path.as_array(), property_value_holders.as_array(), false);
+        const auto object_properties_holder = nmos::details::make_nc_object_properties_holder(role_path.as_array(), property_value_holders.as_array(), value::array().as_array(), value::array().as_array(), false);
         push_back(object_properties_holders, object_properties_holder);
         // must be a more efficient way of initializing these role paths
         const auto target_role_path = value_of({ U("root"), U("receivers") });
@@ -599,7 +599,7 @@ BST_TEST_CASE(testApplyBackupDataSet)
         push_back(property_value_holders, nmos::details::make_nc_property_value_holder(nmos::nc_property_id(3, 2), U("connectionStatusMessage"), U("NcString"), true, value("change this value")));
         // This is a writable property
         push_back(property_value_holders, nmos::details::make_nc_property_value_holder(nmos::nc_property_id(2, 1), U("enabled"), U("NcBoolean"), false, false));
-        const auto object_properties_holder = nmos::details::make_nc_object_properties_holder(role_path.as_array(), property_value_holders.as_array(), false);
+        const auto object_properties_holder = nmos::details::make_nc_object_properties_holder(role_path.as_array(), property_value_holders.as_array(), value::array().as_array(), value::array().as_array(), false);
         push_back(object_properties_holders, object_properties_holder);
         // must be a more efficient way of initializing these role paths
         const auto target_role_path = value_of({ U("root"), U("receivers") });
@@ -646,7 +646,7 @@ BST_TEST_CASE(testApplyBackupDataSet)
 
         push_back(members, nmos::details::make_nc_block_member_descriptor(U("monitor 1"), U("monitor 1"), monitor_1_oid, true, monitor_class_id, U("label"), receiver_block_oid));
         push_back(property_value_holders, nmos::details::make_nc_property_value_holder(nmos::nc_property_id(2, 2), U("members"), U("NcBlockMemberDescriptor"), true, members));
-        push_back(object_properties_holders, nmos::details::make_nc_object_properties_holder(role_path.as_array(), property_value_holders.as_array(), false));
+        push_back(object_properties_holders, nmos::details::make_nc_object_properties_holder(role_path.as_array(), property_value_holders.as_array(), value::array().as_array(), value::array().as_array(), false));
         const auto target_role_path = value_of({ U("root"), U("receivers") });
         bool recurse = true;
         bool validate = true;
@@ -680,7 +680,7 @@ BST_TEST_CASE(testApplyBackupDataSet)
 
         push_back(members, nmos::details::make_nc_block_member_descriptor(U("monitor 1"), U("monitor 1"), monitor_1_oid, true, monitor_class_id, U("label"), receiver_block_oid));
         push_back(property_value_holders, nmos::details::make_nc_property_value_holder(nmos::nc_property_id(2, 2), U("members"), U("NcBlockMemberDescriptor"), true, members));
-        push_back(object_properties_holders, nmos::details::make_nc_object_properties_holder(role_path.as_array(), property_value_holders.as_array(), false));
+        push_back(object_properties_holders, nmos::details::make_nc_object_properties_holder(role_path.as_array(), property_value_holders.as_array(), value::array().as_array(), value::array().as_array(), false));
         const auto target_role_path = value_of({ U("root"), U("receivers") });
         bool recurse = true;
         bool validate = true;
@@ -714,7 +714,7 @@ BST_TEST_CASE(testApplyBackupDataSet)
         // This is a read only property
         push_back(property_value_holders, nmos::details::make_nc_property_value_holder(nmos::nc_property_id(3, 2), U("connectionStatusMessage"), U("NcString"), false, value("change this value"))); //read only
         push_back(property_value_holders, nmos::details::make_nc_property_value_holder(nmos::nc_property_id(2, 1), U("enabled"), U("NcString"), false, false)); // error in data type
-        push_back(object_properties_holders, nmos::details::make_nc_object_properties_holder(role_path.as_array(), property_value_holders.as_array(), false));
+        push_back(object_properties_holders, nmos::details::make_nc_object_properties_holder(role_path.as_array(), property_value_holders.as_array(), value::array().as_array(), value::array().as_array(), false));
         // must be a more efficient way of initializing these role paths
         const auto target_role_path = value_of({ U("root"), U("receivers") });
         bool recurse = true;
@@ -758,7 +758,7 @@ BST_TEST_CASE(testApplyBackupDataSet)
         auto property_value_holders = value::array();
         // This is a read only property
         push_back(property_value_holders, nmos::details::make_nc_property_value_holder(nmos::nc_property_id(3, 2), U("wrong_property_name"), U("NcString"), false, value("change this value"))); //read only
-        push_back(object_properties_holders, nmos::details::make_nc_object_properties_holder(role_path.as_array(), property_value_holders.as_array(), false));
+        push_back(object_properties_holders, nmos::details::make_nc_object_properties_holder(role_path.as_array(), property_value_holders.as_array(), value::array().as_array(), value::array().as_array(), false));
         // must be a more efficient way of initializing these role paths
         const auto target_role_path = value_of({ U("root"), U("receivers") });
         bool recurse = true;
@@ -802,7 +802,7 @@ BST_TEST_CASE(testApplyBackupDataSet)
         auto property_value_holders = value::array();
         // This is a read only property
         push_back(property_value_holders, nmos::details::make_nc_property_value_holder(nmos::nc_property_id(3, 2), U("connectionStatusMessage"), U("wrong_data_type"), false, value("change this value"))); //read only
-        push_back(object_properties_holders, nmos::details::make_nc_object_properties_holder(role_path.as_array(), property_value_holders.as_array(), false));
+        push_back(object_properties_holders, nmos::details::make_nc_object_properties_holder(role_path.as_array(), property_value_holders.as_array(), value::array().as_array(), value::array().as_array(), false));
         // must be a more efficient way of initializing these role paths
         const auto target_role_path = value_of({ U("root"), U("receivers") });
         bool recurse = true;
@@ -890,7 +890,7 @@ BST_TEST_CASE(testApplyBackupDataSet_WithoutCallbacks)
         auto property_value_holders = value::array();
         const auto property_value_holder = nmos::details::make_nc_property_value_holder(nmos::nc_property_id(2, 1), U("enabled"), U("NcBoolean"), false, false);
         push_back(property_value_holders, property_value_holder);
-        const auto object_properties_holder = nmos::details::make_nc_object_properties_holder(role_path.as_array(), property_value_holders.as_array(), false);
+        const auto object_properties_holder = nmos::details::make_nc_object_properties_holder(role_path.as_array(), property_value_holders.as_array(), value::array().as_array(), value::array().as_array(), false);
         push_back(object_properties_holders, object_properties_holder);
         const auto target_role_path = value_of({ U("root"), U("receivers") });
         bool recurse = true;
@@ -917,7 +917,7 @@ BST_TEST_CASE(testApplyBackupDataSet_WithoutCallbacks)
         auto property_value_holders = value::array();
         const auto property_value_holder = nmos::details::make_nc_property_value_holder(nmos::nc_property_id(2, 1), U("enabled"), U("NcBoolean"), false, false);
         push_back(property_value_holders, property_value_holder);
-        const auto object_properties_holder = nmos::details::make_nc_object_properties_holder(role_path.as_array(), property_value_holders.as_array(), false);
+        const auto object_properties_holder = nmos::details::make_nc_object_properties_holder(role_path.as_array(), property_value_holders.as_array(), value::array().as_array(), value::array().as_array(), false);
         push_back(object_properties_holders, object_properties_holder);
         const auto target_role_path = value_of({ U("root"), U("receivers") });
         bool recurse = true;
@@ -946,7 +946,7 @@ BST_TEST_CASE(testApplyBackupDataSet_WithoutCallbacks)
         // This is a read only property
         const auto property_value_holder = nmos::details::make_nc_property_value_holder(nmos::nc_property_id(3, 2), U("connectionStatusMessage"), U("NcString"), false, value("change this value"));
         push_back(property_value_holders, property_value_holder);
-        const auto object_properties_holder = nmos::details::make_nc_object_properties_holder(role_path.as_array(), property_value_holders.as_array(), false);
+        const auto object_properties_holder = nmos::details::make_nc_object_properties_holder(role_path.as_array(), property_value_holders.as_array(), value::array().as_array(), value::array().as_array(), false);
         push_back(object_properties_holders, object_properties_holder);
         // must be a more efficient way of initializing these role paths
         const auto target_role_path = value_of({ U("root"), U("receivers") });
@@ -976,7 +976,7 @@ BST_TEST_CASE(testApplyBackupDataSet_WithoutCallbacks)
 
         push_back(members, nmos::details::make_nc_block_member_descriptor(U("monitor 1"), U("monitor 1"), monitor_1_oid, true, monitor_class_id, U("label"), receiver_block_oid));
         push_back(property_value_holders, nmos::details::make_nc_property_value_holder(nmos::nc_property_id(2, 2), U("members"), U("NcBlockMemberDescriptor"), true, members));
-        push_back(object_properties_holders, nmos::details::make_nc_object_properties_holder(role_path.as_array(), property_value_holders.as_array(), false));
+        push_back(object_properties_holders, nmos::details::make_nc_object_properties_holder(role_path.as_array(), property_value_holders.as_array(), value::array().as_array(), value::array().as_array(), false));
         const auto target_role_path = value_of({ U("root"), U("receivers") });
         bool recurse = true;
         bool validate = true;

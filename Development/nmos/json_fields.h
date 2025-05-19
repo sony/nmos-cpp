@@ -304,7 +304,7 @@ namespace nmos
             const web::json::field_as_bool is_sequence{ U("isSequence") };
             const web::json::field_as_bool is_deprecated{ U("isDeprecated") };
             const web::json::field_as_bool is_constant{ U("isConstant") };
-            const web::json::field_as_string parent_type{ U("parentType") };
+            const web::json::field_as_value parent_type{ U("parentType") };
             const web::json::field_as_string event_datatype{ U("eventDatatype") };
             const web::json::field_as_string result_datatype{ U("resultDatatype") };
             const web::json::field_as_array parameters{ U("parameters") };
@@ -345,6 +345,8 @@ namespace nmos
             const web::json::field_as_string notice_message{ U("noticeMessage") };
             const web::json::field_as_array notices{ U("notices") };
             const web::json::field_as_integer restore_mode{ U("restoreMode") };
+            const web::json::field_as_array dependency_paths{ U("dependencyPaths") };
+            const web::json::field_as_array allowed_members_classes{ U("allowedMembersClasses") };
         }
 
         // NMOS Parameter Registers
