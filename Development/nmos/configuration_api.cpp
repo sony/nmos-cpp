@@ -312,6 +312,7 @@ namespace nmos
 
                 if (!class_id.empty())
                 {
+                    // Hmmm, this feels like it should be a utility function, or we just parameterize the handler to include inherited
                     const auto& control_class = get_control_protocol_class_descriptor(class_id);
 
                     auto& description = control_class.description;
@@ -386,7 +387,7 @@ namespace nmos
         });
 
         // GET /rolePaths/{rolePath}/properties/{propertyId}/descriptor
-        configuration_api.support(U("/rolePaths/") + nmos::patterns::rolePath.pattern + U("/properties/") + nmos::patterns::propertyId.pattern + U("/descriptor/?"), methods::GET, [&model, get_control_protocol_class_descriptor, &gate_](http_request req, http_response res, const string_t&, const route_parameters& parameters)
+        configuration_api.support(U("/rolePaths/") + nmos::patterns::rolePath.pattern + U("/properties/") + nmos::patterns::propertyId.pattern + U("/descriptor/?"), methods::GET, [&model, get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor, &gate_](http_request req, http_response res, const string_t&, const route_parameters& parameters)
         {
             const auto property_id = parameters.at(nmos::patterns::propertyId.name);
             const auto role_path = parameters.at(nmos::patterns::rolePath.name);
@@ -399,13 +400,33 @@ namespace nmos
             {
                 // find the relevant nc_property_descriptor
                 const auto& property_descriptor = nc::find_property_descriptor(details::parse_formatted_property_id(property_id), details::parse_nc_class_id(nmos::fields::nc::class_id(resource->data)), get_control_protocol_class_descriptor);
+                const auto& property_type = nmos::fields::nc::type_name(property_descriptor);
+                auto datatype_descriptor = nc::details::get_datatype_descriptor(value::string(property_type), get_control_protocol_datatype_descriptor);
+
+                if (nmos::nc_datatype_type::Struct == nmos::fields::nc::type(datatype_descriptor))
+                {
+                    auto inherited_struct = datatype_descriptor;
+
+                    while (!nmos::fields::nc::parent_type(inherited_struct).is_null())
+                    {
+                        auto parent_type = nmos::fields::nc::parent_type(datatype_descriptor).as_string();
+
+                        inherited_struct = nc::details::get_datatype_descriptor(value::string(parent_type), get_control_protocol_datatype_descriptor);
+
+                        for (const auto field : nmos::fields::nc::fields(inherited_struct))
+                        {
+                            web::json::push_back(datatype_descriptor[nmos::fields::nc::fields], field);
+                        }
+                    }
+                }
+
                 if (property_descriptor.is_null())
                 {
                     set_error_reply(res, status_codes::NotFound, U("Not Found; ") + property_id);
                 }
                 else
                 {
-                    auto method_result = details::make_nc_method_result({ nmos::nc_method_status::ok }, property_descriptor);
+                    auto method_result = details::make_nc_method_result({ nmos::nc_method_status::ok }, datatype_descriptor);
                     set_reply(res, status_codes::OK, method_result);
                 }
             }
