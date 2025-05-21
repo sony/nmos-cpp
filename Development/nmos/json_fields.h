@@ -330,12 +330,43 @@ namespace nmos
             const web::json::field_as_value resource{ U("resource") };
             const web::json::field_as_string resource_type{ U("resourceType") };
             const web::json::field_as_string io_id{ U("ioId") };
+            const web::json::field_as_integer receiver_monitor_activation_time{ U("receiverMonitorActivationTime") };
             const web::json::field_as_integer connection_status{ U("connectionStatus") }; // NcConnectionStatus
             const web::json::field_as_string connection_status_message{ U("connectionStatusMessage") };
-            const web::json::field_as_integer payload_status{ U("payloadStatus") }; // NcPayloadStatus
-            const web::json::field_as_string payload_status_message{ U("payloadStatusMessage") };
-            const web::json::field_as_bool signal_protection_status{ U("signalProtectionStatus") };
+            const web::json::field_as_integer connection_status_transition_counter{ U("connectionStatusTransitionCounter") };
+            const web::json::field_as_integer connection_status_pending{ U("connectionStatusPending") }; // Internal use only
+            const web::json::field_as_string connection_status_message_pending{ U("connectionStatusMessagePending") }; // Internal use only
+            const web::json::field_as_integer connection_status_pending_received_time{ U("connectionStatusPendingReceivedTime") }; // Internal use only
+            const web::json::field_as_integer link_status{ U("linkStatus") }; // NcLinkStatus
+            const web::json::field_as_string link_status_message{ U("linkStatusMessage") };
+            const web::json::field_as_integer link_status_transition_counter{ U("linkStatusTransitionCounter") };
+            const web::json::field_as_integer link_status_pending{ U("linkStatusPending") };// Internal use only
+            const web::json::field_as_string link_status_message_pending{ U("linkStatusMessagePending") }; // Internal use only
+            const web::json::field_as_integer link_status_pending_received_time{ U("linkStatusPendingReceivedTime") }; // Internal use only
+            const web::json::field_as_integer external_synchronization_status{ U("externalSynchronizationStatus") }; // NcSynchronizationStatus
+            const web::json::field_as_string external_synchronization_status_message{ U("externalSynchronizationStatusMessage") };
+            const web::json::field_as_integer external_synchronization_status_transition_counter{ U("externalSynchronizationStatusTransitionCounter") }; // NcSynchronizationStatus
+            const web::json::field_as_integer external_synchronization_status_pending{ U("externalSynchronizationStatusPending") }; // Internal use only
+            const web::json::field_as_string external_synchronization_status_message_pending{ U("externalSynchronizationStatusMessagePending") }; // Internal use only
+            const web::json::field_as_integer external_synchronization_status_pending_received_time{ U("externalSynchronizationStatusPendingReceivedTime") }; // Internal use only
+            const web::json::field_as_string synchronization_source_id{ U("synchronizationSourceId") };
+            const web::json::field_as_integer stream_status{ U("streamStatus") }; // NcStreamStatus
+            const web::json::field_as_string stream_status_message{ U("streamStatusMessage") };
+            const web::json::field_as_integer stream_status_transition_counter{ U("streamStatusTransitionCounter") };
+            const web::json::field_as_integer stream_status_pending{ U("streamStatusPending") }; // Internal use only
+            const web::json::field_as_string stream_status_message_pending{ U("streamStatusMessagePending") }; // Internal use only
+            const web::json::field_as_integer stream_status_pending_received_time{ U("streamStatusPendingReceivedTime") }; // Internal use only
+            const web::json::field_as_integer transmission_status{ U("transmissionStatus") }; // NcTransmissionStatus
+            const web::json::field_as_string transmission_status_message{ U("transmissionStatusMessage") };
+            const web::json::field_as_integer transmission_status_transition_counter{ U("transmissionStatusTransitionCounter") };
+            const web::json::field_as_integer essence_status{ U("essenceStatus") }; // NcEssenceStatus
+            const web::json::field_as_string essence_status_message{ U("essenceStatusMessage") };
+            const web::json::field_as_integer essence_status_transition_counter{ U("essenceStatusTransitionCounter") };
+            const web::json::field_as_bool auto_reset_counters{ U("autoResetCounters") };
             const web::json::field_as_bool active{ U("active") };
+            const web::json::field_as_integer overall_status{ U("overallStatus") };
+            const web::json::field_as_string overall_status_message{ U("overallStatusMessage") };
+            const web::json::field_as_integer status_reporting_delay{ U("statusReportingDelay") };
         }
 
         // NMOS Parameter Registers
