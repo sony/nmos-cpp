@@ -65,7 +65,8 @@ registry_params=",\
   \"label\":\"nmos-cpp-registry\"\
   "
 node_params=",\
-  \"label\":\"nmos-cpp-node\"\
+  \"label\":\"nmos-cpp-node\",\
+  \"video_type\": \"video/jxsv\"\
   "
   
 if [[ "${config_secure}" == "True" ]]; then
@@ -145,6 +146,7 @@ else
   # test_33, test_33_1
   (( expected_disabled_IS_04_02+=16 ))
   (( expected_disabled_IS_09_01+=7 ))
+  (( expected_disabled_BCP_006_01_01+=7 ))
 fi
 
 "${node_command}" "{\"how_many\":6,\"http_port\":1080 ${common_params} ${node_params}}" > ${results_dir}/nodeoutput 2>&1 &
