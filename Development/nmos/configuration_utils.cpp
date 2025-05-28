@@ -189,7 +189,7 @@ namespace nmos
 
         const auto& class_id = nmos::details::parse_nc_class_id(nmos::fields::nc::class_id(resource.data));
 
-        if (nmos::nc::is_block(class_id))
+        if (recurse && nmos::nc::is_block(class_id))
         {
             // if rebuildable and the block has changed then callback
             if (nmos::fields::nc::is_rebuildable(resource.data) && target_object_properties_holders.size() && is_block_modified(resource, *target_object_properties_holders.begin()))
