@@ -1230,7 +1230,7 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
         nmos::nc::push_back(channel_gain, right_gain);
 
         // example master-gain
-        auto master_gain = make_gain_control(++oid, channel_gain_oid, U("master-gain"), U("Master gain"), U("Master gain block"), value::null(), value::null(), 0.0);
+        auto master_gain = make_gain_control(++oid, stereo_gain_oid, U("master-gain"), U("Master gain"), U("Master gain block"), value::null(), value::null(), 0.0);
         // add channel-gain and master-gain to stereo-gain
         nmos::nc::push_back(stereo_gain, channel_gain);
         nmos::nc::push_back(stereo_gain, master_gain);
