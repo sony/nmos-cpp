@@ -725,6 +725,8 @@ namespace nmos
 
                         method_result = set_properties_by_path(resources, *resource, backup_data_set, recurse, restore_mode, get_control_protocol_class_descriptor, filter_property_value_holders, modify_rebuildable_block);
 
+                        code = status_codes::OK;
+
                         model.notify();
                     }
                     catch (const nmos::control_protocol_exception& e)
