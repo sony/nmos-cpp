@@ -1698,6 +1698,27 @@ nmos::channelmapping_activation_handler make_node_implementation_channelmapping_
     };
 }
 
+// Example Annotation API patch callback to update resource labels, descriptions and tags
+nmos::annotation_patch_merger make_node_implementation_annotation_patch_merger(const nmos::settings& settings, slog::base_gate& gate)
+{
+    using web::json::value;
+    using web::json::value_of;
+
+    return [&settings, &gate](const nmos::resource& resource, web::json::value& value, const web::json::value& patch)
+    {
+        const std::pair<nmos::id, nmos::type> id_type{ resource.id, resource.type };
+        slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::stash_category(impl::categories::node_implementation) << "Updating " << id_type;
+        // this example uses the specified tags for node and device resources as defaults
+        const auto default_tags
+            = id_type.second == nmos::types::node ? impl::fields::node_tags(settings)
+            : id_type.second == nmos::types::device ? impl::fields::device_tags(settings)
+            : value::object();
+        // and uses the default predicate for read-only tags
+        nmos::details::merge_annotation_patch(value, patch, &nmos::details::is_read_only_tag, value_of({ { nmos::fields::tags, default_tags } }));
+        // this example does not save the new values to persistent storage or e.g. reject values that are too large
+    };
+}
+
 // Example Control Protocol WebSocket API property changed callback to perform application-specific operations to complete the property changed
 nmos::control_protocol_property_changed_handler make_node_implementation_control_protocol_property_changed_handler(slog::base_gate& gate)
 {
@@ -1875,5 +1896,6 @@ nmos::experimental::node_implementation make_node_implementation(nmos::node_mode
         .on_connection_activated(make_node_implementation_connection_activation_handler(model, gate))
         .on_validate_channelmapping_output_map(make_node_implementation_map_validator()) // may be omitted if not required
         .on_channelmapping_activated(make_node_implementation_channelmapping_activation_handler(gate))
+        .on_merge_annotation_patch(make_node_implementation_annotation_patch_merger(model.settings, gate)) // may be omitted if not required
         .on_control_protocol_property_changed(make_node_implementation_control_protocol_property_changed_handler(gate)); // may be omitted if IS-12 not required
 }
