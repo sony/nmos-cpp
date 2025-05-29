@@ -79,7 +79,7 @@ The [AMWA NMOS API Testing Tool](https://github.com/AMWA-TV/nmos-testing) is aut
 
 **Test Suite/Status:**
 [![BCP-003-01][BCP-003-01-badge]][BCP-003-01-sheet]
-[![BCP-006-01-01][BCP-006-01-01-badge][BCP-006-01-01-sheet]
+[![BCP-006-01-01][BCP-006-01-01-badge]][BCP-006-01-01-sheet]
 [![IS-04-01][IS-04-01-badge]][IS-04-01-sheet]
 [![IS-04-02][IS-04-02-badge]][IS-04-02-sheet]
 [![IS-04-03][IS-04-03-badge]][IS-04-03-sheet]
