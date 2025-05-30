@@ -735,18 +735,28 @@ namespace nmos
             const auto& property = find_property_descriptor(property_id, details::parse_nc_class_id(nmos::fields::nc::class_id(resource.data)), get_control_protocol_class_descriptor);
             if (!property.is_null())
             {
-                // update property
-                modify_control_protocol_resource(resources, resource.id, [&](nmos::resource& resource)
+                try
                 {
-                    resource.data[nmos::fields::nc::name(property)] = web::json::value::number(0);
-
-                    // do notification that the specified property has changed
-                    if (property_changed)
+                    // update property
+                    modify_control_protocol_resource(resources, resource.id, [&](nmos::resource& resource)
                     {
-                        property_changed(resource, nmos::fields::nc::name(property), -1);
-                    }
+                        resource.data[nmos::fields::nc::name(property)] = web::json::value::number(0);
 
-                }, make_property_changed_event(nmos::fields::nc::oid(resource.data), { { property_id, nc_property_change_type::type::value_changed, web::json::value::number(0) } }));
+                        // do notification that the specified property has changed
+                        if (property_changed)
+                        {
+                            property_changed(resource, nmos::fields::nc::name(property), -1);
+                        }
+
+                    }, make_property_changed_event(nmos::fields::nc::oid(resource.data), { { property_id, nc_property_change_type::type::value_changed, web::json::value::number(0) } }));
+                }
+                catch (const nmos::control_protocol_exception& e)
+                {
+                    utility::ostringstream_t ss;
+                    ss << "Reset counters: " << details::make_nc_property_id(property_id).serialize() << " error: " << e.what();
+                    slog::log<slog::severities::error>(gate, SLOG_FLF) << ss.str();
+                    return details::make_nc_method_result_error({ nc_method_status::parameter_error }, ss.str());
+                }
             }
         }
 
