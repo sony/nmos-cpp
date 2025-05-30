@@ -21,7 +21,7 @@ namespace nmos
 {
     namespace experimental
     {
-        // Construct a server instance for an NMOS Node, implementing the IS-04 Node API, IS-05 Connection API, IS-07 Events API, the IS-10 Authorization API
+        // Construct a server instance for an NMOS Node, implementing the IS-04 Node API, IS-05 Connection API, IS-07 Events API, IS-10 Authorization API, IS-12 control protocol ws API
         // and the experimental Logging API and Settings API, according to the specified data models and callbacks
         nmos::server make_node_server(nmos::node_model& node_model, nmos::experimental::node_implementation node_implementation, nmos::experimental::log_model& log_model, slog::base_gate& gate)
         {
@@ -140,13 +140,14 @@ namespace nmos
             auto resolve_auto = node_implementation.resolve_auto;
             auto set_transportfile = node_implementation.set_transportfile;
             auto connection_activated = node_implementation.connection_activated;
+            auto receiver_monitor_connection_activated = node_implementation.receiver_monitor_connection_activated;
             auto channelmapping_activated = node_implementation.channelmapping_activated;
             auto get_authorization_bearer_token = node_implementation.get_authorization_bearer_token;
             node_server.thread_functions.assign({
                 [&, load_ca_certificates, registration_changed, get_authorization_bearer_token] { nmos::node_behaviour_thread(node_model, load_ca_certificates, registration_changed, get_authorization_bearer_token, gate); },
                 [&] { nmos::send_events_ws_messages_thread(events_ws_listener, node_model, events_ws_api.second, gate); },
                 [&] { nmos::erase_expired_events_resources_thread(node_model, gate); },
-                [&, resolve_auto, set_transportfile, connection_activated] { nmos::connection_activation_thread(node_model, resolve_auto, set_transportfile, connection_activated, gate); },
+                [&, resolve_auto, set_transportfile, connection_activated, receiver_monitor_connection_activated] { nmos::connection_activation_thread(node_model, resolve_auto, set_transportfile, connection_activated, receiver_monitor_connection_activated, gate); },
                 [&, channelmapping_activated] { nmos::channelmapping_activation_thread(node_model, channelmapping_activated, gate); }
             });
 

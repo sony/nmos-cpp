@@ -62,9 +62,20 @@ namespace nmos
                 || (val.is_array() && !nmos::fields::nc::is_sequence(property)))
             {
                 utility::ostringstream_t ss;
-                ss << U("parameter error: can not set value: ") << val.serialize() << U(" on property: ") << property_id.serialize();
+                ss << U("parameter error: cannot set value: ") << val.serialize() << U(" on property: ") << property_id.serialize();
                 slog::log<slog::severities::error>(gate, SLOG_FLF) << ss.str();
                 return details::make_nc_method_result_error({ nc_method_status::parameter_error }, ss.str());
+            }
+
+            // Special case for BCP-008-01/02 where it specifies that status monitors cannot be disabled
+            if (nmos::fields::nc::name(property).c_str() == nmos::fields::nc::enabled.key
+                && is_nc_status_monitor(details::parse_nc_class_id(nmos::fields::nc::class_id(resource.data)))
+                && !val.as_bool())
+            {
+                utility::ostringstream_t ss;
+                ss << U("invalid request: cannot disable NcStatusMonitors");
+                slog::log<slog::severities::error>(gate, SLOG_FLF) << ss.str();
+                return details::make_nc_method_result_error({ nc_method_status::invalid_request }, ss.str());
             }
 
             try
@@ -662,5 +673,98 @@ namespace nmos
         }
 
         return details::make_nc_method_result_error({ nc_method_status::parameter_error }, U("name not found"));
+    }
+
+    // NcReceiverMonitor methods implementation
+    namespace details
+    {
+        web::json::value get_packet_counters(bool is_deprecated, get_packet_counters_handler get_packet_counters)
+        {
+            using web::json::value;
+            using web::json::value_from_elements;
+
+            if (get_packet_counters)
+            {
+                const auto counters = get_packet_counters();
+                auto nc_counter_sequence = value_from_elements(counters | boost::adaptors::transformed([](const nc::counter& counter)
+                {
+                    return web::json::value_of({
+                        { nmos::fields::nc::name, value::string(counter.name) },
+                        { nmos::fields::nc::value, value::number(counter.value) },
+                        { nmos::fields::nc::description, value::string(counter.description) }
+                    });
+                }));
+
+                return nmos::details::make_nc_method_result({ is_deprecated ? nmos::nc_method_status::method_deprecated : nc_method_status::ok }, nc_counter_sequence);
+            }
+
+            return nmos::details::make_nc_method_result_error({ nmos::nc_method_status::method_not_implemented }, U("not implemented"));
+        }
+    }
+
+    // Gets the lost packet counters
+    web::json::value get_lost_packet_counters(nmos::resources& /*resources*/, const nmos::resource& /*resource*/, const web::json::value& /*arguments*/, bool is_deprecated, get_packet_counters_handler get_lost_packet_counters, slog::base_gate& gate)
+    {
+        slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Gets the lost packet counters";
+
+        return details::get_packet_counters(is_deprecated, get_lost_packet_counters);
+    }
+
+    // Gets the late packet counters
+    web::json::value get_late_packet_counters(nmos::resources& /*resources*/, const nmos::resource& /*resource*/, const web::json::value& /*arguments*/, bool is_deprecated, get_packet_counters_handler get_late_packet_counters, slog::base_gate& gate)
+    {
+        slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Gets the late packet counters";
+
+        return details::get_packet_counters(is_deprecated, get_late_packet_counters);
+    }
+
+    // Resets the packet counters
+    web::json::value reset_counters(nmos::resources& resources, const nmos::resource& resource, const web::json::value&, bool is_deprecated, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, control_protocol_property_changed_handler property_changed, reset_counters_handler reset_counters, slog::base_gate& gate)
+    {
+        slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Resets the packet counters";
+
+        // reset all counters
+        const std::vector<nc_property_id> transition_counters = {
+            nc_receiver_monitor_connection_status_transition_counter_property_id,
+            nc_receiver_monitor_external_synchronization_status_transition_counter_property_id,
+            nc_receiver_monitor_link_status_transition_counter_property_id,
+            nc_receiver_monitor_stream_status_transition_counter_property_id };
+
+        for (const auto& property_id : transition_counters)
+        {
+            const auto& property = find_property_descriptor(property_id, details::parse_nc_class_id(nmos::fields::nc::class_id(resource.data)), get_control_protocol_class_descriptor);
+            if (!property.is_null())
+            {
+                try
+                {
+                    // update property
+                    modify_control_protocol_resource(resources, resource.id, [&](nmos::resource& resource)
+                    {
+                        resource.data[nmos::fields::nc::name(property)] = web::json::value::number(0);
+
+                        // do notification that the specified property has changed
+                        if (property_changed)
+                        {
+                            property_changed(resource, nmos::fields::nc::name(property), -1);
+                        }
+
+                    }, make_property_changed_event(nmos::fields::nc::oid(resource.data), { { property_id, nc_property_change_type::type::value_changed, web::json::value::number(0) } }));
+                }
+                catch (const nmos::control_protocol_exception& e)
+                {
+                    utility::ostringstream_t ss;
+                    ss << "Reset counters: " << details::make_nc_property_id(property_id).serialize() << " error: " << e.what();
+                    slog::log<slog::severities::error>(gate, SLOG_FLF) << ss.str();
+                    return details::make_nc_method_result_error({ nc_method_status::parameter_error }, ss.str());
+                }
+            }
+        }
+
+        if (reset_counters)
+        {
+            reset_counters();
+        }
+
+        return nmos::details::make_nc_method_result({ is_deprecated ? nmos::nc_method_status::method_deprecated : nc_method_status::ok });
     }
 }
