@@ -105,7 +105,7 @@ namespace nmos
 
                         // wait until pending update due
                         model.wait_for(lock, bst::chrono::seconds(bst::chrono::seconds::rep(minimum_delay)), [&] { return shutdown; });
-                        if (shutdown) continue;
+                        if (shutdown) break;
 
                         current_time = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
 
@@ -114,13 +114,13 @@ namespace nmos
                         // update statuses
                         for (const auto& descriptor : descriptors.as_array())
                         {
-                            auto oid = nmos::fields::nc::oid(descriptor);
+                            const auto& oid = nmos::fields::nc::oid(descriptor);
 
-                            auto status_reporting_delay = get_control_protocol_property(control_protocol_resources, oid, nc_status_monitor_status_reporting_delay, get_control_protocol_class_descriptor, gate);
+                            const auto status_reporting_delay = get_control_protocol_property(control_protocol_resources, oid, nc_status_monitor_status_reporting_delay, get_control_protocol_class_descriptor, gate);
 
                             for (const auto& domain_status : domain_statuses)
                             {
-                                auto received_time = get_control_protocol_property(control_protocol_resources, oid, domain_status.status_pending_received_time_field_name, gate);
+                                const auto received_time = get_control_protocol_property(control_protocol_resources, oid, domain_status.status_pending_received_time_field_name, gate);
 
                                 if (received_time.as_integer() > 0)
                                 {
@@ -151,10 +151,13 @@ namespace nmos
                         }
                     } while (receiver_monitors_updates_pending);
 
+                    if (shutdown) break;
+
                     if (!receiver_monitors_updates_pending)
                     {
                         auto lock = state.write_lock();
                         state.receiver_monitor_status_pending = false;
+                        slog::log<slog::severities::too_much_info>(gate, SLOG_FLF) << "No more receiver monitors statuses are pending";
                     }
                 }
             }
