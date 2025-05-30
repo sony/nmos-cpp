@@ -85,19 +85,16 @@ namespace nmos
             auto found = find_control_protocol_resource(resources, nmos::types::nc_receiver_monitor, connection_resource.id);
             if (resources.end() != found && nc_receiver_monitor_class_id == details::parse_nc_class_id(nmos::fields::nc::class_id(found->data)))
             {
-                auto oid = nmos::fields::nc::oid(found->data);
+                const auto& oid = nmos::fields::nc::oid(found->data);
 
                 if (active)
                 {
-                    // Activate receiver monitor handler
+                    // Activate receiver monitor
                     activate_receiver_monitor(resources, oid, get_control_protocol_class_descriptor, get_control_protocol_method_descriptor, gate);
-
-                    // For demonstration purposes, stream and connection are *actually* not active, so reflect this in the stream and connection statuses
-                    set_receiver_monitor_stream_status_with_delay(resources, oid, nmos::nc_stream_status::unhealthy, U("No stream detected"), control_protocol_state, get_control_protocol_class_descriptor, gate);
-                    set_receiver_monitor_connection_status_with_delay(resources, oid, nmos::nc_connection_status::unhealthy, U("No connection detected"), control_protocol_state, get_control_protocol_class_descriptor, gate);
                 }
                 else
                 {
+                    // deactivate receiver monitor
                     deactivate_receiver_monitor(resources, oid, get_control_protocol_class_descriptor, gate);
                 }
             }
