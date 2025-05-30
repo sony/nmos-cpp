@@ -39,6 +39,9 @@ namespace nmos
     // this callback should not throw exceptions, as the relevant property will already has been changed and those changes will not be rolled back
     typedef std::function<void(const nmos::resource& resource, const utility::string_t& property_name, int index)> control_protocol_property_changed_handler;
 
+    // callback to set receiver monitor pending
+    typedef std::function<void(void)> receiver_monitor_status_pending_handler;
+
     // Receiver Monitor status callbacks
     // these callbacks should not throw exceptions
     namespace nc
