@@ -168,7 +168,7 @@ namespace nmos
     {
         auto get_control_protocol_class_descriptor = nmos::make_get_control_protocol_class_descriptor_handler(control_protocol_state);
 
-        return [&resources, get_control_protocol_class_descriptor, &gate](nc_oid oid, const utility::string_t& source_id)
+        return [&resources, get_control_protocol_class_descriptor, &gate](nc_oid oid, const bst::optional<utility::string_t>& source_id)
         {
             return set_receiver_monitor_synchronization_source_id(resources, oid, source_id, get_control_protocol_class_descriptor, gate);
         };

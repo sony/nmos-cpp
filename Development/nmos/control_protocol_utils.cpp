@@ -1068,20 +1068,15 @@ namespace nmos
             nmos::fields::nc::stream_status_pending,
             nmos::fields::nc::stream_status_message_pending,
             nmos::fields::nc::stream_status_pending_received_time,
-            details::make_receiver_monitor_status_pending_handler(control_protocol_state),
+            receiver_monitor_status_pending,
             get_control_protocol_class_descriptor,
             gate);
     }
 
     // Set synchronization source id
-    bool set_receiver_monitor_synchronization_source_id(resources& resources, nc_oid oid, const utility::string_t& source_id_, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, slog::base_gate& gate)
+    bool set_receiver_monitor_synchronization_source_id(resources& resources, nc_oid oid, const bst::optional<utility::string_t>& source_id_, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, slog::base_gate& gate)
     {
-        web::json::value source_id = web::json::value::string(source_id_);
-        if (0 == source_id_.length())
-        {
-            source_id = web::json::value::null();
-        }
-
+        web::json::value source_id = source_id_ ? web::json::value::string(*source_id_) : web::json::value{};
         return set_control_protocol_property(resources, oid, nc_receiver_monitor_synchronization_source_id_property_id, source_id, get_control_protocol_class_descriptor, gate);
     }
 
