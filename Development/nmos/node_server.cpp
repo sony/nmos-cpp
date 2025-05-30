@@ -140,14 +140,14 @@ namespace nmos
             auto resolve_auto = node_implementation.resolve_auto;
             auto set_transportfile = node_implementation.set_transportfile;
             auto connection_activated = node_implementation.connection_activated;
-            auto control_protocol_connection_activation = node_implementation.control_protocol_connection_activation;
+            auto receiver_monitor_connection_activated = node_implementation.receiver_monitor_connection_activated;
             auto channelmapping_activated = node_implementation.channelmapping_activated;
             auto get_authorization_bearer_token = node_implementation.get_authorization_bearer_token;
             node_server.thread_functions.assign({
                 [&, load_ca_certificates, registration_changed, get_authorization_bearer_token] { nmos::node_behaviour_thread(node_model, load_ca_certificates, registration_changed, get_authorization_bearer_token, gate); },
                 [&] { nmos::send_events_ws_messages_thread(events_ws_listener, node_model, events_ws_api.second, gate); },
                 [&] { nmos::erase_expired_events_resources_thread(node_model, gate); },
-                [&, resolve_auto, set_transportfile, connection_activated, control_protocol_connection_activation] { nmos::connection_activation_thread(node_model, resolve_auto, set_transportfile, connection_activated, control_protocol_connection_activation, gate); },
+                [&, resolve_auto, set_transportfile, connection_activated, receiver_monitor_connection_activated] { nmos::connection_activation_thread(node_model, resolve_auto, set_transportfile, connection_activated, receiver_monitor_connection_activated, gate); },
                 [&, channelmapping_activated] { nmos::channelmapping_activation_thread(node_model, channelmapping_activated, gate); }
             });
 
