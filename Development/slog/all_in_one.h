@@ -1027,7 +1027,7 @@ namespace slog
     class log_statement
     {
     public:
-        log_statement(severity level, const char* file, int line, const char* function, bool pert, const int& count = 0)
+        log_statement(severity level, const char* file, int line, const char* function, bool pert, const int& count = count_unused())
             : pert_(pert)
             , count_(count)
             , message_()
@@ -1060,6 +1060,7 @@ namespace slog
         const log_message& message() const { return *message_; }
 
     protected:
+        static const int& count_unused() { static const int zero = 0; return zero; }
         template <typename LoggingGateway>
         void log(LoggingGateway& gate) const { if (pert_) gate.log(*message_); }
 
@@ -1103,7 +1104,7 @@ namespace slog
     class nolog_statement
     {
     public:
-        nolog_statement(severity level, const char* file, int line, const char* function, bool pert, const int& nocount = 0)
+        nolog_statement(severity level, const char* file, int line, const char* function, bool pert, const int& nocount = count_unused())
         {}
 
         // Insertion operators for stream-based logging
@@ -1120,6 +1121,7 @@ namespace slog
         bool pertinent() const { return false; }
 
     protected:
+        static const int& count_unused() { static const int zero = 0; return zero; }
         template <typename LoggingGateway>
         void log(LoggingGateway& gate) const {}
 
@@ -1150,7 +1152,7 @@ namespace slog
             using log_statement::pertinent;
             using log_statement::log;
 
-            logw(log_gate& gate, severity level, const char* file, int line, const char* function, bool pert = true, const int& count = 0)
+            logw(log_gate& gate, severity level, const char* file, int line, const char* function, bool pert = true, const int& count = log_statement::count_unused())
                 : log_statement(level, file, line, function, pert && gate.pertinent(level), count)
                 , uncaught_exceptions_(pertinent() ? uncaught_exceptions() : -1)
                 , gate_(gate)
