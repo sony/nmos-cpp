@@ -204,7 +204,8 @@ namespace nmos
             else
             {
                 // resource not found for the role path
-                set_error_reply(res, status_codes::NotFound, U("Not Found; ") + role_path);
+                auto method_result = details::make_nc_method_result_error({ nmos::nc_method_status::bad_oid }, U("Not Found; ") + role_path);
+                set_reply(res, status_codes::NotFound, method_result);
             }
 
             return pplx::task_from_result(true);
@@ -244,7 +245,8 @@ namespace nmos
             else
             {
                 // resource not found for the role path
-                set_error_reply(res, status_codes::NotFound, U("Not Found; ") + role_path);
+                auto method_result = details::make_nc_method_result_error({ nmos::nc_method_status::bad_oid }, U("Not Found; ") + role_path);
+                set_reply(res, status_codes::NotFound, method_result);
             }
 
             return pplx::task_from_result(true);
@@ -291,7 +293,8 @@ namespace nmos
             else
             {
                 // resource not found for the role path
-                set_error_reply(res, status_codes::NotFound, U("Not Found; ") + role_path);
+                auto method_result = details::make_nc_method_result_error({ nmos::nc_method_status::bad_oid }, U("Not Found; ") + role_path);
+                set_reply(res, status_codes::NotFound, method_result);
             }
 
             return pplx::task_from_result(true);
@@ -348,7 +351,8 @@ namespace nmos
             else
             {
                 // resource not found for the role path
-                set_error_reply(res, status_codes::NotFound, U("Not Found; ") + role_path);
+                auto method_result = details::make_nc_method_result_error({ nmos::nc_method_status::bad_oid }, U("Not Found; ") + role_path);
+                set_reply(res, status_codes::NotFound, method_result);
             }
 
             return pplx::task_from_result(true);
@@ -370,7 +374,9 @@ namespace nmos
                 const auto& property_descriptor = nc::find_property_descriptor(details::parse_formatted_property_id(property_id), details::parse_nc_class_id(nmos::fields::nc::class_id(resource->data)), get_control_protocol_class_descriptor);
                 if (property_descriptor.is_null())
                 {
-                    set_error_reply(res, status_codes::NotFound, U("Not Found; ") + property_id);
+                    // resource not found for the role path
+                    auto method_result = details::make_nc_method_result_error({ nmos::nc_method_status::property_not_implemented }, U("Not Found; ") + property_id);
+                    set_reply(res, status_codes::NotFound, method_result);
                 }
                 else
                 {
@@ -380,7 +386,8 @@ namespace nmos
             else
             {
                 // resource not found for the role path
-                set_error_reply(res, status_codes::NotFound, U("Not Found; ") + role_path);
+                auto method_result = details::make_nc_method_result_error({ nmos::nc_method_status::bad_oid }, U("Not Found; ") + role_path);
+                set_reply(res, status_codes::NotFound, method_result);
             }
 
             return pplx::task_from_result(true);
@@ -422,7 +429,9 @@ namespace nmos
 
                 if (property_descriptor.is_null())
                 {
-                    set_error_reply(res, status_codes::NotFound, U("Not Found; ") + property_id);
+                    // property not found
+                    auto method_result = details::make_nc_method_result_error({ nmos::nc_method_status::property_not_implemented }, U("Not Found; ") + property_id);
+                    set_reply(res, status_codes::NotFound, method_result);
                 }
                 else
                 {
@@ -433,7 +442,8 @@ namespace nmos
             else
             {
                 // resource not found for the role path
-                set_error_reply(res, status_codes::NotFound, U("Not Found; ") + role_path);
+                auto method_result = details::make_nc_method_result_error({ nmos::nc_method_status::bad_oid }, U("Not Found; ") + role_path);
+                set_reply(res, status_codes::NotFound, method_result);
             }
 
             return pplx::task_from_result(true);
@@ -463,7 +473,8 @@ namespace nmos
             else
             {
                 // resource not found for the role path
-                set_error_reply(res, status_codes::NotFound, U("Not Found; ") + role_path);
+                auto method_result = details::make_nc_method_result_error({ nmos::nc_method_status::bad_oid }, U("Not Found; ") + role_path);
+                set_reply(res, status_codes::NotFound, method_result);
             }
 
             return pplx::task_from_result(true);
@@ -538,7 +549,8 @@ namespace nmos
                 else
                 {
                     // resource not found for the role path
-                    set_error_reply(res, status_codes::NotFound, U("Not Found; ") + role_path);
+                    auto method_result = details::make_nc_method_result_error({ nmos::nc_method_status::bad_oid }, U("Not Found; ") + role_path);
+                    set_reply(res, status_codes::NotFound, method_result);
                 }
 
                 return true;
@@ -570,7 +582,9 @@ namespace nmos
                     const auto& property_descriptor = nc::find_property_descriptor(details::parse_formatted_property_id(property_id), details::parse_nc_class_id(nmos::fields::nc::class_id(resource->data)), get_control_protocol_class_descriptor);
                     if (property_descriptor.is_null())
                     {
-                        set_error_reply(res, status_codes::NotFound, U("Not Found; ") + property_id);
+                        // property not found
+                        auto method_result = details::make_nc_method_result_error({ nmos::nc_method_status::bad_oid }, U("Not Found; ") + property_id);
+                        set_reply(res, status_codes::NotFound, method_result);
                     }
                     else
                     {
@@ -590,7 +604,8 @@ namespace nmos
                 else
                 {
                     // resource not found for the role path
-                    set_error_reply(res, status_codes::NotFound, U("Not Found; ") + role_path);
+                    auto method_result = details::make_nc_method_result_error({ nmos::nc_method_status::bad_oid }, U("Not Found; ") + role_path);
+                    set_reply(res, status_codes::NotFound, method_result);
                 }
 
                 return true;
@@ -637,7 +652,8 @@ namespace nmos
             else
             {
                 // resource not found for the role path
-                set_error_reply(res, status_codes::NotFound, U("Not Found; ") + role_path);
+                auto method_result = details::make_nc_method_result_error({ nmos::nc_method_status::bad_oid }, U("Not Found; ") + role_path);
+                set_reply(res, status_codes::NotFound, method_result);
             }
 
             return pplx::task_from_result(true);
@@ -656,14 +672,14 @@ namespace nmos
                 const auto& resource = nc::find_resource_by_role_path(resources, role_path);
                 if (resources.end() != resource)
                 {
-                    // Validate JSON syntax according to the schema
-                    details::configurationapi_validator().validate(body, experimental::make_configurationapi_bulkProperties_validate_request_schema_uri(version));
-
                     web::http::status_code code{ status_codes::BadRequest };
                     value method_result;
 
                     try
                     {
+                        // Validate JSON syntax according to the schema
+                        details::configurationapi_validator().validate(body, experimental::make_configurationapi_bulkProperties_validate_request_schema_uri(version));
+
                         const auto& arguments = nmos::fields::nc::arguments(body);
                         bool recurse = nmos::fields::nc::recurse(arguments);
                         const auto& restore_mode = nmos::fields::nc::restore_mode(arguments);
@@ -686,12 +702,22 @@ namespace nmos
 
                         code = status_codes::BadRequest;
                     }
+                    catch (const web::json::json_exception& e)
+                    {
+                        // JSON validation error
+                        utility::stringstream_t ss;
+                        ss << U("JSON validation error: ") << e.what();
+                        method_result = details::make_nc_method_result_error({ nmos::nc_method_status::parameter_error }, ss.str());
+
+                        code = status_codes::BadRequest;
+                    }
                     set_reply(res, code, method_result);
                 }
                 else
                 {
                     // resource not found for the role path
-                    set_error_reply(res, status_codes::NotFound, U("Not Found; ") + role_path);
+                    auto method_result = details::make_nc_method_result_error({ nmos::nc_method_status::bad_oid }, U("Not Found; ") + role_path);
+                    set_reply(res, status_codes::NotFound, method_result);
                 }
                 return true;
             });
@@ -710,14 +736,14 @@ namespace nmos
                 const auto& resource = nc::find_resource_by_role_path(resources, role_path);
                 if (resources.end() != resource)
                 {
-                    // Validate JSON syntax according to the schema
-                    details::configurationapi_validator().validate(body, experimental::make_configurationapi_bulkProperties_set_request_schema_uri(version));
-
                     web::http::status_code code{ status_codes::BadRequest };
                     value method_result;
 
                     try
                     {
+                        // Validate JSON syntax according to the schema
+                        details::configurationapi_validator().validate(body, experimental::make_configurationapi_bulkProperties_set_request_schema_uri(version));
+
                         const auto& arguments = nmos::fields::nc::arguments(body);
                         bool recurse = nmos::fields::nc::recurse(arguments);
                         const auto& restore_mode = nmos::fields::nc::restore_mode(arguments);
@@ -738,12 +764,22 @@ namespace nmos
 
                         code = status_codes::BadRequest;
                     }
+                    catch (const web::json::json_exception& e)
+                    {
+                        // JSON validation error
+                        utility::stringstream_t ss;
+                        ss << U("JSON validation error: ") << e.what();
+                        method_result = details::make_nc_method_result_error({ nmos::nc_method_status::parameter_error }, ss.str());
+
+                        code = status_codes::BadRequest;
+                    }
                     set_reply(res, code, method_result);
                 }
                 else
                 {
                     // resource not found for the role path
-                    set_error_reply(res, status_codes::NotFound, U("Not Found; ") + role_path);
+                    auto method_result = details::make_nc_method_result_error({ nmos::nc_method_status::bad_oid }, U("Not Found; ") + role_path);
+                    set_reply(res, status_codes::NotFound, method_result);
                 }
 
                 return true;
