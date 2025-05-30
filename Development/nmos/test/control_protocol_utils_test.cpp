@@ -310,8 +310,7 @@ BST_TEST_CASE(testSetSynchronizationSourceId)
         BST_CHECK_EQUAL(sync_source_id, actual_sync_source_id.as_string());
     }
     {
-        utility::string_t sync_source_id = U("");
-        nmos::set_receiver_monitor_synchronization_source_id(resources, monitor_oid, sync_source_id, get_control_protocol_class_descriptor, gate);
+        nmos::set_receiver_monitor_synchronization_source_id(resources, monitor_oid, {}, get_control_protocol_class_descriptor, gate);
         auto actual_sync_source_id = nmos::get_control_protocol_property(resources, monitor_oid, nmos::nc_receiver_monitor_synchronization_source_id_property_id, get_control_protocol_class_descriptor, gate);
         BST_CHECK(actual_sync_source_id.is_null());
     }
