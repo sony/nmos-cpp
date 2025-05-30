@@ -377,38 +377,53 @@ namespace nmos
             const utility::string_t& status_pending_field_name,
             const utility::string_t& status_message_pending_time_field_name,
             const utility::string_t& status_pending_received_time_field_name,
-            receiver_monitor_status_pending_handler receiver_monitor_status_pending, // hmm, maybe better to past in a handle to set the receiver_monitor_status_pending
+            receiver_monitor_status_pending_handler receiver_monitor_status_pending,
             get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor,
             slog::base_gate& gate)
         {
-            auto current_status = get_control_protocol_property(resources, oid, status_property_id, get_control_protocol_class_descriptor, gate);
+            const auto current_status = get_control_protocol_property(resources, oid, status_property_id, get_control_protocol_class_descriptor, gate);
+            if (current_status.is_null())
+            {
+                // should never happen, missing receiver monitor status property
+                slog::log<slog::severities::error>(gate, SLOG_FLF) << U("receiver monitor status property: {level=") << status_property_id.level << U(", index=") << status_property_id.index << U("} not found");
+                return false;
+            }
 
+            // do nothing if new status and the current status are the same
+            if (status == current_status) return true;
+
+            // if status or current state is "inactive" (0)
             if (0 == status.as_integer() || 0 == current_status.as_integer())
             {
-                set_receiver_monitor_status(resources, oid, status, status_message, status_property_id, status_message_property_id, status_transition_counter_property_id, status_pending_received_time_field_name, get_control_protocol_class_descriptor, gate);
+                return set_receiver_monitor_status(resources, oid, status, status_message, status_property_id, status_message_property_id, status_transition_counter_property_id, status_pending_received_time_field_name, get_control_protocol_class_descriptor, gate);
             }
             else
             {
-                auto current_time = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
-                auto activation_time = get_control_protocol_property(resources, oid, nmos::fields::nc::receiver_monitor_activation_time, gate);
-                auto status_reporting_delay = get_control_protocol_property(resources, oid, nc_status_monitor_status_reporting_delay, get_control_protocol_class_descriptor, gate);
+                const auto current_time = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
+                const auto activation_time = get_control_protocol_property(resources, oid, nmos::fields::nc::receiver_monitor_activation_time, gate);
+                const auto status_reporting_delay = get_control_protocol_property(resources, oid, nc_status_monitor_status_reporting_delay, get_control_protocol_class_descriptor, gate);
 
                 if (status < current_status.as_integer() && current_time >(static_cast<long long>(activation_time.as_integer()) + status_reporting_delay.as_integer()))
                 {
-                    set_receiver_monitor_status(resources, oid, status, status_message, status_property_id, status_message_property_id, status_transition_counter_property_id, status_pending_received_time_field_name, get_control_protocol_class_descriptor, gate);
+                    // becoming less health and not in the initial activation state
+                    // immediately set the status
+                    return set_receiver_monitor_status(resources, oid, status, status_message, status_property_id, status_message_property_id, status_transition_counter_property_id, status_pending_received_time_field_name, get_control_protocol_class_descriptor, gate);
                 }
                 else
                 {
-                    set_control_protocol_property(resources, oid, status_pending_field_name, status, gate);
-                    set_control_protocol_property(resources, oid, status_message_pending_time_field_name, web::json::value::string(status_message), gate);
-                    // check current pending received time to make sure not already set
-                    auto received_time = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
-                    set_control_protocol_property(resources, oid, status_pending_received_time_field_name, received_time, gate);
-                    receiver_monitor_status_pending();
+                    // becoming more health or in the initial activation state
+                    // set the status with delay
+                    const auto received_time = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
+                    if (set_control_protocol_property(resources, oid, status_pending_field_name, status, gate)
+                        && set_control_protocol_property(resources, oid, status_message_pending_time_field_name, web::json::value::string(status_message), gate)
+                        && set_control_protocol_property(resources, oid, status_pending_received_time_field_name, received_time, gate))
+                    {
+                        receiver_monitor_status_pending();
+                        return true;
+                    }
+                    return false;
                 }
             }
-
-            return true;
         }
 
         bool update_receiver_monitor_overall_status(resources& resources, nc_oid oid, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, slog::base_gate& gate)
