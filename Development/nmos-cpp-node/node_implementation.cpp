@@ -1208,6 +1208,8 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
 
         // example device manager
         auto device_manager = nmos::make_device_manager(++oid, model.settings);
+        // making an object rebuildable allows read only properties to be modified by the Configuration API in Rebuild mode
+        nmos::make_rebuildable(device_manager);
 
         // example class manager
         auto class_manager = nmos::make_class_manager(++oid, control_protocol_state);
@@ -1225,6 +1227,7 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
         // example left/right gains
         auto left_gain = make_gain_control(++oid, channel_gain_oid, U("left-gain"), U("Left gain"), U("Left channel gain"), value::null(), value::null(), 0.0);
         auto right_gain = make_gain_control(++oid, channel_gain_oid, U("right-gain"), U("Right gain"), U("Right channel gain"), value::null(), value::null(), 0.0);
+
         // add left-gain and right-gain to channel gain
         nmos::nc::push_back(channel_gain, left_gain);
         nmos::nc::push_back(channel_gain, right_gain);
@@ -1262,6 +1265,7 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
 
         const auto receiver_block_oid = ++oid;
         auto receiver_block = nmos::make_block(receiver_block_oid, nmos::root_block_oid, U("receivers"), U("Receiver Monitors"), U("Receiver Monitors"));
+        // making a block rebuildable allows block members to be added or removed by the Configuration API in Rebuild mode
         nmos::make_rebuildable(receiver_block);
 
         // example receiver-monitor(s)
@@ -1753,8 +1757,12 @@ nmos::filter_property_value_holders_handler make_filter_property_value_holders_h
             const auto& property_id = nmos::details::parse_nc_property_id(nmos::fields::nc::id(property_value));
             const auto& property_descriptor = nmos::nc::find_property_descriptor(property_id, class_id, get_control_protocol_class_descriptor);
 
-            // In this example we are only allowing writable properties to be modified
-            if (bool(nmos::fields::nc::is_read_only(property_descriptor)))
+            // In this example we are not allowing "structural" parts of an object to be modified
+            if (nmos::fields::nc::name(property_descriptor) == nmos::fields::nc::oid.key
+                || nmos::fields::nc::name(property_descriptor) == nmos::fields::nc::constant_oid.key
+                || nmos::fields::nc::name(property_descriptor) == nmos::fields::nc::role.key
+                || nmos::fields::nc::name(property_descriptor) == nmos::fields::nc::class_id.key
+                || nmos::fields::nc::name(property_descriptor) == nmos::fields::nc::owner.key)
             {
                 // We need to create a notice for any properties that will not be updated
                 const auto& property_restore_notice = nmos::details::make_nc_property_restore_notice(property_id, nmos::fields::nc::name(property_value), nmos::nc_property_restore_notice_type::warning, U("Update of read only properties not supported"));
@@ -1769,11 +1777,14 @@ nmos::filter_property_value_holders_handler make_filter_property_value_holders_h
     };
 }
 
+// JRT perhaps we need two call backs - one for deleting a resource, and one for creating a resource
+
 // Example Device Configuration callback for restoring a back-up dataset
 nmos::modify_rebuildable_block_handler make_modify_rebuildable_block_handler(nmos::node_model& model, slog::base_gate& gate)
 {
     return [&model, &gate](const nmos::resource& resource, const web::json::array& target_role_path, const web::json::array& object_properties_holders, bool recurse, bool validate, nmos::get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor)
     {
+        // rebuildable block and child objects are passed to this function for modification
         auto object_properties_set_validations = web::json::value::array();
 
         nmos::resources& control_protocol_resources = model.control_protocol_resources;
@@ -1839,23 +1850,10 @@ nmos::modify_rebuildable_block_handler make_modify_rebuildable_block_handler(nmo
                 // get the receiver monitor resource
                 auto found = nmos::find_resource(control_protocol_resources, utility::conversions::details::to_string_t(nmos::fields::nc::oid(reference_member)));
 
-                const auto& touchpoint_resource = nmos::nc::find_touchpoint_resource(node_resources, *found);
-
-                if (touchpoint_resource != control_protocol_resources.end())
+                if (control_protocol_resources.end() != found)
                 {
-                    const auto& id = nmos::fields::id(touchpoint_resource->data);
-                    auto erase_count = erase_resource(node_resources, id);
-
-                    if (erase_count == 0)
-                    {
-                        auto status_message = U("Unable to erase node resource ") + id;
-                        auto object_properties_set_validation = nmos::make_object_properties_set_validation(child_role_path.as_array(), nmos::nc_restore_validation_status::failed, status_message);
-                        web::json::push_back(object_properties_set_validations, object_properties_set_validation);
-
-                        continue;
-                    }
                     const auto oid = nmos::fields::nc::oid(found->data);
-                    erase_count = nmos::nc::erase_resource(control_protocol_resources, found->id);
+                    auto erase_count = nmos::nc::erase_resource(control_protocol_resources, found->id);
                     if (erase_count > 0)
                     {
                         members_to_remove.push_back(oid);
@@ -1903,29 +1901,7 @@ nmos::modify_rebuildable_block_handler make_modify_rebuildable_block_handler(nmo
             {
                 // can't find this oid in existing members, so member has been added
                 // Add this resource
-                // Get example resource from the exising members to get node_id, device_id
-                if (reference_members.size() == 0)
-                {
-                    auto status_message = U("Cannot duplicate resources when none exist");
-                    auto object_properties_set_validation = nmos::make_object_properties_set_validation(child_role_path.as_array(), nmos::nc_restore_validation_status::failed, status_message);
-                    web::json::push_back(object_properties_set_validations, object_properties_set_validation);
-
-                    continue;
-                }
-                const auto& example_monitor = *reference_members.begin();
-                const auto& found = nmos::find_resource(control_protocol_resources, utility::conversions::details::to_string_t(nmos::fields::nc::oid(example_monitor)));
-                const auto& touchpoint_resource = nmos::nc::find_touchpoint_resource(node_resources, *found);
-                if (touchpoint_resource == control_protocol_resources.end())
-                {
-                    auto status_message = U("Cannot duplicate resources when none exist");
-                    auto object_properties_set_validation = nmos::make_object_properties_set_validation(child_role_path.as_array(), nmos::nc_restore_validation_status::failed, status_message);
-                    web::json::push_back(object_properties_set_validations, object_properties_set_validation);
-
-                    continue;
-                }
-                const auto& device_id = nmos::fields::device_id(touchpoint_resource->data);
-
-                // Find the object_properties_holder that describes the new receiver monitor
+                // Find the object_properties_holder that describes the receiver monitor
                 const auto& filtered_child_object_properties_holders = boost::copy_range<std::set<web::json::value>>(object_properties_holders
                     | boost::adaptors::filtered([&child_role_path](const web::json::value& object_properties_holder)
                         {
@@ -1944,8 +1920,10 @@ nmos::modify_rebuildable_block_handler make_modify_rebuildable_block_handler(nmo
 
                 const auto& child_object_properties_holder = *filtered_child_object_properties_holders.begin();
 
-                const auto& oid_property_holder = nmos::get_property_value_holder(child_object_properties_holder, nmos::nc_object_oid_property_id);
+                // JRT TODO: unsafe to take oid from backup dataset - need to create a new OID with no clash with existing OIDs so need a utility function to get "next" OID
+                // create utility function to get next oid - perhaps have a state in the control_protocol_state for a monotonically increasing oid
 
+                const auto& oid_property_holder = nmos::get_property_value_holder(child_object_properties_holder, nmos::nc_object_oid_property_id);
                 if (oid_property_holder == web::json::value::null())
                 {
                     auto status_message = U("Cannot find OID object property value holder");
@@ -1965,7 +1943,6 @@ nmos::modify_rebuildable_block_handler make_modify_rebuildable_block_handler(nmo
 
                     continue;
                 }
-                const auto& oid2 = nmos::fields::nc::value(oid_property_holder);
 
                 const auto& touchpoints = nmos::fields::nc::value(touchpoint_property_holder);
 
@@ -1978,35 +1955,6 @@ nmos::modify_rebuildable_block_handler make_modify_rebuildable_block_handler(nmo
                     continue;
                 }
                 const auto& touchpoint_uuid = nmos::fields::nc::id(nmos::fields::nc::resource(*touchpoints.as_array().begin()));
-
-                // Make resources
-                const auto host_interfaces = nmos::get_host_interfaces(model.settings);
-                const auto& host_address = nmos::fields::host_address(model.settings);
-                // the interface corresponding to the host address is used for the example node's WebSocket senders and receivers
-                const auto host_interface_ = impl::find_interface(host_interfaces, host_address);
-                if (host_interfaces.end() == host_interface_)
-                {
-                    slog::log<slog::severities::severe>(gate, SLOG_FLF) << "No network interface corresponding to host_address?";
-                    throw node_implementation_init_exception();
-                }
-
-                const auto& primary_address = model.settings.has_field(nmos::fields::host_addresses) ? web::json::front(nmos::fields::host_addresses(model.settings)).as_string() : host_address;
-                const auto& secondary_address = model.settings.has_field(nmos::fields::host_addresses) ? web::json::back(nmos::fields::host_addresses(model.settings)).as_string() : host_address;
-                const auto primary_interface_ = impl::find_interface(host_interfaces, primary_address);
-                const auto secondary_interface_ = impl::find_interface(host_interfaces, secondary_address);
-                if (host_interfaces.end() == primary_interface_ || host_interfaces.end() == secondary_interface_)
-                {
-                    slog::log<slog::severities::severe>(gate, SLOG_FLF) << "No network interface corresponding to one of the host_addresses?";
-                    throw node_implementation_init_exception();
-                }
-                const auto& primary_interface = *primary_interface_;
-                const auto& secondary_interface = *secondary_interface_;
-                const auto smpte2022_7 = impl::fields::smpte2022_7(model.settings);
-                const auto interface_names = smpte2022_7
-                    ? std::vector<utility::string_t>{ primary_interface.name, secondary_interface.name }
-                : std::vector<utility::string_t>{ primary_interface.name };
-
-                auto receiver = nmos::make_receiver(touchpoint_uuid.as_string(), device_id, nmos::transports::rtp, interface_names, model.settings);
 
                 const auto& owner_property_holder = nmos::get_property_value_holder(child_object_properties_holder, nmos::nc_object_owner_property_id);
                 if (owner_property_holder == web::json::value::null())
@@ -2030,15 +1978,13 @@ nmos::modify_rebuildable_block_handler make_modify_rebuildable_block_handler(nmo
 
                 const auto& owner = nmos::fields::nc::value(owner_property_holder).as_integer();
                 const auto& role = nmos::fields::nc::value(role_property_holder).as_string();
+                const auto& oid2 = nmos::fields::nc::value(oid_property_holder);
 
                 auto receiver_monitor = nmos::make_receiver_monitor(oid2.as_integer(), true, owner, role, U(""), U(""), web::json::value_of({{nmos::details::make_nc_touchpoint_nmos({nmos::ncp_touchpoint_resource_types::receiver, touchpoint_uuid.as_string()})}}));
+                nmos::nc::insert_resource(control_protocol_resources, std::move(receiver_monitor));
 
                 auto block_member_descriptor = nmos::details::make_nc_block_member_descriptor(U(""), role, oid2.as_integer(), true, nmos::nc_receiver_monitor_class_id, U(""), owner);
-
                 members_to_add.push_back(block_member_descriptor);
-                // insert resources
-                insert_resource(node_resources, std::move(receiver));
-                nmos::nc::insert_resource(control_protocol_resources, std::move(receiver_monitor));
 
                 auto object_properties_set_validation = nmos::make_object_properties_set_validation(child_role_path.as_array(), nmos::nc_restore_validation_status::ok);
                 web::json::push_back(object_properties_set_validations, object_properties_set_validation);
