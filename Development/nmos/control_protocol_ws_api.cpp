@@ -268,7 +268,7 @@ namespace nmos
                                             try
                                             {
                                                 // do method arguments constraints validation
-                                                method_parameters_contraints_validation(arguments, nc_method_descriptor, get_control_protocol_datatype_descriptor);
+                                                nc::method_parameters_contraints_validation(arguments, nc_method_descriptor, get_control_protocol_datatype_descriptor);
 
                                                 // execute the relevant control method handler, then accumulating up their response to reponses
                                                 // wrap the NcMethodResuls here
