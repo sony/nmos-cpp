@@ -1794,7 +1794,6 @@ nmos::remove_device_model_object_handler make_remove_device_model_handler(nmos::
             {
                 return true;
             }
-            const auto oid = nmos::fields::nc::oid(found->data);
             auto erase_count = nmos::nc::erase_resource(control_protocol_resources, found->id);
             if (erase_count > 0)
             {
@@ -1812,8 +1811,7 @@ nmos::add_device_model_object_handler make_add_device_model_object_handler(nmos:
         // This example callback shows how to add a receiver monitor resource to the device model
         // The receivers block that contains the monitors must be rebuildable
         // To add a monitor, restore a backup dataset including an additional monitor in the members property of the receivers block, in Rebuild mode
-        // Also include an object properties holder for the new monitor including a touchpoint refencing the NMOS Receiver resource being monitored
-        // JRT TODO: Add some boiler plate to add notices for unused property value holders
+        // Also include an object properties holder for the new monitor including a touchpoint property holder refencing the NMOS Receiver resource being monitored
         nmos::resources& control_protocol_resources = model.control_protocol_resources;
 
         const auto& role_path = nmos::fields::nc::path(object_properties_holder);
@@ -1856,7 +1854,25 @@ nmos::add_device_model_object_handler make_add_device_model_object_handler(nmos:
             auto receiver_monitor = nmos::make_receiver_monitor(oid, true, owner, role, user_label, U(""), web::json::value_of({ {nmos::details::make_nc_touchpoint_nmos({nmos::ncp_touchpoint_resource_types::receiver, touchpoint_uuid.as_string()})} }));
             nmos::nc::insert_resource(control_protocol_resources, std::move(receiver_monitor));
         }
-        return nmos::make_object_properties_set_validation(role_path, nmos::nc_restore_validation_status::ok);
+        // Generate notices for any properties that have been unprocessed
+        std::vector< nmos::nc_property_id > processed_properties = { nmos::nc_object_oid_property_id,
+                                                                     nmos::nc_object_owner_property_id,
+                                                                     nmos::nc_object_role_property_id,
+                                                                     nmos::nc_object_user_label_property_id,
+                                                                     nmos::nc_object_touchpoints_property_id };
+        auto notices = web::json::value::array();
+        for (const auto& property_holder: nmos::fields::nc::values(object_properties_holder))
+        {
+            const auto& property_id = nmos::details::parse_nc_property_id(nmos::fields::nc::id(property_holder));
+            const auto& name = nmos::fields::nc::name(property_holder).c_str();
+            if (std::find(processed_properties.begin(), processed_properties.end(), property_id) == processed_properties.end())
+            {
+                const auto notice = nmos::details::make_nc_property_restore_notice(property_id, name, nmos::nc_property_restore_notice_type::warning, U("Property unprocessed."));
+                web::json::push_back(notices, notice);
+            }
+        }
+
+        return nmos::make_object_properties_set_validation(role_path, nmos::nc_restore_validation_status::ok, notices.as_array());
     };
 }
 
