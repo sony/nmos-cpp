@@ -283,72 +283,6 @@ BST_TEST_CASE(testGetObjectPropertiesHolder)
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////
-BST_TEST_CASE(testGetChildObjectPropertiesHolders)
-{
-    using web::json::value_of;
-    using web::json::value;
-
-    // Create Object Properties Holder
-    auto object_properties_holders = value::array();
-
-    {
-        const auto role_path = value_of({ U("root"), U("receivers"), U("mon1") });
-        auto property_value_holders = value::array();
-        const auto property_value_holder = nmos::details::make_nc_property_value_holder(nmos::nc_property_id(2, 1), U("enabled"), U("NcBoolean"), false, value::boolean(false));
-        push_back(property_value_holders, property_value_holder);
-        const auto object_properties_holder = nmos::details::make_nc_object_properties_holder(role_path.as_array(), property_value_holders.as_array(), value::array().as_array(), value::array().as_array(), false);
-        push_back(object_properties_holders, object_properties_holder);
-    }
-    {
-        const auto role_path = value_of({ U("root"), U("receivers"), U("mon2") });
-        auto property_value_holders = value::array();
-        const auto property_value_holder = nmos::details::make_nc_property_value_holder(nmos::nc_property_id(2, 1), U("enabled"), U("NcBoolean"), false, value::boolean(false));
-        push_back(property_value_holders, property_value_holder);
-        const auto object_properties_holder = nmos::details::make_nc_object_properties_holder(role_path.as_array(), property_value_holders.as_array(), value::array().as_array(), value::array().as_array(), false);
-        push_back(object_properties_holders, object_properties_holder);
-    }
-    {
-        const auto role_path = value_of({ U("root"), U("senders"), U("mon1") });
-        auto property_value_holders = value::array();
-        const auto property_value_holder = nmos::details::make_nc_property_value_holder(nmos::nc_property_id(2, 1), U("enabled"), U("NcBoolean"), false, value::boolean(false));
-        push_back(property_value_holders, property_value_holder);
-        const auto object_properties_holder = nmos::details::make_nc_object_properties_holder(role_path.as_array(), property_value_holders.as_array(), value::array().as_array(), value::array().as_array(), false);
-        push_back(object_properties_holders, object_properties_holder);
-    }
-
-    {
-        const auto target_role_path = value_of({ U("root"), U("receivers") });
-
-        const auto child_object_properties_holders = nmos::get_child_object_properties_holders(object_properties_holders.as_array(), target_role_path.as_array());
-
-        BST_REQUIRE_EQUAL(2, child_object_properties_holders.size());
-
-        const auto& object_properties_holder1 = nmos::get_object_properties_holder(child_object_properties_holders, value_of({ U("root"), U("receivers"), U("mon1") }).as_array());
-        BST_CHECK_EQUAL(1, object_properties_holder1.size());
-
-        const auto& object_properties_holder2 = nmos::get_object_properties_holder(child_object_properties_holders, value_of({ U("root"), U("receivers"), U("mon2") }).as_array());
-        BST_CHECK_EQUAL(1, object_properties_holder2.size());
-    }
-    {
-        const auto target_role_path = value_of({ U("root"), U("receivers"), U("mon1")});
-
-        const auto child_object_properties_holders = nmos::get_child_object_properties_holders(object_properties_holders.as_array(), target_role_path.as_array());
-
-        BST_REQUIRE_EQUAL(1, child_object_properties_holders.size());
-
-        const auto& object_properties_holder1 = nmos::get_object_properties_holder(child_object_properties_holders, value_of({ U("root"), U("receivers"), U("mon1") }).as_array());
-        BST_CHECK_EQUAL(1, object_properties_holder1.size());
-    }
-    {
-        const auto target_role_path = value_of({ U("root"), U("does_not_exist") });
-
-        const auto child_object_properties_holders = nmos::get_child_object_properties_holders(object_properties_holders.as_array(), target_role_path.as_array());
-
-        BST_REQUIRE_EQUAL(0, child_object_properties_holders.size());
-    }
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////
 BST_TEST_CASE(testGetRolePath)
 {
     // Create Fake Device Model
@@ -778,13 +712,8 @@ BST_TEST_CASE(testApplyBackupDataSet)
         const auto& resource = nmos::nc::find_resource_by_role_path(resources, target_role_path.as_array());
         const auto output = nmos::apply_backup_data_set(resources, *resource, object_properties_holders.as_array(), recurse, restore_mode, validate, get_control_protocol_class_descriptor, filter_property_value_holders, remove_device_model_object, add_device_model_object);
 
-        // expectation is there will be a result for each of the object_properties_holders i.e. one
-        BST_REQUIRE_EQUAL(1, output.as_array().size());
-        const auto object_properties_set_validation = output.as_array().at(0);
-
-        BST_CHECK_EQUAL(role_path.as_array(), nmos::fields::nc::path(object_properties_set_validation));
-        BST_CHECK_EQUAL(nmos::nc_restore_validation_status::not_found, nmos::fields::nc::status(object_properties_set_validation));
-        BST_CHECK_EQUAL(0, nmos::fields::nc::notices(object_properties_set_validation).size());
+        // expectation no object_properties_holders as not in the restore scope
+        BST_REQUIRE_EQUAL(0, output.as_array().size());
 
         BST_CHECK(!filter_property_value_holders_called);
         BST_CHECK(!remove_device_model_object_called);
@@ -1640,7 +1569,7 @@ BST_TEST_CASE(testApplyBackupDataSet_NegativeTests)
         BST_REQUIRE_EQUAL(monitor_1_object_properties_holder.size(), 1);
         {
             const auto& object_properties_set_validation = monitor_1_object_properties_holder.at(0);
-            BST_CHECK_EQUAL(nmos::nc_restore_validation_status::failed, nmos::fields::nc::status(object_properties_set_validation));
+            BST_CHECK_EQUAL(nmos::nc_restore_validation_status::ok, nmos::fields::nc::status(object_properties_set_validation));
         }
     }
 }
