@@ -74,6 +74,15 @@ namespace nmos
         return{ is12_versions::v1_0, types::nc_receiver_monitor, std::move(data), true };
     }
 
+    // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/monitoring/#ncsendermonitor
+    control_protocol_resource make_sender_monitor(nc_oid oid, bool constant_oid, nc_oid owner, const utility::string_t& role, const utility::string_t& user_label, const utility::string_t& description, const web::json::value& touchpoints, const web::json::value& runtime_property_constraints, bool enabled,
+        nc_overall_status::status overall_status, const utility::string_t& overall_status_message, nc_link_status::status link_status, const utility::string_t& link_status_message, nc_transmission_status::status transmission_status, const utility::string_t& transmission_status_message, nc_synchronization_status::status synchronization_status, const utility::string_t& synchronization_status_message, const web::json::value& synchronization_source_id, nc_essence_status::status essence_status, const utility::string_t& essence_status_message, uint32_t status_reporting_delay, bool auto_reset_counters)
+    {
+        auto data = details::make_sender_monitor(nc_sender_monitor_class_id, oid, constant_oid, owner, role, user_label, description, touchpoints, runtime_property_constraints, enabled, overall_status, overall_status_message, link_status, link_status_message, transmission_status, transmission_status_message, synchronization_status, synchronization_status_message, synchronization_source_id, essence_status, essence_status_message, status_reporting_delay, auto_reset_counters);
+
+        return{ is12_versions::v1_0, types::nc_sender_monitor, std::move(data), true };
+    }
+
     // Identification feature set control classes
     //
     // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/identification/#ncidentbeacon

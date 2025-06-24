@@ -48,6 +48,7 @@ namespace nmos
         const type nc_class_manager{ U("nc_class_manager") };
         const type nc_status_monitor{ U("nc_status_monitor") };
         const type nc_receiver_monitor{ U("nc_receiver_monitor") };
+        const type nc_sender_monitor{ U("nc_sender_monitor") };
         const type nc_ident_beacon{ U("nc_ident_beacon") };
 
         // all Control Protocol resource types

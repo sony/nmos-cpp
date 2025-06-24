@@ -359,9 +359,15 @@ namespace nmos
             const web::json::field_as_integer transmission_status{ U("transmissionStatus") }; // NcTransmissionStatus
             const web::json::field_as_string transmission_status_message{ U("transmissionStatusMessage") };
             const web::json::field_as_integer transmission_status_transition_counter{ U("transmissionStatusTransitionCounter") };
+            const web::json::field_as_integer transmission_status_pending{ U("transmissionStatusPending") };// Internal use only
+            const web::json::field_as_string transmission_status_message_pending{ U("transmissionStatusMessagePending") }; // Internal use only
+            const web::json::field_as_integer transmission_status_pending_received_time{ U("transmissionStatusPendingReceivedTime") }; // Internal use only
             const web::json::field_as_integer essence_status{ U("essenceStatus") }; // NcEssenceStatus
             const web::json::field_as_string essence_status_message{ U("essenceStatusMessage") };
             const web::json::field_as_integer essence_status_transition_counter{ U("essenceStatusTransitionCounter") };
+            const web::json::field_as_integer essence_status_pending{ U("essenceStatusPending") }; // Internal use only
+            const web::json::field_as_string essence_status_message_pending{ U("essenceStatusMessagePending") }; // Internal use only
+            const web::json::field_as_integer essence_status_pending_received_time{ U("essenceStatusPendingReceivedTime") }; // Internal use only
             const web::json::field_as_bool auto_reset_monitor{ U("autoResetCountersAndMessages") };
             const web::json::field_as_bool active{ U("active") };
             const web::json::field_as_integer overall_status{ U("overallStatus") };

@@ -791,6 +791,46 @@ namespace nmos
             return data;
         }
 
+        // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/monitoring/#ncreceivermonitor
+        web::json::value make_sender_monitor(const nc_class_id& class_id, nc_oid oid, bool constant_oid, nc_oid owner, const utility::string_t& role, const utility::string_t& user_label, const utility::string_t& description, const web::json::value& touchpoints, const web::json::value& runtime_property_constraints, bool enabled, nc_overall_status::status overall_status, const utility::string_t& overall_status_message, nc_link_status::status link_status, const utility::string_t& link_status_message, nc_transmission_status::status transmission_status, const utility::string_t& transmission_status_message, nc_synchronization_status::status external_synchronization_status, const utility::string_t& external_synchronization_status_message, const web::json::value& synchronization_source_id, nc_essence_status::status essence_status, const utility::string_t& essence_status_message, uint32_t status_reporting_delay, bool auto_reset_monitor)
+        {
+            using web::json::value;
+
+            auto data = make_nc_status_monitor(class_id, oid, constant_oid, owner, role, user_label, description, touchpoints, runtime_property_constraints, enabled, overall_status, overall_status_message, status_reporting_delay);
+
+            data[nmos::fields::nc::link_status] = value::number(link_status);
+            data[nmos::fields::nc::link_status_message] = value::string(link_status_message);
+            data[nmos::fields::nc::link_status_transition_counter] = value::number(0);
+            data[nmos::fields::nc::transmission_status] = value::number(transmission_status);
+            data[nmos::fields::nc::transmission_status_message] = value::string(transmission_status_message);
+            data[nmos::fields::nc::transmission_status_transition_counter] = value::number(0);
+            data[nmos::fields::nc::external_synchronization_status] = value::number(external_synchronization_status);
+            data[nmos::fields::nc::external_synchronization_status_message] = value::string(external_synchronization_status_message);
+            data[nmos::fields::nc::external_synchronization_status_transition_counter] = value::number(0);
+            data[nmos::fields::nc::synchronization_source_id] = synchronization_source_id;
+            data[nmos::fields::nc::essence_status] = value::number(essence_status);
+            data[nmos::fields::nc::essence_status_message] = value::string(essence_status_message);
+            data[nmos::fields::nc::essence_status_transition_counter] = value::number(0);
+            data[nmos::fields::nc::auto_reset_monitor] = value::boolean(auto_reset_monitor);
+
+            // Pending status updates
+            data[nmos::fields::nc::receiver_monitor_activation_time] = value::number(0);
+            data[nmos::fields::nc::link_status_pending] = value::number(link_status);
+            data[nmos::fields::nc::link_status_message_pending] = value::string(link_status_message);
+            data[nmos::fields::nc::link_status_pending_received_time] = value::number(0);
+            data[nmos::fields::nc::transmission_status_pending] = value::number(transmission_status);
+            data[nmos::fields::nc::transmission_status_message_pending] = value::string(transmission_status_message);
+            data[nmos::fields::nc::transmission_status_pending_received_time] = value::number(0);
+            data[nmos::fields::nc::external_synchronization_status_pending] = value::number(external_synchronization_status);
+            data[nmos::fields::nc::external_synchronization_status_message_pending] = value::string(external_synchronization_status_message);
+            data[nmos::fields::nc::external_synchronization_status_pending_received_time] = value::number(0);
+            data[nmos::fields::nc::essence_status_pending] = value::number(essence_status);
+            data[nmos::fields::nc::essence_status_message_pending] = value::string(essence_status_message);
+            data[nmos::fields::nc::essence_status_pending_received_time] = value::number(0);
+
+            return data;
+        }
+
         // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncmanager
         web::json::value make_nc_manager(const nc_class_id& class_id, nc_oid oid, bool constant_oid, const web::json::value& owner, const utility::string_t& role, const web::json::value& user_label, const utility::string_t& description, const web::json::value& touchpoints, const web::json::value& runtime_property_constraints)
         {

@@ -1271,12 +1271,32 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
                     const auto receiver_id = impl::make_id(seed_id, nmos::types::receiver, port, index);
 
                     utility::ostringstream_t role;
-                    role << U("monitor-") << ++count;
+                    role << U("receiver-monitor-") << ++count;
                     const auto& receiver = nmos::find_resource(model.node_resources, receiver_id);
                     const auto receiver_monitor = nmos::make_receiver_monitor(++oid, true, nmos::root_block_oid, role.str(), nmos::fields::label(receiver->data), nmos::fields::description(receiver->data), value_of({ { nmos::details::make_nc_touchpoint_nmos({nmos::ncp_nmos_resource_types::receiver, receiver_id}) } }));
 
                     // add receiver-monitor to root-block
                     nmos::push_back(root_block, receiver_monitor);
+                }
+            }
+        }
+
+        // example sender-monitor(s)
+        {
+            int count = 0;
+            for (int index = 0; index < how_many; ++index)
+            {
+                for (const auto& port : rtp_sender_ports)
+                {
+                    const auto sender_id = impl::make_id(seed_id, nmos::types::sender, port, index);
+
+                    utility::ostringstream_t role;
+                    role << U("sender-monitor-") << ++count;
+                    const auto& sender = nmos::find_resource(model.node_resources, sender_id);
+                    const auto sender_monitor = nmos::make_sender_monitor(++oid, true, nmos::root_block_oid, role.str(), nmos::fields::label(sender->data), nmos::fields::description(sender->data), value_of({ { nmos::details::make_nc_touchpoint_nmos({nmos::ncp_nmos_resource_types::sender, sender_id}) } }));
+
+                    // add sender-monitor to root-block
+                    nmos::push_back(root_block, sender_monitor);
                 }
             }
         }
