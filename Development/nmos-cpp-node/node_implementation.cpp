@@ -1320,6 +1320,8 @@ void node_implementation_run(nmos::node_model& model, nmos::experimental::contro
     const auto rtp_receiver_ports = boost::copy_range<std::vector<impl::port>>(impl::parse_ports(impl::fields::receivers(model.settings)) | boost::adaptors::filtered(impl::is_rtp_port));
 
     auto& control_protocol_resources = model.control_protocol_resources;
+
+    auto get_control_protocol_property = nmos::make_get_control_protocol_property_handler(control_protocol_resources, control_protocol_state, gate);
     auto set_receiver_monitor_link_status = nmos::make_set_receiver_monitor_link_status_handler(control_protocol_resources, control_protocol_state, gate);
     auto set_receiver_monitor_connection_status = nmos::make_set_receiver_monitor_connection_status_handler(control_protocol_resources, control_protocol_state, gate);
     auto set_receiver_monitor_external_synchronization_status = nmos::make_set_receiver_monitor_external_synchronization_status_handler(control_protocol_resources, control_protocol_state, gate);
@@ -1334,10 +1336,10 @@ void node_implementation_run(nmos::node_model& model, nmos::experimental::contro
     auto cancellation_source = pplx::cancellation_token_source();
 
     auto token = cancellation_source.get_token();
-    auto events = pplx::do_while([&model, seed_id, how_many, ws_sender_ports, rtp_receiver_ports, set_receiver_monitor_link_status, set_receiver_monitor_connection_status, set_receiver_monitor_external_synchronization_status, set_receiver_monitor_stream_status, set_receiver_monitor_synchronization_source_id, events_engine, &gate, token]
+    auto events = pplx::do_while([&model, seed_id, how_many, ws_sender_ports, rtp_receiver_ports, get_control_protocol_property, set_receiver_monitor_link_status, set_receiver_monitor_connection_status, set_receiver_monitor_external_synchronization_status, set_receiver_monitor_stream_status, set_receiver_monitor_synchronization_source_id, events_engine, &gate, token]
     {
         const auto event_interval = std::uniform_real_distribution<>(0.5, 5.0)(*events_engine);
-        return pplx::complete_after(std::chrono::milliseconds(std::chrono::milliseconds::rep(1000 * event_interval)), token).then([&model, seed_id, how_many, ws_sender_ports, rtp_receiver_ports, set_receiver_monitor_link_status, set_receiver_monitor_connection_status, set_receiver_monitor_external_synchronization_status, set_receiver_monitor_stream_status, set_receiver_monitor_synchronization_source_id, events_engine, &gate]
+        return pplx::complete_after(std::chrono::milliseconds(std::chrono::milliseconds::rep(1000 * event_interval)), token).then([&model, seed_id, how_many, ws_sender_ports, rtp_receiver_ports, get_control_protocol_property, set_receiver_monitor_link_status, set_receiver_monitor_connection_status, set_receiver_monitor_external_synchronization_status, set_receiver_monitor_stream_status, set_receiver_monitor_synchronization_source_id, events_engine, &gate]
         {
             auto lock = model.write_lock();
 
@@ -1427,13 +1429,19 @@ void node_implementation_run(nmos::node_model& model, nmos::experimental::contro
                         if (resources.end() != receiver_monitor)
                         {
                             const auto& oid = nmos::fields::nc::oid(receiver_monitor->data);
+
+                            auto overall_status = get_control_protocol_property(oid, nmos::nc_status_monitor_overall_status_property_id);
+
                             switch (rand() % 3)
                             {
                             case 0:
                                 set_receiver_monitor_link_status(oid, nmos::nc_link_status::status(nmos::nc_link_status::all_up + rand() % 3), U("link status"));
                                 break;
                             case 1:
-                                set_receiver_monitor_connection_status(oid, nmos::nc_connection_status::status(nmos::nc_connection_status::inactive + rand() % 4), U("connection status"));
+                                if (overall_status.as_integer() != nmos::nc_overall_status::inactive)
+                                {
+                                    set_receiver_monitor_connection_status(oid, nmos::nc_connection_status::status(nmos::nc_connection_status::healthy + rand() % 3), U("connection status"));
+                                }
                                 break;
                             case 2:
                             {
@@ -1448,7 +1456,10 @@ void node_implementation_run(nmos::node_model& model, nmos::experimental::contro
                                 break;
                             }
                             case 3:
-                                set_receiver_monitor_stream_status(oid, nmos::nc_stream_status::status(nmos::nc_stream_status::inactive + rand() % 4), U("stream status"));
+                                if (overall_status.as_integer() != nmos::nc_overall_status::inactive)
+                                {
+                                    set_receiver_monitor_stream_status(oid, nmos::nc_stream_status::status(nmos::nc_stream_status::healthy + rand() % 3), U("stream status"));
+                                }
                                 break;
                             default:
                                 break;
@@ -1818,7 +1829,7 @@ nmos::get_packet_counters_handler make_node_implementation_get_late_packet_count
 }
 
 // Example Control Protocol WebSocket API Receiver Status Monitor callback to reset network interface controller packet counters
-nmos::reset_counters_handler make_node_implementation_reset_counters_handler()
+nmos::reset_monitor_handler make_node_implementation_reset_monitor_handler()
 {
     return [&]()
     {
@@ -1987,5 +1998,5 @@ nmos::experimental::node_implementation make_node_implementation(nmos::node_mode
         .on_control_protocol_property_changed(make_node_implementation_control_protocol_property_changed_handler(gate)) // may be omitted if IS-12 not required
         .on_get_lost_packet_counters(make_node_implementation_get_lost_packet_counters_handler()) // may be omitted if IS-12/BCP-008-1 not required
         .on_get_late_packet_counters(make_node_implementation_get_late_packet_counters_handler()) // may be omitted if IS-12/BCP-008-1 not required
-        .on_reset_counters(make_node_implementation_reset_counters_handler()); // may be omitted if IS-12/BCP-008-1 not required
+        .on_reset_monitor(make_node_implementation_reset_monitor_handler()); // may be omitted if IS-12/BCP-008-1 not required
 }
