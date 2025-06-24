@@ -41,7 +41,7 @@ namespace nmos
         nc_stream_status::status stream_status = nc_stream_status::inactive,
         const utility::string_t& stream_status_message = U(""),
         uint32_t status_reporting_delay = 3,
-        bool auto_reset_counters = true
+        bool auto_reset_monitor = true
     );
 
     // Identification feature set control classes

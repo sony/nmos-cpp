@@ -752,7 +752,7 @@ namespace nmos
         }
 
         // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/monitoring/#ncreceivermonitor
-        web::json::value make_receiver_monitor(const nc_class_id& class_id, nc_oid oid, bool constant_oid, nc_oid owner, const utility::string_t& role, const utility::string_t& user_label, const utility::string_t& description, const web::json::value& touchpoints, const web::json::value& runtime_property_constraints, bool enabled, nc_overall_status::status overall_status, const utility::string_t& overall_status_message, nc_link_status::status link_status, const utility::string_t& link_status_message, nc_connection_status::status connection_status, const utility::string_t& connection_status_message, nc_synchronization_status::status external_synchronization_status, const utility::string_t& external_synchronization_status_message, const web::json::value& synchronization_source_id, nc_stream_status::status stream_status, const utility::string_t& stream_status_message, uint32_t status_reporting_delay, bool auto_reset_counters)
+        web::json::value make_receiver_monitor(const nc_class_id& class_id, nc_oid oid, bool constant_oid, nc_oid owner, const utility::string_t& role, const utility::string_t& user_label, const utility::string_t& description, const web::json::value& touchpoints, const web::json::value& runtime_property_constraints, bool enabled, nc_overall_status::status overall_status, const utility::string_t& overall_status_message, nc_link_status::status link_status, const utility::string_t& link_status_message, nc_connection_status::status connection_status, const utility::string_t& connection_status_message, nc_synchronization_status::status external_synchronization_status, const utility::string_t& external_synchronization_status_message, const web::json::value& synchronization_source_id, nc_stream_status::status stream_status, const utility::string_t& stream_status_message, uint32_t status_reporting_delay, bool auto_reset_monitor)
         {
             using web::json::value;
 
@@ -771,7 +771,7 @@ namespace nmos
             data[nmos::fields::nc::stream_status] = value::number(stream_status);
             data[nmos::fields::nc::stream_status_message] = value::string(stream_status_message);
             data[nmos::fields::nc::stream_status_transition_counter] = value::number(0);
-            data[nmos::fields::nc::auto_reset_counters] = value::boolean(auto_reset_counters);
+            data[nmos::fields::nc::auto_reset_monitor] = value::boolean(auto_reset_monitor);
 
             // Pending status updates
             data[nmos::fields::nc::receiver_monitor_activation_time] = value::number(0);
@@ -1237,7 +1237,7 @@ namespace nmos
         web::json::push_back(properties, details::make_nc_property_descriptor(U("Stream status property"), nc_receiver_monitor_stream_status_property_id, nmos::fields::nc::stream_status, U("NcStreamStatus"), true, false, false, false, value::null()));
         web::json::push_back(properties, details::make_nc_property_descriptor(U("Stream status message property"), nc_receiver_monitor_stream_status_message_property_id, nmos::fields::nc::stream_status_message, U("NcString"), true, true, false, false, value::null()));
         web::json::push_back(properties, details::make_nc_property_descriptor(U("Stream status property transition counters"), nc_receiver_monitor_stream_status_transition_counter_property_id, nmos::fields::nc::stream_status_transition_counter, U("NcUint64"), true, false, false, false, value::null()));
-        web::json::push_back(properties, details::make_nc_property_descriptor(U("Automatic reset counters property (default: true)"), nc_receiver_monitor_auto_reset_counters_property_id, nmos::fields::nc::auto_reset_counters, U("NcBoolean"), false, false, false, false, value::null()));
+        web::json::push_back(properties, details::make_nc_property_descriptor(U("Automatic reset counters and messages property (default: true)"), nc_receiver_monitor_auto_reset_monitor_property_id, nmos::fields::nc::auto_reset_monitor, U("NcBoolean"), false, false, false, false, value::null()));
 
         return properties;
     }
@@ -1248,7 +1248,7 @@ namespace nmos
         auto methods = value::array();
         web::json::push_back(methods, details::make_nc_method_descriptor(U("Gets the lost packet counters"), nc_receiver_monitor_get_lost_packet_counters_method_id, U("GetLostPacketCounters"), U("NcMethodResultCounters"), value::array(), false));
         web::json::push_back(methods, details::make_nc_method_descriptor(U("Gets the late packet counters"), nc_receiver_monitor_get_late_packet_counters_method_id, U("GetLatePacketCounters"), U("NcMethodResultCounters"), value::array(), false));
-        web::json::push_back(methods, details::make_nc_method_descriptor(U("Resets ALL counters"), nc_receiver_monitor_reset_counters_method_id, U("ResetCounters"), U("NcMethodResult"), value::array(), false));
+        web::json::push_back(methods, details::make_nc_method_descriptor(U("Resets ALL counters"), nc_receiver_monitor_reset_monitor_method_id, U("ResetCountersAndMessages"), U("NcMethodResult"), value::array(), false));
 
         return methods;
     }
@@ -1278,7 +1278,7 @@ namespace nmos
         web::json::push_back(properties, details::make_nc_property_descriptor(U("Essence status property"), nc_sender_monitor_essence_status_property_id, nmos::fields::nc::essence_status, U("NcEssenceStatus"), true, false, false, false, value::null()));
         web::json::push_back(properties, details::make_nc_property_descriptor(U("Essence status message property"), nc_sender_monitor_essence_status_message_property_id, nmos::fields::nc::essence_status_message, U("NcString"), true, true, false, false, value::null()));
         web::json::push_back(properties, details::make_nc_property_descriptor(U("Essence status property transition counters"), nc_sender_monitor_essence_status_transition_counter_property_id, nmos::fields::nc::essence_status_transition_counter, U("NcUint64"), true, false, false, false, value::null()));
-        web::json::push_back(properties, details::make_nc_property_descriptor(U("Automatic reset counters property (default: true)"), nc_sender_monitor_auto_reset_counters_property_id, nmos::fields::nc::auto_reset_counters, U("NcBoolean"), false, false, false, false, value::null()));
+        web::json::push_back(properties, details::make_nc_property_descriptor(U("Automatic reset counters and messages property (default: true)"), nc_sender_monitor_auto_reset_monitor_property_id, nmos::fields::nc::auto_reset_monitor, U("NcBoolean"), false, false, false, false, value::null()));
 
         return properties;
     }
@@ -1288,7 +1288,7 @@ namespace nmos
 
         auto methods = value::array();
         web::json::push_back(methods, details::make_nc_method_descriptor(U("Gets the transmission error counters"), nc_sender_monitor_get_transmission_error_counters_method_id, U("GetTransmissionErrorCounters"), U("NcMethodResultCounters"), value::array(), false));
-        web::json::push_back(methods, details::make_nc_method_descriptor(U("Resets ALL counters"), nc_sender_monitor_reset_counters_method_id, U("ResetCounters"), U("NcMethodResult"), value::array(), false));
+        web::json::push_back(methods, details::make_nc_method_descriptor(U("Resets ALL counters"), nc_sender_monitor_reset_monitor_method_id, U("ResetCountersAndMessages"), U("NcMethodResult"), value::array(), false));
 
         return methods;
     }

@@ -1084,28 +1084,28 @@ namespace nmos
         if (succeed) succeed = set_receiver_monitor_connection_status(resources, oid, nmos::nc_connection_status::status::healthy, U("Receiver activated"), get_control_protocol_class_descriptor, gate);
         if (succeed) succeed = set_receiver_monitor_stream_status(resources, oid, nmos::nc_stream_status::status::healthy, U("Receiver activated"), get_control_protocol_class_descriptor, gate);
 
-        // If autoResetCounters set to true then reset the transition counters
-        bool auto_reset_counters{ false };
+        // If autoResetCountersAndMessages set to true then reset the transition counters
+        bool auto_reset_monitor{ false };
         if (succeed)
         {
-            auto auto_reset_counters_ = get_control_protocol_property(resources, oid, nmos::nc_receiver_monitor_auto_reset_counters_property_id, get_control_protocol_class_descriptor, gate);
-            if (auto_reset_counters_.is_null()) succeed = false;
-            else auto_reset_counters = auto_reset_counters_.as_bool();
+            auto auto_reset_monitor_ = get_control_protocol_property(resources, oid, nmos::nc_receiver_monitor_auto_reset_monitor_property_id, get_control_protocol_class_descriptor, gate);
+            if (auto_reset_monitor_.is_null()) succeed = false;
+            else auto_reset_monitor = auto_reset_monitor_.as_bool();
         }
 
-        if (succeed && auto_reset_counters)
+        if (succeed && auto_reset_monitor)
         {
-            // find the method_handler for the reset counters method
-            auto method = get_control_protocol_method_descriptor(nmos::nc_receiver_monitor_class_id, nmos::nc_receiver_monitor_reset_counters_method_id);
+            // find the method_handler for the reset monitor method
+            auto method = get_control_protocol_method_descriptor(nmos::nc_receiver_monitor_class_id, nmos::nc_receiver_monitor_reset_monitor_method_id);
             auto& nc_method_descriptor = method.first;
-            auto& reset_counters = method.second;
-            if (reset_counters)
+            auto& reset_monitor = method.second;
+            if (reset_monitor)
             {
                 const auto& found = find_resource(resources, utility::s2us(std::to_string(oid)));
                 if (resources.end() != found)
                 {
                     // this callback should not throw exceptions
-                    const auto method_result = reset_counters(resources, *found, web::json::value::null(), nmos::fields::nc::is_deprecated(nc_method_descriptor), gate);
+                    const auto method_result = reset_monitor(resources, *found, web::json::value::null(), nmos::fields::nc::is_deprecated(nc_method_descriptor), gate);
                     const auto status = nmos::fields::nc::status(method_result);
                     succeed = (nmos::nc_method_status::ok == status || nmos::nc_method_status::property_deprecated == status || nmos::nc_method_status::method_deprecated == status);
                 }

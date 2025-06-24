@@ -321,17 +321,17 @@ BST_TEST_CASE(testActivateDeactivateReceiverMonitor)
 {
     nmos::resources resources;
 
-    bool reset_counters_called = false;
+    bool reset_monitor_called = false;
 
-    nmos::reset_counters_handler reset_counters = [&reset_counters_called]()
+    nmos::reset_monitor_handler reset_monitor = [&reset_monitor_called]()
     {
         // check that the property changed handler gets called
-        reset_counters_called = true;
+        reset_monitor_called = true;
 
         return nmos::details::make_nc_method_result({ nmos::nc_method_status::ok });
     };
 
-    nmos::experimental::control_protocol_state control_protocol_state(nullptr, nullptr, reset_counters, nullptr);
+    nmos::experimental::control_protocol_state control_protocol_state(nullptr, nullptr, reset_monitor, nullptr);
     nmos::get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor = nmos::make_get_control_protocol_class_descriptor_handler(control_protocol_state);
     nmos::get_control_protocol_datatype_descriptor_handler get_control_protocol_datatype_descriptor = nmos::make_get_control_protocol_datatype_descriptor_handler(control_protocol_state);
     nmos::get_control_protocol_method_descriptor_handler get_control_protocol_method_descriptor = nmos::make_get_control_protocol_method_descriptor_handler(control_protocol_state);
@@ -358,8 +358,8 @@ BST_TEST_CASE(testActivateDeactivateReceiverMonitor)
     insert_resource(resources, std::move(monitor));
 
     {
-        // autoResetCounter will reset all counters on activate, including calling back into application code
-        nmos::set_control_protocol_property(resources, monitor_oid, nmos::nc_receiver_monitor_auto_reset_counters_property_id, web::json::value::boolean(true), get_control_protocol_class_descriptor, gate);
+        // autoResetCounterAndMessages will reset all counters and messages on activate, including calling back into application code
+        nmos::set_control_protocol_property(resources, monitor_oid, nmos::nc_receiver_monitor_auto_reset_monitor_property_id, web::json::value::boolean(true), get_control_protocol_class_descriptor, gate);
 
         uint32_t transition_count = 10;
         // set transition counters
@@ -389,8 +389,8 @@ BST_TEST_CASE(testActivateDeactivateReceiverMonitor)
         auto actual_external_synchronization_status_transition_counter = nmos::get_control_protocol_property(resources, monitor_oid, nmos::nc_receiver_monitor_external_synchronization_status_transition_counter_property_id, get_control_protocol_class_descriptor, gate);
         BST_CHECK_EQUAL(0, actual_external_synchronization_status_transition_counter.as_integer());
 
-        // Check that reset_counters handler was invoked
-        BST_CHECK(reset_counters_called);
+        // Check that reset_monitor handler was invoked
+        BST_CHECK(reset_monitor_called);
     }
     {
         // Do deactivation
@@ -405,10 +405,10 @@ BST_TEST_CASE(testActivateDeactivateReceiverMonitor)
         BST_CHECK_EQUAL(nmos::nc_overall_status::status::inactive, actual_overall_status.as_integer());
     }
     {
-        reset_counters_called = false;
+        reset_monitor_called = false;
 
-        // disable autoResetCounter
-        nmos::set_control_protocol_property(resources, monitor_oid, nmos::nc_receiver_monitor_auto_reset_counters_property_id, web::json::value::boolean(false), get_control_protocol_class_descriptor, gate);
+        // disable autoResetCounterAndMessages
+        nmos::set_control_protocol_property(resources, monitor_oid, nmos::nc_receiver_monitor_auto_reset_monitor_property_id, web::json::value::boolean(false), get_control_protocol_class_descriptor, gate);
 
         int32_t transition_count = 10;
         // set transition counters
@@ -438,8 +438,8 @@ BST_TEST_CASE(testActivateDeactivateReceiverMonitor)
         auto actual_external_synchronization_status_transition_counter = nmos::get_control_protocol_property(resources, monitor_oid, nmos::nc_receiver_monitor_external_synchronization_status_transition_counter_property_id, get_control_protocol_class_descriptor, gate);
         BST_CHECK_EQUAL(transition_count, actual_external_synchronization_status_transition_counter.as_integer());
 
-        // Check that reset_counters handler was NOT invoked
-        BST_CHECK(!reset_counters_called);
+        // Check that reset_monitor handler was NOT invoked
+        BST_CHECK(!reset_monitor_called);
     }
     {
         // Do deactivation

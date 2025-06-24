@@ -362,7 +362,7 @@ namespace nmos
             const web::json::field_as_integer essence_status{ U("essenceStatus") }; // NcEssenceStatus
             const web::json::field_as_string essence_status_message{ U("essenceStatusMessage") };
             const web::json::field_as_integer essence_status_transition_counter{ U("essenceStatusTransitionCounter") };
-            const web::json::field_as_bool auto_reset_counters{ U("autoResetCounters") };
+            const web::json::field_as_bool auto_reset_monitor{ U("autoResetCountersAndMessages") };
             const web::json::field_as_bool active{ U("active") };
             const web::json::field_as_integer overall_status{ U("overallStatus") };
             const web::json::field_as_string overall_status_message{ U("overallStatusMessage") };

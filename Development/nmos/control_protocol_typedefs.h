@@ -241,11 +241,11 @@ namespace nmos
     // TODO: link
     const nc_method_id nc_receiver_monitor_get_lost_packet_counters_method_id(4, 1);
     const nc_method_id nc_receiver_monitor_get_late_packet_counters_method_id(4, 2);
-    const nc_method_id nc_receiver_monitor_reset_counters_method_id(4, 3);
+    const nc_method_id nc_receiver_monitor_reset_monitor_method_id(4, 3);
     // NcMethodIds for NcSenderMonitor
     // TODO: link
     const nc_method_id nc_sender_monitor_get_transmission_error_counters_method_id(4, 1);
-    const nc_method_id nc_sender_monitor_reset_counters_method_id(4, 2);
+    const nc_method_id nc_sender_monitor_reset_monitor_method_id(4, 2);
 
     // NcPropertyId
     // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncpropertyid
@@ -302,7 +302,7 @@ namespace nmos
     const nc_property_id nc_receiver_monitor_stream_status_property_id(4, 11);
     const nc_property_id nc_receiver_monitor_stream_status_message_property_id(4, 12);
     const nc_property_id nc_receiver_monitor_stream_status_transition_counter_property_id(4, 13);
-    const nc_property_id nc_receiver_monitor_auto_reset_counters_property_id(4, 14);
+    const nc_property_id nc_receiver_monitor_auto_reset_monitor_property_id(4, 14);
     // NcPropertyIds for NcSenderMonitor
     // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/monitoring/#ncsendermonitor
     const nc_property_id nc_sender_monitor_link_status_property_id(4, 1);
@@ -318,7 +318,7 @@ namespace nmos
     const nc_property_id nc_sender_monitor_essence_status_property_id(4, 11);
     const nc_property_id nc_sender_monitor_essence_status_message_property_id(4, 12);
     const nc_property_id nc_sender_monitor_essence_status_transition_counter_property_id(4, 13);
-    const nc_property_id nc_sender_monitor_auto_reset_counters_property_id(4, 14);
+    const nc_property_id nc_sender_monitor_auto_reset_monitor_property_id(4, 14);
     // NcPropertyids for NcIdentBeacon
     // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/identification/#ncidentbeacon
     const nc_property_id nc_ident_beacon_active_property_id(3, 1);

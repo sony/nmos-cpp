@@ -48,8 +48,8 @@ namespace nmos
     web::json::value get_lost_packet_counters(nmos::resources& resources, const nmos::resource& resource, const web::json::value& arguments, bool is_deprecated, get_packet_counters_handler get_lost_packet_counters, slog::base_gate& gate);
     // Gets the last packet counters
     web::json::value get_late_packet_counters(nmos::resources& resources, const nmos::resource& resource, const web::json::value& arguments, bool is_deprecated, get_packet_counters_handler get_last_packet_counters, slog::base_gate& gate);
-    // Resets the packet counters
-    web::json::value reset_counters(nmos::resources& resources, const nmos::resource& resource, const web::json::value&, bool is_deprecated, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, control_protocol_property_changed_handler property_changed, reset_counters_handler reset_counters, slog::base_gate& gate);
+    // Resets the packet counters and messages
+    web::json::value reset_monitor(nmos::resources& resources, const nmos::resource& resource, const web::json::value&, bool is_deprecated, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, control_protocol_property_changed_handler property_changed, reset_monitor_handler reset_monitor, slog::base_gate& gate);
 }
 
 #endif

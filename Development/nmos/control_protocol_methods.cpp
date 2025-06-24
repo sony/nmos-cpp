@@ -718,8 +718,8 @@ namespace nmos
         return details::get_packet_counters(is_deprecated, get_late_packet_counters);
     }
 
-    // Resets the packet counters
-    web::json::value reset_counters(nmos::resources& resources, const nmos::resource& resource, const web::json::value&, bool is_deprecated, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, control_protocol_property_changed_handler property_changed, reset_counters_handler reset_counters, slog::base_gate& gate)
+    // Resets the packet counters and messages
+    web::json::value reset_monitor(nmos::resources& resources, const nmos::resource& resource, const web::json::value&, bool is_deprecated, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, control_protocol_property_changed_handler property_changed, reset_monitor_handler reset_monitor, slog::base_gate& gate)
     {
         slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Resets the packet counters";
 
@@ -760,9 +760,9 @@ namespace nmos
             }
         }
 
-        if (reset_counters)
+        if (reset_monitor)
         {
-            reset_counters();
+            reset_monitor();
         }
 
         return nmos::details::make_nc_method_result({ is_deprecated ? nmos::nc_method_status::method_deprecated : nc_method_status::ok });
