@@ -13,40 +13,40 @@ namespace nmos
 {
     namespace details
     {
-        web::json::array make_property_value_holders(const nmos::resource& resource, nmos::get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor)
+        web::json::array make_property_holders(const nmos::resource& resource, nmos::get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor)
         {
             using web::json::value;
 
-            value property_value_holders = value::array();
+            value property_holders = value::array();
 
             nmos::nc_class_id class_id = nmos::details::parse_nc_class_id(nmos::fields::nc::class_id(resource.data));
 
-            // make NcPropertyValueHolder objects
+            // make NcPropertyHolder objects
             while (!class_id.empty())
             {
                 const auto& control_class_descriptor = get_control_protocol_class_descriptor(class_id);
 
                 for (const auto& property_descriptor : control_class_descriptor.property_descriptors.as_array())
                 {
-                    value property_value_holder = nmos::details::make_nc_property_value_holder(nmos::details::parse_nc_property_id(nmos::fields::nc::id(property_descriptor)), nmos::fields::nc::name(property_descriptor), nmos::fields::nc::type_name(property_descriptor), nmos::fields::nc::is_read_only(property_descriptor), resource.data.at(nmos::fields::nc::name(property_descriptor)));
+                    value property_holder = nmos::details::make_nc_property_holder(nmos::details::parse_nc_property_id(nmos::fields::nc::id(property_descriptor)), nmos::fields::nc::name(property_descriptor), nmos::fields::nc::type_name(property_descriptor), nmos::fields::nc::is_read_only(property_descriptor), resource.data.at(nmos::fields::nc::name(property_descriptor)));
 
-                    web::json::push_back(property_value_holders, property_value_holder);
+                    web::json::push_back(property_holders, property_holder);
                 }
                 class_id.pop_back();
             }
-            return property_value_holders.as_array();
+            return property_holders.as_array();
         }
 
         void populate_object_property_holder(const nmos::resources& resources, nmos::get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, const nmos::resource& resource, bool recurse, web::json::value& object_properties_holders)
         {
             using web::json::value;
 
-            // Get property_value_holders for this resource
-            const auto& property_value_holders = make_property_value_holders(resource, get_control_protocol_class_descriptor);
+            // Get property_holders for this resource
+            const auto& property_holders = make_property_holders(resource, get_control_protocol_class_descriptor);
 
             const auto role_path = get_role_path(resources, resource);
 
-            auto object_properties_holder = nmos::details::make_nc_object_properties_holder(role_path, property_value_holders, value::array().as_array(), value::array().as_array(), nmos::fields::nc::is_rebuildable(resource.data));
+            auto object_properties_holder = nmos::details::make_nc_object_properties_holder(role_path, property_holders, value::array().as_array(), value::array().as_array(), nmos::fields::nc::is_rebuildable(resource.data));
 
             web::json::push_back(object_properties_holders, object_properties_holder);
 
@@ -119,27 +119,27 @@ namespace nmos
         utility::ostringstream_t ss;
         ss << validation_fingerprint;
 
-        auto bulk_values_holder = nmos::details::make_nc_bulk_values_holder(ss.str(), object_properties_holders);
+        auto bulk_properties_holder = nmos::details::make_nc_bulk_properties_holder(ss.str(), object_properties_holders);
 
-        return nmos::details::make_nc_method_result({ nmos::nc_method_status::ok }, bulk_values_holder);
+        return nmos::details::make_nc_method_result({ nmos::nc_method_status::ok }, bulk_properties_holder);
     }
 
-    web::json::value validate_set_properties_by_path(nmos::resources& resources, const nmos::resource& resource, const web::json::value& backup_data_set, bool recurse, const web::json::value& restore_mode, nmos::get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, nmos::filter_property_value_holders_handler filter_property_value_holders, nmos::remove_device_model_object_handler remove_device_model_object, nmos::add_device_model_object_handler add_device_model_object)
+    web::json::value validate_set_properties_by_path(nmos::resources& resources, const nmos::resource& resource, const web::json::value& backup_data_set, bool recurse, const web::json::value& restore_mode, nmos::get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, nmos::filter_property_holders_handler filter_property_holders, nmos::remove_device_model_object_handler remove_device_model_object, nmos::add_device_model_object_handler add_device_model_object)
     {
         // Do something with validation fingerprint?
         const auto& object_properties_holders = nmos::fields::nc::values(backup_data_set);
 
-        const auto& object_properties_set_validation = apply_backup_data_set(resources, resource, object_properties_holders, recurse, restore_mode, true, get_control_protocol_class_descriptor, filter_property_value_holders, remove_device_model_object, add_device_model_object);
+        const auto& object_properties_set_validation = apply_backup_data_set(resources, resource, object_properties_holders, recurse, restore_mode, true, get_control_protocol_class_descriptor, filter_property_holders, remove_device_model_object, add_device_model_object);
 
         return nmos::details::make_nc_method_result({ nmos::nc_method_status::ok }, object_properties_set_validation);
     }
 
-    web::json::value set_properties_by_path(nmos::resources& resources, const nmos::resource& resource, const web::json::value& backup_data_set, bool recurse, const web::json::value& restore_mode, nmos::get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, nmos::filter_property_value_holders_handler filter_property_value_holders, nmos::remove_device_model_object_handler remove_device_model_object, nmos::add_device_model_object_handler add_device_model_object)
+    web::json::value set_properties_by_path(nmos::resources& resources, const nmos::resource& resource, const web::json::value& backup_data_set, bool recurse, const web::json::value& restore_mode, nmos::get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, nmos::filter_property_holders_handler filter_property_holders, nmos::remove_device_model_object_handler remove_device_model_object, nmos::add_device_model_object_handler add_device_model_object)
     {
         // Do something with validation fingerprint?
         const auto& object_properties_holders = nmos::fields::nc::values(backup_data_set);
 
-        const auto& object_properties_set_validation = apply_backup_data_set(resources, resource, object_properties_holders, recurse, restore_mode, false, get_control_protocol_class_descriptor, filter_property_value_holders, remove_device_model_object, add_device_model_object);
+        const auto& object_properties_set_validation = apply_backup_data_set(resources, resource, object_properties_holders, recurse, restore_mode, false, get_control_protocol_class_descriptor, filter_property_holders, remove_device_model_object, add_device_model_object);
 
         return nmos::details::make_nc_method_result({ nmos::nc_method_status::ok }, object_properties_set_validation);
     }

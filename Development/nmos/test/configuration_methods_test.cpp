@@ -61,8 +61,8 @@ BST_TEST_CASE(testGetPropertiesByPath)
 
         BST_REQUIRE_EQUAL(nmos::nc_method_status::ok, nmos::fields::nc::status(method_result));
 
-        const auto& bulk_values_holder = nmos::fields::nc::value(method_result);
-        const auto& object_properties_holders = nmos::fields::nc::values(bulk_values_holder);
+        const auto& bulk_properties_holder = nmos::fields::nc::value(method_result);
+        const auto& object_properties_holders = nmos::fields::nc::values(bulk_properties_holder);
 
         BST_REQUIRE_EQUAL(5, object_properties_holders.size());
     }
@@ -73,8 +73,8 @@ BST_TEST_CASE(testGetPropertiesByPath)
 
         BST_REQUIRE_EQUAL(nmos::nc_method_status::ok, nmos::fields::nc::status(method_result));
 
-        const auto& bulk_values_holder = nmos::fields::nc::value(method_result);
-        const auto& object_properties_holders = nmos::fields::nc::values(bulk_values_holder);
+        const auto& bulk_properties_holder = nmos::fields::nc::value(method_result);
+        const auto& object_properties_holders = nmos::fields::nc::values(bulk_properties_holder);
 
         BST_REQUIRE_EQUAL(3, object_properties_holders.size());
     }
@@ -85,8 +85,8 @@ BST_TEST_CASE(testGetPropertiesByPath)
 
         BST_REQUIRE_EQUAL(nmos::nc_method_status::ok, nmos::fields::nc::status(method_result));
 
-        const auto& bulk_values_holder = nmos::fields::nc::value(method_result);
-        const auto& object_properties_holders = nmos::fields::nc::values(bulk_values_holder);
+        const auto& bulk_properties_holder = nmos::fields::nc::value(method_result);
+        const auto& object_properties_holders = nmos::fields::nc::values(bulk_properties_holder);
 
         BST_REQUIRE_EQUAL(1, object_properties_holders.size());
     }

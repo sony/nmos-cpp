@@ -1743,16 +1743,16 @@ nmos::control_protocol_property_changed_handler make_node_implementation_control
 // Example Device Configuration callback called when a rebuildable object is modified in Rebuild mode.
 // An array of property values is passed in, and an array of property values that can be modified is returned
 // For each property value that can't be returned a property restore notice must be created
-nmos::filter_property_value_holders_handler make_filter_property_value_holders_handler(nmos::resources& resources, slog::base_gate& gate)
+nmos::filter_property_holders_handler make_filter_property_holders_handler(nmos::resources& resources, slog::base_gate& gate)
 {
     return [&resources, &gate](const nmos::resource& resource, const web::json::array& target_role_path, const web::json::array& property_values, bool recurse, bool validate, web::json::array& property_restore_notices, nmos::get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor)
     {
         // Use this function to filter which of the properties in the object should be modified by the configuration API
-        slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::stash_category(impl::categories::node_implementation) << "Do filter_property_value_holders";
+        slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::stash_category(impl::categories::node_implementation) << "Do filter_property_holders";
 
         nmos::nc_class_id class_id = nmos::details::parse_nc_class_id(nmos::fields::nc::class_id(resource.data));
 
-        auto modifiable_property_value_holders = web::json::value::array();
+        auto modifiable_property_holders = web::json::value::array();
 
         for (const auto& property_value : property_values)
         {
@@ -1772,10 +1772,10 @@ nmos::filter_property_value_holders_handler make_filter_property_value_holders_h
             }
             else
             {
-                web::json::push_back(modifiable_property_value_holders, property_value);
+                web::json::push_back(modifiable_property_holders, property_value);
             }
         }
-        return modifiable_property_value_holders.as_array();
+        return modifiable_property_holders.as_array();
     };
 }
 
@@ -1834,10 +1834,10 @@ nmos::add_device_model_object_handler make_add_device_model_object_handler(nmos:
                 return nmos::make_object_properties_set_validation(role_path, nmos::nc_restore_validation_status::device_error, status_message);
             }
         }
-        const auto& touchpoint_property_holder = nmos::get_property_value_holder(object_properties_holder, nmos::nc_object_touchpoints_property_id);
+        const auto& touchpoint_property_holder = nmos::get_property_holder(object_properties_holder, nmos::nc_object_touchpoints_property_id);
         if (touchpoint_property_holder == web::json::value::null())
         {
-            auto status_message = U("Cannot find touchpoint object property value holder");
+            auto status_message = U("Cannot find touchpoint object property holder");
             return nmos::make_object_properties_set_validation(role_path, nmos::nc_restore_validation_status::failed, status_message);
         }
 
@@ -2031,7 +2031,7 @@ nmos::experimental::node_implementation make_node_implementation(nmos::node_mode
         .on_validate_channelmapping_output_map(make_node_implementation_map_validator()) // may be omitted if not required
         .on_channelmapping_activated(make_node_implementation_channelmapping_activation_handler(gate))
         .on_control_protocol_property_changed(make_node_implementation_control_protocol_property_changed_handler(gate)) // may be omitted if IS-12 not required
-        .on_filter_property_value_holders(make_filter_property_value_holders_handler(model.control_protocol_resources, gate)) // may be omitted if either IS-14 not required, or IS-14 Rebuild functionality not required
+        .on_filter_property_holders(make_filter_property_holders_handler(model.control_protocol_resources, gate)) // may be omitted if either IS-14 not required, or IS-14 Rebuild functionality not required
         .on_remove_device_model_object(make_remove_device_model_handler(model, gate)) // may be omitted if either IS-14 not required, or IS-14 Rebuild functionality not required
         .on_add_device_model_object(make_add_device_model_object_handler(model, gate)); // may be omitted if either IS-14 not required, or IS-14 Rebuild functionality not required
 }
