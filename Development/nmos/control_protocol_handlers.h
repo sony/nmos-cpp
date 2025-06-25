@@ -39,8 +39,8 @@ namespace nmos
     // this callback should not throw exceptions, as the relevant property will already has been changed and those changes will not be rolled back
     typedef std::function<void(const nmos::resource& resource, const utility::string_t& property_name, int index)> control_protocol_property_changed_handler;
 
-    // callback to set receiver monitor pending
-    typedef std::function<void(void)> receiver_monitor_status_pending_handler;
+    // callback to set monitor pending
+    typedef std::function<void(void)> monitor_status_pending_handler;
 
     // Receiver Monitor status callbacks
     // these callbacks should not throw exceptions
@@ -84,7 +84,7 @@ namespace nmos
     get_control_protocol_method_descriptor_handler make_get_control_protocol_method_descriptor_handler(experimental::control_protocol_state& control_protocol_state);
 
     // control_protocol_connection_activation_handler notifies that the active parameters for the specified (IS-05) sender/connection_sender or receiver/connection_receiver have changed
-    control_protocol_connection_activation_handler make_receiver_monitor_connection_activation_handler(resources& resources, experimental::control_protocol_state& control_protocol_state, slog::base_gate& gate);
+    control_protocol_connection_activation_handler make_monitor_connection_activation_handler(resources& resources, experimental::control_protocol_state& control_protocol_state, slog::base_gate& gate);
 
     // construct callback to get values from device model
     typedef std::function<web::json::value(nmos::nc_oid oid, const nmos::nc_property_id& property_id)> get_control_protocol_property_handler;

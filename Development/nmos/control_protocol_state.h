@@ -54,7 +54,7 @@ namespace nmos
 
             // true : at least one of the receiver monitors statuses is pending
             // false: no more receiver monitors statuses are pending
-            bool receiver_monitor_status_pending;
+            bool monitor_status_pending;
 
             experimental::control_class_descriptors control_class_descriptors;
             experimental::datatype_descriptors datatype_descriptors;

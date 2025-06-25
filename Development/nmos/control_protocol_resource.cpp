@@ -774,7 +774,7 @@ namespace nmos
             data[nmos::fields::nc::auto_reset_monitor] = value::boolean(auto_reset_monitor);
 
             // Pending status updates
-            data[nmos::fields::nc::receiver_monitor_activation_time] = value::number(0);
+            data[nmos::fields::nc::monitor_activation_time] = value::number(0);
             data[nmos::fields::nc::link_status_pending] = value::number(link_status);
             data[nmos::fields::nc::link_status_message_pending] = value::string(link_status_message);
             data[nmos::fields::nc::link_status_pending_received_time] = value::number(0);
@@ -814,7 +814,7 @@ namespace nmos
             data[nmos::fields::nc::auto_reset_monitor] = value::boolean(auto_reset_monitor);
 
             // Pending status updates
-            data[nmos::fields::nc::receiver_monitor_activation_time] = value::number(0);
+            data[nmos::fields::nc::monitor_activation_time] = value::number(0);
             data[nmos::fields::nc::link_status_pending] = value::number(link_status);
             data[nmos::fields::nc::link_status_message_pending] = value::string(link_status_message);
             data[nmos::fields::nc::link_status_pending_received_time] = value::number(0);

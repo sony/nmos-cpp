@@ -71,7 +71,7 @@ namespace nmos
     {
         auto data = details::make_receiver_monitor(nc_receiver_monitor_class_id, oid, constant_oid, owner, role, user_label, description, touchpoints, runtime_property_constraints, enabled, overall_status, overall_status_message, link_status, link_status_message, connection_status, connection_status_message, synchronization_status, synchronization_status_message, synchronization_source_id, stream_status, stream_status_message, status_reporting_delay, auto_reset_monitor);
 
-        return{ is12_versions::v1_0, types::nc_receiver_monitor, std::move(data), true };
+        return{ is12_versions::v1_0, types::nc_status_monitor, std::move(data), true };
     }
 
     // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/monitoring/#ncsendermonitor
@@ -80,7 +80,7 @@ namespace nmos
     {
         auto data = details::make_sender_monitor(nc_sender_monitor_class_id, oid, constant_oid, owner, role, user_label, description, touchpoints, runtime_property_constraints, enabled, overall_status, overall_status_message, link_status, link_status_message, transmission_status, transmission_status_message, synchronization_status, synchronization_status_message, synchronization_source_id, essence_status, essence_status_message, status_reporting_delay, auto_reset_counters);
 
-        return{ is12_versions::v1_0, types::nc_sender_monitor, std::move(data), true };
+        return{ is12_versions::v1_0, types::nc_status_monitor, std::move(data), true };
     }
 
     // Identification feature set control classes

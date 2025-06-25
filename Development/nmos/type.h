@@ -52,7 +52,7 @@ namespace nmos
         const type nc_ident_beacon{ U("nc_ident_beacon") };
 
         // all Control Protocol resource types
-        const std::vector<type> all_nc{ nmos::types::nc_block, nmos::types::nc_worker, nmos::types::nc_manager, nmos::types::nc_device_manager, nmos::types::nc_class_manager, nmos::types::nc_receiver_monitor, nmos::types::nc_ident_beacon };
+        const std::vector<type> all_nc{ nmos::types::nc_block, nmos::types::nc_worker, nmos::types::nc_manager, nmos::types::nc_device_manager, nmos::types::nc_class_manager, nmos::types::nc_status_monitor, nmos::types::nc_ident_beacon };
 
     }
 }

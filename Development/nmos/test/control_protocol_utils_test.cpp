@@ -305,12 +305,12 @@ BST_TEST_CASE(testSetSynchronizationSourceId)
 
     {
         utility::string_t sync_source_id = U("SYNCID");
-        nmos::set_receiver_monitor_synchronization_source_id(resources, monitor_oid, sync_source_id, get_control_protocol_class_descriptor, gate);
+        nmos::set_monitor_synchronization_source_id(resources, monitor_oid, sync_source_id, get_control_protocol_class_descriptor, gate);
         auto actual_sync_source_id = nmos::get_control_protocol_property(resources, monitor_oid, nmos::nc_receiver_monitor_synchronization_source_id_property_id, get_control_protocol_class_descriptor, gate);
         BST_CHECK_EQUAL(sync_source_id, actual_sync_source_id.as_string());
     }
     {
-        nmos::set_receiver_monitor_synchronization_source_id(resources, monitor_oid, {}, get_control_protocol_class_descriptor, gate);
+        nmos::set_monitor_synchronization_source_id(resources, monitor_oid, {}, get_control_protocol_class_descriptor, gate);
         auto actual_sync_source_id = nmos::get_control_protocol_property(resources, monitor_oid, nmos::nc_receiver_monitor_synchronization_source_id_property_id, get_control_protocol_class_descriptor, gate);
         BST_CHECK(actual_sync_source_id.is_null());
     }
@@ -369,7 +369,7 @@ BST_TEST_CASE(testActivateDeactivateReceiverMonitor)
         nmos::set_control_protocol_property(resources, monitor_oid, nmos::nc_receiver_monitor_stream_status_transition_counter_property_id, web::json::value::number(transition_count), get_control_protocol_class_descriptor, gate);
 
         // Do activatation
-        nmos::activate_receiver_monitor(resources, monitor_oid, get_control_protocol_class_descriptor, get_control_protocol_method_descriptor, gate);
+        nmos::activate_monitor(resources, monitor_oid, get_control_protocol_class_descriptor, get_control_protocol_method_descriptor, gate);
 
         // Check statuses
         auto actual_stream_status = nmos::get_control_protocol_property(resources, monitor_oid, nmos::nc_receiver_monitor_stream_status_property_id, get_control_protocol_class_descriptor, gate);
@@ -394,7 +394,7 @@ BST_TEST_CASE(testActivateDeactivateReceiverMonitor)
     }
     {
         // Do deactivation
-        nmos::deactivate_receiver_monitor(resources, monitor_oid, get_control_protocol_class_descriptor, gate);
+        nmos::deactivate_monitor(resources, monitor_oid, get_control_protocol_class_descriptor, gate);
 
         // Check statuses
         auto actual_stream_status = nmos::get_control_protocol_property(resources, monitor_oid, nmos::nc_receiver_monitor_stream_status_property_id, get_control_protocol_class_descriptor, gate);
@@ -418,7 +418,7 @@ BST_TEST_CASE(testActivateDeactivateReceiverMonitor)
         nmos::set_control_protocol_property(resources, monitor_oid, nmos::nc_receiver_monitor_stream_status_transition_counter_property_id, web::json::value::number(transition_count), get_control_protocol_class_descriptor, gate);
 
         // Do activatation
-        nmos::activate_receiver_monitor(resources, monitor_oid, get_control_protocol_class_descriptor, get_control_protocol_method_descriptor, gate);
+        nmos::activate_monitor(resources, monitor_oid, get_control_protocol_class_descriptor, get_control_protocol_method_descriptor, gate);
 
         // Check statuses
         auto actual_stream_status = nmos::get_control_protocol_property(resources, monitor_oid, nmos::nc_receiver_monitor_stream_status_property_id, get_control_protocol_class_descriptor, gate);
@@ -443,7 +443,7 @@ BST_TEST_CASE(testActivateDeactivateReceiverMonitor)
     }
     {
         // Do deactivation
-        nmos::deactivate_receiver_monitor(resources, monitor_oid, get_control_protocol_class_descriptor, gate);
+        nmos::deactivate_monitor(resources, monitor_oid, get_control_protocol_class_descriptor, gate);
 
         // Check statuses
         auto actual_stream_status = nmos::get_control_protocol_property(resources, monitor_oid, nmos::nc_receiver_monitor_stream_status_property_id, get_control_protocol_class_descriptor, gate);
@@ -454,3 +454,366 @@ BST_TEST_CASE(testActivateDeactivateReceiverMonitor)
         BST_CHECK_EQUAL(nmos::nc_overall_status::status::inactive, actual_overall_status.as_integer());
     }
 }
+
+
+//////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////
+BST_TEST_CASE(testSetSenderMonitorStatuses)
+{
+    nmos::resources resources;
+    nmos::experimental::control_protocol_state control_protocol_state;
+    nmos::get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor = nmos::make_get_control_protocol_class_descriptor_handler(control_protocol_state);
+    nmos::get_control_protocol_datatype_descriptor_handler get_control_protocol_datatype_descriptor = nmos::make_get_control_protocol_datatype_descriptor_handler(control_protocol_state);
+
+    boost::iostreams::stream< boost::iostreams::null_sink > null_ostream((boost::iostreams::null_sink()));
+    nmos::experimental::log_model log_model;
+    nmos::experimental::log_gate gate(null_ostream, null_ostream, log_model);
+
+	// Create Device Model
+    // root
+    auto root_block = nmos::make_root_block();
+    auto root_block_oid = nmos::root_block_oid;
+    // root, ClassManager
+    auto class_manager_oid = ++root_block_oid;
+    auto class_manager = nmos::make_class_manager(class_manager_oid, control_protocol_state);
+	auto monitor_oid = ++class_manager_oid;
+
+	auto monitor = nmos::make_sender_monitor(monitor_oid, true, root_block_oid, U("monitor"), U("monitor"), U("monitor"), web::json::value::null());
+
+    nmos::push_back(root_block, class_manager);
+    nmos::push_back(root_block, monitor);
+    insert_resource(resources, std::move(root_block));
+    insert_resource(resources, std::move(class_manager));
+    insert_resource(resources, std::move(monitor));
+
+    {
+        auto link_status = nmos::nc_link_status::status::all_up;
+        auto link_status_message = U("All links are up");
+        auto expected_link_status_transition_counter = 0;
+        auto transmission_status = nmos::nc_transmission_status::status::inactive;
+        auto transmission_status_message = U("transmission healthy");
+        auto expected_transmission_status_transition_counter = 0;
+        auto external_synchronization_status = nmos::nc_synchronization_status::status::unhealthy;
+        auto external_synchronization_status_message = U("No external synchronization");
+        auto expected_external_synchronization_status_transition_counter = 1;
+        auto essence_status = nmos::nc_essence_status::status::inactive;
+        auto essence_status_message = U("essence status healthy");
+        auto expected_essence_status_transition_counter = 0;
+
+        BST_REQUIRE(set_sender_monitor_link_status(resources, monitor_oid, link_status, link_status_message, get_control_protocol_class_descriptor, gate));
+        BST_REQUIRE(set_sender_monitor_transmission_status(resources, monitor_oid, transmission_status, transmission_status_message, get_control_protocol_class_descriptor, gate));
+        BST_REQUIRE(set_sender_monitor_external_synchronization_status(resources, monitor_oid, external_synchronization_status, external_synchronization_status_message, get_control_protocol_class_descriptor, gate));
+        BST_REQUIRE(set_sender_monitor_essence_status(resources, monitor_oid, essence_status, essence_status_message, get_control_protocol_class_descriptor, gate));
+
+        auto actual_link_status = get_control_protocol_property(resources, monitor_oid, nmos::nc_sender_monitor_link_status_property_id, get_control_protocol_class_descriptor, gate);
+        BST_CHECK_EQUAL(link_status, actual_link_status.as_integer());
+        auto actual_link_status_message = get_control_protocol_property(resources, monitor_oid, nmos::nc_sender_monitor_link_status_message_property_id, get_control_protocol_class_descriptor, gate);
+        BST_CHECK_EQUAL(link_status_message, actual_link_status_message.as_string());
+        auto actual_link_status_transition_counter = get_control_protocol_property(resources, monitor_oid, nmos::nc_sender_monitor_link_status_transition_counter_property_id, get_control_protocol_class_descriptor, gate);
+        BST_CHECK_EQUAL(expected_link_status_transition_counter, actual_link_status_transition_counter.as_integer());
+        auto actual_transmission_status = get_control_protocol_property(resources, monitor_oid, nmos::nc_sender_monitor_transmission_status_property_id, get_control_protocol_class_descriptor, gate);
+        BST_CHECK_EQUAL(transmission_status, actual_transmission_status.as_integer());
+        auto actual_transmission_status_message = get_control_protocol_property(resources, monitor_oid, nmos::nc_sender_monitor_transmission_status_message_property_id, get_control_protocol_class_descriptor, gate);
+        BST_CHECK_EQUAL(transmission_status_message, actual_transmission_status_message.as_string());
+        auto actual_transmission_status_transition_counter = get_control_protocol_property(resources, monitor_oid, nmos::nc_sender_monitor_transmission_status_transition_counter_property_id, get_control_protocol_class_descriptor, gate);
+        BST_CHECK_EQUAL(expected_transmission_status_transition_counter, actual_transmission_status_transition_counter.as_integer());
+        auto actual_external_synchronization_status = get_control_protocol_property(resources, monitor_oid, nmos::nc_sender_monitor_external_synchronization_status_property_id, get_control_protocol_class_descriptor, gate);
+        BST_CHECK_EQUAL(external_synchronization_status, actual_external_synchronization_status.as_integer());
+        auto actual_external_synchronization_status_message = get_control_protocol_property(resources, monitor_oid, nmos::nc_sender_monitor_external_synchronization_status_message_property_id, get_control_protocol_class_descriptor, gate);
+        BST_CHECK_EQUAL(external_synchronization_status_message, actual_external_synchronization_status_message.as_string());
+        auto actual_external_synchronization_status_transition_counter = get_control_protocol_property(resources, monitor_oid, nmos::nc_sender_monitor_external_synchronization_status_transition_counter_property_id, get_control_protocol_class_descriptor, gate);
+        BST_CHECK_EQUAL(expected_external_synchronization_status_transition_counter, actual_external_synchronization_status_transition_counter.as_integer());
+        auto actual_essence_status = get_control_protocol_property(resources, monitor_oid, nmos::nc_sender_monitor_essence_status_property_id, get_control_protocol_class_descriptor, gate);
+        BST_CHECK_EQUAL(essence_status, actual_essence_status.as_integer());
+        auto actual_essence_status_message = get_control_protocol_property(resources, monitor_oid, nmos::nc_sender_monitor_essence_status_message_property_id, get_control_protocol_class_descriptor, gate);
+        BST_CHECK_EQUAL(essence_status_message, actual_essence_status_message.as_string());
+        auto actual_essence_status_transition_counter = get_control_protocol_property(resources, monitor_oid, nmos::nc_sender_monitor_essence_status_transition_counter_property_id, get_control_protocol_class_descriptor, gate);
+        BST_CHECK_EQUAL(expected_essence_status_transition_counter, actual_essence_status_transition_counter.as_integer());
+
+        auto overall_status = get_control_protocol_property(resources, monitor_oid, nmos::nc_status_monitor_overall_status_property_id, get_control_protocol_class_descriptor, gate);
+        BST_CHECK_EQUAL(nmos::nc_overall_status::status::inactive, overall_status.as_integer());
+    }
+    {
+        auto link_status = nmos::nc_link_status::status::all_up;
+        auto link_status_message = U("All links are up");
+        auto expected_link_status_transition_counter = 0;
+        auto transmission_status = nmos::nc_transmission_status::status::healthy;
+        auto transmission_status_message = U("transmission healthy");
+        auto expected_transmission_status_transition_counter = 0;
+        auto external_synchronization_status = nmos::nc_synchronization_status::status::not_used;
+        auto external_synchronization_status_message = U("No external synchronization");
+        auto expected_external_synchronization_status_transition_counter = 1;
+        auto essence_status = nmos::nc_essence_status::status::healthy;
+        auto essence_status_message = U("essence status healthy");
+        auto expected_essence_status_transition_counter = 0;
+
+        BST_REQUIRE(set_sender_monitor_link_status(resources, monitor_oid, link_status, link_status_message, get_control_protocol_class_descriptor, gate));
+        BST_REQUIRE(set_sender_monitor_transmission_status(resources, monitor_oid, transmission_status, transmission_status_message, get_control_protocol_class_descriptor, gate));
+        BST_REQUIRE(set_sender_monitor_external_synchronization_status(resources, monitor_oid, external_synchronization_status, external_synchronization_status_message, get_control_protocol_class_descriptor, gate));
+        BST_REQUIRE(set_sender_monitor_essence_status(resources, monitor_oid, essence_status, essence_status_message, get_control_protocol_class_descriptor, gate));
+
+        auto actual_link_status = get_control_protocol_property(resources, monitor_oid, nmos::nc_sender_monitor_link_status_property_id, get_control_protocol_class_descriptor, gate);
+        BST_CHECK_EQUAL(link_status, actual_link_status.as_integer());
+        auto actual_link_status_message = get_control_protocol_property(resources, monitor_oid, nmos::nc_sender_monitor_link_status_message_property_id, get_control_protocol_class_descriptor, gate);
+        BST_CHECK_EQUAL(link_status_message, actual_link_status_message.as_string());
+        auto actual_link_status_transition_counter = get_control_protocol_property(resources, monitor_oid, nmos::nc_sender_monitor_link_status_transition_counter_property_id, get_control_protocol_class_descriptor, gate);
+        BST_CHECK_EQUAL(expected_link_status_transition_counter, actual_link_status_transition_counter.as_integer());
+        auto actual_transmission_status = get_control_protocol_property(resources, monitor_oid, nmos::nc_sender_monitor_transmission_status_property_id, get_control_protocol_class_descriptor, gate);
+        BST_CHECK_EQUAL(transmission_status, actual_transmission_status.as_integer());
+        auto actual_transmission_status_message = get_control_protocol_property(resources, monitor_oid, nmos::nc_sender_monitor_transmission_status_message_property_id, get_control_protocol_class_descriptor, gate);
+        BST_CHECK_EQUAL(transmission_status_message, actual_transmission_status_message.as_string());
+        auto actual_transmission_status_transition_counter = get_control_protocol_property(resources, monitor_oid, nmos::nc_sender_monitor_transmission_status_transition_counter_property_id, get_control_protocol_class_descriptor, gate);
+        BST_CHECK_EQUAL(expected_transmission_status_transition_counter, actual_transmission_status_transition_counter.as_integer());
+        auto actual_external_synchronization_status = get_control_protocol_property(resources, monitor_oid, nmos::nc_sender_monitor_external_synchronization_status_property_id, get_control_protocol_class_descriptor, gate);
+        BST_CHECK_EQUAL(external_synchronization_status, actual_external_synchronization_status.as_integer());
+        auto actual_external_synchronization_status_message = get_control_protocol_property(resources, monitor_oid, nmos::nc_sender_monitor_external_synchronization_status_message_property_id, get_control_protocol_class_descriptor, gate);
+        BST_CHECK_EQUAL(external_synchronization_status_message, actual_external_synchronization_status_message.as_string());
+        auto actual_external_synchronization_status_transition_counter = get_control_protocol_property(resources, monitor_oid, nmos::nc_sender_monitor_external_synchronization_status_transition_counter_property_id, get_control_protocol_class_descriptor, gate);
+        BST_CHECK_EQUAL(expected_external_synchronization_status_transition_counter, actual_external_synchronization_status_transition_counter.as_integer());
+        auto actual_essence_status = get_control_protocol_property(resources, monitor_oid, nmos::nc_sender_monitor_essence_status_property_id, get_control_protocol_class_descriptor, gate);
+        BST_CHECK_EQUAL(essence_status, actual_essence_status.as_integer());
+        auto actual_essence_status_message = get_control_protocol_property(resources, monitor_oid, nmos::nc_sender_monitor_essence_status_message_property_id, get_control_protocol_class_descriptor, gate);
+        BST_CHECK_EQUAL(essence_status_message, actual_essence_status_message.as_string());
+        auto actual_essence_status_transition_counter = get_control_protocol_property(resources, monitor_oid, nmos::nc_sender_monitor_essence_status_transition_counter_property_id, get_control_protocol_class_descriptor, gate);
+        BST_CHECK_EQUAL(expected_essence_status_transition_counter, actual_essence_status_transition_counter.as_integer());
+
+        auto overall_status = get_control_protocol_property(resources, monitor_oid, nmos::nc_status_monitor_overall_status_property_id, get_control_protocol_class_descriptor, gate);
+        BST_CHECK_EQUAL(nmos::nc_overall_status::status::healthy, overall_status.as_integer());
+    }
+    {
+        auto link_status = nmos::nc_link_status::status::some_down;
+        auto link_status_message = U("All links are up");
+        auto expected_link_status_transition_counter = 1;
+        auto transmission_status = nmos::nc_transmission_status::status::healthy;
+        auto transmission_status_message = U("transmission healthy");
+        auto expected_transmission_status_transition_counter = 0;
+        auto external_synchronization_status = nmos::nc_synchronization_status::status::not_used;
+        auto external_synchronization_status_message = U("No external synchronization");
+        auto expected_external_synchronization_status_transition_counter = 1;
+        auto essence_status = nmos::nc_essence_status::status::partially_healthy;
+        auto essence_status_message = U("essence status healthy");
+        auto expected_essence_status_transition_counter = 1;
+
+        BST_REQUIRE(set_sender_monitor_link_status(resources, monitor_oid, link_status, link_status_message, get_control_protocol_class_descriptor, gate));
+        BST_REQUIRE(set_sender_monitor_transmission_status(resources, monitor_oid, transmission_status, transmission_status_message, get_control_protocol_class_descriptor, gate));
+        BST_REQUIRE(set_sender_monitor_external_synchronization_status(resources, monitor_oid, external_synchronization_status, external_synchronization_status_message, get_control_protocol_class_descriptor, gate));
+        BST_REQUIRE(set_sender_monitor_essence_status(resources, monitor_oid, essence_status, essence_status_message, get_control_protocol_class_descriptor, gate));
+
+        auto actual_link_status = get_control_protocol_property(resources, monitor_oid, nmos::nc_sender_monitor_link_status_property_id, get_control_protocol_class_descriptor, gate);
+        BST_CHECK_EQUAL(link_status, actual_link_status.as_integer());
+        auto actual_link_status_message = get_control_protocol_property(resources, monitor_oid, nmos::nc_sender_monitor_link_status_message_property_id, get_control_protocol_class_descriptor, gate);
+        BST_CHECK_EQUAL(link_status_message, actual_link_status_message.as_string());
+        auto actual_link_status_transition_counter = get_control_protocol_property(resources, monitor_oid, nmos::nc_sender_monitor_link_status_transition_counter_property_id, get_control_protocol_class_descriptor, gate);
+        BST_CHECK_EQUAL(expected_link_status_transition_counter, actual_link_status_transition_counter.as_integer());
+        auto actual_transmission_status = get_control_protocol_property(resources, monitor_oid, nmos::nc_sender_monitor_transmission_status_property_id, get_control_protocol_class_descriptor, gate);
+        BST_CHECK_EQUAL(transmission_status, actual_transmission_status.as_integer());
+        auto actual_transmission_status_message = get_control_protocol_property(resources, monitor_oid, nmos::nc_sender_monitor_transmission_status_message_property_id, get_control_protocol_class_descriptor, gate);
+        BST_CHECK_EQUAL(transmission_status_message, actual_transmission_status_message.as_string());
+        auto actual_transmission_status_transition_counter = get_control_protocol_property(resources, monitor_oid, nmos::nc_sender_monitor_transmission_status_transition_counter_property_id, get_control_protocol_class_descriptor, gate);
+        BST_CHECK_EQUAL(expected_transmission_status_transition_counter, actual_transmission_status_transition_counter.as_integer());
+        auto actual_external_synchronization_status = get_control_protocol_property(resources, monitor_oid, nmos::nc_sender_monitor_external_synchronization_status_property_id, get_control_protocol_class_descriptor, gate);
+        BST_CHECK_EQUAL(external_synchronization_status, actual_external_synchronization_status.as_integer());
+        auto actual_external_synchronization_status_message = get_control_protocol_property(resources, monitor_oid, nmos::nc_sender_monitor_external_synchronization_status_message_property_id, get_control_protocol_class_descriptor, gate);
+        BST_CHECK_EQUAL(external_synchronization_status_message, actual_external_synchronization_status_message.as_string());
+        auto actual_external_synchronization_status_transition_counter = get_control_protocol_property(resources, monitor_oid, nmos::nc_sender_monitor_external_synchronization_status_transition_counter_property_id, get_control_protocol_class_descriptor, gate);
+        BST_CHECK_EQUAL(expected_external_synchronization_status_transition_counter, actual_external_synchronization_status_transition_counter.as_integer());
+        auto actual_essence_status = get_control_protocol_property(resources, monitor_oid, nmos::nc_sender_monitor_essence_status_property_id, get_control_protocol_class_descriptor, gate);
+        BST_CHECK_EQUAL(essence_status, actual_essence_status.as_integer());
+        auto actual_essence_status_message = get_control_protocol_property(resources, monitor_oid, nmos::nc_sender_monitor_essence_status_message_property_id, get_control_protocol_class_descriptor, gate);
+        BST_CHECK_EQUAL(essence_status_message, actual_essence_status_message.as_string());
+        auto actual_essence_status_transition_counter = get_control_protocol_property(resources, monitor_oid, nmos::nc_sender_monitor_essence_status_transition_counter_property_id, get_control_protocol_class_descriptor, gate);
+        BST_CHECK_EQUAL(expected_essence_status_transition_counter, actual_essence_status_transition_counter.as_integer());
+
+        auto overall_status = get_control_protocol_property(resources, monitor_oid, nmos::nc_status_monitor_overall_status_property_id, get_control_protocol_class_descriptor, gate);
+        BST_CHECK_EQUAL(nmos::nc_overall_status::status::partially_healthy, overall_status.as_integer());
+    }
+    {
+        auto link_status = nmos::nc_link_status::status::some_down;
+        auto link_status_message = U("All links are up");
+        auto expected_link_status_transition_counter = 1;
+        auto transmission_status = nmos::nc_transmission_status::status::unhealthy;
+        auto transmission_status_message = U("transmission healthy");
+        auto expected_transmission_status_transition_counter = 1;
+        auto external_synchronization_status = nmos::nc_synchronization_status::status::healthy;
+        auto external_synchronization_status_message = U("No external synchronization");
+        auto expected_external_synchronization_status_transition_counter = 1;
+        auto essence_status = nmos::nc_essence_status::status::partially_healthy;
+        auto essence_status_message = U("essence status healthy");
+        auto expected_essence_status_transition_counter = 1;
+
+        BST_REQUIRE(set_sender_monitor_link_status(resources, monitor_oid, link_status, link_status_message, get_control_protocol_class_descriptor, gate));
+        BST_REQUIRE(set_sender_monitor_transmission_status(resources, monitor_oid, transmission_status, transmission_status_message, get_control_protocol_class_descriptor, gate));
+        BST_REQUIRE(set_sender_monitor_external_synchronization_status(resources, monitor_oid, external_synchronization_status, external_synchronization_status_message, get_control_protocol_class_descriptor, gate));
+        BST_REQUIRE(set_sender_monitor_essence_status(resources, monitor_oid, essence_status, essence_status_message, get_control_protocol_class_descriptor, gate));
+
+        auto actual_link_status = get_control_protocol_property(resources, monitor_oid, nmos::nc_sender_monitor_link_status_property_id, get_control_protocol_class_descriptor, gate);
+        BST_CHECK_EQUAL(link_status, actual_link_status.as_integer());
+        auto actual_link_status_message = get_control_protocol_property(resources, monitor_oid, nmos::nc_sender_monitor_link_status_message_property_id, get_control_protocol_class_descriptor, gate);
+        BST_CHECK_EQUAL(link_status_message, actual_link_status_message.as_string());
+        auto actual_link_status_transition_counter = get_control_protocol_property(resources, monitor_oid, nmos::nc_sender_monitor_link_status_transition_counter_property_id, get_control_protocol_class_descriptor, gate);
+        BST_CHECK_EQUAL(expected_link_status_transition_counter, actual_link_status_transition_counter.as_integer());
+        auto actual_transmission_status = get_control_protocol_property(resources, monitor_oid, nmos::nc_sender_monitor_transmission_status_property_id, get_control_protocol_class_descriptor, gate);
+        BST_CHECK_EQUAL(transmission_status, actual_transmission_status.as_integer());
+        auto actual_transmission_status_message = get_control_protocol_property(resources, monitor_oid, nmos::nc_sender_monitor_transmission_status_message_property_id, get_control_protocol_class_descriptor, gate);
+        BST_CHECK_EQUAL(transmission_status_message, actual_transmission_status_message.as_string());
+        auto actual_transmission_status_transition_counter = get_control_protocol_property(resources, monitor_oid, nmos::nc_sender_monitor_transmission_status_transition_counter_property_id, get_control_protocol_class_descriptor, gate);
+        BST_CHECK_EQUAL(expected_transmission_status_transition_counter, actual_transmission_status_transition_counter.as_integer());
+        auto actual_external_synchronization_status = get_control_protocol_property(resources, monitor_oid, nmos::nc_sender_monitor_external_synchronization_status_property_id, get_control_protocol_class_descriptor, gate);
+        BST_CHECK_EQUAL(external_synchronization_status, actual_external_synchronization_status.as_integer());
+        auto actual_external_synchronization_status_message = get_control_protocol_property(resources, monitor_oid, nmos::nc_sender_monitor_external_synchronization_status_message_property_id, get_control_protocol_class_descriptor, gate);
+        BST_CHECK_EQUAL(external_synchronization_status_message, actual_external_synchronization_status_message.as_string());
+        auto actual_external_synchronization_status_transition_counter = get_control_protocol_property(resources, monitor_oid, nmos::nc_sender_monitor_external_synchronization_status_transition_counter_property_id, get_control_protocol_class_descriptor, gate);
+        BST_CHECK_EQUAL(expected_external_synchronization_status_transition_counter, actual_external_synchronization_status_transition_counter.as_integer());
+        auto actual_essence_status = get_control_protocol_property(resources, monitor_oid, nmos::nc_sender_monitor_essence_status_property_id, get_control_protocol_class_descriptor, gate);
+        BST_CHECK_EQUAL(essence_status, actual_essence_status.as_integer());
+        auto actual_essence_status_message = get_control_protocol_property(resources, monitor_oid, nmos::nc_sender_monitor_essence_status_message_property_id, get_control_protocol_class_descriptor, gate);
+        BST_CHECK_EQUAL(essence_status_message, actual_essence_status_message.as_string());
+        auto actual_essence_status_transition_counter = get_control_protocol_property(resources, monitor_oid, nmos::nc_sender_monitor_essence_status_transition_counter_property_id, get_control_protocol_class_descriptor, gate);
+        BST_CHECK_EQUAL(expected_essence_status_transition_counter, actual_essence_status_transition_counter.as_integer());
+
+        auto overall_status = get_control_protocol_property(resources, monitor_oid, nmos::nc_status_monitor_overall_status_property_id, get_control_protocol_class_descriptor, gate);
+        BST_CHECK_EQUAL(nmos::nc_overall_status::status::unhealthy, overall_status.as_integer());
+    }
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////
+BST_TEST_CASE(testActivateDeactivateSenderMonitor)
+{
+    nmos::resources resources;
+
+    bool reset_monitor_called = false;
+
+    nmos::reset_monitor_handler reset_monitor = [&reset_monitor_called]()
+    {
+        // check that the property changed handler gets called
+        reset_monitor_called = true;
+
+        return nmos::details::make_nc_method_result({ nmos::nc_method_status::ok });
+    };
+
+    nmos::experimental::control_protocol_state control_protocol_state(nullptr, nullptr, reset_monitor, nullptr);
+    nmos::get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor = nmos::make_get_control_protocol_class_descriptor_handler(control_protocol_state);
+    nmos::get_control_protocol_datatype_descriptor_handler get_control_protocol_datatype_descriptor = nmos::make_get_control_protocol_datatype_descriptor_handler(control_protocol_state);
+    nmos::get_control_protocol_method_descriptor_handler get_control_protocol_method_descriptor = nmos::make_get_control_protocol_method_descriptor_handler(control_protocol_state);
+
+    boost::iostreams::stream< boost::iostreams::null_sink > null_ostream((boost::iostreams::null_sink()));
+    nmos::experimental::log_model log_model;
+    nmos::experimental::log_gate gate(null_ostream, null_ostream, log_model);
+
+    // Create Device Model
+    // root
+    auto root_block = nmos::make_root_block();
+    auto root_block_oid = nmos::root_block_oid;
+    // root, ClassManager
+    auto class_manager_oid = ++root_block_oid;
+    auto class_manager = nmos::make_class_manager(class_manager_oid, control_protocol_state);
+    auto monitor_oid = ++class_manager_oid;
+
+    auto monitor = nmos::make_sender_monitor(monitor_oid, true, root_block_oid, U("monitor"), U("monitor"), U("monitor"), web::json::value::null());
+
+    nmos::push_back(root_block, class_manager);
+    nmos::push_back(root_block, monitor);
+    insert_resource(resources, std::move(root_block));
+    insert_resource(resources, std::move(class_manager));
+    insert_resource(resources, std::move(monitor));
+
+    {
+        // autoResetCounterAndMessages will reset all counters and messages on activate, including calling back into application code
+        nmos::set_control_protocol_property(resources, monitor_oid, nmos::nc_sender_monitor_auto_reset_monitor_property_id, web::json::value::boolean(true), get_control_protocol_class_descriptor, gate);
+
+        uint32_t transition_count = 10;
+        // set transition counters
+        nmos::set_control_protocol_property(resources, monitor_oid, nmos::nc_sender_monitor_link_status_transition_counter_property_id, web::json::value::number(transition_count), get_control_protocol_class_descriptor, gate);
+        nmos::set_control_protocol_property(resources, monitor_oid, nmos::nc_sender_monitor_transmission_status_transition_counter_property_id, web::json::value::number(transition_count), get_control_protocol_class_descriptor, gate);
+        nmos::set_control_protocol_property(resources, monitor_oid, nmos::nc_sender_monitor_external_synchronization_status_transition_counter_property_id, web::json::value::number(transition_count), get_control_protocol_class_descriptor, gate);
+        nmos::set_control_protocol_property(resources, monitor_oid, nmos::nc_sender_monitor_essence_status_transition_counter_property_id, web::json::value::number(transition_count), get_control_protocol_class_descriptor, gate);
+
+        // Do activatation
+        nmos::activate_monitor(resources, monitor_oid, get_control_protocol_class_descriptor, get_control_protocol_method_descriptor, gate);
+
+        // Check statuses
+        auto actual_essence_status = nmos::get_control_protocol_property(resources, monitor_oid, nmos::nc_sender_monitor_essence_status_property_id, get_control_protocol_class_descriptor, gate);
+        BST_CHECK_EQUAL(nmos::nc_essence_status::status::healthy, actual_essence_status.as_integer());
+        auto actual_transmission_status = nmos::get_control_protocol_property(resources, monitor_oid, nmos::nc_sender_monitor_transmission_status_property_id, get_control_protocol_class_descriptor, gate);
+        BST_CHECK_EQUAL(nmos::nc_essence_status::status::healthy, actual_transmission_status.as_integer());
+        auto actual_overall_status = nmos::get_control_protocol_property(resources, monitor_oid, nmos::nc_status_monitor_overall_status_property_id, get_control_protocol_class_descriptor, gate);
+        BST_CHECK_EQUAL(nmos::nc_overall_status::status::healthy, actual_overall_status.as_integer());
+
+        // Check transition counters
+        auto actual_essence_status_transition_counter = nmos::get_control_protocol_property(resources, monitor_oid, nmos::nc_sender_monitor_essence_status_transition_counter_property_id, get_control_protocol_class_descriptor, gate);
+        BST_CHECK_EQUAL(0, actual_essence_status_transition_counter.as_integer());
+        auto actual_link_status_transition_counter = nmos::get_control_protocol_property(resources, monitor_oid, nmos::nc_sender_monitor_link_status_transition_counter_property_id, get_control_protocol_class_descriptor, gate);
+        BST_CHECK_EQUAL(0, actual_link_status_transition_counter.as_integer());
+        auto actual_transmission_status_transition_counter = nmos::get_control_protocol_property(resources, monitor_oid, nmos::nc_sender_monitor_transmission_status_transition_counter_property_id, get_control_protocol_class_descriptor, gate);
+        BST_CHECK_EQUAL(0, actual_transmission_status_transition_counter.as_integer());
+        auto actual_external_synchronization_status_transition_counter = nmos::get_control_protocol_property(resources, monitor_oid, nmos::nc_sender_monitor_external_synchronization_status_transition_counter_property_id, get_control_protocol_class_descriptor, gate);
+        BST_CHECK_EQUAL(0, actual_external_synchronization_status_transition_counter.as_integer());
+
+        // Check that reset_monitor handler was invoked
+        BST_CHECK(reset_monitor_called);
+    }
+    {
+        // Do deactivation
+        nmos::deactivate_monitor(resources, monitor_oid, get_control_protocol_class_descriptor, gate);
+
+        // Check statuses
+        auto actual_essence_status = nmos::get_control_protocol_property(resources, monitor_oid, nmos::nc_sender_monitor_essence_status_property_id, get_control_protocol_class_descriptor, gate);
+        BST_CHECK_EQUAL(nmos::nc_essence_status::status::inactive, actual_essence_status.as_integer());
+        auto actual_transmission_status = nmos::get_control_protocol_property(resources, monitor_oid, nmos::nc_sender_monitor_transmission_status_property_id, get_control_protocol_class_descriptor, gate);
+        BST_CHECK_EQUAL(nmos::nc_essence_status::status::inactive, actual_transmission_status.as_integer());
+        auto actual_overall_status = nmos::get_control_protocol_property(resources, monitor_oid, nmos::nc_status_monitor_overall_status_property_id, get_control_protocol_class_descriptor, gate);
+        BST_CHECK_EQUAL(nmos::nc_overall_status::status::inactive, actual_overall_status.as_integer());
+    }
+    {
+        reset_monitor_called = false;
+
+        // disable autoResetCounterAndMessages
+        nmos::set_control_protocol_property(resources, monitor_oid, nmos::nc_sender_monitor_auto_reset_monitor_property_id, web::json::value::boolean(false), get_control_protocol_class_descriptor, gate);
+
+        int32_t transition_count = 10;
+        // set transition counters
+        nmos::set_control_protocol_property(resources, monitor_oid, nmos::nc_sender_monitor_link_status_transition_counter_property_id, web::json::value::number(transition_count), get_control_protocol_class_descriptor, gate);
+        nmos::set_control_protocol_property(resources, monitor_oid, nmos::nc_sender_monitor_transmission_status_transition_counter_property_id, web::json::value::number(transition_count), get_control_protocol_class_descriptor, gate);
+        nmos::set_control_protocol_property(resources, monitor_oid, nmos::nc_sender_monitor_external_synchronization_status_transition_counter_property_id, web::json::value::number(transition_count), get_control_protocol_class_descriptor, gate);
+        nmos::set_control_protocol_property(resources, monitor_oid, nmos::nc_sender_monitor_essence_status_transition_counter_property_id, web::json::value::number(transition_count), get_control_protocol_class_descriptor, gate);
+
+        // Do activatation
+        nmos::activate_monitor(resources, monitor_oid, get_control_protocol_class_descriptor, get_control_protocol_method_descriptor, gate);
+
+        // Check statuses
+        auto actual_essence_status = nmos::get_control_protocol_property(resources, monitor_oid, nmos::nc_sender_monitor_essence_status_property_id, get_control_protocol_class_descriptor, gate);
+        BST_CHECK_EQUAL(nmos::nc_essence_status::status::healthy, actual_essence_status.as_integer());
+        auto actual_transmission_status = nmos::get_control_protocol_property(resources, monitor_oid, nmos::nc_sender_monitor_transmission_status_property_id, get_control_protocol_class_descriptor, gate);
+        BST_CHECK_EQUAL(nmos::nc_essence_status::status::healthy, actual_transmission_status.as_integer());
+        auto actual_overall_status = nmos::get_control_protocol_property(resources, monitor_oid, nmos::nc_status_monitor_overall_status_property_id, get_control_protocol_class_descriptor, gate);
+        BST_CHECK_EQUAL(nmos::nc_overall_status::status::healthy, actual_overall_status.as_integer());
+
+        // Check transition counters
+        auto actual_essence_status_transition_counter = nmos::get_control_protocol_property(resources, monitor_oid, nmos::nc_sender_monitor_essence_status_transition_counter_property_id, get_control_protocol_class_descriptor, gate);
+        BST_CHECK_EQUAL(transition_count, actual_essence_status_transition_counter.as_integer());
+        auto actual_link_status_transition_counter = nmos::get_control_protocol_property(resources, monitor_oid, nmos::nc_sender_monitor_link_status_transition_counter_property_id, get_control_protocol_class_descriptor, gate);
+        BST_CHECK_EQUAL(transition_count, actual_link_status_transition_counter.as_integer());
+        auto actual_transmission_status_transition_counter = nmos::get_control_protocol_property(resources, monitor_oid, nmos::nc_sender_monitor_transmission_status_transition_counter_property_id, get_control_protocol_class_descriptor, gate);
+        BST_CHECK_EQUAL(transition_count, actual_transmission_status_transition_counter.as_integer());
+        auto actual_external_synchronization_status_transition_counter = nmos::get_control_protocol_property(resources, monitor_oid, nmos::nc_sender_monitor_external_synchronization_status_transition_counter_property_id, get_control_protocol_class_descriptor, gate);
+        BST_CHECK_EQUAL(transition_count, actual_external_synchronization_status_transition_counter.as_integer());
+
+        // Check that reset_monitor handler was NOT invoked
+        BST_CHECK(!reset_monitor_called);
+    }
+    {
+        // Do deactivation
+        nmos::deactivate_monitor(resources, monitor_oid, get_control_protocol_class_descriptor, gate);
+
+        // Check statuses
+        auto actual_essence_status = nmos::get_control_protocol_property(resources, monitor_oid, nmos::nc_sender_monitor_essence_status_property_id, get_control_protocol_class_descriptor, gate);
+        BST_CHECK_EQUAL(nmos::nc_essence_status::status::inactive, actual_essence_status.as_integer());
+        auto actual_transmission_status = nmos::get_control_protocol_property(resources, monitor_oid, nmos::nc_sender_monitor_transmission_status_property_id, get_control_protocol_class_descriptor, gate);
+        BST_CHECK_EQUAL(nmos::nc_essence_status::status::inactive, actual_transmission_status.as_integer());
+        auto actual_overall_status = nmos::get_control_protocol_property(resources, monitor_oid, nmos::nc_status_monitor_overall_status_property_id, get_control_protocol_class_descriptor, gate);
+        BST_CHECK_EQUAL(nmos::nc_overall_status::status::inactive, actual_overall_status.as_integer());
+    }
+}
+

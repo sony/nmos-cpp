@@ -1445,7 +1445,7 @@ void node_implementation_run(nmos::node_model& model, nmos::experimental::contro
                     {
                         const auto receiver_id = impl::make_id(seed_id, nmos::types::receiver, port, index);
 
-                        auto receiver_monitor = nmos::find_control_protocol_resource(resources, nmos::types::nc_receiver_monitor, receiver_id);
+                        auto receiver_monitor = nmos::find_control_protocol_resource(resources, nmos::types::nc_status_monitor, receiver_id);
                         if (resources.end() != receiver_monitor)
                         {
                             const auto& oid = nmos::fields::nc::oid(receiver_monitor->data);

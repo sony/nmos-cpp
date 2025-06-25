@@ -35,11 +35,17 @@ namespace nmos
 
             slog::log<slog::severities::info>(gate, SLOG_FLF) << "Starting control protocol behaviour thread";
 
-            std::vector<domain_status_properties> domain_statuses;
-            domain_statuses.push_back(domain_status_properties(nc_receiver_monitor_stream_status_property_id, nc_receiver_monitor_stream_status_message_property_id, nc_receiver_monitor_stream_status_transition_counter_property_id, nmos::fields::nc::stream_status_pending, nmos::fields::nc::stream_status_message_pending, nmos::fields::nc::stream_status_pending_received_time));
-            domain_statuses.push_back(domain_status_properties(nc_receiver_monitor_connection_status_property_id, nc_receiver_monitor_connection_status_message_property_id, nc_receiver_monitor_connection_status_transition_counter_property_id, nmos::fields::nc::connection_status_pending, nmos::fields::nc::connection_status_message_pending, nmos::fields::nc::connection_status_pending_received_time));
-            domain_statuses.push_back(domain_status_properties(nc_receiver_monitor_link_status_property_id, nc_receiver_monitor_link_status_message_property_id, nc_receiver_monitor_link_status_transition_counter_property_id, nmos::fields::nc::link_status_pending, nmos::fields::nc::link_status_message_pending, nmos::fields::nc::link_status_pending_received_time));
-            domain_statuses.push_back(domain_status_properties(nc_receiver_monitor_external_synchronization_status_property_id, nc_receiver_monitor_external_synchronization_status_message_property_id, nc_receiver_monitor_external_synchronization_status_transition_counter_property_id, nmos::fields::nc::external_synchronization_status_pending, nmos::fields::nc::external_synchronization_status_message_pending, nmos::fields::nc::external_synchronization_status_pending_received_time));
+            std::vector<domain_status_properties> receiver_monitor_domain_statuses;
+            receiver_monitor_domain_statuses.push_back(domain_status_properties(nc_receiver_monitor_stream_status_property_id, nc_receiver_monitor_stream_status_message_property_id, nc_receiver_monitor_stream_status_transition_counter_property_id, nmos::fields::nc::stream_status_pending, nmos::fields::nc::stream_status_message_pending, nmos::fields::nc::stream_status_pending_received_time));
+            receiver_monitor_domain_statuses.push_back(domain_status_properties(nc_receiver_monitor_connection_status_property_id, nc_receiver_monitor_connection_status_message_property_id, nc_receiver_monitor_connection_status_transition_counter_property_id, nmos::fields::nc::connection_status_pending, nmos::fields::nc::connection_status_message_pending, nmos::fields::nc::connection_status_pending_received_time));
+            receiver_monitor_domain_statuses.push_back(domain_status_properties(nc_receiver_monitor_link_status_property_id, nc_receiver_monitor_link_status_message_property_id, nc_receiver_monitor_link_status_transition_counter_property_id, nmos::fields::nc::link_status_pending, nmos::fields::nc::link_status_message_pending, nmos::fields::nc::link_status_pending_received_time));
+            receiver_monitor_domain_statuses.push_back(domain_status_properties(nc_receiver_monitor_external_synchronization_status_property_id, nc_receiver_monitor_external_synchronization_status_message_property_id, nc_receiver_monitor_external_synchronization_status_transition_counter_property_id, nmos::fields::nc::external_synchronization_status_pending, nmos::fields::nc::external_synchronization_status_message_pending, nmos::fields::nc::external_synchronization_status_pending_received_time));
+
+            std::vector<domain_status_properties> sender_monitor_domain_statuses;
+            sender_monitor_domain_statuses.push_back(domain_status_properties(nc_sender_monitor_essence_status_property_id, nc_sender_monitor_essence_status_message_property_id, nc_sender_monitor_essence_status_transition_counter_property_id, nmos::fields::nc::essence_status_pending, nmos::fields::nc::essence_status_message_pending, nmos::fields::nc::essence_status_pending_received_time));
+            sender_monitor_domain_statuses.push_back(domain_status_properties(nc_sender_monitor_transmission_status_property_id, nc_sender_monitor_transmission_status_message_property_id, nc_sender_monitor_transmission_status_transition_counter_property_id, nmos::fields::nc::transmission_status_pending, nmos::fields::nc::transmission_status_message_pending, nmos::fields::nc::transmission_status_pending_received_time));
+            sender_monitor_domain_statuses.push_back(domain_status_properties(nc_sender_monitor_link_status_property_id, nc_sender_monitor_link_status_message_property_id, nc_sender_monitor_link_status_transition_counter_property_id, nmos::fields::nc::link_status_pending, nmos::fields::nc::link_status_message_pending, nmos::fields::nc::link_status_pending_received_time));
+            sender_monitor_domain_statuses.push_back(domain_status_properties(nc_sender_monitor_external_synchronization_status_property_id, nc_sender_monitor_external_synchronization_status_message_property_id, nc_sender_monitor_external_synchronization_status_transition_counter_property_id, nmos::fields::nc::external_synchronization_status_pending, nmos::fields::nc::external_synchronization_status_message_pending, nmos::fields::nc::external_synchronization_status_pending_received_time));
 
             auto lock = model.write_lock();
             auto& condition = model.condition;
@@ -50,11 +56,11 @@ namespace nmos
             // continue until the server is being shut down
             for (;;)
             {
-                condition.wait(lock, [&] { return shutdown || nmos::with_read_lock(state.mutex, [&] { return state.receiver_monitor_status_pending; }); });
+                condition.wait(lock, [&] { return shutdown || nmos::with_read_lock(state.mutex, [&] { return state.monitor_status_pending; }); });
 
                 if (shutdown) break;
 
-                slog::log<slog::severities::info>(gate, SLOG_FLF) << "Receiver monitor status pending";
+                slog::log<slog::severities::info>(gate, SLOG_FLF) << "Monitor status pending";
 
                 // Check statuses of receivers
                 // Get root block
@@ -63,13 +69,13 @@ namespace nmos
                     return nmos::root_block_oid == nmos::fields::nc::oid(resource.data);
                 });
 
-                if (control_protocol_resources.end() != found) // ensure root block is presented
+                if (control_protocol_resources.end() != found) // ensure root block is present
                 {
-                    // Get all receiver monitors
+                    // Get all status monitors - including receiver and sender monitors
                     auto descriptors = web::json::value::array();
-                    nmos::find_members_by_class_id(control_protocol_resources, *found, nmos::nc_receiver_monitor_class_id, true, true, descriptors.as_array());
+                    nmos::find_members_by_class_id(control_protocol_resources, *found, nmos::nc_status_monitor_class_id, true, true, descriptors.as_array());
 
-                    bool receiver_monitors_updates_pending = false;
+                    bool monitors_updates_pending = false;
 
                     do
                     {
@@ -81,8 +87,11 @@ namespace nmos
                         for (const auto& descriptor : descriptors.as_array())
                         {
                             auto oid = nmos::fields::nc::oid(descriptor);
+                            const auto& class_id = nmos::details::parse_nc_class_id(nmos::fields::nc::class_id(descriptor));
 
                             auto status_reporting_delay = get_control_protocol_property(control_protocol_resources, oid, nc_status_monitor_status_reporting_delay, get_control_protocol_class_descriptor, gate);
+
+                            const auto& domain_statuses = nmos::is_nc_sender_monitor(class_id) ? sender_monitor_domain_statuses : receiver_monitor_domain_statuses;
 
                             for (const auto& domain_status : domain_statuses)
                             {
@@ -96,12 +105,12 @@ namespace nmos
 
                                     minimum_delay = std::min(delay, minimum_delay);
 
-                                    receiver_monitors_updates_pending = true;
+                                    monitors_updates_pending = true;
                                 }
                             }
                         }
 
-                        if (!receiver_monitors_updates_pending) continue;
+                        if (!monitors_updates_pending) continue;
 
                         // wait until pending update due
                         model.wait_for(lock, bst::chrono::seconds(bst::chrono::seconds::rep(minimum_delay)), [&] { return shutdown; });
@@ -109,14 +118,17 @@ namespace nmos
 
                         current_time = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
 
-                        receiver_monitors_updates_pending = false;
+                        monitors_updates_pending = false;
 
                         // update statuses
                         for (const auto& descriptor : descriptors.as_array())
                         {
                             const auto& oid = nmos::fields::nc::oid(descriptor);
+                            const auto& class_id = nmos::details::parse_nc_class_id(nmos::fields::nc::class_id(descriptor));
 
                             const auto status_reporting_delay = get_control_protocol_property(control_protocol_resources, oid, nc_status_monitor_status_reporting_delay, get_control_protocol_class_descriptor, gate);
+
+                            const auto& domain_statuses = nmos::is_nc_sender_monitor(class_id) ? sender_monitor_domain_statuses : receiver_monitor_domain_statuses;
 
                             for (const auto& domain_status : domain_statuses)
                             {
@@ -132,7 +144,7 @@ namespace nmos
                                         auto status = get_control_protocol_property(control_protocol_resources, oid, domain_status.status_pending_field_name, gate);
                                         auto status_message = get_control_protocol_property(control_protocol_resources, oid, domain_status.status_message_pending_field_name, gate);
 
-                                        details::set_receiver_monitor_status(control_protocol_resources, oid, status, status_message.as_string(),
+                                        details::set_monitor_status(control_protocol_resources, oid, status, status_message.as_string(),
                                             domain_status.status_property_id,
                                             domain_status.status_message_property_id,
                                             domain_status.status_transition_counter_property_id,
@@ -144,19 +156,19 @@ namespace nmos
                                     }
                                     else
                                     {
-                                        receiver_monitors_updates_pending = true;
+                                        monitors_updates_pending = true;
                                     }
                                 }
                             }
                         }
-                    } while (receiver_monitors_updates_pending);
+                    } while (monitors_updates_pending);
 
                     if (shutdown) break;
 
-                    if (!receiver_monitors_updates_pending)
+                    if (!monitors_updates_pending)
                     {
                         auto lock = state.write_lock();
-                        state.receiver_monitor_status_pending = false;
+                        state.monitor_status_pending = false;
                         slog::log<slog::severities::too_much_info>(gate, SLOG_FLF) << "No more receiver monitors statuses are pending";
                     }
                 }

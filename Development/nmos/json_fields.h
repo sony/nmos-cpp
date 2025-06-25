@@ -330,7 +330,7 @@ namespace nmos
             const web::json::field_as_value resource{ U("resource") };
             const web::json::field_as_string resource_type{ U("resourceType") };
             const web::json::field_as_string io_id{ U("ioId") };
-            const web::json::field_as_integer receiver_monitor_activation_time{ U("receiverMonitorActivationTime") };
+            const web::json::field_as_integer monitor_activation_time{ U("monitorActivationTime") };
             const web::json::field_as_integer connection_status{ U("connectionStatus") }; // NcConnectionStatus
             const web::json::field_as_string connection_status_message{ U("connectionStatusMessage") };
             const web::json::field_as_integer connection_status_transition_counter{ U("connectionStatusTransitionCounter") };
