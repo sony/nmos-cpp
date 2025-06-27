@@ -834,7 +834,7 @@ namespace nmos
             );
         }
 
-        // TODO: add link
+        // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/device-configuration/#ncbulkpropertiesmanager
         web::json::value make_nc_bulk_properties_manager(nc_oid oid, nc_oid owner, const web::json::value &user_label, const utility::string_t& description, const web::json::value& touchpoints, const web::json::value& runtime_property_constraints)
         {
             using web::json::value;
@@ -844,6 +844,7 @@ namespace nmos
             return data;
         }
 
+        // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/device-configuration/#ncbulkpropertiesholder
         web::json::value make_nc_bulk_properties_holder(const utility::string_t& validation_fingerprint, const web::json::value& object_properties_holders)
         {
             using web::json::value_of;
@@ -855,7 +856,7 @@ namespace nmos
             );
         }
 
-        // TODO: add link
+        // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/device-configuration/#ncpropertyholder
         web::json::value make_nc_property_holder(const nc_property_id& property_id, const nc_name& name, const utility::string_t& type_name, bool is_read_only, const web::json::value& property_value)
         {
             using web::json::value;
@@ -870,7 +871,7 @@ namespace nmos
                 }, true);
         }
 
-        // TODO: add link
+        // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/device-configuration/#ncobjectpropertiesholder
         web::json::value make_nc_object_properties_holder(const web::json::array& role_path, const web::json::array& property_holders, const web::json::array& dependency_paths, const web::json::array& allowed_members_classes, bool is_rebuildable)
         {
             using web::json::value_of;
@@ -886,7 +887,7 @@ namespace nmos
 
         }
 
-        // TODO: add link
+        // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/device-configuration/#ncpropertyrestorenotice
         web::json::value make_nc_property_restore_notice(const nc_property_id& property_id, const nc_name& name, nc_property_restore_notice_type::type notice_type, const utility::string_t& notice_message)
         {
             using web::json::value;
@@ -901,7 +902,7 @@ namespace nmos
             );
         }
 
-        // TODO: add link
+        // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/device-configuration/#ncobjectpropertiessetvalidation
         web::json::value make_nc_object_properties_set_validation(const web::json::array& role_path, nc_restore_validation_status::status status, const web::json::array& notices, const web::json::value& status_message)
         {
             using web::json::value;
@@ -1315,7 +1316,7 @@ namespace nmos
 
     // Device configuration classes
     // NcBulkPropertiesManager
-    // TODO: add link
+    // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/device-configuration/#ncbulkpropertiesmanager
     web::json::value make_nc_bulk_properties_manager_properties()
     {
         using web::json::value;
@@ -1434,7 +1435,7 @@ namespace nmos
     }
 
     // Device configuration feature set control classes
-    // TODO: add link
+    // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/device-configuration/#ncbulkpropertiesmanager
     web::json::value make_nc_bulk_properties_manager_class()
     {
         using web::json::value;
@@ -2192,7 +2193,7 @@ namespace nmos
     }
 
     // Device Configuration datatypes
-    // TODO: add link
+    // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/device-configuration/#ncrestoremode
     web::json::value make_nc_restore_mode_datatype()
     {
         using web::json::value;
@@ -2203,7 +2204,7 @@ namespace nmos
 
         return details::make_nc_datatype_descriptor_enum(U("Restore mode enumeration"), U("NcRestoreMode"), items, value::null());
     }
-    // TODO: add link
+    // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/device-configuration/#ncpropertyholder
     web::json::value make_nc_property_holder_datatype()
     {
         using web::json::value;
@@ -2217,7 +2218,7 @@ namespace nmos
 
         return details::make_nc_datatype_descriptor_struct(U("Property holder descriptor"), U("NcPropertyHolder"), fields, value::null());
     }
-    // TODO: add link
+    // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/device-configuration/#ncobjectpropertiesholder
     web::json::value make_nc_object_properties_holder_datatype()
     {
         using web::json::value;
@@ -2231,7 +2232,7 @@ namespace nmos
 
         return details::make_nc_datatype_descriptor_struct(U("Object properties holder descriptor"), U("NcObjectPropertiesHolder"), fields, value::null());
     }
-    // TODO: add link
+    // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/device-configuration/#ncbulkpropertiesholder
     web::json::value make_nc_bulk_properties_holder_datatype()
     {
         using web::json::value;
@@ -2242,7 +2243,7 @@ namespace nmos
 
         return details::make_nc_datatype_descriptor_struct(U("Bulk properties holder descriptor"), U("NcBulkPropertiesHolder"), fields, value::null());
     }
-    // TODO: add link
+    // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/device-configuration/#ncrestorevalidationstatus
     web::json::value make_nc_restore_validation_status_datatype()
     {
         using web::json::value;
@@ -2254,7 +2255,7 @@ namespace nmos
         web::json::push_back(items, details::make_nc_enum_item_descriptor(U("Restore failed due to an internal device error preventing the restore from happening"), U("DeviceError"), 500));
         return details::make_nc_datatype_descriptor_enum(U("Restore validation status enumeration"), U("NcRestoreValidationStatus"), items, value::null());
     }
-    // TODO: add link
+    // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/device-configuration/#ncpropertyrestorenoticetype
     web::json::value make_nc_property_restore_notice_type_datatype()
     {
         using web::json::value;
@@ -2264,7 +2265,7 @@ namespace nmos
         web::json::push_back(items, details::make_nc_enum_item_descriptor(U("Error property restore notice"), U("Error"), nc_property_restore_notice_type::error));
         return details::make_nc_datatype_descriptor_enum(U("Property restore notice type enumeration"), U("NcPropertyRestoreNoticeType"), items, value::null());
     }
-    // TODO: add link
+    // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/device-configuration/#ncpropertyrestorenotice
     web::json::value make_nc_property_restore_notice_datatype()
     {
         using web::json::value;
@@ -2277,7 +2278,7 @@ namespace nmos
 
         return details::make_nc_datatype_descriptor_struct(U("Property restore notice descriptor"), U("NcPropertyRestoreNotice"), fields, value::null());
     }
-    // TODO: add link
+    // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/device-configuration/#ncobjectpropertiessetvalidation
     web::json::value make_nc_object_properties_set_validation_datatype()
     {
         using web::json::value;
@@ -2290,7 +2291,7 @@ namespace nmos
 
         return details::make_nc_datatype_descriptor_struct(U("Object properties set validation descriptor"), U("NcObjectPropertiesSetValidation"), fields, value::null());
     }
-    // TODO: add link
+    // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/device-configuration/#ncmethodresultbulkpropertiesholder
     web::json::value make_nc_method_result_bulk_properties_holder_datatype()
     {
         using web::json::value;
@@ -2300,7 +2301,7 @@ namespace nmos
 
         return details::make_nc_datatype_descriptor_struct(U("Method result containing bulk properties holder descriptor"), U("NcMethodResultBulkPropertiesHolder"), fields, U("NcMethodResult"), value::null());
     }
-    // TODO: add link
+    // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/device-configuration/#ncmethodresultobjectpropertiessetvalidation
     web::json::value make_nc_method_result_object_properties_set_validation_datatype()
     {
         using web::json::value;

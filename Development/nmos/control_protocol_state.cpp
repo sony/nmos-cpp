@@ -468,7 +468,7 @@ namespace nmos
                 { U("NcConnectionStatus"), {make_nc_connection_status_datatype()} },
                 { U("NcPayloadStatus"), {make_nc_payload_status_datatype()} },
                 // Device configuration feature set
-                // TODO: add link
+                // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/device-configuration/#datatypes
                 { U("NcRestoreMode"), {make_nc_restore_mode_datatype()} },
                 { U("NcPropertyHolder"), {make_nc_property_holder_datatype()}},
                 { U("NcObjectPropertiesHolder"), {make_nc_object_properties_holder_datatype()}},

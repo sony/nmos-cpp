@@ -110,7 +110,7 @@ namespace nmos
 
     // Device Configuration feature set control classes
     //
-    // TODO: add link
+    // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/device-configuration/#ncbulkpropertiesmanager
     control_protocol_resource make_bulk_properties_manager(nc_oid oid)
     {
         using web::json::value;

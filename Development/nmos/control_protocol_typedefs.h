@@ -146,7 +146,7 @@ namespace nmos
         };
     }
 
-    // NcPropertyRestoreNoticeType 
+    // NcPropertyRestoreNoticeType
     namespace nc_property_restore_notice_type
     {
         enum type
@@ -204,7 +204,7 @@ namespace nmos
     const nc_method_id nc_class_manager_get_control_class_method_id(3, 1);
     const nc_method_id nc_class_manager_get_datatype_method_id(3, 2);
     // NcMethodsIds for NcBulkPropertiesManager
-    // TODO: add link
+    // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/device-configuration/#ncbulkpropertiesholder
     const nc_method_id nc_bulk_properties_manager_get_properties_by_path_method_id(3, 1);
     const nc_method_id nc_bulk_properties_manager_validate_set_properties_by_path_method_id(3, 2);
     const nc_method_id nc_bulk_properties_manager_set_properties_by_path_method_id(3, 3);
@@ -307,7 +307,7 @@ namespace nmos
     const nc_class_id nc_receiver_monitor_class_id({ 1, 2, 3 });
     // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/monitoring/#ncreceivermonitorprotected
     const nc_class_id nc_receiver_monitor_protected_class_id({ 1, 2, 3, 1 });
-    // TODO: add link
+    // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/device-configuration/#ncbulkpropertiesmanager
     const nc_class_id nc_bulk_properties_manager_class_id({ 1, 3, 3 });
 
     // NcTouchpoint
