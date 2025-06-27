@@ -129,8 +129,8 @@ namespace nmos
                 boost::copy_range<std::vector<web::uri>>(boost::range::join(boost::range::join(boost::range::join(
                     is14_versions::all | boost::adaptors::transformed(experimental::make_configurationapi_method_patch_request_schema_uri),
                     is14_versions::all | boost::adaptors::transformed(experimental::make_configurationapi_property_value_put_request_schema_uri)),
-                    is14_versions::all | boost::adaptors::transformed(experimental::make_configurationapi_bulkProperties_validate_request_schema_uri)),
-                    is14_versions::all | boost::adaptors::transformed(experimental::make_configurationapi_bulkProperties_set_request_schema_uri)))
+                    is14_versions::all | boost::adaptors::transformed(experimental::make_configurationapi_bulkProperties_patch_request_schema_uri)),
+                    is14_versions::all | boost::adaptors::transformed(experimental::make_configurationapi_bulkProperties_put_request_schema_uri)))
             };
             return validator;
         }
@@ -678,7 +678,7 @@ namespace nmos
                             try
                             {
                                 // Validate JSON syntax according to the schema
-                                details::configurationapi_validator().validate(body, experimental::make_configurationapi_bulkProperties_validate_request_schema_uri(version));
+                                details::configurationapi_validator().validate(body, experimental::make_configurationapi_bulkProperties_patch_request_schema_uri(version));
 
                                 const auto& arguments = nmos::fields::nc::arguments(body);
                                 bool recurse = nmos::fields::nc::recurse(arguments);
@@ -742,7 +742,7 @@ namespace nmos
                             try
                             {
                                 // Validate JSON syntax according to the schema
-                                details::configurationapi_validator().validate(body, experimental::make_configurationapi_bulkProperties_set_request_schema_uri(version));
+                                details::configurationapi_validator().validate(body, experimental::make_configurationapi_bulkProperties_put_request_schema_uri(version));
 
                                 const auto& arguments = nmos::fields::nc::arguments(body);
                                 bool recurse = nmos::fields::nc::recurse(arguments);

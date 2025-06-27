@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-04/schema#",
   "type": "object",
-  "description": "OPTIONS request body for invoking ValidateSetPropertiesByPath method on NcBulkPropertiesManager",
+  "description": "PATCH request body for invoking ValidateSetPropertiesByPath method on NcBulkPropertiesManager",
   "title": "Bulk properties Validate request",
   "required": [
     "arguments"
@@ -13,10 +13,14 @@
       "properties": {
         "dataSet": {
           "type": "object",
-          "description": "NcBulkValuesHolder datatype"
+          "description": "NcBulkPropertiesHolder datatype"
         },
         "recurse": {
           "type": "boolean"
+        },
+        "restoreMode": {
+          "type": "integer",
+          "description": "numeric representation of NcRestoreMode enum options"
         }
       }
     }

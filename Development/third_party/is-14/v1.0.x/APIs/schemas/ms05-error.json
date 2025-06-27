@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-04/schema#",
   "type": "object",
-  "description": "NcMethodResultError",
-  "title": "NcMethodResultError"
+  "description": "Object of type NcMethodResultError or a type derived from NcMethodResultError",
+  "title": "Request error"
 }

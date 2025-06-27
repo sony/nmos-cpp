@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-04/schema#",
   "type": "object",
-  "description": "Returns a NcMethodResultBulkValuesHolder from a bulkProperties GET",
-  "title": "NcMethodResultBulkValuesHolder"
+  "description": "Returns a NcMethodResultBulkPropertiesHolder from a bulkProperties GET",
+  "title": "NcMethodResultBulkPropertiesHolder"
 }

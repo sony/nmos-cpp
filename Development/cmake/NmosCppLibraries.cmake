@@ -846,10 +846,11 @@ set(NMOS_IS14_V1_0_TAG v1.0.x)
 set(NMOS_IS14_V1_0_SCHEMAS_JSON
     third_party/is-14/${NMOS_IS14_V1_0_TAG}/APIs/schemas/base.json
     third_party/is-14/${NMOS_IS14_V1_0_TAG}/APIs/schemas/bulkProperties-get-response.json
-    third_party/is-14/${NMOS_IS14_V1_0_TAG}/APIs/schemas/bulkProperties-set-request.json
-    third_party/is-14/${NMOS_IS14_V1_0_TAG}/APIs/schemas/bulkProperties-set-response.json
-    third_party/is-14/${NMOS_IS14_V1_0_TAG}/APIs/schemas/bulkProperties-validate-request.json
-    third_party/is-14/${NMOS_IS14_V1_0_TAG}/APIs/schemas/bulkProperties-validate-response.json
+
+    third_party/is-14/${NMOS_IS14_V1_0_TAG}/APIs/schemas/bulkProperties-patch-request.json
+    third_party/is-14/${NMOS_IS14_V1_0_TAG}/APIs/schemas/bulkProperties-patch-response.json
+    third_party/is-14/${NMOS_IS14_V1_0_TAG}/APIs/schemas/bulkProperties-put-request.json
+    third_party/is-14/${NMOS_IS14_V1_0_TAG}/APIs/schemas/bulkProperties-put-response.json
     third_party/is-14/${NMOS_IS14_V1_0_TAG}/APIs/schemas/descriptor-get.json
     third_party/is-14/${NMOS_IS14_V1_0_TAG}/APIs/schemas/method-patch-request.json
     third_party/is-14/${NMOS_IS14_V1_0_TAG}/APIs/schemas/method-patch-response.json
