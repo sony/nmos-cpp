@@ -124,6 +124,38 @@ namespace nmos
         };
     }
 
+    // NcRestoreMode
+    namespace nc_restore_mode
+    {
+        enum restore_mode
+        {
+            modify = 0, // Restore mode is Modify
+            rebuild = 1 // Restore mode is Rebuild
+        };
+    }
+
+    // NcRestoreValidationStatus
+    namespace nc_restore_validation_status
+    {
+        enum status
+        {
+            ok = 200,                 // Restore was successful
+            failed = 400,             // Restore failed because relevant backup data set provided is invalid
+            not_found = 404,          // Restore failed because the role path is not found in the device model or the device cannot create the role path from the data set
+            device_error = 500        // Restore failed due to an internal device error preventing the restore from happening
+        };
+    }
+
+    // NcPropertyRestoreNoticeType
+    namespace nc_property_restore_notice_type
+    {
+        enum type
+        {
+            warning = 300,  // Warning property restore notice
+            error = 400     // Error property restore notice
+        };
+    }
+
     // NcElementId
     // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncelementid
     struct nc_element_id
@@ -171,6 +203,11 @@ namespace nmos
     // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncclassmanager
     const nc_method_id nc_class_manager_get_control_class_method_id(3, 1);
     const nc_method_id nc_class_manager_get_datatype_method_id(3, 2);
+    // NcMethodsIds for NcBulkPropertiesManager
+    // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/device-configuration/#ncbulkpropertiesholder
+    const nc_method_id nc_bulk_properties_manager_get_properties_by_path_method_id(3, 1);
+    const nc_method_id nc_bulk_properties_manager_validate_set_properties_by_path_method_id(3, 2);
+    const nc_method_id nc_bulk_properties_manager_set_properties_by_path_method_id(3, 3);
 
     // NcPropertyId
     // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncpropertyid
@@ -232,8 +269,6 @@ namespace nmos
     // NcOid
     // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncoid
     typedef uint32_t nc_oid;
-    // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Blocks.html
-    const nc_oid root_block_oid{ 1 };
 
     // NcUri
     // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncuri
@@ -272,6 +307,8 @@ namespace nmos
     const nc_class_id nc_receiver_monitor_class_id({ 1, 2, 3 });
     // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/monitoring/#ncreceivermonitorprotected
     const nc_class_id nc_receiver_monitor_protected_class_id({ 1, 2, 3, 1 });
+    // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/device-configuration/#ncbulkpropertiesmanager
+    const nc_class_id nc_bulk_properties_manager_class_id({ 1, 3, 3 });
 
     // NcTouchpoint
     // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#nctouchpoint
@@ -353,7 +390,7 @@ namespace nmos
             , id(id)
         {}
 
-        nc_touchpoint_resource_nmos(const ncp_nmos_resource_type& resource_type, nc_uuid id)
+        nc_touchpoint_resource_nmos(const ncp_touchpoint_resource_type& resource_type, nc_uuid id)
             : nc_touchpoint_resource(resource_type.name)
             , id(id)
         {}
@@ -381,6 +418,14 @@ namespace nmos
         friend bool operator!=(const nc_touchpoint_resource_nmos_channel_mapping& lhs, const nc_touchpoint_resource_nmos_channel_mapping& rhs) { return !(lhs == rhs); }
         friend bool operator<(const nc_touchpoint_resource_nmos_channel_mapping& lhs, const nc_touchpoint_resource_nmos_channel_mapping& rhs) { return lhs.tied() < rhs.tied(); }
     };
+
+    // Root block specification
+    // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Blocks.html
+    const nc_oid root_block_oid{ 1 };
+    const utility::string_t root_block_role{ U("root") };
+
+    // Device Configuration
+    const utility::string_t bulk_properties_manager_role{ root_block_role + U(".BulkPropertiesManager") };
 }
 
 #endif

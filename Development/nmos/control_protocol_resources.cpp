@@ -27,12 +27,21 @@ namespace nmos
         return details::make_block(oid, value(owner), role, user_label, description, touchpoints, runtime_property_constraints, members);
     }
 
+    control_protocol_resource make_rebuildable(control_protocol_resource& control_protocol_resource)
+    {
+        using web::json::value;
+
+        control_protocol_resource.data[nmos::fields::nc::is_rebuildable] = value::boolean(true);
+
+        return control_protocol_resource;
+    }
+
     // create Root block resource
     control_protocol_resource make_root_block()
     {
         using web::json::value;
 
-        return details::make_block(1, value::null(), U("root"), U("Root"), U("Root block"), value::null(), value::null(), value::array());
+        return details::make_block(nmos::root_block_oid, value::null(), nmos::root_block_role, U("Root"), U("Root block"), value::null(), value::null(), value::array());
     }
 
     // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncdevicemanager
@@ -97,5 +106,17 @@ namespace nmos
         data[nmos::fields::nc::active] = value::boolean(active);
 
         return{ is12_versions::v1_0, types::nc_ident_beacon, std::move(data), true };
+    }
+
+    // Device Configuration feature set control classes
+    //
+    // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/device-configuration/#ncbulkpropertiesmanager
+    control_protocol_resource make_bulk_properties_manager(nc_oid oid)
+    {
+        using web::json::value;
+
+        auto data = details::make_nc_bulk_properties_manager(oid, root_block_oid, value::string(U("Bulk properties manager")), U("The bulk properties manager offers a central model for getting and setting properties of multiple role paths"), value::null(), value::null());
+
+        return{ is12_versions::v1_0, types::nc_bulk_properties_manager, std::move(data), true };
     }
 }

@@ -26,6 +26,8 @@ namespace nmos
             const scope channelmapping{ U("channelmapping") };
             // IS-12
             const scope ncp{ U("ncp") };
+            // IS-14
+            const scope configuration{ U("configuration") };
         }
 
         inline utility::string_t make_scope(const scope& scope)
@@ -43,6 +45,7 @@ namespace nmos
             if (scopes::events.name == scope) { return scopes::events; }
             if (scopes::channelmapping.name == scope) { return scopes::channelmapping; }
             if (scopes::ncp.name == scope) { return scopes::ncp; }
+            if (scopes::configuration.name == scope) { return scopes::configuration; }
             return{};
         }
     }
