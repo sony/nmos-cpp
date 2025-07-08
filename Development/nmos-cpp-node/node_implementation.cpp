@@ -1267,6 +1267,8 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
         auto receiver_block = nmos::make_block(receiver_block_oid, nmos::root_block_oid, U("receivers"), U("Receiver Monitors"), U("Receiver Monitors"));
         // making a block rebuildable allows block members to be added or removed by the Configuration API in Rebuild mode
         nmos::make_rebuildable(receiver_block);
+        // restrict the allowed classes for members of this block
+        nmos::set_block_allowed_member_classes(receiver_block, {nmos::nc_receiver_monitor_class_id});
 
         // example receiver-monitor(s)
         {
@@ -1280,8 +1282,9 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
                     utility::ostringstream_t role;
                     role << U("monitor-") << ++count;
                     const auto& receiver = nmos::find_resource(model.node_resources, receiver_id);
-                    const auto receiver_monitor = nmos::make_receiver_monitor(++oid, true, receiver_block_oid, role.str(), nmos::fields::label(receiver->data), nmos::fields::description(receiver->data), value_of({ { nmos::details::make_nc_touchpoint_nmos({nmos::ncp_touchpoint_resource_types::receiver, receiver_id}) } }));
-
+                    auto receiver_monitor = nmos::make_receiver_monitor(++oid, true, receiver_block_oid, role.str(), nmos::fields::label(receiver->data), nmos::fields::description(receiver->data), value_of({ { nmos::details::make_nc_touchpoint_nmos({nmos::ncp_touchpoint_resource_types::receiver, receiver_id}) } }));
+                    // optionally indicate dependencies within the device model
+                    nmos::set_object_dependency_paths(receiver_monitor, {{U("root"), U("receivers")}});
                     // add receiver-monitor to root-block
                     nmos::nc::push_back(receiver_block, receiver_monitor);
                 }

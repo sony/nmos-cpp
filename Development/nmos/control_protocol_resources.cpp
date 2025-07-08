@@ -36,6 +36,40 @@ namespace nmos
         return control_protocol_resource;
     }
 
+    control_protocol_resource set_block_allowed_member_classes(control_protocol_resource& control_protocol_resource, const std::vector<nmos::nc_class_id>& allowed_member_classes)
+    {
+        using web::json::value;
+
+        auto allowed_member_classes_array = value::array();
+
+        for(const auto& class_id: allowed_member_classes)
+        {
+            web::json::push_back(allowed_member_classes_array, nmos::details::make_nc_class_id(class_id));
+        }
+
+        control_protocol_resource.data[nmos::fields::nc::allowed_members_classes] = allowed_member_classes_array;
+
+        return control_protocol_resource;
+    }
+
+    control_protocol_resource set_object_dependency_paths(control_protocol_resource& control_protocol_resource, const std::vector<nmos::nc_role_path>& dependency_paths)
+    {
+        using web::json::value;
+
+        auto dependency_path_array = value::array();
+
+        for(const auto& path: dependency_paths)
+        {
+            auto role_path = value::array();
+            for (const auto path_item : path) { web::json::push_back(role_path, path_item); }
+            web::json::push_back(dependency_path_array, role_path);
+        }
+
+        control_protocol_resource.data[nmos::fields::nc::dependency_paths] = dependency_path_array;
+
+        return control_protocol_resource;
+    }
+
     // create Root block resource
     control_protocol_resource make_root_block()
     {

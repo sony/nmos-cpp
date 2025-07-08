@@ -289,6 +289,11 @@ namespace nmos
     // NcClassId
     // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncclassid
     typedef std::vector<int32_t> nc_class_id;
+
+    // NcRolePath
+    // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncrolepath
+    typedef std::vector<utility::string_t> nc_role_path;
+
     // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncobject
     const nc_class_id nc_object_class_id({ 1 });
     // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncblock

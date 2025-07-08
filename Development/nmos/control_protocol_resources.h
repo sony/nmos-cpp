@@ -19,6 +19,12 @@ namespace nmos
     // make object rebuildable - for IS-14 dynamic configuration of Device Model
     control_protocol_resource make_rebuildable(control_protocol_resource& control_protocol_resource);
 
+    // set the allowed_member_classes field of an NcBlock - for IS-14 dynamic configuration of Device Model
+    control_protocol_resource set_block_allowed_member_classes(control_protocol_resource& control_protocol_resource, const std::vector<nmos::nc_class_id>& allowed_member_classes);
+
+    // set the dependency_paths field of an NcObject - for IS-14 configuration of Device Model
+    control_protocol_resource set_object_dependency_paths(control_protocol_resource& control_protocol_resource, const std::vector<nmos::nc_role_path>& dependency_paths);
+
     // create Root block resource
     control_protocol_resource make_root_block();
 

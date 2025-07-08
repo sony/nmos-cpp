@@ -46,7 +46,10 @@ namespace nmos
 
             const auto role_path = get_role_path(resources, resource);
 
-            auto object_properties_holder = nmos::details::make_nc_object_properties_holder(role_path, property_holders, value::array().as_array(), value::array().as_array(), nmos::fields::nc::is_rebuildable(resource.data));
+            const auto& dependency_paths = nmos::fields::nc::dependency_paths(resource.data);
+            const auto& allowed_member_classes = nmos::fields::nc::allowed_members_classes(resource.data);
+
+            auto object_properties_holder = nmos::details::make_nc_object_properties_holder(role_path, property_holders, dependency_paths, allowed_member_classes, nmos::fields::nc::is_rebuildable(resource.data));
 
             web::json::push_back(object_properties_holders, object_properties_holder);
 
