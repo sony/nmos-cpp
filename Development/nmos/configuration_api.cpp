@@ -667,7 +667,7 @@ namespace nmos
 
                 return details::extract_json(req, gate_).then([res, &model, role_path, get_control_protocol_class_descriptor, filter_property_holders, remove_device_model_object, add_device_model_object, version, &gate_](value body) mutable
                     {
-                        auto lock = model.write_lock();
+                        auto lock = model.read_lock();
                         auto& resources = model.control_protocol_resources;
                         const auto& resource = nc::find_resource_by_role_path(resources, role_path);
                         if (resources.end() != resource)
