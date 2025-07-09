@@ -7,6 +7,8 @@
 
 namespace nmos
 {
+    typedef std::map<web::json::array, web::json::value> object_properties_map;
+
     struct control_protocol_resource;
 
     // Check to see if role_path is sub path of parent_role_path

@@ -13,8 +13,6 @@
 
 namespace nmos
 {
-    typedef std::map<web::json::array, web::json::value> object_properties_map;
-
     namespace details
     {
         bool is_property_value_valid(web::json::value& property_restore_notices, const web::json::value& property_value, const web::json::value& property_descriptor, const web::json::value& restore_mode, bool is_rebuildable)
@@ -145,6 +143,7 @@ namespace nmos
             const auto& reference_members = nmos::fields::nc::members(resource.data);
 
             const auto& block_oid = nmos::fields::nc::oid(resource.data);
+            const auto& allowed_member_classes = nmos::fields::nc::allowed_members_classes(resource.data);
 
             std::vector<int> members_to_remove;
             std::vector<web::json::value> members_to_add;
@@ -291,7 +290,7 @@ namespace nmos
                     {
                         utility::stringstream_t ss;
                         ss << U("Owner value in block property holder inconsistent with oid of Block. Block oid takes precidence for role=") << role;
-                        const auto notice = nmos::details::make_nc_property_restore_notice(nmos::nc_block_members_property_id, U("members"), nmos::nc_property_restore_notice_type::warning, ss.str());
+                        const auto notice = nmos::details::make_nc_property_restore_notice(nmos::nc_block_members_property_id, U("owner"), nmos::nc_property_restore_notice_type::warning, ss.str());
                         web::json::push_back(added_object_notices, notice);
                     }
                     const auto& constant_oid_property_holder = nmos::get_property_holder(child_object_properties_holder->second, nmos::nc_object_constant_oid_property_id);
@@ -303,6 +302,42 @@ namespace nmos
                         ss << U("Constant OID value in block property holder inconsistent with oid of Block. Block oid takes precidence for role=") << role;
                         const auto notice = nmos::details::make_nc_property_restore_notice(nmos::nc_block_members_property_id, U("members"), nmos::nc_property_restore_notice_type::warning, ss.str());
                         web::json::push_back(block_notices, notice);
+                    }
+
+                    // Validate that the class of the object to add is allowed
+                    if (allowed_member_classes.size() > 0)
+                    {
+                        const auto& class_id_property_holder = nmos::get_property_holder(child_object_properties_holder->second, nmos::nc_object_class_id_property_id);
+
+                        if (class_id_property_holder != web::json::value::null())
+                        {
+                            const auto& class_id = nmos::fields::nc::value(class_id_property_holder);
+
+                            const auto& filtered_classes = boost::copy_range<std::set<web::json::value>>(allowed_member_classes
+                                | boost::adaptors::filtered([&](const web::json::value& member)
+                                    {
+                                        return member.as_array() == class_id.as_array();
+                                    })
+                            );
+
+                            // If receiver monitor class not allowed then return with error
+                            if (filtered_classes.size() == 0)
+                            {
+                                utility::stringstream_t ss;
+                                ss << U("Device model error: attempting to add unexpected class for role=") << role;
+                                const auto notice = nmos::details::make_nc_property_restore_notice(nmos::nc_block_members_property_id, U("class_id"), nmos::nc_property_restore_notice_type::error, ss.str());
+                                web::json::push_back(added_object_notices, notice);
+                                continue;
+                            }
+                        }
+                        else
+                        {
+                            utility::stringstream_t ss;
+                            ss << U("Class ID property value holder missing for role=") << role;
+                            const auto notice = nmos::details::make_nc_property_restore_notice(nmos::nc_block_members_property_id, U("class_id"), nmos::nc_property_restore_notice_type::error, ss.str());
+                            web::json::push_back(added_object_notices, notice);
+                            continue;
+                        }
                     }
 
                     const auto& user_label_property_holder = nmos::get_property_holder(child_object_properties_holder->second, nmos::nc_object_user_label_property_id);
