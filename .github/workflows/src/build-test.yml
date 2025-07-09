@@ -17,7 +17,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-22.04, windows-2022]
+        os: [ubuntu-22.04, ubuntu-24.04, windows-2022]
         install_mdns: [false, true]
         use_conan: [true]
         force_cpprest_asio: [false]
@@ -30,26 +30,18 @@ jobs:
           # for now, unicast DNS-SD tests are only implemented on Linux
           - os: windows-2022
             dns_sd_mode: unicast
+          - os: ubuntu-22.04
+            enable_authorization: false
           # for now, exclude unicast DNS-SD with mDNSResponder due to
           # intermittent *** buffer overflow detected *** in mdnsd
           - os: ubuntu-22.04
             install_mdns: true
             dns_sd_mode: unicast
             enable_authorization: true
-        include:
           - os: ubuntu-24.04
-            install_mdns: false
-            use_conan: true
-            force_cpprest_asio: false
-            dns_sd_mode: multicast
-            enable_authorization: true
+            install_mdns: true
           - os: ubuntu-24.04
-            install_mdns: false
-            use_conan: true
-            force_cpprest_asio: false
-            dns_sd_mode: multicast
-            enable_authorization: false
-
+            dns_sd_mode: unicast
     steps:
     - uses: actions/checkout@v3
 
