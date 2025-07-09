@@ -1577,7 +1577,7 @@ BST_TEST_CASE(testApplyBackupDataSet_NegativeTests)
 ////////////////////////////////////////////////////////////////////////////////////////////
 BST_TEST_CASE(testModifyRebuildableBlock)
 {
-        using web::json::value_of;
+    using web::json::value_of;
     using web::json::value;
 
     nmos::resources resources;
@@ -1594,6 +1594,7 @@ BST_TEST_CASE(testModifyRebuildableBlock)
     // root, receivers
     auto receivers = nmos::make_block(receiver_block_oid, nmos::root_block_oid, U("receivers"), U("Receivers"), U("Receivers block"));
     nmos::make_rebuildable(receivers);
+    nmos::set_block_allowed_member_classes(receivers, {nmos::nc_receiver_monitor_class_id});
     // root, receivers, mon1
     auto monitor1 = nmos::make_receiver_monitor(++oid, true, receiver_block_oid, U("mon1"), U("monitor 1"), U("monitor 1"), value_of({ {nmos::details::make_nc_touchpoint_nmos({nmos::ncp_touchpoint_resource_types::receiver, U("id_1")})} }));
     // make monitor1 rebuildable
@@ -1647,45 +1648,179 @@ BST_TEST_CASE(testModifyRebuildableBlock)
         const auto& role_path = nmos::fields::nc::path(object_properties_holder);
         return nmos::make_object_properties_set_validation(role_path, nmos::nc_restore_validation_status::ok, U("OK"));
     };
-
-    auto monitor_3_oid = 999;
-    // Create Object Properties Holder for Block, with a Property Holder for the block members
-    auto object_properties_holders = value::array();
-    const auto role_path = value_of({ U("root"), U("receivers") });
     {
-        auto property_holders = value::array();
-        auto members = value::array();
-        push_back(members, nmos::details::make_nc_block_member_descriptor(U("monitor 1"), U("mon1"), monitor_1_oid, true, monitor_class_id, U("label"), receiver_block_oid));
-        push_back(members, nmos::details::make_nc_block_member_descriptor(U("monitor 2"), U("mon2"), monitor_2_oid, true, monitor_class_id, U("label"), receiver_block_oid));
-        push_back(members, nmos::details::make_nc_block_member_descriptor(U("monitor 3"), U("mon3"), monitor_3_oid, true, monitor_class_id, U("label"), receiver_block_oid));
-        push_back(property_holders, nmos::details::make_nc_property_holder(nmos::nc_property_id(2, 2), U("members"), U("NcBlockMemberDescriptor"), true, members));
-        push_back(object_properties_holders, nmos::details::make_nc_object_properties_holder(role_path.as_array(), property_holders.as_array(), value::array().as_array(), value::array().as_array(), false));
-    }
-    // Create Object Properties Holder for new monitor
-    const auto monitor_2_role_path = value_of({ U("root"), U("receivers"), U("mon2") });
-    {
-        auto property_holders = value::array();
-        push_back(property_holders, nmos::details::make_nc_property_holder(nmos::nc_property_id(1, 2), U("oid"), U("NcOid"), true, monitor_2_oid));
-        push_back(object_properties_holders, nmos::details::make_nc_object_properties_holder(monitor_2_role_path.as_array(), property_holders.as_array(), value::array().as_array(), value::array().as_array(), false));
-    }
-    const auto monitor_3_role_path = value_of({ U("root"), U("receivers"), U("mon3") });
-    {
-        auto property_holders = value::array();
-        push_back(property_holders, nmos::details::make_nc_property_holder(nmos::nc_property_id(1, 2), U("oid"), U("NcOid"), true, monitor_3_oid));
-        push_back(object_properties_holders, nmos::details::make_nc_object_properties_holder(monitor_3_role_path.as_array(), property_holders.as_array(), value::array().as_array(), value::array().as_array(), false));
-    }
-    const auto target_role_path = value_of({ U("root"), U("receivers") });
-    bool recurse = true;
-    bool validate = true;
-    const value restore_mode{ nmos::nc_restore_mode::restore_mode::rebuild };
+        auto monitor_3_oid = 999;
+        // Create Object Properties Holder for Block, with a Property Holder for the block members
+        auto object_properties_holders = value::array();
+        auto block_property_holders = value::array();
+        const auto role_path = value_of({ U("root"), U("receivers") });
+        {
+            auto members = value::array();
+            push_back(members, nmos::details::make_nc_block_member_descriptor(U("monitor 1"), U("mon1"), monitor_1_oid, true, monitor_class_id, U("label"), receiver_block_oid));
+            push_back(members, nmos::details::make_nc_block_member_descriptor(U("monitor 2"), U("mon2"), monitor_2_oid, true, monitor_class_id, U("label"), receiver_block_oid));
+            push_back(members, nmos::details::make_nc_block_member_descriptor(U("monitor 3"), U("mon3"), monitor_3_oid, true, monitor_class_id, U("label"), receiver_block_oid));
+            push_back(block_property_holders, nmos::details::make_nc_property_holder(nmos::nc_property_id(2, 2), U("members"), U("NcBlockMemberDescriptor"), true, members));
+        }
+        const auto block_object_properties_holder = nmos::details::make_nc_object_properties_holder(role_path.as_array(), block_property_holders.as_array(), value::array().as_array(), value::array().as_array(), false);
+        push_back(object_properties_holders, block_object_properties_holder);
+        // Create Object Properties Holder for new monitor
+        const auto monitor_2_role_path = value_of({ U("root"), U("receivers"), U("mon2") });
+        {
+            auto property_holders = value::array();
+            push_back(property_holders, nmos::details::make_nc_property_holder(nmos::nc_property_id(1, 2), U("oid"), U("NcOid"), true, monitor_2_oid));
+            push_back(object_properties_holders, nmos::details::make_nc_object_properties_holder(monitor_2_role_path.as_array(), property_holders.as_array(), value::array().as_array(), value::array().as_array(), false));
+        }
+        auto monitor3_property_holders = value::array();
+        const auto monitor_3_role_path = value_of({ U("root"), U("receivers"), U("mon3") });
+        {
+            //auto property_holders = value::array();
+            push_back(monitor3_property_holders, nmos::details::make_nc_property_holder(nmos::nc_property_id(1, 2), U("oid"), U("NcOid"), true, monitor_3_oid));
+            push_back(object_properties_holders, nmos::details::make_nc_object_properties_holder(monitor_3_role_path.as_array(), monitor3_property_holders.as_array(), value::array().as_array(), value::array().as_array(), false));
+        }
+        const auto target_role_path = value_of({ U("root"), U("receivers") });
+        bool validate = true;
+        const value restore_mode{ nmos::nc_restore_mode::restore_mode::rebuild };
 
-    nmos::object_properties_map object_properties_holder_map;
+        nmos::object_properties_map object_properties_holder_map;
 
-    for (const auto& object_properties_holder: object_properties_holders.as_array())
-    {
-        const auto& role_path = nmos::fields::nc::path(object_properties_holder);
-        object_properties_holder_map.insert({ role_path, object_properties_holder });
+        for (const auto& object_properties_holder: object_properties_holders.as_array())
+        {
+            const auto& role_path = nmos::fields::nc::path(object_properties_holder);
+            object_properties_holder_map.insert({ role_path, object_properties_holder });
+        }
+
+        const auto resource = nmos::nc::find_resource_by_role_path(resources, target_role_path.as_array());
+
+        // allowed member classes specified for block but no class_id property holder in the new monitor object properties holder
+        const auto object_set_validations = nmos::details::modify_rebuildable_block(resources, object_properties_holder_map, *resource, target_role_path.as_array(), block_object_properties_holder, validate, get_control_protocol_class_descriptor, remove_device_model_object, add_device_model_object, filter_property_holders);
+
+        BST_REQUIRE_EQUAL(object_set_validations.size(), 2);
+        {
+            const auto& object_properties_set_validation = object_set_validations.at(0);
+            BST_CHECK_EQUAL(nmos::nc_restore_validation_status::failed, nmos::fields::nc::status(object_properties_set_validation));
+        }
+        {
+            // warnings perhaps?
+            const auto& object_properties_set_validation = object_set_validations.at(1);
+            BST_CHECK_EQUAL(nmos::nc_restore_validation_status::failed, nmos::fields::nc::status(object_properties_set_validation));
+        }
     }
 
-    modify_rebuildable_block(resources, object_properties_holder_map, resource, const web::json::array& target_role_path, const web::json::value& block_object_properties_holder, bool validate, nmos::get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, nmos::remove_device_model_object_handler remove_device_model_object, nmos::add_device_model_object_handler add_device_model_object, nmos::filter_property_holders_handler filter_property_holders)
+    // add class id to the property holders, but use a disallowed class id
+    {
+        auto monitor_3_oid = 999;
+        // Create Object Properties Holder for Block, with a Property Holder for the block members
+        auto object_properties_holders = value::array();
+        auto block_property_holders = value::array();
+        const auto role_path = value_of({ U("root"), U("receivers") });
+        {
+            auto members = value::array();
+            push_back(members, nmos::details::make_nc_block_member_descriptor(U("monitor 1"), U("mon1"), monitor_1_oid, true, monitor_class_id, U("label"), receiver_block_oid));
+            push_back(members, nmos::details::make_nc_block_member_descriptor(U("monitor 2"), U("mon2"), monitor_2_oid, true, monitor_class_id, U("label"), receiver_block_oid));
+            push_back(members, nmos::details::make_nc_block_member_descriptor(U("monitor 3"), U("mon3"), monitor_3_oid, true, monitor_class_id, U("label"), receiver_block_oid));
+            push_back(block_property_holders, nmos::details::make_nc_property_holder(nmos::nc_property_id(2, 2), U("members"), U("NcBlockMemberDescriptor"), true, members));
+        }
+        const auto block_object_properties_holder = nmos::details::make_nc_object_properties_holder(role_path.as_array(), block_property_holders.as_array(), value::array().as_array(), value::array().as_array(), false);
+        push_back(object_properties_holders, block_object_properties_holder);
+        // Create Object Properties Holder for new monitor
+        const auto monitor_2_role_path = value_of({ U("root"), U("receivers"), U("mon2") });
+        {
+            auto property_holders = value::array();
+            push_back(property_holders, nmos::details::make_nc_property_holder(nmos::nc_property_id(1, 2), U("oid"), U("NcOid"), true, monitor_2_oid));
+            push_back(object_properties_holders, nmos::details::make_nc_object_properties_holder(monitor_2_role_path.as_array(), property_holders.as_array(), value::array().as_array(), value::array().as_array(), false));
+        }
+        auto monitor3_property_holders = value::array();
+        const auto monitor_3_role_path = value_of({ U("root"), U("receivers"), U("mon3") });
+        {
+            //auto property_holders = value::array();
+            push_back(monitor3_property_holders, nmos::details::make_nc_property_holder(nmos::nc_property_id(1, 2), U("oid"), U("NcOid"), true, monitor_3_oid));
+            push_back(monitor3_property_holders, nmos::details::make_nc_property_holder(nmos::nc_object_class_id_property_id, U("classId"), U("NcClassId"), true, nmos::details::make_nc_class_id(nmos::nc_block_class_id))); // disallowed class id
+            push_back(object_properties_holders, nmos::details::make_nc_object_properties_holder(monitor_3_role_path.as_array(), monitor3_property_holders.as_array(), value::array().as_array(), value::array().as_array(), false));
+        }
+        const auto target_role_path = value_of({ U("root"), U("receivers") });
+        bool validate = true;
+        const value restore_mode{ nmos::nc_restore_mode::restore_mode::rebuild };
+
+        nmos::object_properties_map object_properties_holder_map;
+
+        for (const auto& object_properties_holder: object_properties_holders.as_array())
+        {
+            const auto& role_path = nmos::fields::nc::path(object_properties_holder);
+            object_properties_holder_map.insert({ role_path, object_properties_holder });
+        }
+
+        const auto resource = nmos::nc::find_resource_by_role_path(resources, target_role_path.as_array());
+        // allowed member classes specified for block but class_id property holder has disallowed class_id
+        const auto object_set_validations = nmos::details::modify_rebuildable_block(resources, object_properties_holder_map, *resource, target_role_path.as_array(), block_object_properties_holder, validate, get_control_protocol_class_descriptor, remove_device_model_object, add_device_model_object, filter_property_holders);
+
+        BST_REQUIRE_EQUAL(object_set_validations.size(), 2);
+        {
+            const auto& object_properties_set_validation = object_set_validations.at(0);
+            BST_CHECK_EQUAL(nmos::nc_restore_validation_status::failed, nmos::fields::nc::status(object_properties_set_validation));
+        }
+        {
+            // warnings perhaps?
+            const auto& object_properties_set_validation = object_set_validations.at(1);
+            BST_CHECK_EQUAL(nmos::nc_restore_validation_status::failed, nmos::fields::nc::status(object_properties_set_validation));
+        }
+    }
+    
+    // add class id to the property holders, and use an allowed class id
+    {
+        auto monitor_3_oid = 999;
+        // Create Object Properties Holder for Block, with a Property Holder for the block members
+        auto object_properties_holders = value::array();
+        auto block_property_holders = value::array();
+        const auto role_path = value_of({ U("root"), U("receivers") });
+        {
+            auto members = value::array();
+            push_back(members, nmos::details::make_nc_block_member_descriptor(U("monitor 1"), U("mon1"), monitor_1_oid, true, monitor_class_id, U("label"), receiver_block_oid));
+            push_back(members, nmos::details::make_nc_block_member_descriptor(U("monitor 2"), U("mon2"), monitor_2_oid, true, monitor_class_id, U("label"), receiver_block_oid));
+            push_back(members, nmos::details::make_nc_block_member_descriptor(U("monitor 3"), U("mon3"), monitor_3_oid, true, monitor_class_id, U("label"), receiver_block_oid));
+            push_back(block_property_holders, nmos::details::make_nc_property_holder(nmos::nc_property_id(2, 2), U("members"), U("NcBlockMemberDescriptor"), true, members));
+        }
+        const auto block_object_properties_holder = nmos::details::make_nc_object_properties_holder(role_path.as_array(), block_property_holders.as_array(), value::array().as_array(), value::array().as_array(), false);
+        push_back(object_properties_holders, block_object_properties_holder);
+        // Create Object Properties Holder for new monitor
+        const auto monitor_2_role_path = value_of({ U("root"), U("receivers"), U("mon2") });
+        {
+            auto property_holders = value::array();
+            push_back(property_holders, nmos::details::make_nc_property_holder(nmos::nc_property_id(1, 2), U("oid"), U("NcOid"), true, monitor_2_oid));
+            push_back(object_properties_holders, nmos::details::make_nc_object_properties_holder(monitor_2_role_path.as_array(), property_holders.as_array(), value::array().as_array(), value::array().as_array(), false));
+        }
+        auto monitor3_property_holders = value::array();
+        const auto monitor_3_role_path = value_of({ U("root"), U("receivers"), U("mon3") });
+        {
+            //auto property_holders = value::array();
+            push_back(monitor3_property_holders, nmos::details::make_nc_property_holder(nmos::nc_property_id(1, 2), U("oid"), U("NcOid"), true, monitor_3_oid));
+            push_back(monitor3_property_holders, nmos::details::make_nc_property_holder(nmos::nc_object_class_id_property_id, U("classId"), U("NcClassId"), true, nmos::details::make_nc_class_id(nmos::nc_receiver_monitor_class_id)));
+            push_back(object_properties_holders, nmos::details::make_nc_object_properties_holder(monitor_3_role_path.as_array(), monitor3_property_holders.as_array(), value::array().as_array(), value::array().as_array(), false));
+        }
+        const auto target_role_path = value_of({ U("root"), U("receivers") });
+        bool validate = true;
+        const value restore_mode{ nmos::nc_restore_mode::restore_mode::rebuild };
+
+        nmos::object_properties_map object_properties_holder_map;
+
+        for (const auto& object_properties_holder: object_properties_holders.as_array())
+        {
+            const auto& role_path = nmos::fields::nc::path(object_properties_holder);
+            object_properties_holder_map.insert({ role_path, object_properties_holder });
+        }
+
+        const auto resource = nmos::nc::find_resource_by_role_path(resources, target_role_path.as_array());
+        // allowed member classes specified for block but class_id property holder has disallowed class_id
+        const auto object_set_validations = nmos::details::modify_rebuildable_block(resources, object_properties_holder_map, *resource, target_role_path.as_array(), block_object_properties_holder, validate, get_control_protocol_class_descriptor, remove_device_model_object, add_device_model_object, filter_property_holders);
+
+        BST_REQUIRE_EQUAL(object_set_validations.size(), 2);
+        {
+            const auto& object_properties_set_validation = object_set_validations.at(0);
+            BST_CHECK_EQUAL(nmos::nc_restore_validation_status::ok, nmos::fields::nc::status(object_properties_set_validation));
+        }
+        {
+            // warnings perhaps?
+            const auto& object_properties_set_validation = object_set_validations.at(1);
+            BST_CHECK_EQUAL(nmos::nc_restore_validation_status::ok, nmos::fields::nc::status(object_properties_set_validation));
+        }
+    }
 }

@@ -11,6 +11,11 @@ namespace nmos
 
     struct control_protocol_resource;
 
+    namespace details
+    {
+        web::json::value modify_rebuildable_block(nmos::resources& resources, object_properties_map& object_properties_holder_map, const nmos::resource& resource, const web::json::array& target_role_path, const web::json::value& block_object_properties_holder, bool validate, nmos::get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, nmos::remove_device_model_object_handler remove_device_model_object, nmos::add_device_model_object_handler add_device_model_object, nmos::filter_property_holders_handler filter_property_holders);
+    }
+
     // Check to see if role_path is sub path of parent_role_path
     bool is_role_path_root(const web::json::array& role_path_, const web::json::array& parent_role_path);
 
