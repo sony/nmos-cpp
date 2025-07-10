@@ -61,7 +61,7 @@ namespace nmos
         for(const auto& path: dependency_paths)
         {
             auto role_path = value::array();
-            for (const auto path_item : path) { web::json::push_back(role_path, path_item); }
+            for (const auto& path_item : path) { web::json::push_back(role_path, path_item); }
             web::json::push_back(dependency_path_array, role_path);
         }
 

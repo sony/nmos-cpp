@@ -420,7 +420,7 @@ namespace nmos
 
                             inherited_struct = nc::details::get_datatype_descriptor(value::string(parent_type), get_control_protocol_datatype_descriptor);
 
-                            for (const auto field : nmos::fields::nc::fields(inherited_struct))
+                            for (const auto& field : nmos::fields::nc::fields(inherited_struct))
                             {
                                 web::json::push_back(datatype_descriptor[nmos::fields::nc::fields], field);
                             }
