@@ -576,7 +576,7 @@ namespace nmos
         {
             const auto& role_path = nmos::fields::nc::path(object_properties_holder);
             // Only process role paths within the restore scope, or target_role_path only
-            if ((recurse && is_role_path_root(target_role_path, nmos::fields::nc::path(object_properties_holder))) || (!recurse && target_role_path == role_path))
+            if ((recurse && is_role_path_root(target_role_path, role_path)) || (!recurse && target_role_path == role_path))
             {
                 const auto& find_role_paths = get_object_properties_holder(object_properties_holders, role_path);
 
