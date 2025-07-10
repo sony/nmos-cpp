@@ -130,7 +130,7 @@ namespace nmos
             return nmos::make_object_properties_set_validation(target_role_path, nmos::nc_restore_validation_status::ok, property_restore_notices.as_array(), U("OK"));
         }
 
-        web::json::value modify_rebuildable_block(nmos::resources& resources, object_properties_map& object_properties_holder_map, const nmos::resource& resource, const web::json::array& target_role_path, const web::json::value& block_object_properties_holder, bool validate, nmos::get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, nmos::remove_device_model_object_handler remove_device_model_object, nmos::add_device_model_object_handler add_device_model_object, nmos::filter_property_holders_handler filter_property_holders)
+        web::json::value modify_rebuildable_block(nmos::resources& resources, object_properties_map& object_properties_holder_map, const nmos::resource& resource, const web::json::array& target_role_path, const web::json::value& block_object_properties_holder, bool validate, nmos::get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, nmos::remove_device_model_object_handler remove_device_model_object, nmos::add_device_model_object_handler add_device_model_object)
         {
             auto object_properties_set_validations = web::json::value::array();
 
@@ -632,7 +632,7 @@ namespace nmos
                 {
                     // Process this block to add / remove device model objects as members of this block
                     // the object properties holder for any added objects will be erased from the object_properties_holder_map to avoid double processing
-                    const auto& child_object_properties_set_validations = details::modify_rebuildable_block(resources, object_properties_holder_map, *r, role_path, object_properties_holder, validate, get_control_protocol_class_descriptor, remove_device_model_object, add_device_model_object, filter_property_holders);
+                    const auto& child_object_properties_set_validations = details::modify_rebuildable_block(resources, object_properties_holder_map, *r, role_path, object_properties_holder, validate, get_control_protocol_class_descriptor, remove_device_model_object, add_device_model_object);
                     for (const auto& validation_values : child_object_properties_set_validations.as_array())
                     {
                         web::json::push_back(object_properties_set_validation_values, validation_values);
