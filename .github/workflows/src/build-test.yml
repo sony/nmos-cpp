@@ -46,7 +46,7 @@ jobs:
           - os: ubuntu-24.04
             dns_sd_mode: unicast
             # don't force ASIO for ubuntu platforms
-          - os: ubuntu-22.04
+          - os: ubuntu-24.04
             force_cpprest_asio: true
           
     steps:
