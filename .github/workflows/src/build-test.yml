@@ -20,7 +20,7 @@ jobs:
         os: [ubuntu-22.04, ubuntu-24.04, windows-2022]
         install_mdns: [false, true]
         use_conan: [true]
-        force_cpprest_asio: [false]
+        force_cpprest_asio: [false, true]
         dns_sd_mode: [multicast, unicast]
         enable_authorization: [false, true]
         exclude:
@@ -32,6 +32,9 @@ jobs:
             dns_sd_mode: unicast
           - os: ubuntu-22.04
             enable_authorization: false
+          # don't force ASIO for ubuntu platforms
+          - os: ubuntu-22.04
+            force_cpprest_asio: true
           # for now, exclude unicast DNS-SD with mDNSResponder due to
           # intermittent *** buffer overflow detected *** in mdnsd
           - os: ubuntu-22.04
@@ -42,6 +45,10 @@ jobs:
             install_mdns: true
           - os: ubuntu-24.04
             dns_sd_mode: unicast
+            # don't force ASIO for ubuntu platforms
+          - os: ubuntu-22.04
+            force_cpprest_asio: true
+          
     steps:
     - uses: actions/checkout@v3
 
