@@ -17,6 +17,7 @@
 #include "nmos/is07_versions.h"
 #include "nmos/is08_versions.h"
 #include "nmos/is12_versions.h"
+#include "nmos/is14_versions.h"
 #include "nmos/media_type.h"
 #include "nmos/resource.h"
 #include "nmos/sdp_utils.h" // for nmos::make_components
@@ -145,6 +146,27 @@ namespace nmos
                 {
                     web::json::push_back(data[U("controls")], value_of({
                         { U("href"), ncp_uri.set_host(host).to_uri().to_string() },
+                        { U("type"), type },
+                        { U("authorization"), nmos::experimental::fields::server_authorization(settings) }
+                    }));
+                }
+            }
+        }
+
+        if (0 <= nmos::fields::configuration_port(settings))
+        {
+            for (const auto& version : nmos::is14_versions::from_settings(settings))
+            {
+                auto configuration_uri = web::uri_builder()
+                    .set_scheme(nmos::http_scheme(settings))
+                    .set_port(nmos::fields::connection_port(settings))
+                    .set_path(U("/x-nmos/configuration/") + make_api_version(version));
+                auto type = U("urn:x-nmos:control:configuration/") + make_api_version(version);
+
+                for (const auto& host : hosts)
+                {
+                    web::json::push_back(data[U("controls")], value_of({
+                        { U("href"), configuration_uri.set_host(host).to_uri().to_string() },
                         { U("type"), type },
                         { U("authorization"), nmos::experimental::fields::server_authorization(settings) }
                     }));
