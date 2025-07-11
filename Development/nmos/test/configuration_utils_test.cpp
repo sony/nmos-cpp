@@ -1692,7 +1692,7 @@ BST_TEST_CASE(testModifyRebuildableBlock)
         const auto resource = nmos::nc::find_resource_by_role_path(resources, target_role_path.as_array());
 
         // allowed member classes specified for block but no class_id property holder in the new monitor object properties holder
-        const auto object_set_validations = nmos::details::modify_rebuildable_block(resources, object_properties_holder_map, *resource, target_role_path.as_array(), block_object_properties_holder, validate, get_control_protocol_class_descriptor, remove_device_model_object, add_device_model_object, filter_property_holders);
+        const auto object_set_validations = nmos::details::modify_rebuildable_block(resources, object_properties_holder_map, *resource, target_role_path.as_array(), block_object_properties_holder, validate, get_control_protocol_class_descriptor, remove_device_model_object, add_device_model_object);
 
         BST_REQUIRE_EQUAL(object_set_validations.size(), 2);
         {
@@ -1751,7 +1751,7 @@ BST_TEST_CASE(testModifyRebuildableBlock)
 
         const auto resource = nmos::nc::find_resource_by_role_path(resources, target_role_path.as_array());
         // allowed member classes specified for block but class_id property holder has disallowed class_id
-        const auto object_set_validations = nmos::details::modify_rebuildable_block(resources, object_properties_holder_map, *resource, target_role_path.as_array(), block_object_properties_holder, validate, get_control_protocol_class_descriptor, remove_device_model_object, add_device_model_object, filter_property_holders);
+        const auto object_set_validations = nmos::details::modify_rebuildable_block(resources, object_properties_holder_map, *resource, target_role_path.as_array(), block_object_properties_holder, validate, get_control_protocol_class_descriptor, remove_device_model_object, add_device_model_object);
 
         BST_REQUIRE_EQUAL(object_set_validations.size(), 2);
         {
@@ -1764,7 +1764,7 @@ BST_TEST_CASE(testModifyRebuildableBlock)
             BST_CHECK_EQUAL(nmos::nc_restore_validation_status::failed, nmos::fields::nc::status(object_properties_set_validation));
         }
     }
-    
+
     // add class id to the property holders, and use an allowed class id
     {
         auto monitor_3_oid = 999;
@@ -1810,7 +1810,7 @@ BST_TEST_CASE(testModifyRebuildableBlock)
 
         const auto resource = nmos::nc::find_resource_by_role_path(resources, target_role_path.as_array());
         // allowed member classes specified for block but class_id property holder has disallowed class_id
-        const auto object_set_validations = nmos::details::modify_rebuildable_block(resources, object_properties_holder_map, *resource, target_role_path.as_array(), block_object_properties_holder, validate, get_control_protocol_class_descriptor, remove_device_model_object, add_device_model_object, filter_property_holders);
+        const auto object_set_validations = nmos::details::modify_rebuildable_block(resources, object_properties_holder_map, *resource, target_role_path.as_array(), block_object_properties_holder, validate, get_control_protocol_class_descriptor, remove_device_model_object, add_device_model_object);
 
         BST_REQUIRE_EQUAL(object_set_validations.size(), 2);
         {
