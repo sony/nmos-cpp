@@ -18,22 +18,23 @@ namespace nmos
         bool is_property_value_valid(web::json::value& property_restore_notices, const web::json::value& property_value, const web::json::value& property_descriptor, const web::json::value& restore_mode, bool is_rebuildable)
         {
             const nmos::nc_property_id& property_id = nmos::details::parse_nc_property_id(nmos::fields::nc::id(property_descriptor));
+            const auto& property_value_descriptor = nmos::fields::nc::descriptor(property_value);
             bool is_valid = true;
             // Check the name of the property is correct
-            if (nmos::fields::nc::name(property_descriptor) != nmos::fields::nc::name(property_value))
+            if (nmos::fields::nc::name(property_descriptor) != nmos::fields::nc::name(property_value_descriptor))
             {
                 utility::ostringstream_t os;
-                os << U("unexpected property name: expected ") << nmos::fields::nc::name(property_descriptor) << U(", actual ") << nmos::fields::nc::name(property_value);
-                const auto& property_restore_notice = nmos::details::make_nc_property_restore_notice(property_id, nmos::fields::nc::name(property_value), nmos::nc_property_restore_notice_type::error, os.str());
+                os << U("unexpected property name: expected ") << nmos::fields::nc::name(property_descriptor) << U(", actual ") << nmos::fields::nc::name(property_value_descriptor);
+                const auto& property_restore_notice = nmos::details::make_nc_property_restore_notice(property_id, nmos::fields::nc::name(property_value_descriptor), nmos::nc_property_restore_notice_type::error, os.str());
                 web::json::push_back(property_restore_notices, property_restore_notice);
                 is_valid = false;
             }
             // Check the type of the property value is correct
-            if (nmos::fields::nc::type_name(property_descriptor) != nmos::fields::nc::type_name(property_value))
+            if (nmos::fields::nc::type_name(property_descriptor) != nmos::fields::nc::type_name(property_value_descriptor))
             {
                 utility::ostringstream_t os;
-                os << U("unexpected property type: expected ") << nmos::fields::nc::type_name(property_descriptor) << U(", actual ") << nmos::fields::nc::type_name(property_value);
-                const auto& property_restore_notice = nmos::details::make_nc_property_restore_notice(property_id, nmos::fields::nc::name(property_value), nmos::nc_property_restore_notice_type::error, os.str());
+                os << U("unexpected property type: expected ") << nmos::fields::nc::type_name(property_descriptor) << U(", actual ") << nmos::fields::nc::type_name(property_value_descriptor);
+                const auto& property_restore_notice = nmos::details::make_nc_property_restore_notice(property_id, nmos::fields::nc::name(property_value_descriptor), nmos::nc_property_restore_notice_type::error, os.str());
                 web::json::push_back(property_restore_notices, property_restore_notice);
                 is_valid = false;
             }
@@ -41,7 +42,7 @@ namespace nmos
             if (bool(nmos::fields::nc::is_read_only(property_descriptor))
                 && restore_mode != nmos::nc_restore_mode::restore_mode::rebuild)
             {
-                const auto& property_restore_notice = nmos::details::make_nc_property_restore_notice(property_id, nmos::fields::nc::name(property_value), nmos::nc_property_restore_notice_type::error, U("read only properties can not be modified in Modify restore mode."));
+                const auto& property_restore_notice = nmos::details::make_nc_property_restore_notice(property_id, nmos::fields::nc::name(property_value_descriptor), nmos::nc_property_restore_notice_type::error, U("read only properties can not be modified in Modify restore mode."));
                 web::json::push_back(property_restore_notices, property_restore_notice);
                 is_valid = false;
             }
@@ -49,7 +50,7 @@ namespace nmos
             if (bool(nmos::fields::nc::is_read_only(property_descriptor))
                 && !is_rebuildable)
             {
-                const auto& property_restore_notice = nmos::details::make_nc_property_restore_notice(property_id, nmos::fields::nc::name(property_value), nmos::nc_property_restore_notice_type::error, U("object must be rebuildable to allow modification of read only properties."));
+                const auto& property_restore_notice = nmos::details::make_nc_property_restore_notice(property_id, nmos::fields::nc::name(property_value_descriptor), nmos::nc_property_restore_notice_type::error, U("object must be rebuildable to allow modification of read only properties."));
                 web::json::push_back(property_restore_notices, property_restore_notice);
                 is_valid = false;
             }
@@ -98,9 +99,12 @@ namespace nmos
             {
                 // Find any read only properties
                 const auto& read_only_property_values = boost::copy_range<std::set<web::json::value>>(filtered_property_values
-                    | boost::adaptors::filtered([](const web::json::value& property_value)
+                    | boost::adaptors::filtered([class_id, get_control_protocol_class_descriptor](const web::json::value& property_value)
                         {
-                            return nmos::fields::nc::is_read_only(property_value);
+                            const auto& property_id = nmos::details::parse_nc_property_id(nmos::fields::nc::id(property_value));
+                            const auto& property_descriptor = nmos::nc::find_property_descriptor(property_id, class_id, get_control_protocol_class_descriptor);
+
+                            return nmos::fields::nc::is_read_only(property_descriptor);
                         })
                 );
                 if (read_only_property_values.size() > 0) // Call back to user code
@@ -113,10 +117,12 @@ namespace nmos
                         const auto& allow_list_read_only_property_ids = filter_property_holders(resource, target_role_path, web::json::value_from_elements(read_only_property_values).as_array(), get_control_protocol_class_descriptor);
 
                         const auto& allowed_property_values = boost::copy_range<std::set<web::json::value>>(filtered_property_values
-                            | boost::adaptors::filtered([&property_restore_notices, allow_list_read_only_property_ids](const web::json::value& property_value)
+                            | boost::adaptors::filtered([&property_restore_notices, get_control_protocol_class_descriptor, class_id, allow_list_read_only_property_ids](const web::json::value& property_value)
                                 {
+                                    const auto& property_id = nmos::details::parse_nc_property_id(nmos::fields::nc::id(property_value));
+                                    const auto& property_descriptor = nmos::nc::find_property_descriptor(property_id, class_id, get_control_protocol_class_descriptor);
                                     // if it's read only and in the allow list then add it
-                                    if (!nmos::fields::nc::is_read_only(property_value))
+                                    if (!nmos::fields::nc::is_read_only(property_descriptor))
                                     {
                                         return true;
                                     }
@@ -129,8 +135,7 @@ namespace nmos
                                         }
                                     }
                                     // Create a warning notice for any read only property not allowed by the allow list
-                                    const auto& property_id = nmos::details::parse_nc_property_id(nmos::fields::nc::id(property_value));
-                                    const auto& property_restore_notice = nmos::details::make_nc_property_restore_notice(property_id, nmos::fields::nc::name(property_value), nmos::nc_property_restore_notice_type::warning, U("This read only property can not be modified."));
+                                    const auto& property_restore_notice = nmos::details::make_nc_property_restore_notice(property_id, nmos::fields::nc::name(property_descriptor), nmos::nc_property_restore_notice_type::warning, U("This read only property can not be modified."));
                                     web::json::push_back(property_restore_notices, property_restore_notice);
 
                                     return false;
@@ -149,6 +154,7 @@ namespace nmos
             for (const auto& property_value : property_modify_list)
             {
                 const auto& property_id = nmos::details::parse_nc_property_id(nmos::fields::nc::id(property_value));
+                const auto& property_descriptor = nmos::nc::find_property_descriptor(property_id, class_id, get_control_protocol_class_descriptor);
 
                 // hmmm, ideally we would pass the value into modify_resource with the validate
                 // flag, so that it's subject to property contraints and also the application code can decide if it's a legal value
@@ -159,7 +165,7 @@ namespace nmos
 
                     nc::modify_resource(resources, resource.id, [&](nmos::resource& resource_)
                         {
-                            resource_.data[nmos::fields::nc::name(property_value)] = value;
+                            resource_.data[nmos::fields::nc::name(property_descriptor)] = value;
 
                         }, nmos::make_property_changed_event(nmos::fields::nc::oid(resource.data), { {property_id, nmos::nc_property_change_type::type::value_changed, value} }));
                 }
@@ -414,7 +420,7 @@ namespace nmos
                     const auto& user_label_property_holder = nmos::get_property_holder(child_object_properties_holder->second, nmos::nc_object_user_label_property_id);
                     const auto& user_label = (user_label_property_holder == web::json::value::null()) ? block_member_user_label : nmos::fields::nc::value(user_label_property_holder).as_string();
 
-                    auto object_properties_set_validation = add_device_model_object(child_object_properties_holder->second, oid, owner, role, user_label, validate);
+                    auto object_properties_set_validation = add_device_model_object(child_object_properties_holder->second, oid, owner, role, user_label, validate, get_control_protocol_class_descriptor);
                     // Add warnings about known inconsistancies between backup dataset and new device model object
                     for (const auto& added_object_notice: added_object_notices.as_array())
                     {

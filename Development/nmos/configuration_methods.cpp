@@ -28,7 +28,7 @@ namespace nmos
 
                 for (const auto& property_descriptor : control_class_descriptor.property_descriptors.as_array())
                 {
-                    value property_holder = nmos::details::make_nc_property_holder(nmos::details::parse_nc_property_id(nmos::fields::nc::id(property_descriptor)), nmos::fields::nc::name(property_descriptor), nmos::fields::nc::type_name(property_descriptor), nmos::fields::nc::is_read_only(property_descriptor), resource.data.at(nmos::fields::nc::name(property_descriptor)));
+                    value property_holder = nmos::details::make_nc_property_holder(nmos::details::parse_nc_property_id(nmos::fields::nc::id(property_descriptor)), property_descriptor, resource.data.at(nmos::fields::nc::name(property_descriptor)));
 
                     web::json::push_back(property_holders, property_holder);
                 }

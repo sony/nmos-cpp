@@ -863,16 +863,14 @@ namespace nmos
         }
 
         // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/device-configuration/#ncpropertyholder
-        web::json::value make_nc_property_holder(const nc_property_id& property_id, const nc_name& name, const utility::string_t& type_name, bool is_read_only, const web::json::value& property_value)
+        web::json::value make_nc_property_holder(const nc_property_id& property_id, const web::json::value& descriptor, const web::json::value& property_value)
         {
             using web::json::value;
             using web::json::value_of;
 
             return value_of({
                 { nmos::fields::nc::id, make_nc_property_id(property_id)},
-                { nmos::fields::nc::name, value::string(name)},
-                { nmos::fields::nc::type_name, value::string(type_name)},
-                { nmos::fields::nc::is_read_only, value::boolean(is_read_only)},
+                { nmos::fields::nc::descriptor, descriptor},
                 { nmos::fields::nc::value, property_value},
                 }, true);
         }
@@ -1338,6 +1336,7 @@ namespace nmos
             auto parameters = value::array();
             web::json::push_back(parameters, details::make_nc_parameter_descriptor(U("The target role path"), nmos::fields::nc::path, U("NcRolePath"), false, false, value::null()));
             web::json::push_back(parameters, details::make_nc_parameter_descriptor(U("If true will return properties on specified path and all the nested paths"), nmos::fields::nc::recurse, U("NcBoolean"), false, false, value::null()));
+            web::json::push_back(parameters, details::make_nc_parameter_descriptor(U("If true, property holders returned will contain non-null property descriptors and for full backups the ClassManager role path will also be included"), nmos::fields::nc::include_descriptors, U("NcBoolean"), false, false, value::null()));
             web::json::push_back(methods, details::make_nc_method_descriptor(U("Get bulk object properties by given path"), nc_bulk_properties_manager_get_properties_by_path_method_id, U("GetPropertiesByPath"), U("NcMethodResultBulkPropertiesHolder"), parameters, false));
         }
         {
@@ -2217,9 +2216,7 @@ namespace nmos
 
         auto fields = value::array();
         web::json::push_back(fields, details::make_nc_field_descriptor(U("Property id"), nmos::fields::nc::id, U("NcPropertyId"), false, false, value::null()));
-        web::json::push_back(fields, details::make_nc_field_descriptor(U("Property name"), nmos::fields::nc::name, U("NcString"), false, false, value::null()));
-        web::json::push_back(fields, details::make_nc_field_descriptor(U("Property type name. If null it means the type is any"), nmos::fields::nc::type_name, U("NcName"), true, false, value::null()));
-        web::json::push_back(fields, details::make_nc_field_descriptor(U("Is the property ReadOnly?"), nmos::fields::nc::is_read_only, U("NcBoolean"), false, false, value::null()));
+        web::json::push_back(fields, details::make_nc_field_descriptor(U("Property descriptor"), nmos::fields::nc::descriptor, U("NcPropertyDescriptor"), true, false, value::null()));
         web::json::push_back(fields, details::make_nc_field_descriptor(U("Property value"), nmos::fields::nc::value, true, false, value::null()));
 
         return details::make_nc_datatype_descriptor_struct(U("Property holder descriptor"), U("NcPropertyHolder"), fields, value::null());

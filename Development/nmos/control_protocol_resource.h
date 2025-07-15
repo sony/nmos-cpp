@@ -199,7 +199,7 @@ namespace nmos
         web::json::value make_nc_bulk_properties_holder(const utility::string_t& validation_fingerprint, const web::json::value& object_properties_holders);
 
         // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/device-configuration/#ncpropertyholder
-        web::json::value make_nc_property_holder(const nc_property_id& property_id, const nc_name& name, const utility::string_t& type_name, bool is_read_only, const web::json::value& property_value);
+        web::json::value make_nc_property_holder(const nc_property_id& property_id, const web::json::value& descriptor, const web::json::value& property_value);
 
         // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/device-configuration/#ncobjectpropertiesholder
         web::json::value make_nc_object_properties_holder(const web::json::array& role_path, const web::json::array& property_holders, const web::json::array& dependency_paths, const web::json::array& allowed_members_classes, bool is_rebuildable);

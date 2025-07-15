@@ -1792,7 +1792,7 @@ nmos::remove_device_model_object_handler make_remove_device_model_handler(nmos::
 
 nmos::add_device_model_object_handler make_add_device_model_object_handler(nmos::node_model& model, slog::base_gate& gate)
 {
-    return[&model, &gate](const web::json::value& object_properties_holder, const nmos::nc_oid oid, const nmos::nc_oid owner, const utility::string_t& role, const utility::string_t& user_label, bool validate)
+    return[&model, &gate](const web::json::value& object_properties_holder, const nmos::nc_oid oid, const nmos::nc_oid owner, const utility::string_t& role, const utility::string_t& user_label, bool validate, nmos::get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor)
     {
         // This example callback shows how to add a receiver monitor resource to the device model
         // The receivers block that contains the monitors must be rebuildable
@@ -1831,7 +1831,8 @@ nmos::add_device_model_object_handler make_add_device_model_object_handler(nmos:
         for (const auto& property_holder: nmos::fields::nc::values(object_properties_holder))
         {
             const auto& property_id = nmos::details::parse_nc_property_id(nmos::fields::nc::id(property_holder));
-            const auto& name = nmos::fields::nc::name(property_holder).c_str();
+            const auto& property_descriptor = nmos::nc::find_property_descriptor(property_id, nmos::nc_receiver_monitor_class_id, get_control_protocol_class_descriptor);
+            const auto& name = nmos::fields::nc::name(property_descriptor).c_str();
             if (std::find(processed_properties.begin(), processed_properties.end(), property_id) == processed_properties.end())
             {
                 const auto notice = nmos::details::make_nc_property_restore_notice(property_id, name, nmos::nc_property_restore_notice_type::warning, U("Property unprocessed."));

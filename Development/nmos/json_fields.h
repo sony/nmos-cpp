@@ -269,6 +269,7 @@ namespace nmos
             const web::json::field_as_array touchpoints{ U("touchpoints") };
             const web::json::field_as_array runtime_property_constraints{ U("runtimePropertyConstraints") };
             const web::json::field_as_bool recurse{ U("recurse") };
+            const web::json::field_as_bool include_descriptors{ U("includeDescriptors") };
             const web::json::field_as_bool enabled{ U("enabled") };
             const web::json::field_as_array members{ U("members") };
             const web::json::field_as_string description{ U("description") };
@@ -339,6 +340,7 @@ namespace nmos
             const web::json::field_as_array values{ U("values") };
             const web::json::field_as_string validation_fingerprint{ U("validationFingerprint") };
             const web::json::field_as_value status_message{ U("statusMessage") };
+            const web::json::field_as_value descriptor{U("descriptor")};
             const web::json::field_as_value data_set{ U("dataSet") }; // NcBulkPropertiesHolder
             const web::json::field_as_bool is_rebuildable{ U("isRebuildable") };
             const web::json::field_as_integer notice_type{ U("noticeType") };
