@@ -1818,25 +1818,6 @@ nmos::add_device_model_object_handler make_add_device_model_object_handler(nmos:
         nmos::resources& control_protocol_resources = model.control_protocol_resources;
 
         const auto& role_path = nmos::fields::nc::path(object_properties_holder);
-        const auto& allowed_member_classes = nmos::fields::nc::allowed_members_classes(object_properties_holder);
-
-        if (allowed_member_classes.size() > 0)
-        {
-            // If allowed member classes array populated, ensure that the receiver monitor class is present
-            const auto& filtered_classes = boost::copy_range<std::set<web::json::value>>(allowed_member_classes
-                | boost::adaptors::filtered([&](const web::json::value& member)
-                    {
-                        return nmos::details::parse_nc_class_id(member.as_array()) == nmos::nc_receiver_monitor_class_id;
-                    })
-            );
-
-            // If receiver monitor class not allowed then return with error
-            if (filtered_classes.size() == 0)
-            {
-                auto status_message = U("Device model error: attempting to add unexpected class");
-                return nmos::make_object_properties_set_validation(role_path, nmos::nc_restore_validation_status::device_error, status_message);
-            }
-        }
         const auto& touchpoint_property_holder = nmos::get_property_holder(object_properties_holder, nmos::nc_object_touchpoints_property_id);
         if (touchpoint_property_holder == web::json::value::null())
         {
