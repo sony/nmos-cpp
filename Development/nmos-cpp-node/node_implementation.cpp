@@ -1743,19 +1743,22 @@ nmos::control_protocol_property_changed_handler make_node_implementation_control
     };
 }
 
-// Example Device Configuration callback called when a rebuildable object is modified in Rebuild mode.
-// An array of property values is passed in, and an array of property values that can be modified is returned
-// For each property value that can't be returned a property restore notice must be created
+// Example Device Configuration callbacks called when a rebuildable object is modified in Rebuild mode.
+
+// The filter_property_holders function is called when the Device Configuration API is attempting to modify
+// the read only properties of a Device Model object. This callback returns an "allow list" of property ids
+// for properties that can be updated - the read only property will be updated to the value given in the NcPropertyHolder
+// For each "disallowed" property value that isn't returned (is filtered out) a property restore notice must be created
 nmos::filter_property_holders_handler make_filter_property_holders_handler(nmos::resources& resources, slog::base_gate& gate)
 {
-    return [&resources, &gate](const nmos::resource& resource, const web::json::array& target_role_path, const web::json::array& property_values, bool recurse, bool validate, web::json::array& property_restore_notices, nmos::get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor)
+    return [&resources, &gate](const nmos::resource& resource, const web::json::array& target_role_path, const web::json::array& property_values, nmos::get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor)
     {
-        // Use this function to filter which of the properties in the object should be modified by the configuration API
+        // Use this function to create allow list of property ids for properties in the object should be modified by the configuration API
         slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::stash_category(impl::categories::node_implementation) << "Do filter_property_holders";
 
         nmos::nc_class_id class_id = nmos::details::parse_nc_class_id(nmos::fields::nc::class_id(resource.data));
 
-        auto modifiable_property_holders = web::json::value::array();
+        auto modifiable_property_ids = web::json::value::array();
 
         for (const auto& property_value : property_values)
         {
@@ -1763,22 +1766,16 @@ nmos::filter_property_holders_handler make_filter_property_holders_handler(nmos:
             const auto& property_descriptor = nmos::nc::find_property_descriptor(property_id, class_id, get_control_protocol_class_descriptor);
 
             // In this example we are not allowing "structural" parts of an object to be modified
-            if (nmos::fields::nc::name(property_descriptor) == nmos::fields::nc::oid.key
-                || nmos::fields::nc::name(property_descriptor) == nmos::fields::nc::constant_oid.key
-                || nmos::fields::nc::name(property_descriptor) == nmos::fields::nc::role.key
-                || nmos::fields::nc::name(property_descriptor) == nmos::fields::nc::class_id.key
-                || nmos::fields::nc::name(property_descriptor) == nmos::fields::nc::owner.key)
+            if (nmos::fields::nc::name(property_descriptor) != nmos::fields::nc::oid.key
+                && nmos::fields::nc::name(property_descriptor) != nmos::fields::nc::constant_oid.key
+                && nmos::fields::nc::name(property_descriptor) != nmos::fields::nc::role.key
+                && nmos::fields::nc::name(property_descriptor) != nmos::fields::nc::class_id.key
+                && nmos::fields::nc::name(property_descriptor) != nmos::fields::nc::owner.key)
             {
-                // We need to create a notice for any properties that will not be updated
-                const auto& property_restore_notice = nmos::details::make_nc_property_restore_notice(property_id, nmos::fields::nc::name(property_value), nmos::nc_property_restore_notice_type::warning, U("Update of read only properties not supported"));
-                web::json::push_back(property_restore_notices, property_restore_notice);
-            }
-            else
-            {
-                web::json::push_back(modifiable_property_holders, property_value);
+                web::json::push_back(modifiable_property_ids, nmos::fields::nc::id(property_value));
             }
         }
-        return modifiable_property_holders.as_array();
+        return modifiable_property_ids.as_array();
     };
 }
 
@@ -1786,24 +1783,8 @@ nmos::remove_device_model_object_handler make_remove_device_model_handler(nmos::
 {
     return [&model, &gate](const nmos::nc_oid reference_oid, bool validate)
     {
-        nmos::resources& control_protocol_resources = model.control_protocol_resources;
-
-        // get the receiver monitor resource
-        auto found = nmos::find_resource(control_protocol_resources, utility::conversions::details::to_string_t(reference_oid));
-
-        if (control_protocol_resources.end() != found)
-        {
-            if (validate) // If validate is true then delete the object, just indicate whether it's possible given the data supplied
-            {
-                return true;
-            }
-            auto erase_count = nmos::nc::erase_resource(control_protocol_resources, found->id);
-            if (erase_count > 0)
-            {
-                return true;
-            }
-        }
-        return false;
+        // Perform application code functions here
+        return true;
     };
 }
 
@@ -1838,7 +1819,7 @@ nmos::add_device_model_object_handler make_add_device_model_object_handler(nmos:
             auto receiver_monitor = nmos::make_receiver_monitor(oid, true, owner, role, user_label, U(""), web::json::value_of({ {nmos::details::make_nc_touchpoint_nmos({nmos::ncp_touchpoint_resource_types::receiver, touchpoint_uuid.as_string()})} }));
             nmos::nc::insert_resource(control_protocol_resources, std::move(receiver_monitor));
         }
-        // Generate notices for any properties that have been unprocessed
+        // Define the properties that have been procesed, and generate notices for all other (unprocessed) properties in the object_properties_holder
         std::vector< nmos::nc_property_id > processed_properties = { nmos::nc_object_oid_property_id,
                                                                      nmos::nc_object_owner_property_id,
                                                                      nmos::nc_object_role_property_id,

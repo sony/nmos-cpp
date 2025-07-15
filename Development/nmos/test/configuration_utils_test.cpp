@@ -382,7 +382,7 @@ BST_TEST_CASE(testApplyBackupDataSet)
     bool add_device_model_object_called = false;
 
     // callback stubs
-    nmos::filter_property_holders_handler filter_property_holders = [&](const nmos::resource& resource, const web::json::array& target_role_path, const web::json::array& property_values, bool recurse, bool validate, web::json::array& property_restore_notices, nmos::get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor)
+    nmos::filter_property_holders_handler filter_property_holders = [&](const nmos::resource& resource, const web::json::array& target_role_path, const web::json::array& property_values, nmos::get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor)
     {
         filter_property_holders_called = true;
         auto modifiable_property_holders = value::array();
@@ -1084,7 +1084,7 @@ BST_TEST_CASE(testApplyBackupDataSet_AddDeviceModelObject)
     bool add_device_model_object_called = false;
 
     // callback stubs
-    nmos::filter_property_holders_handler filter_property_holders = [&](const nmos::resource& resource, const web::json::array& target_role_path, const web::json::array& property_values, bool recurse, bool validate, web::json::array& property_restore_notices, nmos::get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor)
+    nmos::filter_property_holders_handler filter_property_holders = [&](const nmos::resource& resource, const web::json::array& target_role_path, const web::json::array& property_values, nmos::get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor)
     {
         filter_property_holders_called = true;
         auto modifiable_property_holders = value::array();
@@ -1309,7 +1309,7 @@ BST_TEST_CASE(testApplyBackupDataSet_NegativeTests)
     bool add_device_model_object_called = false;
 
     // callback stubs
-    nmos::filter_property_holders_handler filter_property_holders = [&](const nmos::resource& resource, const web::json::array& target_role_path, const web::json::array& property_values, bool recurse, bool validate, web::json::array& property_restore_notices, nmos::get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor)
+    nmos::filter_property_holders_handler filter_property_holders = [&](const nmos::resource& resource, const web::json::array& target_role_path, const web::json::array& property_values, nmos::get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor)
     {
         filter_property_holders_called = true;
         auto modifiable_property_holders = value::array();
@@ -1623,7 +1623,7 @@ BST_TEST_CASE(testModifyRebuildableBlock)
     bool add_device_model_object_called = false;
 
     // callback stubs
-    nmos::filter_property_holders_handler filter_property_holders = [&](const nmos::resource& resource, const web::json::array& target_role_path, const web::json::array& property_values, bool recurse, bool validate, web::json::array& property_restore_notices, nmos::get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor)
+    nmos::filter_property_holders_handler filter_property_holders = [&](const nmos::resource& resource, const web::json::array& target_role_path, const web::json::array& property_values, nmos::get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor)
     {
         filter_property_holders_called = true;
         auto modifiable_property_holders = value::array();

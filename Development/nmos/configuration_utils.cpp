@@ -94,19 +94,56 @@ namespace nmos
             );
             auto property_modify_list = web::json::value_from_elements(filtered_property_values).as_array();
 
-            if (details::is_contains_read_only_property(property_modify_list, class_id, get_control_protocol_class_descriptor))
+            if (nmos::nc_restore_mode::rebuild == restore_mode.as_integer())
             {
-                if (filter_property_holders)
+                // Find any read only properties
+                const auto& read_only_property_values = boost::copy_range<std::set<web::json::value>>(filtered_property_values
+                    | boost::adaptors::filtered([](const web::json::value& property_value)
+                        {
+                            return nmos::fields::nc::is_read_only(property_value);
+                        })
+                );
+                if (read_only_property_values.size() > 0) // Call back to user code
                 {
-                    // If the property_modify_list contains read only properties then we call back to the application code to
-                    // check that it's OK to change those value.  Bear in mind that these could be the class Id, or the oid or some other
-                    // property that we don't want changed ordinarily
-                    property_modify_list = filter_property_holders(resource, target_role_path, property_modify_list, true, validate, property_restore_notices.as_array(), get_control_protocol_class_descriptor);
-                }
-                else
-                {
-                    // Modify of read only properties not supported
-                    return nmos::make_object_properties_set_validation(target_role_path, nmos::nc_restore_validation_status::failed, property_restore_notices.as_array(), U("Modification of read only properties not supported"));
+                    if (filter_property_holders)
+                    {
+                        // If the property_modify_list contains read only properties then we call back to the application code to
+                        // check that it's OK to change those value.  Bear in mind that these could be the class Id, or the oid or some other
+                        // property that we don't want changed ordinarily
+                        const auto& allow_list_read_only_property_ids = filter_property_holders(resource, target_role_path, web::json::value_from_elements(read_only_property_values).as_array(), get_control_protocol_class_descriptor);
+
+                        const auto& allowed_property_values = boost::copy_range<std::set<web::json::value>>(filtered_property_values
+                            | boost::adaptors::filtered([&property_restore_notices, allow_list_read_only_property_ids](const web::json::value& property_value)
+                                {
+                                    // if it's read only and in the allow list then add it
+                                    if (!nmos::fields::nc::is_read_only(property_value))
+                                    {
+                                        return true;
+                                    }
+
+                                    for (const auto& allowed_property_id: allow_list_read_only_property_ids)
+                                    {
+                                        if (nmos::fields::nc::id(property_value) == allowed_property_id)
+                                        {
+                                            return true;
+                                        }
+                                    }
+                                    // Create a warning notice for any read only property not allowed by the allow list
+                                    const auto& property_id = nmos::details::parse_nc_property_id(nmos::fields::nc::id(property_value));
+                                    const auto& property_restore_notice = nmos::details::make_nc_property_restore_notice(property_id, nmos::fields::nc::name(property_value), nmos::nc_property_restore_notice_type::warning, U("This read only property can not be modified."));
+                                    web::json::push_back(property_restore_notices, property_restore_notice);
+
+                                    return false;
+                                })
+                        );
+
+                        property_modify_list = web::json::value_from_elements(allowed_property_values).as_array();
+                    }
+                    else
+                    {
+                        // Modify of read only properties not supported
+                        return nmos::make_object_properties_set_validation(target_role_path, nmos::nc_restore_validation_status::failed, property_restore_notices.as_array(), U("Modification of read only properties not supported"));
+                    }
                 }
             }
             for (const auto& property_value : property_modify_list)
@@ -166,20 +203,36 @@ namespace nmos
                 if (filtered_members.size() != 1)
                 {
                     // can't find this role in restore dataset, so member has been removed
-                    bool success = remove_device_model_object(nmos::fields::nc::oid(reference_member), validate);
-                    if (success)
+                    // get the receiver monitor resource
+                    auto found = nmos::find_resource(resources, utility::conversions::details::to_string_t(nmos::fields::nc::oid(reference_member)));
+
+                    if (resources.end() != found)
                     {
-                        if (!validate)
+                        if (!validate) // If validate is true then delete the object, just indicate whether it's possible given the data supplied
                         {
-                            members_to_remove.push_back(nmos::fields::nc::oid(reference_member));
+                            auto erase_count = nmos::nc::erase_resource(resources, found->id);
+                            if (erase_count > 0)
+                            {
+                                members_to_remove.push_back(nmos::fields::nc::oid(reference_member));
+                            }
+                            else
+                            {
+                                // unable to delete resource so report the error and don't update block
+                                web::json::push_back(block_notices, nmos::details::make_nc_property_restore_notice(nmos::nc_block_members_property_id, U("members"), nmos::nc_property_restore_notice_type::error, U("Unable to delete resource in Device Model.")));
+                                continue;
+                            }
+                        }
+                        // callback to user code
+                        if (!remove_device_model_object(nmos::fields::nc::oid(reference_member), validate))
+                        {
+                            // error in user code
+                            web::json::push_back(block_notices, nmos::details::make_nc_property_restore_notice(nmos::nc_block_members_property_id, U("members"), nmos::nc_property_restore_notice_type::error, U("Application error.")));
                         }
                     }
                     else
                     {
                         // unable to delete resource so report the error and don't update block
-                        auto notices = web::json::value::array();
-                        const auto notice = nmos::details::make_nc_property_restore_notice(nmos::nc_block_members_property_id, U("members"), nmos::nc_property_restore_notice_type::error, U("Unable to delete resource from Device Model."));
-                        web::json::push_back(block_notices, notice);
+                        web::json::push_back(block_notices, nmos::details::make_nc_property_restore_notice(nmos::nc_block_members_property_id, U("members"), nmos::nc_property_restore_notice_type::error, U("Unable to find resource in Device Model.")));
                     }
                 }
             }
