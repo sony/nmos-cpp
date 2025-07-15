@@ -1781,9 +1781,11 @@ nmos::filter_property_holders_handler make_filter_property_holders_handler(nmos:
 
 nmos::remove_device_model_object_handler make_remove_device_model_handler(nmos::node_model& model, slog::base_gate& gate)
 {
-    return [&model, &gate](const nmos::nc_oid reference_oid, bool validate)
+    return [&model, &gate](const nmos::nc_oid oid, bool validate)
     {
         // Perform application code functions here
+        // oid - oid of Device Model resource beng deleted
+        // validate - true when only checks are performed, false when checks and deletion are performed
         return true;
     };
 }
