@@ -18,31 +18,12 @@ namespace nmos
         bool is_property_value_valid(web::json::value& property_restore_notices, const web::json::value& property_value, const web::json::value& property_descriptor, const web::json::value& restore_mode, bool is_rebuildable)
         {
             const nmos::nc_property_id& property_id = nmos::details::parse_nc_property_id(nmos::fields::nc::id(property_descriptor));
-            const auto& property_value_descriptor = nmos::fields::nc::descriptor(property_value);
             bool is_valid = true;
-            // Check the name of the property is correct
-            if (nmos::fields::nc::name(property_descriptor) != nmos::fields::nc::name(property_value_descriptor))
-            {
-                utility::ostringstream_t os;
-                os << U("unexpected property name: expected ") << nmos::fields::nc::name(property_descriptor) << U(", actual ") << nmos::fields::nc::name(property_value_descriptor);
-                const auto& property_restore_notice = nmos::details::make_nc_property_restore_notice(property_id, nmos::fields::nc::name(property_value_descriptor), nmos::nc_property_restore_notice_type::error, os.str());
-                web::json::push_back(property_restore_notices, property_restore_notice);
-                is_valid = false;
-            }
-            // Check the type of the property value is correct
-            if (nmos::fields::nc::type_name(property_descriptor) != nmos::fields::nc::type_name(property_value_descriptor))
-            {
-                utility::ostringstream_t os;
-                os << U("unexpected property type: expected ") << nmos::fields::nc::type_name(property_descriptor) << U(", actual ") << nmos::fields::nc::type_name(property_value_descriptor);
-                const auto& property_restore_notice = nmos::details::make_nc_property_restore_notice(property_id, nmos::fields::nc::name(property_value_descriptor), nmos::nc_property_restore_notice_type::error, os.str());
-                web::json::push_back(property_restore_notices, property_restore_notice);
-                is_valid = false;
-            }
             // Only allow modification of read only properties when in Rebuild mode
             if (bool(nmos::fields::nc::is_read_only(property_descriptor))
                 && restore_mode != nmos::nc_restore_mode::restore_mode::rebuild)
             {
-                const auto& property_restore_notice = nmos::details::make_nc_property_restore_notice(property_id, nmos::fields::nc::name(property_value_descriptor), nmos::nc_property_restore_notice_type::error, U("read only properties can not be modified in Modify restore mode."));
+                const auto& property_restore_notice = nmos::details::make_nc_property_restore_notice(property_id, nmos::fields::nc::name(property_descriptor), nmos::nc_property_restore_notice_type::error, U("read only properties can not be modified in Modify restore mode."));
                 web::json::push_back(property_restore_notices, property_restore_notice);
                 is_valid = false;
             }
@@ -50,7 +31,7 @@ namespace nmos
             if (bool(nmos::fields::nc::is_read_only(property_descriptor))
                 && !is_rebuildable)
             {
-                const auto& property_restore_notice = nmos::details::make_nc_property_restore_notice(property_id, nmos::fields::nc::name(property_value_descriptor), nmos::nc_property_restore_notice_type::error, U("object must be rebuildable to allow modification of read only properties."));
+                const auto& property_restore_notice = nmos::details::make_nc_property_restore_notice(property_id, nmos::fields::nc::name(property_descriptor), nmos::nc_property_restore_notice_type::error, U("object must be rebuildable to allow modification of read only properties."));
                 web::json::push_back(property_restore_notices, property_restore_notice);
                 is_valid = false;
             }
