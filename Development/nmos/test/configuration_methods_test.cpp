@@ -57,7 +57,7 @@ BST_TEST_CASE(testGetPropertiesByPath)
     {
         const auto target_role_path = value_of({ U("root") });
         const auto& resource = nmos::nc::find_resource_by_role_path(resources, target_role_path.as_array());
-        auto method_result = get_properties_by_path(resources, *resource, true, get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor);
+        auto method_result = get_properties_by_path(resources, *resource, true, true, get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor);
 
         BST_REQUIRE_EQUAL(nmos::nc_method_status::ok, nmos::fields::nc::status(method_result));
 
@@ -69,7 +69,7 @@ BST_TEST_CASE(testGetPropertiesByPath)
     {
         const auto target_role_path = value_of({ U("root"), U("receivers") });
         const auto& resource = nmos::nc::find_resource_by_role_path(resources, target_role_path.as_array());
-        auto method_result = get_properties_by_path(resources, *resource, true, get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor);
+        auto method_result = get_properties_by_path(resources, *resource, true, true, get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor);
 
         BST_REQUIRE_EQUAL(nmos::nc_method_status::ok, nmos::fields::nc::status(method_result));
 
@@ -81,7 +81,7 @@ BST_TEST_CASE(testGetPropertiesByPath)
     {
         const auto target_role_path = value_of({ U("root"), U("receivers"), U("mon1") });
         const auto& resource = nmos::nc::find_resource_by_role_path(resources, target_role_path.as_array());
-        auto method_result = get_properties_by_path(resources, *resource, true, get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor);
+        auto method_result = get_properties_by_path(resources, *resource, true, true, get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor);
 
         BST_REQUIRE_EQUAL(nmos::nc_method_status::ok, nmos::fields::nc::status(method_result));
 

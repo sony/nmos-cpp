@@ -146,6 +146,18 @@ namespace nmos
 
             return true;
         }
+
+        bool parse_include_descriptors_query_parameter(const utility::string_t& query)
+        {
+            web::json::value arguments = web::json::value_from_query(query);
+
+            if (arguments.has_field(fields::nc::include_descriptors))
+            {
+                return U("false") != arguments.at(fields::nc::include_descriptors).as_string();
+            }
+
+            return true;
+        }
     }
 
     inline web::http::experimental::listener::api_router make_unmounted_configuration_api(node_model& model, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor_handler get_control_protocol_datatype_descriptor, get_control_protocol_method_descriptor_handler get_control_protocol_method_descriptor, filter_property_holders_handler filter_property_holders, nmos::remove_device_model_object_handler remove_device_model_object, nmos::add_device_model_object_handler add_device_model_object, control_protocol_property_changed_handler property_changed, slog::base_gate& gate_)
@@ -629,8 +641,9 @@ namespace nmos
                     try
                     {
                         bool recurse = details::parse_recurse_query_parameter(req.request_uri().query());
+                        bool include_descriptors = details::parse_include_descriptors_query_parameter(req.request_uri().query());
 
-                        method_result = get_properties_by_path(resources, *resource, recurse, get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor);
+                        method_result = get_properties_by_path(resources, *resource, recurse, include_descriptors, get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor);
 
                         auto status = nmos::fields::nc::status(method_result);
                         if (nc_method_status::ok == status || nc_method_status::method_deprecated == status) { code = status_codes::OK; }

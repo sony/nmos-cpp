@@ -13,7 +13,7 @@ namespace nmos
 {
     namespace details
     {
-        web::json::array make_property_holders(const nmos::resource& resource, nmos::get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor)
+        web::json::array make_property_holders(const nmos::resource& resource, bool include_descriptors, nmos::get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor)
         {
             using web::json::value;
 
@@ -28,7 +28,8 @@ namespace nmos
 
                 for (const auto& property_descriptor : control_class_descriptor.property_descriptors.as_array())
                 {
-                    value property_holder = nmos::details::make_nc_property_holder(nmos::details::parse_nc_property_id(nmos::fields::nc::id(property_descriptor)), property_descriptor, resource.data.at(nmos::fields::nc::name(property_descriptor)));
+                    const auto descriptor = include_descriptors ? property_descriptor : value::null();
+                    value property_holder = nmos::details::make_nc_property_holder(nmos::details::parse_nc_property_id(nmos::fields::nc::id(property_descriptor)), descriptor, resource.data.at(nmos::fields::nc::name(property_descriptor)));
 
                     web::json::push_back(property_holders, property_holder);
                 }
@@ -37,15 +38,20 @@ namespace nmos
             return property_holders.as_array();
         }
 
-        void populate_object_property_holder(const nmos::resources& resources, nmos::get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, const nmos::resource& resource, bool recurse, web::json::value& object_properties_holders)
+        void populate_object_property_holder(const nmos::resources& resources, nmos::get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, const nmos::resource& resource, bool recurse, bool include_descriptors, web::json::value& object_properties_holders)
         {
             using web::json::value;
 
             // Get property_holders for this resource
-            const auto& property_holders = make_property_holders(resource, get_control_protocol_class_descriptor);
+            const auto& property_holders = make_property_holders(resource, include_descriptors, get_control_protocol_class_descriptor);
 
             const auto role_path = get_role_path(resources, resource);
 
+            // when include_descriptors = false, don't include the Class Manager
+            if (!include_descriptors && role_path.size() > 1 && role_path.at(0).as_string() == U("root") && role_path.at(1).as_string() == U("ClassManager"))
+            {
+                return;
+            }
             const auto& dependency_paths = nmos::fields::nc::dependency_paths(resource.data);
             const auto& allowed_member_classes = nmos::fields::nc::allowed_members_classes(resource.data);
 
@@ -66,7 +72,7 @@ namespace nmos
 
                         if (resources.end() != found)
                         {
-                            populate_object_property_holder(resources, get_control_protocol_class_descriptor, *found, recurse, object_properties_holders);
+                            populate_object_property_holder(resources, get_control_protocol_class_descriptor, *found, recurse, include_descriptors, object_properties_holders);
                         }
                     }
                 }
@@ -108,14 +114,14 @@ namespace nmos
         }
     }
 
-    web::json::value get_properties_by_path(const nmos::resources& resources, const nmos::resource& resource, bool recurse, nmos::get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, nmos::get_control_protocol_datatype_descriptor_handler get_control_protocol_datatype_descriptor)
+    web::json::value get_properties_by_path(const nmos::resources& resources, const nmos::resource& resource, bool recurse, bool include_descriptors, nmos::get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, nmos::get_control_protocol_datatype_descriptor_handler get_control_protocol_datatype_descriptor)
     {
         using web::json::value;
         using web::json::value_of;
 
         value object_properties_holders = value::array();
 
-        details::populate_object_property_holder(resources, get_control_protocol_class_descriptor, resource, recurse, object_properties_holders);
+        details::populate_object_property_holder(resources, get_control_protocol_class_descriptor, resource, recurse, include_descriptors, object_properties_holders);
 
         size_t validation_fingerprint = details::generate_validation_fingerprint(resources, resource);
 

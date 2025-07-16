@@ -185,8 +185,9 @@ namespace nmos
                 return [get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor](nmos::resources& resources, const nmos::resource& resource, const web::json::value& arguments, bool is_deprecated, slog::base_gate& gate)
                 {
                     bool recurse = nmos::fields::nc::recurse(arguments);
+                    bool include_descriptors = nmos::fields::nc::include_descriptors(arguments);
 
-                    return nmos::get_properties_by_path(resources, resource, recurse, get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor);
+                    return nmos::get_properties_by_path(resources, resource, recurse, include_descriptors, get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor);
                 };
             }
             nmos::experimental::control_protocol_method_handler make_nc_validate_set_properties_by_path_handler(get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor_handler get_control_protocol_datatype_descriptor, filter_property_holders_handler filter_property_holders, remove_device_model_object_handler remove_device_model_object, add_device_model_object_handler add_device_model_object)
