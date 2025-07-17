@@ -19,7 +19,7 @@ namespace nmos
     }
     // This callback is invoked if attempting to modify read only properties when restoring a configuration.
     // This function should modify the Device Model object directly and return a corresponding NcObjectPropertiesSetValidation object
-    typedef std::function<web::json::array(const nmos::resource& resource, const web::json::array& target_role_path, const web::json::array& object_properties_holders, nmos::get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor)> filter_property_holders_handler;
+    typedef std::function<std::vector<nmos::nc_property_id>(const nmos::resource& resource, const std::vector<utility::string_t>& target_role_path, const const std::vector<nmos::nc_property_id>& property_ids)> get_read_only_modification_allow_list_handler;
 
     // This callback is invoked if attempting to modify a rebuildable block when restoring a configuration.
     // This function should handle the modification of the Device Model and any corresponding NMOS resources

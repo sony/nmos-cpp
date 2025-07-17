@@ -374,21 +374,15 @@ BST_TEST_CASE(testApplyBackupDataSet)
     insert_resource(resources, std::move(monitor1));
     insert_resource(resources, std::move(monitor2));
 
-    bool filter_property_holders_called = false;
+    bool get_read_only_modification_allow_list_called = false;
     bool remove_device_model_object_called = false;
     bool add_device_model_object_called = false;
 
     // callback stubs
-    nmos::filter_property_holders_handler filter_property_holders = [&](const nmos::resource& resource, const web::json::array& target_role_path, const web::json::array& property_values, nmos::get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor)
+    nmos::get_read_only_modification_allow_list_handler get_read_only_modification_allow_list = [&](const nmos::resource& resource, const std::vector<utility::string_t>& target_role_path, const const std::vector<nmos::nc_property_id>& property_ids)
     {
-        filter_property_holders_called = true;
-        auto modifiable_property_holders = value::array();
-
-        for (const auto& property_value : property_values)
-        {
-            web::json::push_back(modifiable_property_holders, property_value);
-        }
-        return modifiable_property_holders.as_array();
+        get_read_only_modification_allow_list_called = true;
+        return property_ids;
     };
 
     nmos::remove_device_model_object_handler remove_device_model_object = [&](const nmos::nc_oid reference_oid, bool validate)
@@ -423,7 +417,7 @@ BST_TEST_CASE(testApplyBackupDataSet)
         const value restore_mode{ nmos::nc_restore_mode::restore_mode::modify };
 
         const auto& resource = nmos::nc::find_resource_by_role_path(resources, target_role_path.as_array());
-        auto output = nmos::apply_backup_data_set(resources, *resource, object_properties_holders.as_array(), recurse, restore_mode, validate, get_control_protocol_class_descriptor, filter_property_holders, remove_device_model_object, add_device_model_object);
+        auto output = nmos::apply_backup_data_set(resources, *resource, object_properties_holders.as_array(), recurse, restore_mode, validate, get_control_protocol_class_descriptor, get_read_only_modification_allow_list, remove_device_model_object, add_device_model_object);
 
         // expectation is there will be a result for each of the object_properties_holders i.e. one
         BST_REQUIRE_EQUAL(1, output.as_array().size());
@@ -434,15 +428,15 @@ BST_TEST_CASE(testApplyBackupDataSet)
         BST_CHECK_EQUAL(0, nmos::fields::nc::notices(object_properties_set_validation).size());
 
         // not expecting callbacks to be invoked as no read only properties, or rebuildable blocks modified
-        BST_CHECK(!filter_property_holders_called);
+        BST_CHECK(!get_read_only_modification_allow_list_called);
         BST_CHECK(!remove_device_model_object_called);
         BST_CHECK(!add_device_model_object_called);
     }
     const auto connection_status_property_descriptor = nmos::details::make_nc_property_descriptor(U("connectionStatusMessage"), nmos::nc_receiver_monitor_connection_status_message_property_id, U("connectionStatusMessage"), U("NcString"), true, false, false, false, web::json::value::null());
     {
-        // Check filter_property_holders_handler is called when changing a read only property of rebuildable object in Rebuild mode
+        // Check get_read_only_modification_allow_list_handler is called when changing a read only property of rebuildable object in Rebuild mode
         //
-        filter_property_holders_called = false;
+        get_read_only_modification_allow_list_called = false;
         remove_device_model_object_called = false;
         add_device_model_object_called = false;
 
@@ -463,7 +457,7 @@ BST_TEST_CASE(testApplyBackupDataSet)
         bool validate = true;
 
         const auto& resource = nmos::nc::find_resource_by_role_path(resources, target_role_path.as_array());
-        auto output = nmos::apply_backup_data_set(resources, *resource, object_properties_holders.as_array(), recurse, restore_mode, validate, get_control_protocol_class_descriptor, filter_property_holders, remove_device_model_object, add_device_model_object);
+        auto output = nmos::apply_backup_data_set(resources, *resource, object_properties_holders.as_array(), recurse, restore_mode, validate, get_control_protocol_class_descriptor, get_read_only_modification_allow_list, remove_device_model_object, add_device_model_object);
 
         // expectation is there will be a result for each of the object_properties_holders i.e. one
         BST_REQUIRE_EQUAL(1, output.as_array().size());
@@ -473,16 +467,16 @@ BST_TEST_CASE(testApplyBackupDataSet)
         // make sure the validation status propagates from the callback
         BST_CHECK_EQUAL(nmos::nc_restore_validation_status::ok, nmos::fields::nc::status(object_properties_set_validation));
 
-        // expecting callback to filter_property_holders_called
+        // expecting callback to get_read_only_modification_allow_list_called
         // but not to modify_rebuildable_block_called
-        BST_CHECK(filter_property_holders_called);
+        BST_CHECK(get_read_only_modification_allow_list_called);
         BST_CHECK(!remove_device_model_object_called);
         BST_CHECK(!add_device_model_object_called);
     }
     {
         // Check error generated when attempting to change a read only property of non-rebuidable object in Rebuild mode
         //
-        filter_property_holders_called = false;
+        get_read_only_modification_allow_list_called = false;
         remove_device_model_object_called = false;
         add_device_model_object_called = false;
 
@@ -503,7 +497,7 @@ BST_TEST_CASE(testApplyBackupDataSet)
         bool validate = true;
 
         const auto& resource = nmos::nc::find_resource_by_role_path(resources, target_role_path.as_array());
-        const auto output = nmos::apply_backup_data_set(resources, *resource, object_properties_holders.as_array(), recurse, restore_mode, validate, get_control_protocol_class_descriptor, filter_property_holders, remove_device_model_object, add_device_model_object);
+        const auto output = nmos::apply_backup_data_set(resources, *resource, object_properties_holders.as_array(), recurse, restore_mode, validate, get_control_protocol_class_descriptor, get_read_only_modification_allow_list, remove_device_model_object, add_device_model_object);
 
         // expectation is there will be a result for each of the object_properties_holders i.e. one
         BST_REQUIRE_EQUAL(1, output.as_array().size());
@@ -523,16 +517,16 @@ BST_TEST_CASE(testApplyBackupDataSet)
         BST_CHECK_EQUAL(nmos::nc_property_restore_notice_type::error, nmos::fields::nc::notice_type(notice));
         BST_CHECK_NE(U(""), nmos::fields::nc::notice_message(notice));
 
-        // expecting callback to filter_property_holders_called
+        // expecting callback to get_read_only_modification_allow_list_called
         // but not to modify_rebuildable_block_called
-        BST_CHECK(!filter_property_holders_called);
+        BST_CHECK(!get_read_only_modification_allow_list_called);
         BST_CHECK(!remove_device_model_object_called);
         BST_CHECK(!add_device_model_object_called);
     }
     {
         // Check an error is caused by trying to modify a read only property in Modify mode
         //
-        filter_property_holders_called = false;
+        get_read_only_modification_allow_list_called = false;
         remove_device_model_object_called = false;
         add_device_model_object_called = false;
 
@@ -555,7 +549,7 @@ BST_TEST_CASE(testApplyBackupDataSet)
         bool validate = true;
 
         const auto& resource = nmos::nc::find_resource_by_role_path(resources, target_role_path.as_array());
-        const auto output = nmos::apply_backup_data_set(resources, *resource, object_properties_holders.as_array(), recurse, restore_mode, validate, get_control_protocol_class_descriptor, filter_property_holders, remove_device_model_object, add_device_model_object);
+        const auto output = nmos::apply_backup_data_set(resources, *resource, object_properties_holders.as_array(), recurse, restore_mode, validate, get_control_protocol_class_descriptor, get_read_only_modification_allow_list, remove_device_model_object, add_device_model_object);
 
         // expectation is there will be a result for each of the object_properties_holders i.e. one
         BST_REQUIRE_EQUAL(1, output.as_array().size());
@@ -576,7 +570,7 @@ BST_TEST_CASE(testApplyBackupDataSet)
         BST_CHECK_EQUAL(nmos::nc_property_restore_notice_type::error, nmos::fields::nc::notice_type(notice));
         BST_CHECK_NE(U(""), nmos::fields::nc::notice_message(notice));
 
-        BST_CHECK(!filter_property_holders_called);
+        BST_CHECK(!get_read_only_modification_allow_list_called);
         BST_CHECK(!remove_device_model_object_called);
         BST_CHECK(!add_device_model_object_called);
     }
@@ -584,7 +578,7 @@ BST_TEST_CASE(testApplyBackupDataSet)
     {
         // Check remove_device_model_object_called is called when trying to modify a rebuildable block
         //
-        filter_property_holders_called = false;
+        get_read_only_modification_allow_list_called = false;
         remove_device_model_object_called = false;
         add_device_model_object_called = false;
 
@@ -603,7 +597,7 @@ BST_TEST_CASE(testApplyBackupDataSet)
         const value restore_mode{ nmos::nc_restore_mode::restore_mode::rebuild };
 
         const auto& resource = nmos::nc::find_resource_by_role_path(resources, target_role_path.as_array());
-        const auto output = nmos::apply_backup_data_set(resources, *resource, object_properties_holders.as_array(), recurse, restore_mode, validate, get_control_protocol_class_descriptor, filter_property_holders, remove_device_model_object, add_device_model_object);
+        const auto output = nmos::apply_backup_data_set(resources, *resource, object_properties_holders.as_array(), recurse, restore_mode, validate, get_control_protocol_class_descriptor, get_read_only_modification_allow_list, remove_device_model_object, add_device_model_object);
 
         // expectation is there will be a result for each of the object_properties_holders i.e. one
         BST_REQUIRE_EQUAL(1, output.as_array().size());
@@ -613,7 +607,7 @@ BST_TEST_CASE(testApplyBackupDataSet)
         BST_CHECK_EQUAL(nmos::nc_restore_validation_status::ok, nmos::fields::nc::status(object_properties_set_validation));
         BST_CHECK_EQUAL(0, nmos::fields::nc::notices(object_properties_set_validation).size());
 
-        BST_CHECK(!filter_property_holders_called);
+        BST_CHECK(!get_read_only_modification_allow_list_called);
         BST_CHECK(remove_device_model_object_called);
         BST_CHECK(!add_device_model_object_called);
     }
@@ -621,7 +615,7 @@ BST_TEST_CASE(testApplyBackupDataSet)
     {
         // Check add_device_model_object_called is called when trying to modify a rebuildable block
         //
-        filter_property_holders_called = false;
+        get_read_only_modification_allow_list_called = false;
         remove_device_model_object_called = false;
         add_device_model_object_called = false;
 
@@ -657,7 +651,7 @@ BST_TEST_CASE(testApplyBackupDataSet)
         const value restore_mode{ nmos::nc_restore_mode::restore_mode::rebuild };
 
         const auto& resource = nmos::nc::find_resource_by_role_path(resources, target_role_path.as_array());
-        const auto output = nmos::apply_backup_data_set(resources, *resource, object_properties_holders.as_array(), recurse, restore_mode, validate, get_control_protocol_class_descriptor, filter_property_holders, remove_device_model_object, add_device_model_object);
+        const auto output = nmos::apply_backup_data_set(resources, *resource, object_properties_holders.as_array(), recurse, restore_mode, validate, get_control_protocol_class_descriptor, get_read_only_modification_allow_list, remove_device_model_object, add_device_model_object);
 
         // expectation is there will be a result for each of the object_properties_holders i.e. one for the block and one each for the monitors
         BST_REQUIRE_EQUAL(3, output.as_array().size());
@@ -685,14 +679,14 @@ BST_TEST_CASE(testApplyBackupDataSet)
             BST_CHECK_EQUAL(0, nmos::fields::nc::notices(object_properties_set_validation).size());
         }
 
-        BST_CHECK(!filter_property_holders_called);
+        BST_CHECK(!get_read_only_modification_allow_list_called);
         BST_CHECK(!remove_device_model_object_called);
         BST_CHECK(add_device_model_object_called);
     }
     {
         // Check that role paths outside of the scope of the target role path are errored
         //
-        filter_property_holders_called = false;
+        get_read_only_modification_allow_list_called = false;
         remove_device_model_object_called = false;
         add_device_model_object_called = false;
 
@@ -711,12 +705,12 @@ BST_TEST_CASE(testApplyBackupDataSet)
         const value restore_mode{ nmos::nc_restore_mode::restore_mode::rebuild };
 
         const auto& resource = nmos::nc::find_resource_by_role_path(resources, target_role_path.as_array());
-        const auto output = nmos::apply_backup_data_set(resources, *resource, object_properties_holders.as_array(), recurse, restore_mode, validate, get_control_protocol_class_descriptor, filter_property_holders, remove_device_model_object, add_device_model_object);
+        const auto output = nmos::apply_backup_data_set(resources, *resource, object_properties_holders.as_array(), recurse, restore_mode, validate, get_control_protocol_class_descriptor, get_read_only_modification_allow_list, remove_device_model_object, add_device_model_object);
 
         // expectation no object_properties_holders as not in the restore scope
         BST_REQUIRE_EQUAL(0, output.as_array().size());
 
-        BST_CHECK(!filter_property_holders_called);
+        BST_CHECK(!get_read_only_modification_allow_list_called);
         BST_CHECK(!remove_device_model_object_called);
         BST_CHECK(!add_device_model_object_called);
     }
@@ -763,7 +757,7 @@ BST_TEST_CASE(testApplyBackupDataSet_WithoutCallbacks)
     insert_resource(resources, std::move(monitor2));
 
     // undefined callback stubs
-    nmos::filter_property_holders_handler filter_property_holders;
+    nmos::get_read_only_modification_allow_list_handler get_read_only_modification_allow_list;
     nmos::remove_device_model_object_handler remove_device_model_object;
     nmos::add_device_model_object_handler add_device_model_object;
 
@@ -785,7 +779,7 @@ BST_TEST_CASE(testApplyBackupDataSet_WithoutCallbacks)
         const value restore_mode{ nmos::nc_restore_mode::restore_mode::modify };
 
         const auto& resource = nmos::nc::find_resource_by_role_path(resources, target_role_path.as_array());
-        const auto output = nmos::apply_backup_data_set(resources, *resource, object_properties_holders.as_array(), recurse, restore_mode, validate, get_control_protocol_class_descriptor, filter_property_holders, remove_device_model_object, add_device_model_object);
+        const auto output = nmos::apply_backup_data_set(resources, *resource, object_properties_holders.as_array(), recurse, restore_mode, validate, get_control_protocol_class_descriptor, get_read_only_modification_allow_list, remove_device_model_object, add_device_model_object);
 
         // expectation is there will be a result for each of the object_properties_holders i.e. one
         BST_REQUIRE_EQUAL(1, output.as_array().size());
@@ -812,7 +806,7 @@ BST_TEST_CASE(testApplyBackupDataSet_WithoutCallbacks)
         const value restore_mode{ nmos::nc_restore_mode::restore_mode::rebuild };
 
         const auto& resource = nmos::nc::find_resource_by_role_path(resources, target_role_path.as_array());
-        const auto output = nmos::apply_backup_data_set(resources, *resource, object_properties_holders.as_array(), recurse, restore_mode, validate, get_control_protocol_class_descriptor, filter_property_holders, remove_device_model_object, add_device_model_object);
+        const auto output = nmos::apply_backup_data_set(resources, *resource, object_properties_holders.as_array(), recurse, restore_mode, validate, get_control_protocol_class_descriptor, get_read_only_modification_allow_list, remove_device_model_object, add_device_model_object);
 
         // expectation is there will be a result for each of the object_properties_holders i.e. one
         BST_REQUIRE_EQUAL(1, output.as_array().size());
@@ -823,7 +817,7 @@ BST_TEST_CASE(testApplyBackupDataSet_WithoutCallbacks)
         BST_CHECK_EQUAL(0, nmos::fields::nc::notices(object_properties_set_validation).size());
     }
     {
-        // Check undefined filter_property_holders_handler causes an unsupported mode error when attempting to modify a read only property in Rebuild mode
+        // Check undefined get_read_only_modification_allow_list_handler causes an unsupported mode error when attempting to modify a read only property in Rebuild mode
         //
         // Create Object Properties Holder
         auto object_properties_holders = value::array();
@@ -843,7 +837,7 @@ BST_TEST_CASE(testApplyBackupDataSet_WithoutCallbacks)
         bool validate = true;
 
         const auto& resource = nmos::nc::find_resource_by_role_path(resources, target_role_path.as_array());
-        const auto output = nmos::apply_backup_data_set(resources, *resource, object_properties_holders.as_array(), recurse, restore_mode, validate, get_control_protocol_class_descriptor, filter_property_holders, remove_device_model_object, add_device_model_object);
+        const auto output = nmos::apply_backup_data_set(resources, *resource, object_properties_holders.as_array(), recurse, restore_mode, validate, get_control_protocol_class_descriptor, get_read_only_modification_allow_list, remove_device_model_object, add_device_model_object);
 
         // expectation is there will be a result for each of the object_properties_holders i.e. one
         BST_REQUIRE_EQUAL(1, output.as_array().size());
@@ -879,7 +873,7 @@ BST_TEST_CASE(testApplyBackupDataSet_WithoutCallbacks)
         const value restore_mode{ nmos::nc_restore_mode::restore_mode::rebuild };
 
         const auto& resource = nmos::nc::find_resource_by_role_path(resources, target_role_path.as_array());
-        const auto output = nmos::apply_backup_data_set(resources, *resource, object_properties_holders.as_array(), recurse, restore_mode, validate, get_control_protocol_class_descriptor, filter_property_holders, remove_device_model_object, add_device_model_object);
+        const auto output = nmos::apply_backup_data_set(resources, *resource, object_properties_holders.as_array(), recurse, restore_mode, validate, get_control_protocol_class_descriptor, get_read_only_modification_allow_list, remove_device_model_object, add_device_model_object);
 
         // expectation is there will be a result for each of the object_properties_holder
         BST_CHECK_EQUAL(2, output.as_array().size());
@@ -943,21 +937,15 @@ BST_TEST_CASE(testApplyBackupDataSet_AddDeviceModelObject)
     insert_resource(resources, std::move(monitor1));
     insert_resource(resources, std::move(monitor2));
 
-    bool filter_property_holders_called = false;
+    bool get_read_only_modification_allow_list_called = false;
     bool remove_device_model_object_called = false;
     bool add_device_model_object_called = false;
 
     // callback stubs
-    nmos::filter_property_holders_handler filter_property_holders = [&](const nmos::resource& resource, const web::json::array& target_role_path, const web::json::array& property_values, nmos::get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor)
+    nmos::get_read_only_modification_allow_list_handler get_read_only_modification_allow_list = [&](const nmos::resource& resource, const std::vector<utility::string_t>& target_role_path, const const std::vector<nmos::nc_property_id>& property_ids)
     {
-        filter_property_holders_called = true;
-        auto modifiable_property_holders = value::array();
-
-        for (const auto& property_value : property_values)
-        {
-            web::json::push_back(modifiable_property_holders, property_value);
-        }
-        return modifiable_property_holders.as_array();
+        get_read_only_modification_allow_list_called = true;
+        return property_ids;
     };
 
     nmos::remove_device_model_object_handler remove_device_model_object = [&](const nmos::nc_oid reference_oid, bool validate)
@@ -979,7 +967,7 @@ BST_TEST_CASE(testApplyBackupDataSet_AddDeviceModelObject)
     {
         // Check new oid is generated for new device model object
         //
-        filter_property_holders_called = false;
+        get_read_only_modification_allow_list_called = false;
         remove_device_model_object_called = false;
         add_device_model_object_called = false;
 
@@ -1015,7 +1003,7 @@ BST_TEST_CASE(testApplyBackupDataSet_AddDeviceModelObject)
         const value restore_mode{ nmos::nc_restore_mode::restore_mode::rebuild };
 
         const auto& resource = nmos::nc::find_resource_by_role_path(resources, target_role_path.as_array());
-        const auto output = nmos::apply_backup_data_set(resources, *resource, object_properties_holders.as_array(), recurse, restore_mode, validate, get_control_protocol_class_descriptor, filter_property_holders, remove_device_model_object, add_device_model_object);
+        const auto output = nmos::apply_backup_data_set(resources, *resource, object_properties_holders.as_array(), recurse, restore_mode, validate, get_control_protocol_class_descriptor, get_read_only_modification_allow_list, remove_device_model_object, add_device_model_object);
 
         // expectation is there will be a result for each of the object_properties_holders i.e. one for the block and one each for the monitors
         BST_REQUIRE_EQUAL(3, output.as_array().size());
@@ -1054,14 +1042,14 @@ BST_TEST_CASE(testApplyBackupDataSet_AddDeviceModelObject)
             BST_CHECK_EQUAL(nmos::fields::nc::index(property_id), nmos::nc_object_oid_property_id.index);
         }
 
-        BST_CHECK(!filter_property_holders_called);
+        BST_CHECK(!get_read_only_modification_allow_list_called);
         BST_CHECK(!remove_device_model_object_called);
         BST_CHECK(add_device_model_object_called);
     }
     {
         // Handle constant oid clash
         //
-        filter_property_holders_called = false;
+        get_read_only_modification_allow_list_called = false;
         remove_device_model_object_called = false;
         add_device_model_object_called = false;
 
@@ -1096,7 +1084,7 @@ BST_TEST_CASE(testApplyBackupDataSet_AddDeviceModelObject)
         const value restore_mode{ nmos::nc_restore_mode::restore_mode::rebuild };
 
         const auto& resource = nmos::nc::find_resource_by_role_path(resources, target_role_path.as_array());
-        const auto output = nmos::apply_backup_data_set(resources, *resource, object_properties_holders.as_array(), recurse, restore_mode, validate, get_control_protocol_class_descriptor, filter_property_holders, remove_device_model_object, add_device_model_object);
+        const auto output = nmos::apply_backup_data_set(resources, *resource, object_properties_holders.as_array(), recurse, restore_mode, validate, get_control_protocol_class_descriptor, get_read_only_modification_allow_list, remove_device_model_object, add_device_model_object);
 
         // expectation is there will be a result for each of the object_properties_holders i.e. one for the block and one each for the monitors
         BST_REQUIRE_EQUAL(3, output.as_array().size());
@@ -1121,7 +1109,7 @@ BST_TEST_CASE(testApplyBackupDataSet_AddDeviceModelObject)
             BST_CHECK_EQUAL(nmos::nc_restore_validation_status::device_error, nmos::fields::nc::status(object_properties_set_validation));
         }
 
-        BST_CHECK(!filter_property_holders_called);
+        BST_CHECK(!get_read_only_modification_allow_list_called);
         BST_CHECK(!remove_device_model_object_called);
         BST_CHECK(!add_device_model_object_called);
     }
@@ -1170,21 +1158,15 @@ BST_TEST_CASE(testApplyBackupDataSet_NegativeTests)
     insert_resource(resources, std::move(monitor1));
     insert_resource(resources, std::move(monitor2));
 
-    bool filter_property_holders_called = false;
+    bool get_read_only_modification_allow_list_called = false;
     bool remove_device_model_object_called = false;
     bool add_device_model_object_called = false;
 
     // callback stubs
-    nmos::filter_property_holders_handler filter_property_holders = [&](const nmos::resource& resource, const web::json::array& target_role_path, const web::json::array& property_values, nmos::get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor)
+    nmos::get_read_only_modification_allow_list_handler get_read_only_modification_allow_list = [&](const nmos::resource& resource, const std::vector<utility::string_t>& target_role_path, const const std::vector<nmos::nc_property_id>& property_ids)
     {
-        filter_property_holders_called = true;
-        auto modifiable_property_holders = value::array();
-
-        for (const auto& property_value : property_values)
-        {
-            web::json::push_back(modifiable_property_holders, property_value);
-        }
-        return modifiable_property_holders.as_array();
+        get_read_only_modification_allow_list_called = true;
+        return property_ids;
     };
 
     nmos::remove_device_model_object_handler remove_device_model_object = [&](const nmos::nc_oid reference_oid, bool validate)
@@ -1207,7 +1189,7 @@ BST_TEST_CASE(testApplyBackupDataSet_NegativeTests)
     {
         // Check remove_device_model_object_called error is handled when attempting to modify a rebuildable block
         //
-        filter_property_holders_called = false;
+        get_read_only_modification_allow_list_called = false;
         remove_device_model_object_called = false;
         add_device_model_object_called = false;
 
@@ -1226,7 +1208,7 @@ BST_TEST_CASE(testApplyBackupDataSet_NegativeTests)
         const value restore_mode{ nmos::nc_restore_mode::restore_mode::rebuild };
 
         const auto& resource = nmos::nc::find_resource_by_role_path(resources, target_role_path.as_array());
-        const auto output = nmos::apply_backup_data_set(resources, *resource, object_properties_holders.as_array(), recurse, restore_mode, validate, get_control_protocol_class_descriptor, filter_property_holders, remove_device_model_object, add_device_model_object);
+        const auto output = nmos::apply_backup_data_set(resources, *resource, object_properties_holders.as_array(), recurse, restore_mode, validate, get_control_protocol_class_descriptor, get_read_only_modification_allow_list, remove_device_model_object, add_device_model_object);
 
         // expectation is there will be a result for each of the object_properties_holders i.e. one
         BST_REQUIRE_EQUAL(1, output.as_array().size());
@@ -1241,14 +1223,14 @@ BST_TEST_CASE(testApplyBackupDataSet_NegativeTests)
         BST_CHECK_EQUAL(nmos::fields::nc::level(property_id), nmos::nc_block_members_property_id.level);
         BST_CHECK_EQUAL(nmos::fields::nc::index(property_id), nmos::nc_block_members_property_id.index);
 
-        BST_CHECK(!filter_property_holders_called);
+        BST_CHECK(!get_read_only_modification_allow_list_called);
         BST_CHECK(remove_device_model_object_called);
         BST_CHECK(!add_device_model_object_called);
     }
     {
         // Check on remove_device_model_object_called error all other object properties holders are processed
         //
-        filter_property_holders_called = false;
+        get_read_only_modification_allow_list_called = false;
         remove_device_model_object_called = false;
         add_device_model_object_called = false;
 
@@ -1274,7 +1256,7 @@ BST_TEST_CASE(testApplyBackupDataSet_NegativeTests)
         const value restore_mode{ nmos::nc_restore_mode::restore_mode::rebuild };
 
         const auto& resource = nmos::nc::find_resource_by_role_path(resources, target_role_path.as_array());
-        const auto output = nmos::apply_backup_data_set(resources, *resource, object_properties_holders.as_array(), recurse, restore_mode, validate, get_control_protocol_class_descriptor, filter_property_holders, remove_device_model_object, add_device_model_object);
+        const auto output = nmos::apply_backup_data_set(resources, *resource, object_properties_holders.as_array(), recurse, restore_mode, validate, get_control_protocol_class_descriptor, get_read_only_modification_allow_list, remove_device_model_object, add_device_model_object);
 
         // expectation is there will be a result for each of the object_properties_holders
         BST_CHECK_EQUAL(2, output.as_array().size());
@@ -1303,7 +1285,7 @@ BST_TEST_CASE(testApplyBackupDataSet_NegativeTests)
     {
         // Check add_device_model_object_called error is handled when trying to modify a rebuildable block
         //
-        filter_property_holders_called = false;
+        get_read_only_modification_allow_list_called = false;
         remove_device_model_object_called = false;
         add_device_model_object_called = false;
 
@@ -1345,7 +1327,7 @@ BST_TEST_CASE(testApplyBackupDataSet_NegativeTests)
         const value restore_mode{ nmos::nc_restore_mode::restore_mode::rebuild };
 
         const auto& resource = nmos::nc::find_resource_by_role_path(resources, target_role_path.as_array());
-        const auto output = nmos::apply_backup_data_set(resources, *resource, object_properties_holders.as_array(), recurse, restore_mode, validate, get_control_protocol_class_descriptor, filter_property_holders, remove_device_model_object, add_device_model_object);
+        const auto output = nmos::apply_backup_data_set(resources, *resource, object_properties_holders.as_array(), recurse, restore_mode, validate, get_control_protocol_class_descriptor, get_read_only_modification_allow_list, remove_device_model_object, add_device_model_object);
 
         // expectation is there will be a result for each of the object_properties_holders i.e. one for the block and one each for the monitors
         BST_CHECK_EQUAL(4, output.as_array().size());
@@ -1380,14 +1362,14 @@ BST_TEST_CASE(testApplyBackupDataSet_NegativeTests)
             BST_CHECK_EQUAL(0, nmos::fields::nc::notices(object_properties_set_validation).size());
         }
 
-        BST_CHECK(!filter_property_holders_called);
+        BST_CHECK(!get_read_only_modification_allow_list_called);
         BST_CHECK(!remove_device_model_object_called);
         BST_CHECK(add_device_model_object_called);
     }
     {
         // Check duplicate block object properties holders are handled
         //
-        filter_property_holders_called = false;
+        get_read_only_modification_allow_list_called = false;
         remove_device_model_object_called = false;
         add_device_model_object_called = false;
 
@@ -1419,7 +1401,7 @@ BST_TEST_CASE(testApplyBackupDataSet_NegativeTests)
         const value restore_mode{ nmos::nc_restore_mode::restore_mode::rebuild };
 
         const auto& resource = nmos::nc::find_resource_by_role_path(resources, target_role_path.as_array());
-        const auto output = nmos::apply_backup_data_set(resources, *resource, object_properties_holders.as_array(), recurse, restore_mode, validate, get_control_protocol_class_descriptor, filter_property_holders, remove_device_model_object, add_device_model_object);
+        const auto output = nmos::apply_backup_data_set(resources, *resource, object_properties_holders.as_array(), recurse, restore_mode, validate, get_control_protocol_class_descriptor, get_read_only_modification_allow_list, remove_device_model_object, add_device_model_object);
 
         // expectation is there will be a result for each of the object_properties_holders
         BST_CHECK_EQUAL(3, output.as_array().size());
@@ -1486,21 +1468,15 @@ BST_TEST_CASE(testModifyRebuildableBlock)
     insert_resource(resources, std::move(monitor1));
     insert_resource(resources, std::move(monitor2));
 
-    bool filter_property_holders_called = false;
+    bool get_read_only_modification_allow_list_called = false;
     bool remove_device_model_object_called = false;
     bool add_device_model_object_called = false;
 
     // callback stubs
-    nmos::filter_property_holders_handler filter_property_holders = [&](const nmos::resource& resource, const web::json::array& target_role_path, const web::json::array& property_values, nmos::get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor)
+    nmos::get_read_only_modification_allow_list_handler get_read_only_modification_allow_list = [&](const nmos::resource& resource, const std::vector<utility::string_t>& target_role_path, const const std::vector<nmos::nc_property_id>& property_ids)
     {
-        filter_property_holders_called = true;
-        auto modifiable_property_holders = value::array();
-
-        for (const auto& property_value : property_values)
-        {
-            web::json::push_back(modifiable_property_holders, property_value);
-        }
-        return modifiable_property_holders.as_array();
+        get_read_only_modification_allow_list_called = true;
+        return property_ids;
     };
 
     nmos::remove_device_model_object_handler remove_device_model_object = [&](const nmos::nc_oid reference_oid, bool validate)

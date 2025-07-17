@@ -54,7 +54,7 @@ namespace nmos
             return false;
         }
 
-        web::json::value modify_device_model_object(nmos::resources& resources, const nmos::resource& resource, const web::json::array& target_role_path, const web::json::value& target_object_properties_holder, const web::json::value& restore_mode, bool validate, nmos::get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, nmos::filter_property_holders_handler filter_property_holders)
+        web::json::value modify_device_model_object(nmos::resources& resources, const nmos::resource& resource, const web::json::array& target_role_path, const web::json::value& target_object_properties_holder, const web::json::value& restore_mode, bool validate, nmos::get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, nmos::get_read_only_modification_allow_list_handler get_read_only_modification_allow_list)
         {
             const auto& class_id = nmos::details::parse_nc_class_id(nmos::fields::nc::class_id(resource.data));
 
@@ -90,12 +90,23 @@ namespace nmos
                 );
                 if (read_only_property_values.size() > 0) // Call back to user code
                 {
-                    if (filter_property_holders)
+                    if (get_read_only_modification_allow_list)
                     {
                         // If the property_modify_list contains read only properties then we call back to the application code to
                         // check that it's OK to change those value.  Bear in mind that these could be the class Id, or the oid or some other
                         // property that we don't want changed ordinarily
-                        const auto& allow_list_read_only_property_ids = filter_property_holders(resource, target_role_path, web::json::value_from_elements(read_only_property_values).as_array(), get_control_protocol_class_descriptor);
+                        std::vector<utility::string_t> target_role_path_array;
+                        for (const auto& element: target_role_path)
+                        {
+                            target_role_path_array.push_back(element.as_string());
+                        }
+                        std::vector<nmos::nc_property_id> read_only_property_ids;
+                        for (const auto& property_value: read_only_property_values)
+                        {
+                            read_only_property_ids.push_back(nmos::details::parse_nc_property_id(nmos::fields::nc::id(property_value)));
+                        }
+
+                        const auto& allow_list_read_only_property_ids = get_read_only_modification_allow_list(resource, target_role_path_array, read_only_property_ids);
 
                         const auto& allowed_property_values = boost::copy_range<std::set<web::json::value>>(filtered_property_values
                             | boost::adaptors::filtered([&property_restore_notices, get_control_protocol_class_descriptor, class_id, allow_list_read_only_property_ids](const web::json::value& property_value)
@@ -110,7 +121,7 @@ namespace nmos
 
                                     for (const auto& allowed_property_id: allow_list_read_only_property_ids)
                                     {
-                                        if (nmos::fields::nc::id(property_value) == allowed_property_id)
+                                        if (nmos::fields::nc::id(property_value) == nmos::details::make_nc_property_id(allowed_property_id))
                                         {
                                             return true;
                                         }
@@ -600,7 +611,7 @@ namespace nmos
         return web::json::value_from_elements(target_object_properties_holders).as_array();
     }
 
-    web::json::value apply_backup_data_set(nmos::resources& resources, const nmos::resource& resource, const web::json::array& object_properties_holders, bool recurse, const web::json::value& restore_mode, bool validate, nmos::get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, nmos::filter_property_holders_handler filter_property_holders, nmos::remove_device_model_object_handler remove_device_model_object, nmos::add_device_model_object_handler add_device_model_object)
+    web::json::value apply_backup_data_set(nmos::resources& resources, const nmos::resource& resource, const web::json::array& object_properties_holders, bool recurse, const web::json::value& restore_mode, bool validate, nmos::get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, nmos::get_read_only_modification_allow_list_handler get_read_only_modification_allow_list, nmos::remove_device_model_object_handler remove_device_model_object, nmos::add_device_model_object_handler add_device_model_object)
     {
         auto object_properties_set_validation_values = web::json::value::array();
 
@@ -688,7 +699,7 @@ namespace nmos
             }
             else
             {
-                const auto object_properties_set_validation = details::modify_device_model_object(resources, *r, role_path, object_properties_holder, restore_mode, validate, get_control_protocol_class_descriptor, filter_property_holders);
+                const auto object_properties_set_validation = details::modify_device_model_object(resources, *r, role_path, object_properties_holder, restore_mode, validate, get_control_protocol_class_descriptor, get_read_only_modification_allow_list);
                 web::json::push_back(object_properties_set_validation_values, object_properties_set_validation);
             }
 

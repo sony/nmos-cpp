@@ -1745,40 +1745,40 @@ nmos::control_protocol_property_changed_handler make_node_implementation_control
 
 // Example Device Configuration callbacks called when a rebuildable object is modified in Rebuild mode.
 
-// The filter_property_holders function is called when the Device Configuration API is attempting to modify
-// the read only properties of a Device Model object. This callback returns an "allow list" of property ids
-// for properties that can be updated - the read only property will be updated to the value given in the NcPropertyHolder
-// For each "disallowed" property value that isn't returned (is filtered out) a property restore notice must be created
-nmos::filter_property_holders_handler make_filter_property_holders_handler(nmos::resources& resources, slog::base_gate& gate)
+// This function is called when the Device Configuration API is attempting to modify
+// the read only properties of a rebuildable Device Model object. This callback returns an "allow list" of property ids
+// for properties that can be updated - the "allowed" read only property will be updated according to backup dataset received.
+nmos::get_read_only_modification_allow_list_handler make_get_read_only_modification_allow_list_handler(nmos::resources& resources, slog::base_gate& gate)
 {
-    return [&resources, &gate](const nmos::resource& resource, const web::json::array& target_role_path, const web::json::array& property_values, nmos::get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor)
+    return [&resources, &gate](const nmos::resource& resource, const std::vector<utility::string_t>& target_role_path, const const std::vector<nmos::nc_property_id>& property_ids)
     {
         // Use this function to create allow list of property ids for properties in the object should be modified by the configuration API
         slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::stash_category(impl::categories::node_implementation) << "Do filter_property_holders";
 
-        nmos::nc_class_id class_id = nmos::details::parse_nc_class_id(nmos::fields::nc::class_id(resource.data));
+        std::vector<nmos::nc_property_id> allow_list;
 
-        auto modifiable_property_ids = web::json::value::array();
-
-        for (const auto& property_value : property_values)
+        for (const auto& property_id : property_ids)
         {
-            const auto& property_id = nmos::details::parse_nc_property_id(nmos::fields::nc::id(property_value));
-            const auto& property_descriptor = nmos::nc::find_property_descriptor(property_id, class_id, get_control_protocol_class_descriptor);
-
-            // In this example we are not allowing "structural" parts of an object to be modified
-            if (nmos::fields::nc::name(property_descriptor) != nmos::fields::nc::oid.key
-                && nmos::fields::nc::name(property_descriptor) != nmos::fields::nc::constant_oid.key
-                && nmos::fields::nc::name(property_descriptor) != nmos::fields::nc::role.key
-                && nmos::fields::nc::name(property_descriptor) != nmos::fields::nc::class_id.key
-                && nmos::fields::nc::name(property_descriptor) != nmos::fields::nc::owner.key)
+            if (property_id == nmos::nc_object_oid_property_id || property_id == nmos::nc_object_constant_oid_property_id
+                || property_id == nmos::nc_object_role_property_id || property_id == nmos::nc_object_class_id_property_id
+                || property_id == nmos::nc_object_owner_property_id)
             {
-                web::json::push_back(modifiable_property_ids, nmos::fields::nc::id(property_value));
+                // don't modify this property
+            }
+            else
+            {
+                // allow modification of this read only property
+                allow_list.push_back(property_id);
             }
         }
-        return modifiable_property_ids.as_array();
+        return allow_list;
     };
 }
 
+// This function is called before an object is deleted from the device model.
+// If this function returns true and validate is false then the object will be deleted.
+// If thus function returns false or validate is true then the object will not be deleted.
+// If this function returns false an appropriate error will be passed to the calling client.
 nmos::remove_device_model_object_handler make_remove_device_model_handler(nmos::node_model& model, slog::base_gate& gate)
 {
     return [&model, &gate](const nmos::nc_oid oid, bool validate)
@@ -1999,7 +1999,7 @@ nmos::experimental::node_implementation make_node_implementation(nmos::node_mode
         .on_validate_channelmapping_output_map(make_node_implementation_map_validator()) // may be omitted if not required
         .on_channelmapping_activated(make_node_implementation_channelmapping_activation_handler(gate))
         .on_control_protocol_property_changed(make_node_implementation_control_protocol_property_changed_handler(gate)) // may be omitted if IS-12 not required
-        .on_filter_property_holders(make_filter_property_holders_handler(model.control_protocol_resources, gate)) // may be omitted if either IS-14 not required, or IS-14 Rebuild functionality not required
+        .on_get_read_only_modification_allow_list(make_get_read_only_modification_allow_list_handler(model.control_protocol_resources, gate)) // may be omitted if either IS-14 not required, or IS-14 Rebuild functionality not required
         .on_remove_device_model_object(make_remove_device_model_handler(model, gate)) // may be omitted if either IS-14 not required, or IS-14 Rebuild functionality not required
         .on_add_device_model_object(make_add_device_model_object_handler(model, gate)); // may be omitted if either IS-14 not required, or IS-14 Rebuild functionality not required
 }
