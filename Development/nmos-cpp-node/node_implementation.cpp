@@ -1790,14 +1790,14 @@ nmos::remove_device_model_object_handler make_remove_device_model_object_handler
     };
 }
 
+// This example callback shows how to add a receiver monitor resource to the device model
+// The receivers block that contains the monitors must be rebuildable
+// To add a monitor, restore a backup dataset including an additional monitor in the members property of the receivers block in Rebuild mode
+// Also include an object properties holder for the new monitor including a touchpoint property holder refencing the NMOS Receiver resource being monitored
 nmos::create_device_model_object_handler make_create_device_model_object_handler(nmos::node_model& model, slog::base_gate& gate)
 {
     return[&model, &gate](const nmos::nc_class_id& class_id, nmos::nc_oid oid, bool constant_oid, nmos::nc_oid owner, const utility::string_t& role, const utility::string_t& user_label, const web::json::value& touchpoints, bool validate, const std::map<nmos::nc_property_id, web::json::value>& property_values)
     {
-        // This example callback shows how to add a receiver monitor resource to the device model
-        // The receivers block that contains the monitors must be rebuildable
-        // To add a monitor, restore a backup dataset including an additional monitor in the members property of the receivers block in Rebuild mode
-        // Also include an object properties holder for the new monitor including a touchpoint property holder refencing the NMOS Receiver resource being monitored
         if (touchpoints.size() != 1)
         {
             slog::log<slog::severities::error>(gate, SLOG_FLF) << "Either zero or more than one touchpoint found (ambiguous) when attempting to create " << role;
