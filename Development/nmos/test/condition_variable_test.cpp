@@ -52,18 +52,9 @@ namespace
 
         for (;;)
         {
-            try
-            {
-                nmos::details::wait_until(condition, lock, earliest_necessary_update, [&] { return shutdown; });
+            nmos::details::wait_until(condition, lock, earliest_necessary_update, [&] { return shutdown; });
 
-                ++waken_up_count;
-            }
-            catch (const std::exception& e)
-            {
-                std::stringstream ss;
-                ss << "wait_until exception: " << e.what() << std::endl;
-                std::cerr << ss.str();
-            }
+            ++waken_up_count;
 
             if (shutdown) break;
         }
@@ -81,15 +72,11 @@ namespace
             {
                 auto lock = model.write_lock();
                 model.shutdown = true;
-                std::cerr << "shutdown\n";
                 break;
             }
-            catch (const std::exception& e)
+            catch (...)
             {
                 // ignore lock failure
-                std::stringstream ss;
-                ss << "shutdown: " << e.what() << std::endl;
-                std::cerr << ss.str();
             }
         }
 
@@ -102,46 +89,37 @@ namespace
 ////////////////////////////////////////////////////////////////////////////////////////////
 BST_TEST_CASE(testConditionVariableWait)
 {
-    for (int i = 0; i < 100; ++i)
+    const int max_threads{ 500 };
+
+    // start a wait thread
+    std::thread wait_thread(wait);
+
+    // start a large number of lock_then_unlock threads to exhaust the lock limit
+    std::vector<std::thread> threads;
+    for (auto idx = 0; idx < max_threads; idx++)
     {
-        {
-            std::stringstream ss;
-            ss << "Iteration: " << i << std::endl;
-            std::cerr << ss.str();
-        }
-
-        const int max_threads{ 500 };
-
-        // start a wait thread
-        std::thread wait_thread(wait);
-
-        // start a large number of lock_then_unlock threads to exhaust the lock limit
-        std::vector<std::thread> threads;
-        for (auto idx = 0; idx < max_threads; idx++)
-        {
-            threads.push_back(std::thread(lock_then_unlock));
-        }
-
-        // send a lot of notifications to wake up the wait thread
-        // to wake the wait thread when lock limit is exhausted
-        for (auto idx = 0; idx < 100; idx++)
-        {
-            model.notify();
-        }
-
-        // start the thread to pause 1 second before signal a shutdown
-        std::thread shutdown_thread(shutdown, std::chrono::seconds{ 1 });
-
-        shutdown_thread.join();
-        wait_thread.join();
-
-        for (auto idx = 0; idx < max_threads; idx++)
-        {
-            threads[idx].join();
-        }
-
-        std::cerr << "\n";
-
-        BST_CHECK(true);
+        threads.push_back(std::thread(lock_then_unlock));
     }
+
+    // send a lot of notifications to wake up the wait thread
+    // to wake the wait thread when lock limit is exhausted
+    for (auto idx = 0; idx < 100; idx++)
+    {
+        model.notify();
+    }
+
+    // start the thread to pause 1 second before signal a shutdown
+    std::thread shutdown_thread(shutdown, std::chrono::seconds{ 1 });
+
+    shutdown_thread.join();
+    wait_thread.join();
+
+    for (auto idx = 0; idx < max_threads; idx++)
+    {
+        threads[idx].join();
+    }
+
+    std::cerr << "\n";
+
+    BST_CHECK(true);
 }
