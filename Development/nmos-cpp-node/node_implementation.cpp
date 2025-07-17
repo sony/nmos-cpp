@@ -1750,7 +1750,7 @@ nmos::control_protocol_property_changed_handler make_node_implementation_control
 // for properties that can be updated - the "allowed" read only property will be updated according to backup dataset received.
 nmos::get_read_only_modification_allow_list_handler make_get_read_only_modification_allow_list_handler(nmos::resources& resources, slog::base_gate& gate)
 {
-    return [&resources, &gate](const nmos::resource& resource, const std::vector<utility::string_t>& target_role_path, const const std::vector<nmos::nc_property_id>& property_ids)
+    return [&resources, &gate](const nmos::resource& resource, const std::vector<utility::string_t>& target_role_path, const std::vector<nmos::nc_property_id>& property_ids)
     {
         // Use this function to create allow list of property ids for properties in the object should be modified by the configuration API
         slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::stash_category(impl::categories::node_implementation) << "Do filter_property_holders";
@@ -1779,7 +1779,7 @@ nmos::get_read_only_modification_allow_list_handler make_get_read_only_modificat
 // If this function returns true and validate is false then the object will be deleted.
 // If thus function returns false or validate is true then the object will not be deleted.
 // If this function returns false an appropriate error will be passed to the calling client.
-nmos::remove_device_model_object_handler make_remove_device_model_handler(nmos::node_model& model, slog::base_gate& gate)
+nmos::remove_device_model_object_handler make_remove_device_model_object_handler(nmos::node_model& model, slog::base_gate& gate)
 {
     return [&model, &gate](const nmos::nc_oid oid, bool validate)
     {
@@ -1790,57 +1790,23 @@ nmos::remove_device_model_object_handler make_remove_device_model_handler(nmos::
     };
 }
 
-nmos::add_device_model_object_handler make_add_device_model_object_handler(nmos::node_model& model, slog::base_gate& gate)
+nmos::create_device_model_object_handler make_create_device_model_object_handler(nmos::node_model& model, slog::base_gate& gate)
 {
-    return[&model, &gate](const web::json::value& object_properties_holder, const nmos::nc_oid oid, const nmos::nc_oid owner, const utility::string_t& role, const utility::string_t& user_label, bool validate, nmos::get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor)
+    return[&model, &gate](const nmos::nc_class_id& class_id, nmos::nc_oid oid, bool constant_oid, nmos::nc_oid owner, const utility::string_t& role, const utility::string_t& user_label, const web::json::value& touchpoints, bool validate, const std::map<nmos::nc_property_id, web::json::value>& property_values)
     {
         // This example callback shows how to add a receiver monitor resource to the device model
         // The receivers block that contains the monitors must be rebuildable
-        // To add a monitor, restore a backup dataset including an additional monitor in the members property of the receivers block, in Rebuild mode
+        // To add a monitor, restore a backup dataset including an additional monitor in the members property of the receivers block in Rebuild mode
         // Also include an object properties holder for the new monitor including a touchpoint property holder refencing the NMOS Receiver resource being monitored
-        nmos::resources& control_protocol_resources = model.control_protocol_resources;
-
-        const auto& role_path = nmos::fields::nc::path(object_properties_holder);
-        const auto& touchpoint_property_holder = nmos::get_property_holder(object_properties_holder, nmos::nc_object_touchpoints_property_id);
-        if (touchpoint_property_holder == web::json::value::null())
-        {
-            auto status_message = U("Cannot find touchpoint object property holder");
-            return nmos::make_object_properties_set_validation(role_path, nmos::nc_restore_validation_status::failed, status_message);
-        }
-
-        const auto& touchpoints = nmos::fields::nc::value(touchpoint_property_holder);
         if (touchpoints.size() != 1)
         {
-            auto status_message = U("Either zero or more than one touchpoint found (ambiguous).");
-            return nmos::make_object_properties_set_validation(role_path, nmos::nc_restore_validation_status::failed, status_message);
+            slog::log<slog::severities::error>(gate, SLOG_FLF) << "Either zero or more than one touchpoint found (ambiguous) when attempting to create " << role;
+            return nmos::control_protocol_resource(); // return empty resource on error
         }
-        if (!validate) // If validate is true then don't add object to device model, just indicate whether it's possible given the data supplied
-        {
-            const auto& touchpoint_uuid = nmos::fields::nc::id(nmos::fields::nc::resource(*touchpoints.as_array().begin()));
+        const auto& touchpoint_uuid = nmos::fields::nc::id(nmos::fields::nc::resource(*touchpoints.as_array().begin()));
 
-            auto receiver_monitor = nmos::make_receiver_monitor(oid, true, owner, role, user_label, U(""), web::json::value_of({ {nmos::details::make_nc_touchpoint_nmos({nmos::ncp_touchpoint_resource_types::receiver, touchpoint_uuid.as_string()})} }));
-            nmos::nc::insert_resource(control_protocol_resources, std::move(receiver_monitor));
-        }
-        // Define the properties that have been procesed, and generate notices for all other (unprocessed) properties in the object_properties_holder
-        std::vector< nmos::nc_property_id > processed_properties = { nmos::nc_object_oid_property_id,
-                                                                     nmos::nc_object_owner_property_id,
-                                                                     nmos::nc_object_role_property_id,
-                                                                     nmos::nc_object_user_label_property_id,
-                                                                     nmos::nc_object_touchpoints_property_id };
-        auto notices = web::json::value::array();
-        for (const auto& property_holder: nmos::fields::nc::values(object_properties_holder))
-        {
-            const auto& property_id = nmos::details::parse_nc_property_id(nmos::fields::nc::id(property_holder));
-            const auto& property_descriptor = nmos::nc::find_property_descriptor(property_id, nmos::nc_receiver_monitor_class_id, get_control_protocol_class_descriptor);
-            const auto& name = nmos::fields::nc::name(property_descriptor).c_str();
-            if (std::find(processed_properties.begin(), processed_properties.end(), property_id) == processed_properties.end())
-            {
-                const auto notice = nmos::details::make_nc_property_restore_notice(property_id, name, nmos::nc_property_restore_notice_type::warning, U("Property unprocessed."));
-                web::json::push_back(notices, notice);
-            }
-        }
-
-        return nmos::make_object_properties_set_validation(role_path, nmos::nc_restore_validation_status::ok, notices.as_array());
+        // In the case of validate = true, the object created will not be added to the device model, but it's values will be checked against the backup dataset
+        return nmos::make_receiver_monitor(oid, true, owner, role, user_label, U(""), web::json::value_of({ {nmos::details::make_nc_touchpoint_nmos({nmos::ncp_touchpoint_resource_types::receiver, touchpoint_uuid.as_string()})} }));
     };
 }
 
@@ -2000,6 +1966,6 @@ nmos::experimental::node_implementation make_node_implementation(nmos::node_mode
         .on_channelmapping_activated(make_node_implementation_channelmapping_activation_handler(gate))
         .on_control_protocol_property_changed(make_node_implementation_control_protocol_property_changed_handler(gate)) // may be omitted if IS-12 not required
         .on_get_read_only_modification_allow_list(make_get_read_only_modification_allow_list_handler(model.control_protocol_resources, gate)) // may be omitted if either IS-14 not required, or IS-14 Rebuild functionality not required
-        .on_remove_device_model_object(make_remove_device_model_handler(model, gate)) // may be omitted if either IS-14 not required, or IS-14 Rebuild functionality not required
-        .on_add_device_model_object(make_add_device_model_object_handler(model, gate)); // may be omitted if either IS-14 not required, or IS-14 Rebuild functionality not required
+        .on_remove_device_model_object(make_remove_device_model_object_handler(model, gate)) // may be omitted if either IS-14 not required, or IS-14 Rebuild functionality not required
+        .on_create_device_model_object(make_create_device_model_object_handler(model, gate)); // may be omitted if either IS-14 not required, or IS-14 Rebuild functionality not required
 }

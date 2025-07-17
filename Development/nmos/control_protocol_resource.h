@@ -18,6 +18,10 @@ namespace nmos
 {
     struct control_protocol_resource : resource
     {
+        control_protocol_resource()
+            : resource()
+        {}
+
         control_protocol_resource(api_version version, nmos::type type, web::json::value&& data, nmos::id id, bool never_expire)
             : resource(version, type, std::move(data), id, never_expire)
         {}
