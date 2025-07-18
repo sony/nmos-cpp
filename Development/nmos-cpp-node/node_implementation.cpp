@@ -1758,6 +1758,9 @@ nmos::get_read_only_modification_allow_list_handler make_get_read_only_modificat
 
         std::vector<nmos::nc_property_id> allow_list;
 
+        // "structural properties such as classId, role, owner can only be changed when the containing parent block object is rebuildable."
+        // see https://specs.amwa.tv/is-14/branches/v1.0-dev/docs/Backup_&_restore.html#general-concepts
+        // hmm, the following should be filtered inside the nmos-cpp framework?
         for (const auto& property_id : property_ids)
         {
             if (property_id == nmos::nc_object_oid_property_id || property_id == nmos::nc_object_constant_oid_property_id
