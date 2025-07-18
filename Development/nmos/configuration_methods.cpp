@@ -117,7 +117,6 @@ namespace nmos
     web::json::value get_properties_by_path(const nmos::resources& resources, const nmos::resource& resource, bool recurse, bool include_descriptors, nmos::get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, nmos::get_control_protocol_datatype_descriptor_handler get_control_protocol_datatype_descriptor)
     {
         using web::json::value;
-        using web::json::value_of;
 
         value object_properties_holders = value::array();
 

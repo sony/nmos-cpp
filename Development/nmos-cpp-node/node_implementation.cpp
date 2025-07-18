@@ -1779,7 +1779,7 @@ nmos::get_read_only_modification_allow_list_handler make_get_read_only_modificat
 // IS-14 Device Configuration callback
 // This function is called before an object is deleted from the device model.
 // If this function returns true and validate is false then the object will be deleted.
-// If thus function returns false or validate is true then the object will not be deleted.
+// If this function returns true/false or validate is true then the object will not be deleted.
 // If this function returns false an appropriate error will be passed to the calling client.
 nmos::remove_device_model_object_handler make_remove_device_model_object_handler(nmos::node_model& model, slog::base_gate& gate)
 {

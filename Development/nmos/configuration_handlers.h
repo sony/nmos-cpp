@@ -2,7 +2,6 @@
 #define NMOS_CONFIGURATION_HANDLERS_H
 
 #include <functional>
-#include "nmos/control_protocol_typedefs.h"
 #include "nmos/control_protocol_handlers.h"
 #include "nmos/resources.h"
 #include "nmos/control_protocol_resource.h"
@@ -29,7 +28,7 @@ namespace nmos
 
     // This callback is invoked if attempting to add a device model object to a rebuildable block when restoring a configuration.
     // This function should handle the modification of the Device Model and any corresponding NMOS resources
-    // and return correpsonding NcObjectPropertiesSetValidation objects for the object added
+    // and return corresponding NcObjectPropertiesSetValidation objects for the object added
     typedef std::function<nmos::control_protocol_resource(const nmos::nc_class_id& class_id, nmos::nc_oid oid, bool constant_oid, nmos::nc_oid owner, const utility::string_t& role, const utility::string_t& user_label, const web::json::value& touchpoints, bool validate, const std::map<nmos::nc_property_id, web::json::value>& property_values)> create_device_model_object_handler;
 }
 

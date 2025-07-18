@@ -527,7 +527,7 @@ namespace nmos
                                     // do method arguments constraints validation
                                     nc::method_parameters_contraints_validation(arguments, nc_method_descriptor, get_control_protocol_datatype_descriptor);
 
-                                    // execute the relevant control method handler, then accumulating up their response to reponses
+                                    // execute the relevant control method handler, then accumulating up their response to responses
                                     method_result = control_method_handler(resources, *resource, arguments, nmos::fields::nc::is_deprecated(nc_method_descriptor), gate);
 
                                     auto status = nmos::fields::nc::status(method_result);

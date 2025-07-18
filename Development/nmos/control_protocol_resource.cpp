@@ -714,7 +714,7 @@ namespace nmos
 
             // IS-14 metadata fields
             // These fields are "invisible" as they are not part of the NcObject definition
-            // use make_rebuildable function to declare an control protocl resource rebuildable
+            // use make_rebuildable function to declare an control protocol resource rebuildable
             data[nmos::fields::nc::is_rebuildable] = value::boolean(false);
             // use allowed_member_classes to restrict the types of object that an NcBlock can contain
             data[nmos::fields::nc::allowed_members_classes] = value::array();
