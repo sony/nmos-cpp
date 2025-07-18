@@ -386,7 +386,7 @@ BST_TEST_CASE(testApplyBackupDataSet)
         return property_ids;
     };
 
-    nmos::remove_device_model_object_handler remove_device_model_object = [&](const nmos::nc_oid reference_oid, bool validate)
+    nmos::remove_device_model_object_handler remove_device_model_object = [&](const nmos::resource& resource, const std::vector<utility::string_t>& target_role_path, bool validate)
     {
         remove_device_model_object_called = true;
 
@@ -955,7 +955,7 @@ BST_TEST_CASE(testApplyBackupDataSet_AddDeviceModelObject)
         return property_ids;
     };
 
-    nmos::remove_device_model_object_handler remove_device_model_object = [&](const nmos::nc_oid reference_oid, bool validate)
+    nmos::remove_device_model_object_handler remove_device_model_object = [&](const nmos::resource& resource, const std::vector<utility::string_t>& target_role_path, bool validate)
     {
         remove_device_model_object_called = true;
 
@@ -1183,7 +1183,7 @@ BST_TEST_CASE(testApplyBackupDataSet_NegativeTests)
         return property_ids;
     };
 
-    nmos::remove_device_model_object_handler remove_device_model_object = [&](const nmos::nc_oid reference_oid, bool validate)
+    nmos::remove_device_model_object_handler remove_device_model_object = [&](const nmos::resource& resource, const std::vector<utility::string_t>& target_role_path, bool validate)
     {
         remove_device_model_object_called = true;
 
@@ -1494,7 +1494,7 @@ BST_TEST_CASE(testModifyRebuildableBlock)
         return property_ids;
     };
 
-    nmos::remove_device_model_object_handler remove_device_model_object = [&](const nmos::nc_oid reference_oid, bool validate)
+    nmos::remove_device_model_object_handler remove_device_model_object = [&](const nmos::resource& resource, const std::vector<utility::string_t>& target_role_path, bool validate)
     {
         remove_device_model_object_called = true;
 

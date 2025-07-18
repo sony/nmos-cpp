@@ -1783,10 +1783,11 @@ nmos::get_read_only_modification_allow_list_handler make_get_read_only_modificat
 // If this function returns false an appropriate error will be passed to the calling client.
 nmos::remove_device_model_object_handler make_remove_device_model_object_handler(nmos::node_model& model, slog::base_gate& gate)
 {
-    return [&model, &gate](const nmos::nc_oid oid, bool validate)
+    return [&model, &gate](const nmos::resource& resource, const std::vector<utility::string_t>& role_path, bool validate)
     {
         // Perform application code functions here
-        // oid - oid of Device Model resource beng deleted
+        // resource - device model object about to be deleted
+        // role_path - role path of device object about to be deleted
         // validate - true when only checks are performed, false when checks and deletion are performed
         return true;
     };

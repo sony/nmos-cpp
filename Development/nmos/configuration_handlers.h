@@ -20,12 +20,12 @@ namespace nmos
     }
     // This callback is invoked if attempting to modify read only properties when restoring a configuration.
     // This function should modify the Device Model object directly and return a corresponding NcObjectPropertiesSetValidation object
-    typedef std::function<std::vector<nmos::nc_property_id>(const nmos::resource& resource, const std::vector<utility::string_t>& target_role_path, const std::vector<nmos::nc_property_id>& property_ids)> get_read_only_modification_allow_list_handler;
+    typedef std::function<std::vector<nmos::nc_property_id>(const nmos::resource& resource, const std::vector<utility::string_t>& role_path, const std::vector<nmos::nc_property_id>& property_ids)> get_read_only_modification_allow_list_handler;
 
     // This callback is invoked if attempting to remove a device model object when restoring a configuration.
     // This function should handle the modification of the Device Model and any corresponding NMOS resources
     // and return true if successful and false otherwise
-    typedef std::function<bool(nmos::nc_oid reference_oid, bool validate)> remove_device_model_object_handler;
+    typedef std::function<bool(const nmos::resource& resource, const std::vector<utility::string_t>& role_path, bool validate)> remove_device_model_object_handler;
 
     // This callback is invoked if attempting to add a device model object to a rebuildable block when restoring a configuration.
     // This function should handle the modification of the Device Model and any corresponding NMOS resources

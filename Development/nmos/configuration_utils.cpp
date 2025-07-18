@@ -206,6 +206,19 @@ namespace nmos
 
                     if (resources.end() != found)
                     {
+                        // callback to user code
+                        std::vector<utility::string_t> child_role_path_array;
+                        for (const auto& element: child_role_path.as_array())
+                        {
+                            child_role_path_array.push_back(element.as_string());
+                        }
+                        if (!remove_device_model_object(*found, child_role_path_array, validate))
+                        {
+                            // error in user code
+                            web::json::push_back(block_notices, nmos::details::make_nc_property_restore_notice(nmos::nc_block_members_property_id, U("members"), nmos::nc_property_restore_notice_type::error, U("Application error.")));
+                            continue;
+                        }
+
                         if (!validate) // If validate is true then delete the object, just indicate whether it's possible given the data supplied
                         {
                             auto erase_count = nmos::nc::erase_resource(resources, found->id);
@@ -217,14 +230,7 @@ namespace nmos
                             {
                                 // unable to delete resource so report the error and don't update block
                                 web::json::push_back(block_notices, nmos::details::make_nc_property_restore_notice(nmos::nc_block_members_property_id, U("members"), nmos::nc_property_restore_notice_type::error, U("Unable to delete resource in Device Model.")));
-                                continue;
                             }
-                        }
-                        // callback to user code
-                        if (!remove_device_model_object(nmos::fields::nc::oid(reference_member), validate))
-                        {
-                            // error in user code
-                            web::json::push_back(block_notices, nmos::details::make_nc_property_restore_notice(nmos::nc_block_members_property_id, U("members"), nmos::nc_property_restore_notice_type::error, U("Application error.")));
                         }
                     }
                     else
