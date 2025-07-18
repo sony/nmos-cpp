@@ -89,7 +89,7 @@ namespace
 ////////////////////////////////////////////////////////////////////////////////////////////
 BST_TEST_CASE(testConditionVariableWait)
 {
-    const auto max_threads{ 500 };
+    const int max_threads{ 500 };
 
     // start a wait thread
     std::thread wait_thread(wait);
