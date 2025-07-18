@@ -1745,6 +1745,7 @@ nmos::control_protocol_property_changed_handler make_node_implementation_control
 
 // Example Device Configuration callbacks called when a rebuildable object is modified in Rebuild mode.
 
+// IS-14 Device Configuration callback
 // This function is called when the Device Configuration API is attempting to modify
 // the read only properties of a rebuildable Device Model object. This callback returns an "allow list" of property ids
 // for properties that can be updated - the "allowed" read only property will be updated according to backup dataset received.
@@ -1775,6 +1776,7 @@ nmos::get_read_only_modification_allow_list_handler make_get_read_only_modificat
     };
 }
 
+// IS-14 Device Configuration callback
 // This function is called before an object is deleted from the device model.
 // If this function returns true and validate is false then the object will be deleted.
 // If thus function returns false or validate is true then the object will not be deleted.
@@ -1790,10 +1792,11 @@ nmos::remove_device_model_object_handler make_remove_device_model_object_handler
     };
 }
 
-// This example callback shows how to add a receiver monitor resource to the device model
-// The receivers block that contains the monitors must be rebuildable
-// To add a monitor, restore a backup dataset including an additional monitor in the members property of the receivers block in Rebuild mode
-// Also include an object properties holder for the new monitor including a touchpoint property holder refencing the NMOS Receiver resource being monitored
+// IS-14 Device Configuration callback
+// This function is called when an object is to be created.
+// The returned object is then added to the Device Model
+// This example shows the creation of a receiver monitor resource
+// In the Device Model the receivers block that contains the monitors must be rebuildable
 nmos::create_device_model_object_handler make_create_device_model_object_handler(nmos::node_model& model, slog::base_gate& gate)
 {
     return[&model, &gate](const nmos::nc_class_id& class_id, nmos::nc_oid oid, bool constant_oid, nmos::nc_oid owner, const utility::string_t& role, const utility::string_t& user_label, const web::json::value& touchpoints, bool validate, const std::map<nmos::nc_property_id, web::json::value>& property_values)
