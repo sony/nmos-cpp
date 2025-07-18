@@ -137,7 +137,7 @@ namespace nmos
         // Do something with validation fingerprint?
         const auto& object_properties_holders = nmos::fields::nc::values(backup_data_set);
 
-        const auto& object_properties_set_validation = apply_backup_data_set(resources, resource, object_properties_holders, recurse, restore_mode, true, get_control_protocol_class_descriptor, get_read_only_modification_allow_list, remove_device_model_object, create_device_model_object);
+        const auto object_properties_set_validation = apply_backup_data_set(resources, resource, object_properties_holders, recurse, restore_mode, true, get_control_protocol_class_descriptor, get_read_only_modification_allow_list, remove_device_model_object, create_device_model_object);
 
         return nmos::details::make_nc_method_result({ nmos::nc_method_status::ok }, object_properties_set_validation);
     }
@@ -147,7 +147,7 @@ namespace nmos
         // Do something with validation fingerprint?
         const auto& object_properties_holders = nmos::fields::nc::values(backup_data_set);
 
-        const auto& object_properties_set_validation = apply_backup_data_set(resources, resource, object_properties_holders, recurse, restore_mode, false, get_control_protocol_class_descriptor, get_read_only_modification_allow_list, remove_device_model_object, create_device_model_object);
+        const auto object_properties_set_validation = apply_backup_data_set(resources, resource, object_properties_holders, recurse, restore_mode, false, get_control_protocol_class_descriptor, get_read_only_modification_allow_list, remove_device_model_object, create_device_model_object);
 
         return nmos::details::make_nc_method_result({ nmos::nc_method_status::ok }, object_properties_set_validation);
     }
