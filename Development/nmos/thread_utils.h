@@ -15,7 +15,21 @@ namespace nmos
         public:
             typedef BasicLockable mutex_type;
             explicit reverse_lock_guard(mutex_type& m) : m(m) { m.unlock(); }
-            ~reverse_lock_guard() { m.lock(); }
+            ~reverse_lock_guard()
+            {
+                for (;;)
+                {
+                    try
+                    {
+                        m.lock();
+                        break;
+                    }
+                    catch (...)
+                    {
+                        // ignore exception
+                    }
+                }
+            }
             reverse_lock_guard(const reverse_lock_guard&) = delete;
             reverse_lock_guard& operator=(const reverse_lock_guard&) = delete;
         private:
