@@ -723,7 +723,7 @@ namespace nmos
                 {
                     // Process this block to add / remove device model objects as members of this block
                     // the object properties holder for any added objects will be erased from the object_properties_holder_map to avoid double processing
-                    const auto& child_object_properties_set_validations = details::modify_rebuildable_block(resources, object_properties_holder_map, *r, role_path, object_properties_holder, validate, get_control_protocol_class_descriptor, remove_device_model_object, create_device_model_object);
+                    const auto child_object_properties_set_validations = details::modify_rebuildable_block(resources, object_properties_holder_map, *r, role_path, object_properties_holder, validate, get_control_protocol_class_descriptor, remove_device_model_object, create_device_model_object);
                     for (const auto& validation_values : child_object_properties_set_validations.as_array())
                     {
                         web::json::push_back(object_properties_set_validation_values, validation_values);
