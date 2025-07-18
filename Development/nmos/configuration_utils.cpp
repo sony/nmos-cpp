@@ -598,7 +598,7 @@ namespace nmos
         const auto& block_members_properties_holders = boost::copy_range<std::set<web::json::value>>(nmos::fields::nc::values(object_properties_holder)
             | boost::adaptors::filtered([](const web::json::value& property_holder)
                 {
-                    return nmos::nc_property_id(2, 2) == nmos::details::parse_nc_property_id(nmos::fields::nc::id(property_holder));
+                    return nmos::nc_block_members_property_id == nmos::details::parse_nc_property_id(nmos::fields::nc::id(property_holder));
                 })
         );
         // There should only be a single property holder for the members
