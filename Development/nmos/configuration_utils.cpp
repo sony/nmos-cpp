@@ -312,9 +312,6 @@ namespace nmos
                         oid = ++max_oid;
                         const auto block_notice = nmos::details::make_nc_property_restore_notice(nmos::nc_block_members_property_id, U("members"), nmos::nc_property_restore_notice_type::warning, U("Dynamically generating new OID for new block member."));
                         web::json::push_back(block_notices, block_notice);
-
-                        const auto added_object_notice = nmos::details::make_nc_property_restore_notice(nmos::nc_object_oid_property_id, U("oid"), nmos::nc_property_restore_notice_type::warning, U("Dynamically generating new OID for new object."));
-                        web::json::push_back(added_object_notices, added_object_notice);
                     }
 
                     // The values in the block member object properties holder will take precidence over the block member descriptor values

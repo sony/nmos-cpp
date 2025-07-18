@@ -1115,7 +1115,7 @@ BST_TEST_CASE(testApplyBackupDataSet_AddDeviceModelObject)
         {
             const auto& object_properties_set_validation = monitor_3_object_properties_holder.at(0);
             BST_CHECK_EQUAL(nmos::nc_restore_validation_status::ok, nmos::fields::nc::status(object_properties_set_validation));
-            BST_CHECK_EQUAL(2, nmos::fields::nc::notices(object_properties_set_validation).size());
+            BST_CHECK_EQUAL(1, nmos::fields::nc::notices(object_properties_set_validation).size());
             const auto& notice = nmos::fields::nc::notices(object_properties_set_validation).at(0);
             BST_CHECK_EQUAL(nmos::nc_property_restore_notice_type::warning, nmos::fields::nc::notice_type(notice));
             const auto& property_id = nmos::fields::nc::id(notice);
