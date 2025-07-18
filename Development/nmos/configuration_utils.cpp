@@ -450,11 +450,14 @@ namespace nmos
                             }
                         }
 
-                        // Add object to device model
-                        nmos::nc::insert_resource(resources, std::move(device_model_object));
+                        if (!validate)
+                        {
+                            // Add object to device model
+                            nmos::nc::insert_resource(resources, std::move(device_model_object));
 
-                        auto block_member_descriptor = nmos::details::make_nc_block_member_descriptor(block_member_description, role, oid, constant_oid, nmos::nc_receiver_monitor_class_id, block_member_user_label, owner);
-                        members_to_add.push_back(block_member_descriptor);
+                            auto block_member_descriptor = nmos::details::make_nc_block_member_descriptor(block_member_description, role, oid, constant_oid, nmos::nc_receiver_monitor_class_id, block_member_user_label, owner);
+                            members_to_add.push_back(block_member_descriptor);
+                        }
                         web::json::push_back(object_properties_set_validations, nmos::make_object_properties_set_validation(child_role_path.as_array(), nmos::nc_restore_validation_status::ok, added_object_notices.as_array()));
                     }
                     else
@@ -462,22 +465,6 @@ namespace nmos
                         // An error has occurred
                         web::json::push_back(object_properties_set_validations, nmos::make_object_properties_set_validation(child_role_path.as_array(), nmos::nc_restore_validation_status::device_error, U("Unable to create Device Model object. This may be due to missing property values.")));
                     }
-
-
-
-                    //// Add warnings about known inconsistancies between backup dataset and new device model object
-                    //for (const auto& added_object_notice: added_object_notices.as_array())
-                    //{
-                    //    web::json::push_back(nmos::fields::nc::notices(object_properties_set_validation), added_object_notice);
-                    //}
-
-                    //// If the status is anything other than OK assume the object wasn't created
-                    //if (nmos::fields::nc::status(object_properties_set_validation) == nmos::nc_restore_validation_status::ok && !validate)
-                    //{
-                    //}
-
-                    //web::json::push_back(object_properties_set_validations, object_properties_set_validation);
-
                     // erase object from object_properties_holder_map so it isn't processed subsequently
                     object_properties_holder_map.erase(child_role_path.as_array());
                 }
