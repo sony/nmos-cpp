@@ -77,7 +77,7 @@ namespace nmos
 
             // Configure the Configuration API
 
-            node_server.api_routers[{ {}, nmos::fields::configuration_port(node_model.settings) }].mount({}, nmos::make_configuration_api(node_model, validate_authorization ? validate_authorization(nmos::experimental::scopes::configuration) : nullptr, node_implementation.get_control_protocol_class_descriptor, node_implementation.get_control_protocol_datatype_descriptor, node_implementation.get_control_protocol_method_descriptor, node_implementation.get_read_only_modification_allow_list, node_implementation.remove_device_model_object, node_implementation.create_device_model_object, node_implementation.control_protocol_property_changed, gate));
+            node_server.api_routers[{ {}, nmos::fields::configuration_port(node_model.settings) }].mount({}, nmos::make_configuration_api(node_model, validate_authorization ? validate_authorization(nmos::experimental::scopes::configuration) : nullptr, node_implementation.get_control_protocol_class_descriptor, node_implementation.get_control_protocol_datatype_descriptor, node_implementation.get_control_protocol_method_descriptor, node_implementation.create_validation_fingerprint, node_implementation.validate_validation_fingerprint, node_implementation.get_read_only_modification_allow_list, node_implementation.remove_device_model_object, node_implementation.create_device_model_object, node_implementation.control_protocol_property_changed, gate));
 
             const auto& events_ws_port = nmos::fields::events_ws_port(node_model.settings);
             auto& events_ws_api = node_server.ws_handlers[{ {}, nmos::fields::events_ws_port(node_model.settings) }];

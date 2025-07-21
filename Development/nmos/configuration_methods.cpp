@@ -78,43 +78,9 @@ namespace nmos
                 }
             }
         }
-
-        std::size_t generate_validation_fingerprint(const nmos::resources& resources, const nmos::resource& resource)
-        {
-            // Generate a hash based on structure of the Device Model
-            size_t hash(0);
-
-            nmos::nc_class_id class_id = nmos::details::parse_nc_class_id(nmos::fields::nc::class_id(resource.data));
-
-            boost::hash_combine(hash, class_id);
-            boost::hash_combine(hash, nmos::fields::nc::role(resource.data));
-
-            // Recurse into members...if we want to...and the object has them
-            if (nmos::nc::is_block(nmos::details::parse_nc_class_id(nmos::fields::nc::class_id(resource.data))))
-            {
-                if (resource.data.has_field(nmos::fields::nc::members))
-                {
-                    const auto& members = nmos::fields::nc::members(resource.data);
-
-                    // Generate hash for block members
-                    for (const auto& member : members)
-                    {
-                        const auto& oid = nmos::fields::nc::oid(member);
-                        const auto& found = find_resource(resources, utility::s2us(std::to_string(oid)));
-                        if (resources.end() != found)
-                        {
-                            size_t sub_hash = generate_validation_fingerprint(resources, *found);
-                            boost::hash_combine(hash, sub_hash);
-                        }
-                    }
-                }
-            }
-
-            return hash;
-        }
     }
 
-    web::json::value get_properties_by_path(const nmos::resources& resources, const nmos::resource& resource, bool recurse, bool include_descriptors, nmos::get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, nmos::get_control_protocol_datatype_descriptor_handler get_control_protocol_datatype_descriptor)
+    web::json::value get_properties_by_path(const nmos::resources& resources, const nmos::resource& resource, bool recurse, bool include_descriptors, nmos::get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, nmos::get_control_protocol_datatype_descriptor_handler get_control_protocol_datatype_descriptor, nmos::create_validation_fingerprint_handler create_validation_fingerprint)
     {
         using web::json::value;
 
@@ -122,19 +88,29 @@ namespace nmos
 
         details::populate_object_property_holder(resources, get_control_protocol_class_descriptor, resource, recurse, include_descriptors, object_properties_holders);
 
-        size_t validation_fingerprint = details::generate_validation_fingerprint(resources, resource);
+        utility::string_t validation_fingerprint = U("");
 
-        utility::ostringstream_t ss;
-        ss << validation_fingerprint;
+        if (create_validation_fingerprint)
+        {
+            validation_fingerprint = create_validation_fingerprint(resources, resource);
+        }
 
-        auto bulk_properties_holder = nmos::details::make_nc_bulk_properties_holder(ss.str(), object_properties_holders);
+        auto bulk_properties_holder = nmos::details::make_nc_bulk_properties_holder(validation_fingerprint, object_properties_holders);
 
         return nmos::details::make_nc_method_result({ nmos::nc_method_status::ok }, bulk_properties_holder);
     }
 
-    web::json::value validate_set_properties_by_path(nmos::resources& resources, const nmos::resource& resource, const web::json::value& backup_data_set, bool recurse, const web::json::value& restore_mode, nmos::get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, nmos::get_read_only_modification_allow_list_handler get_read_only_modification_allow_list, nmos::remove_device_model_object_handler remove_device_model_object, nmos::create_device_model_object_handler create_device_model_object)
+    web::json::value validate_set_properties_by_path(nmos::resources& resources, const nmos::resource& resource, const web::json::value& backup_data_set, bool recurse, const web::json::value& restore_mode, nmos::get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, nmos::validate_validation_fingerprint_handler validate_validation_fingerprint, nmos::get_read_only_modification_allow_list_handler get_read_only_modification_allow_list, nmos::remove_device_model_object_handler remove_device_model_object, nmos::create_device_model_object_handler create_device_model_object)
     {
-        // Do something with validation fingerprint?
+        if (validate_validation_fingerprint)
+        {
+            const auto& validation_fingerprint = nmos::fields::nc::validation_fingerprint(backup_data_set);
+
+            if (!validate_validation_fingerprint(resources, resource, validation_fingerprint.c_str()))
+            {
+                return nmos::details::make_nc_method_result_error({ nmos::nc_method_status::invalid_request }, U("Invalid validation fingerprint"));
+            }
+        }
         const auto& object_properties_holders = nmos::fields::nc::values(backup_data_set);
 
         const auto object_properties_set_validation = apply_backup_data_set(resources, resource, object_properties_holders, recurse, restore_mode, true, get_control_protocol_class_descriptor, get_read_only_modification_allow_list, remove_device_model_object, create_device_model_object);
@@ -142,9 +118,17 @@ namespace nmos
         return nmos::details::make_nc_method_result({ nmos::nc_method_status::ok }, object_properties_set_validation);
     }
 
-    web::json::value set_properties_by_path(nmos::resources& resources, const nmos::resource& resource, const web::json::value& backup_data_set, bool recurse, const web::json::value& restore_mode, nmos::get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, nmos::get_read_only_modification_allow_list_handler get_read_only_modification_allow_list, nmos::remove_device_model_object_handler remove_device_model_object, nmos::create_device_model_object_handler create_device_model_object)
+    web::json::value set_properties_by_path(nmos::resources& resources, const nmos::resource& resource, const web::json::value& backup_data_set, bool recurse, const web::json::value& restore_mode, nmos::get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, nmos::validate_validation_fingerprint_handler validate_validation_fingerprint, nmos::get_read_only_modification_allow_list_handler get_read_only_modification_allow_list, nmos::remove_device_model_object_handler remove_device_model_object, nmos::create_device_model_object_handler create_device_model_object)
     {
-        // Do something with validation fingerprint?
+        if (validate_validation_fingerprint)
+        {
+            const auto& validation_fingerprint = nmos::fields::nc::validation_fingerprint(backup_data_set);
+
+            if (!validate_validation_fingerprint(resources, resource, validation_fingerprint.c_str()))
+            {
+                return nmos::details::make_nc_method_result_error({ nmos::nc_method_status::invalid_request }, U("Invalid validation fingerprint"));
+            }
+        }
         const auto& object_properties_holders = nmos::fields::nc::values(backup_data_set);
 
         const auto object_properties_set_validation = apply_backup_data_set(resources, resource, object_properties_holders, recurse, restore_mode, false, get_control_protocol_class_descriptor, get_read_only_modification_allow_list, remove_device_model_object, create_device_model_object);

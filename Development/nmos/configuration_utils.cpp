@@ -103,7 +103,16 @@ namespace nmos
                         std::vector<nmos::nc_property_id> read_only_property_ids;
                         for (const auto& property_value: read_only_property_values)
                         {
-                            read_only_property_ids.push_back(nmos::details::parse_nc_property_id(nmos::fields::nc::id(property_value)));
+                            const auto& property_id = nmos::details::parse_nc_property_id(nmos::fields::nc::id(property_value));
+                            // Don't include structural properties - changing these could break the device model
+                            if (property_id != nmos::nc_object_class_id_property_id &&
+                                property_id != nmos::nc_object_oid_property_id &&
+                                property_id != nmos::nc_object_constant_oid_property_id &&
+                                property_id != nmos::nc_object_owner_property_id &&
+                                property_id != nmos::nc_object_role_property_id)
+                            {
+                                read_only_property_ids.push_back(nmos::details::parse_nc_property_id(nmos::fields::nc::id(property_value)));
+                            }
                         }
 
                         const auto allow_list_read_only_property_ids = get_read_only_modification_allow_list(resource, target_role_path_array, read_only_property_ids);

@@ -1746,6 +1746,26 @@ nmos::control_protocol_property_changed_handler make_node_implementation_control
 // Example Device Configuration callbacks called when a rebuildable object is modified in Rebuild mode.
 
 // IS-14 Device Configuration callback
+// This function should generate a fingerprint that can be used for subsequent validation.
+nmos::create_validation_fingerprint_handler make_create_validation_fingerprint_handler(const nmos::resources& resources, slog::base_gate& gate)
+{
+    return [&resources, &gate](const nmos::resources& resources, const nmos::resource& resource)
+    {
+        return U("Sony nmos-cpp node");
+    };
+}
+
+// IS-14 Device Configuration callback
+// This function called by a validate or restore and can be used to validate a validation fingerprint. Returning false will fail the validate or restore operation.
+nmos::validate_validation_fingerprint_handler make_validate_validation_fingerprint_handler(const nmos::resources& resources, slog::base_gate& gate)
+{
+    return [&resources, &gate](const nmos::resources& resources, const nmos::resource& resource, const utility::string_t& validation_fingerprint)
+    {
+        return true;
+    };
+}
+
+// IS-14 Device Configuration callback
 // This function is called when the Device Configuration API is attempting to modify
 // the read only properties of a rebuildable Device Model object. This callback returns an "allow list" of property ids
 // for properties that can be updated - the "allowed" read only property will be updated according to backup dataset received.
@@ -1756,26 +1776,8 @@ nmos::get_read_only_modification_allow_list_handler make_get_read_only_modificat
         // Use this function to create allow list of property ids for properties in the object should be modified by the configuration API
         slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::stash_category(impl::categories::node_implementation) << "Do filter_property_holders";
 
-        std::vector<nmos::nc_property_id> allow_list;
-
-        // "structural properties such as classId, role, owner can only be changed when the containing parent block object is rebuildable."
-        // see https://specs.amwa.tv/is-14/branches/v1.0-dev/docs/Backup_&_restore.html#general-concepts
-        // hmm, the following should be filtered inside the nmos-cpp framework?
-        for (const auto& property_id : property_ids)
-        {
-            if (property_id == nmos::nc_object_oid_property_id || property_id == nmos::nc_object_constant_oid_property_id
-                || property_id == nmos::nc_object_role_property_id || property_id == nmos::nc_object_class_id_property_id
-                || property_id == nmos::nc_object_owner_property_id)
-            {
-                // don't modify this property
-            }
-            else
-            {
-                // allow modification of this read only property
-                allow_list.push_back(property_id);
-            }
-        }
-        return allow_list;
+        // Filter out any read only properties that should not be modified
+        return property_ids;
     };
 }
 
@@ -1972,6 +1974,8 @@ nmos::experimental::node_implementation make_node_implementation(nmos::node_mode
         .on_validate_channelmapping_output_map(make_node_implementation_map_validator()) // may be omitted if not required
         .on_channelmapping_activated(make_node_implementation_channelmapping_activation_handler(gate))
         .on_control_protocol_property_changed(make_node_implementation_control_protocol_property_changed_handler(gate)) // may be omitted if IS-12 not required
+        .on_create_validation_fingerprint(make_create_validation_fingerprint_handler(model.control_protocol_resources, gate))
+        .on_validate_validation_fingerprint(make_validate_validation_fingerprint_handler(model.control_protocol_resources, gate))
         .on_get_read_only_modification_allow_list(make_get_read_only_modification_allow_list_handler(model.control_protocol_resources, gate)) // may be omitted if either IS-14 not required, or IS-14 Rebuild functionality not required
         .on_remove_device_model_object(make_remove_device_model_object_handler(model, gate)) // may be omitted if either IS-14 not required, or IS-14 Rebuild functionality not required
         .on_create_device_model_object(make_create_device_model_object_handler(model, gate)); // may be omitted if either IS-14 not required, or IS-14 Rebuild functionality not required

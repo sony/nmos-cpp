@@ -1514,6 +1514,8 @@ BST_TEST_CASE(testModifyRebuildableBlock)
     const auto block_members_property_descriptor = nmos::details::make_nc_property_descriptor(U("members"), nmos::nc_block_members_property_id, U("members"), U("NcBlockMemberDescriptor"), true, false, true, false, web::json::value::null());
     const auto oid_property_descriptor = nmos::details::make_nc_property_descriptor(U("oid"), nmos::nc_object_oid_property_id, U("oid"), U("NcOid"), true, false, false, false, web::json::value::null());
     const auto class_id_property_descriptor = nmos::details::make_nc_property_descriptor(U("classId"), nmos::nc_object_class_id_property_id, U("classId"), U("NcClassId"), true, false, false, false, web::json::value::null());
+
+    // No class id specified in the objet properties holder for new monitor causes an error
     {
         auto monitor_3_oid = 999;
         // Create Object Properties Holder for Block, with a Property Holder for the block members
@@ -1529,17 +1531,17 @@ BST_TEST_CASE(testModifyRebuildableBlock)
         }
         const auto block_object_properties_holder = nmos::details::make_nc_object_properties_holder(role_path.as_array(), block_property_holders.as_array(), value::array().as_array(), value::array().as_array(), false);
         push_back(object_properties_holders, block_object_properties_holder);
-        // Create Object Properties Holder for new monitor
         const auto monitor_2_role_path = value_of({ U("root"), U("receivers"), U("mon2") });
         {
             auto property_holders = value::array();
             push_back(property_holders, nmos::details::make_nc_property_holder(nmos::nc_object_oid_property_id, oid_property_descriptor, monitor_2_oid));
             push_back(object_properties_holders, nmos::details::make_nc_object_properties_holder(monitor_2_role_path.as_array(), property_holders.as_array(), value::array().as_array(), value::array().as_array(), false));
         }
+        // Create Object Properties Holder for new monitor
         auto monitor3_property_holders = value::array();
         const auto monitor_3_role_path = value_of({ U("root"), U("receivers"), U("mon3") });
         {
-            //auto property_holders = value::array();
+            // No property holders, including no class id
             push_back(monitor3_property_holders, nmos::details::make_nc_property_holder(nmos::nc_object_oid_property_id, oid_property_descriptor, monitor_3_oid));
             push_back(object_properties_holders, nmos::details::make_nc_object_properties_holder(monitor_3_role_path.as_array(), monitor3_property_holders.as_array(), value::array().as_array(), value::array().as_array(), false));
         }

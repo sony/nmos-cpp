@@ -23,6 +23,14 @@ BST_TEST_CASE(testGetPropertiesByPath)
     nmos::get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor = nmos::make_get_control_protocol_class_descriptor_handler(control_protocol_state);
     nmos::get_control_protocol_datatype_descriptor_handler get_control_protocol_datatype_descriptor = nmos::make_get_control_protocol_datatype_descriptor_handler(control_protocol_state);
 
+    bool create_validation_fingerprint_called = false;
+    // callback stubs
+    nmos::create_validation_fingerprint_handler create_validation_fingerprint = [&](const nmos::resources& resources, const nmos::resource& resource)
+    {
+        create_validation_fingerprint_called = true;
+        return U("test fingerprint");
+    };
+
     // Create Device Model
     // root
     auto root_block = nmos::make_root_block();
@@ -55,9 +63,10 @@ BST_TEST_CASE(testGetPropertiesByPath)
     insert_resource(resources, std::move(monitor2));
 
     {
+        create_validation_fingerprint_called = false;
         const auto target_role_path = value_of({ U("root") });
         const auto& resource = nmos::nc::find_resource_by_role_path(resources, target_role_path.as_array());
-        auto method_result = get_properties_by_path(resources, *resource, true, true, get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor);
+        auto method_result = get_properties_by_path(resources, *resource, true, true, get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor, create_validation_fingerprint);
 
         BST_REQUIRE_EQUAL(nmos::nc_method_status::ok, nmos::fields::nc::status(method_result));
 
@@ -65,11 +74,14 @@ BST_TEST_CASE(testGetPropertiesByPath)
         const auto& object_properties_holders = nmos::fields::nc::values(bulk_properties_holder);
 
         BST_REQUIRE_EQUAL(5, object_properties_holders.size());
+
+        BST_CHECK(create_validation_fingerprint_called);
     }
     {
+        create_validation_fingerprint_called = false;
         const auto target_role_path = value_of({ U("root"), U("receivers") });
         const auto& resource = nmos::nc::find_resource_by_role_path(resources, target_role_path.as_array());
-        auto method_result = get_properties_by_path(resources, *resource, true, true, get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor);
+        auto method_result = get_properties_by_path(resources, *resource, true, true, get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor, create_validation_fingerprint);
 
         BST_REQUIRE_EQUAL(nmos::nc_method_status::ok, nmos::fields::nc::status(method_result));
 
@@ -77,11 +89,14 @@ BST_TEST_CASE(testGetPropertiesByPath)
         const auto& object_properties_holders = nmos::fields::nc::values(bulk_properties_holder);
 
         BST_REQUIRE_EQUAL(3, object_properties_holders.size());
+
+        BST_CHECK(create_validation_fingerprint_called);
     }
     {
+        create_validation_fingerprint_called = false;
         const auto target_role_path = value_of({ U("root"), U("receivers"), U("mon1") });
         const auto& resource = nmos::nc::find_resource_by_role_path(resources, target_role_path.as_array());
-        auto method_result = get_properties_by_path(resources, *resource, true, true, get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor);
+        auto method_result = get_properties_by_path(resources, *resource, true, true, get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor, create_validation_fingerprint);
 
         BST_REQUIRE_EQUAL(nmos::nc_method_status::ok, nmos::fields::nc::status(method_result));
 
@@ -89,5 +104,7 @@ BST_TEST_CASE(testGetPropertiesByPath)
         const auto& object_properties_holders = nmos::fields::nc::values(bulk_properties_holder);
 
         BST_REQUIRE_EQUAL(1, object_properties_holders.size());
+
+        BST_CHECK(create_validation_fingerprint_called);
     }
 }
