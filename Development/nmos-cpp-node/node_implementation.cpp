@@ -1454,35 +1454,50 @@ void node_implementation_run(nmos::node_model& model, nmos::experimental::contro
 
                             switch (rand() % 3)
                             {
-                            case 0:
-                                set_receiver_monitor_link_status(oid, nmos::nc_link_status::status(nmos::nc_link_status::all_up + rand() % 3), U("link status"));
-                                break;
-                            case 1:
-                                if (overall_status.as_integer() != nmos::nc_overall_status::inactive)
+                                case 0:
                                 {
-                                    set_receiver_monitor_connection_status(oid, nmos::nc_connection_status::status(nmos::nc_connection_status::healthy + rand() % 3), U("connection status"));
+                                    const auto status = nmos::nc_link_status::status(nmos::nc_link_status::all_up + rand() % 3);
+                                    const auto status_message = status > nmos::nc_link_status::all_up ? U("NIC1, NIC2 are down") : U("");
+                                    set_receiver_monitor_link_status(oid, status, status_message);
+                                    break;
                                 }
-                                break;
-                            case 2:
-                            {
-                                auto status = nmos::nc_synchronization_status::status(nmos::nc_synchronization_status::not_used + rand() % 4);
-                                set_receiver_monitor_external_synchronization_status(oid, status, U("synchronization status"));
-                                // update receiver monitor synchronization source id if in-used
-                                if (nmos::nc_synchronization_status::not_used != status)
+                                case 1:
                                 {
-                                    if (nmos::nc_synchronization_status::healthy == status) set_receiver_monitor_synchronization_source_id(oid, bst::optional<utility::string_t>{ U("internal") });
-                                    else set_receiver_monitor_synchronization_source_id(oid, {});
+                                    if (overall_status.as_integer() != nmos::nc_overall_status::inactive)
+                                    {
+                                        const auto connection_status = nmos::nc_connection_status::status(nmos::nc_connection_status::healthy + rand() % 3);
+                                        const auto connection_status_message = connection_status > nmos::nc_connection_status::healthy ? U("Packet loss detected") : U("");
+
+                                        set_receiver_monitor_connection_status(oid, connection_status, connection_status_message);
+                                    }
+                                    break;
                                 }
-                                break;
-                            }
-                            case 3:
-                                if (overall_status.as_integer() != nmos::nc_overall_status::inactive)
+                                case 2:
                                 {
-                                    set_receiver_monitor_stream_status(oid, nmos::nc_stream_status::status(nmos::nc_stream_status::healthy + rand() % 3), U("stream status"));
+                                    const auto status = nmos::nc_synchronization_status::status(nmos::nc_synchronization_status::not_used + rand() % 4);
+                                    const auto status_message = status > nmos::nc_synchronization_status::healthy ? U("Source change from: 00:0c:ec:ff:fe:0a:2b:a1 on NIC1") : U("");
+                                    set_receiver_monitor_external_synchronization_status(oid, status, status_message);
+                                    // update receiver monitor synchronization source id if in-used
+                                    if (nmos::nc_synchronization_status::not_used != status)
+                                    {
+                                        if (nmos::nc_synchronization_status::healthy == status) set_receiver_monitor_synchronization_source_id(oid, bst::optional<utility::string_t>{ U("internal") });
+                                        else set_receiver_monitor_synchronization_source_id(oid, {});
+                                    }
+                                    break;
                                 }
-                                break;
-                            default:
-                                break;
+                                case 3:
+                                {
+                                    if (overall_status.as_integer() != nmos::nc_overall_status::inactive)
+                                    {
+                                        const auto status = nmos::nc_stream_status::status(nmos::nc_stream_status::healthy + rand() % 3);
+                                        const auto status_message = status > nmos::nc_stream_status::status::healthy ? U("Unexpected stream format") : U("");
+
+                                        set_receiver_monitor_stream_status(oid, status, status_message);
+                                    }
+                                    break;
+                                }
+                                default:
+                                    break;
                             }
                         }
                     }
