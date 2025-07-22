@@ -349,7 +349,7 @@ namespace nmos
             set_control_protocol_property(resources, oid, status_property_id, status, get_control_protocol_class_descriptor, gate);
             set_control_protocol_property(resources, oid, status_message_property_id, web::json::value::string(status_message), get_control_protocol_class_descriptor, gate);
             // Cancel any pending status updates
-            set_control_protocol_property(resources, oid, status_pending_received_time_field_name, web::json::value::number(0), gate);
+            set_hidden_control_protocol_property(resources, oid, status_pending_received_time_field_name, web::json::value::number(0), gate);
 
             // if status is "partially unhealthy" (2) or "unhealthy" (3) and less healthy than current state
             if (status > 1 && status > current_connection_status.as_integer())
@@ -406,9 +406,9 @@ namespace nmos
                     // becoming more health or in the initial activation state
                     // set the status with delay
                     const auto received_time = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
-                    if (set_control_protocol_property(resources, oid, status_pending_field_name, status, gate)
-                        && set_control_protocol_property(resources, oid, status_message_pending_time_field_name, web::json::value::string(status_message), gate)
-                        && set_control_protocol_property(resources, oid, status_pending_received_time_field_name, received_time, gate))
+                    if (set_hidden_control_protocol_property(resources, oid, status_pending_field_name, status, gate)
+                        && set_hidden_control_protocol_property(resources, oid, status_message_pending_time_field_name, web::json::value::string(status_message), gate)
+                        && set_hidden_control_protocol_property(resources, oid, status_pending_received_time_field_name, received_time, gate))
                     {
                         monitor_status_pending();
                         return true;
@@ -957,7 +957,21 @@ namespace nmos
         return false;
     }
 
-    bool set_control_protocol_property(resources& resources, nc_oid oid, const utility::string_t& property_name, const web::json::value& value, slog::base_gate& gate)
+    web::json::value get_control_protocol_property(const resources& resources, nc_oid oid, const utility::string_t& property_name, slog::base_gate& gate)
+    {
+        // get resource based on the oid
+        const auto& found = find_resource(resources, utility::s2us(std::to_string(oid)));
+        if (resources.end() != found)
+        {
+            // find the relevant nc_property_descriptor
+            return found->data.at(property_name);
+        }
+        // unknown resource
+        slog::log<slog::severities::error>(gate, SLOG_FLF) << "unknown control protocol resource: oid=" << oid;
+        return web::json::value::null();
+    }
+
+    bool set_hidden_control_protocol_property(resources& resources, nc_oid oid, const utility::string_t& property_name, const web::json::value& value, slog::base_gate& gate)
     {
         const auto& found = find_resource(resources, utility::s2us(std::to_string(oid)));
         if (resources.end() != found)
@@ -980,20 +994,6 @@ namespace nmos
         // unknown resource
         slog::log<slog::severities::error>(gate, SLOG_FLF) << "unknown control protocol resource: oid=" << oid;
         return false;
-    }
-
-    web::json::value get_control_protocol_property(const resources& resources, nc_oid oid, const utility::string_t& property_name, slog::base_gate& gate)
-    {
-        // get resource based on the oid
-        const auto& found = find_resource(resources, utility::s2us(std::to_string(oid)));
-        if (resources.end() != found)
-        {
-            // find the relevant nc_property_descriptor
-            return found->data.at(property_name);
-        }
-        // unknown resource
-        slog::log<slog::severities::error>(gate, SLOG_FLF) << "unknown control protocol resource: oid=" << oid;
-        return web::json::value::null();
     }
 
     // Set link status and link status message
@@ -1118,7 +1118,7 @@ namespace nmos
             const auto& class_id = details::parse_nc_class_id(nmos::fields::nc::class_id(found->data));
 
             auto activation_time = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
-            auto succeed = set_control_protocol_property(resources, oid, nmos::fields::nc::monitor_activation_time, activation_time, gate);
+            auto succeed = set_hidden_control_protocol_property(resources, oid, nmos::fields::nc::monitor_activation_time, activation_time, gate);
             // If autoResetCountersAndMessages set to true then reset the transition counters
             bool auto_reset_monitor{false};
 
@@ -1176,7 +1176,7 @@ namespace nmos
         {
             const auto& class_id = details::parse_nc_class_id(nmos::fields::nc::class_id(found->data));
 
-            auto succeed = set_control_protocol_property(resources, oid, nmos::fields::nc::monitor_activation_time, web::json::value::number(0), gate);
+            auto succeed = set_hidden_control_protocol_property(resources, oid, nmos::fields::nc::monitor_activation_time, web::json::value::number(0), gate);
 
             if (is_nc_sender_monitor(class_id))
             {
@@ -1197,7 +1197,7 @@ namespace nmos
         }
         return false;
     }
-    
+
     // Set link status and link status message
     bool set_sender_monitor_link_status(resources& resources, nc_oid oid, nmos::nc_link_status::status link_status, const utility::string_t& link_status_message, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, slog::base_gate& gate)
     {

@@ -107,8 +107,11 @@ namespace nmos
     // get property value given oid and property_id
     web::json::value get_control_protocol_property(const resources& resources, nc_oid oid, const nc_property_id& property_id, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, slog::base_gate& gate);
 
-    // set property value given oid and property_id
+    // set property value given oid and property_id and notify
     bool set_control_protocol_property(resources& resources, nc_oid oid, const nc_property_id& property_id, const web::json::value& value, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, slog::base_gate& gate);
+
+    // set hidden property but don't notify, as property isn't part of class definition
+    bool set_hidden_control_protocol_property(resources& resources, nc_oid oid, const utility::string_t& property_name, const web::json::value& value, slog::base_gate& gate);
 
     // Set link status and link status message
     bool set_receiver_monitor_link_status(resources& resources, nc_oid oid, nmos::nc_link_status::status link_status, const utility::string_t& link_status_message, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, slog::base_gate& gate);
@@ -157,9 +160,6 @@ namespace nmos
     bool set_sender_monitor_essence_status(resources& resources, nc_oid oid, nmos::nc_essence_status::status essence_status, const utility::string_t& essence_status_message, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, slog::base_gate& gate);
     // Set essence status and status message and apply status reporting delay
     bool set_sender_monitor_essence_status_with_delay(resources& resources, nc_oid oid, nmos::nc_essence_status::status essence_status, const utility::string_t& essence_status_message, monitor_status_pending_handler monitor_status_pending, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, slog::base_gate& gate);
-
-    // Used to set "hidden" resource properties
-    bool set_control_protocol_property(resources& resources, nc_oid oid, const utility::string_t& property_name, const web::json::value& value, slog::base_gate& gate);
 
     // Used to get "hidden" resource properties
     web::json::value get_control_protocol_property(const resources& resources, nc_oid oid, const utility::string_t& property_name, slog::base_gate& gate);
