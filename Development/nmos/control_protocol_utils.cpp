@@ -358,7 +358,16 @@ namespace nmos
                 auto transition_counter = get_control_protocol_property(resources, oid, status_transition_counter_property_id, get_control_protocol_class_descriptor, gate).as_integer();
                 set_control_protocol_property(resources, oid, status_transition_counter_property_id, ++transition_counter, get_control_protocol_class_descriptor, gate);
             }
-            return details::update_receiver_monitor_overall_status(resources, oid, get_control_protocol_class_descriptor, gate);
+            const auto& found = find_resource(resources, utility::s2us(std::to_string(oid)));
+            if (resources.end() != found)
+            {
+                if (nmos::is_nc_sender_monitor(details::parse_nc_class_id(nmos::fields::nc::class_id(found->data))))
+                {
+                    return details::update_sender_monitor_overall_status(resources, oid, get_control_protocol_class_descriptor, gate);
+                }
+                return details::update_receiver_monitor_overall_status(resources, oid, get_control_protocol_class_descriptor, gate);
+            }
+            return false;
         }
 
         // Set status and status message
@@ -384,10 +393,25 @@ namespace nmos
             // do nothing if new status and the current status are the same
             if (status == current_status) return true;
 
+            utility::string_t updated_status_message = status_message;
+
+            // if status is "healthy", and  then preserve the previous status message
+            if (1 == status.as_integer() && status_message.size() == 0)
+            {
+                // Get existing status message and prepend with "Previously: "
+                const auto& current_status_message = get_control_protocol_property(resources, oid, status_message_property_id, get_control_protocol_class_descriptor, gate);
+
+                if (!current_status_message.is_null())
+                {
+                    utility::ostringstream_t ss;
+                    ss << U("Previously: ") << current_status_message.as_string();
+                    updated_status_message = ss.str();
+                }
+            }
             // if status or current state is "inactive" (0)
             if (0 == status.as_integer() || 0 == current_status.as_integer())
             {
-                return set_monitor_status(resources, oid, status, status_message, status_property_id, status_message_property_id, status_transition_counter_property_id, status_pending_received_time_field_name, get_control_protocol_class_descriptor, gate);
+                return set_monitor_status(resources, oid, status, updated_status_message, status_property_id, status_message_property_id, status_transition_counter_property_id, status_pending_received_time_field_name, get_control_protocol_class_descriptor, gate);
             }
             else
             {
@@ -399,7 +423,7 @@ namespace nmos
                 {
                     // becoming less health and not in the initial activation state
                     // immediately set the status
-                    return set_monitor_status(resources, oid, status, status_message, status_property_id, status_message_property_id, status_transition_counter_property_id, status_pending_received_time_field_name, get_control_protocol_class_descriptor, gate);
+                    return set_monitor_status(resources, oid, status, updated_status_message, status_property_id, status_message_property_id, status_transition_counter_property_id, status_pending_received_time_field_name, get_control_protocol_class_descriptor, gate);
                 }
                 else
                 {
@@ -407,7 +431,7 @@ namespace nmos
                     // set the status with delay
                     const auto received_time = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
                     if (set_hidden_control_protocol_property(resources, oid, status_pending_field_name, status, gate)
-                        && set_hidden_control_protocol_property(resources, oid, status_message_pending_time_field_name, web::json::value::string(status_message), gate)
+                        && set_hidden_control_protocol_property(resources, oid, status_message_pending_time_field_name, web::json::value::string(updated_status_message), gate)
                         && set_hidden_control_protocol_property(resources, oid, status_pending_received_time_field_name, received_time, gate))
                     {
                         monitor_status_pending();

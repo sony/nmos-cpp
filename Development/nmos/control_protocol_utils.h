@@ -44,6 +44,7 @@ namespace nmos
             slog::base_gate& gate);
 
         bool update_receiver_monitor_overall_status(resources& resources, nc_oid oid, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, slog::base_gate& gate);
+        bool update_sender_monitor_overall_status(resources& resources, nc_oid oid, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, slog::base_gate& gate);
     }
 
     // is the given class_id a NcBlock
