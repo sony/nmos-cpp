@@ -723,16 +723,38 @@ namespace nmos
     {
         slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Resets the packet counters";
 
-        // reset all counters
-        const std::vector<nc_property_id> transition_counters = {
-            nc_receiver_monitor_connection_status_transition_counter_property_id,
-            nc_receiver_monitor_external_synchronization_status_transition_counter_property_id,
-            nc_receiver_monitor_link_status_transition_counter_property_id,
-            nc_receiver_monitor_stream_status_transition_counter_property_id };
+        const std::vector<std::pair<nc_property_id, web::json::value>> receiver_property_values = {
+            std::pair<nc_property_id, web::json::value>(nc_receiver_monitor_connection_status_transition_counter_property_id, web::json::value::number(0)),
+            std::pair<nc_property_id, web::json::value>(nc_receiver_monitor_external_synchronization_status_transition_counter_property_id, web::json::value::number(0)),
+            std::pair<nc_property_id, web::json::value>(nc_receiver_monitor_link_status_transition_counter_property_id, web::json::value::number(0)),
+            std::pair<nc_property_id, web::json::value>(nc_receiver_monitor_stream_status_transition_counter_property_id, web::json::value::number(0)),
+            std::pair<nc_property_id, web::json::value>(nc_receiver_monitor_connection_status_message_property_id, web::json::value::null()),
+            std::pair<nc_property_id, web::json::value>(nc_receiver_monitor_external_synchronization_status_message_property_id, web::json::value::null()),
+            std::pair<nc_property_id, web::json::value>(nc_receiver_monitor_link_status_message_property_id, web::json::value::null()),
+            std::pair<nc_property_id, web::json::value>(nc_receiver_monitor_stream_status_message_property_id, web::json::value::null()),
+            std::pair<nc_property_id, web::json::value>(nc_status_monitor_overall_status_message_property_id, web::json::value::null()),
+        };
 
-        for (const auto& property_id : transition_counters)
+        const std::vector<std::pair<nc_property_id, web::json::value>> sender_property_values = {
+            std::pair<nc_property_id, web::json::value>(nc_sender_monitor_transmission_status_transition_counter_property_id, web::json::value::number(0)),
+            std::pair<nc_property_id, web::json::value>(nc_sender_monitor_external_synchronization_status_transition_counter_property_id, web::json::value::number(0)),
+            std::pair<nc_property_id, web::json::value>(nc_sender_monitor_link_status_transition_counter_property_id, web::json::value::number(0)),
+            std::pair<nc_property_id, web::json::value>(nc_sender_monitor_essence_status_transition_counter_property_id, web::json::value::number(0)),
+            std::pair<nc_property_id, web::json::value>(nc_sender_monitor_transmission_status_message_property_id, web::json::value::null()),
+            std::pair<nc_property_id, web::json::value>(nc_sender_monitor_external_synchronization_status_message_property_id, web::json::value::null()),
+            std::pair<nc_property_id, web::json::value>(nc_sender_monitor_link_status_message_property_id, web::json::value::null()),
+            std::pair<nc_property_id, web::json::value>(nc_sender_monitor_essence_status_message_property_id, web::json::value::null()),
+            std::pair<nc_property_id, web::json::value>(nc_status_monitor_overall_status_message_property_id, web::json::value::null()),
+        };
+
+        const auto& class_id = details::parse_nc_class_id(nmos::fields::nc::class_id(resource.data));
+
+        // reset all counters
+        const std::vector<std::pair<nc_property_id, web::json::value>> property_values = nmos::is_nc_sender_monitor(class_id) ? sender_property_values : receiver_property_values;
+
+        for (const auto& property_value : property_values)
         {
-            const auto& property = find_property_descriptor(property_id, details::parse_nc_class_id(nmos::fields::nc::class_id(resource.data)), get_control_protocol_class_descriptor);
+            const auto& property = find_property_descriptor(property_value.first, details::parse_nc_class_id(nmos::fields::nc::class_id(resource.data)), get_control_protocol_class_descriptor);
             if (!property.is_null())
             {
                 try
@@ -740,7 +762,7 @@ namespace nmos
                     // update property
                     modify_control_protocol_resource(resources, resource.id, [&](nmos::resource& resource)
                     {
-                        resource.data[nmos::fields::nc::name(property)] = web::json::value::number(0);
+                        resource.data[nmos::fields::nc::name(property)] = property_value.second;
 
                         // do notification that the specified property has changed
                         if (property_changed)
@@ -748,12 +770,12 @@ namespace nmos
                             property_changed(resource, nmos::fields::nc::name(property), -1);
                         }
 
-                    }, make_property_changed_event(nmos::fields::nc::oid(resource.data), { { property_id, nc_property_change_type::type::value_changed, web::json::value::number(0) } }));
+                    }, make_property_changed_event(nmos::fields::nc::oid(resource.data), { { property_value.first, nc_property_change_type::type::value_changed, property_value.second } }));
                 }
                 catch (const nmos::control_protocol_exception& e)
                 {
                     utility::ostringstream_t ss;
-                    ss << "Reset counters: " << details::make_nc_property_id(property_id).serialize() << " error: " << e.what();
+                    ss << "Reset counters: " << details::make_nc_property_id(property_value.first).serialize() << " error: " << e.what();
                     slog::log<slog::severities::error>(gate, SLOG_FLF) << ss.str();
                     return details::make_nc_method_result_error({ nc_method_status::parameter_error }, ss.str());
                 }
