@@ -187,4 +187,63 @@ namespace nmos
             return set_monitor_synchronization_source_id(resources, oid, source_id, get_control_protocol_class_descriptor, gate);
         };
     }
+
+    // Set sender monitor link status and link status message
+    set_sender_monitor_link_status_handler make_set_sender_monitor_link_status_handler(resources& resources, experimental::control_protocol_state& control_protocol_state, slog::base_gate& gate)
+    {
+        auto get_control_protocol_class_descriptor = nmos::make_get_control_protocol_class_descriptor_handler(control_protocol_state);
+        auto monitor_status_pending = nmos::make_monitor_status_pending_handler(control_protocol_state);
+
+        return [&resources, monitor_status_pending, get_control_protocol_class_descriptor, &gate](nc_oid oid, nmos::nc_link_status::status link_status, const utility::string_t& link_status_message)
+        {
+            return set_sender_monitor_link_status_with_delay(resources, oid, link_status, link_status_message, monitor_status_pending, get_control_protocol_class_descriptor, gate);
+        };
+    }
+
+    // Set sender monitor transmission status and transmission status message
+    set_sender_monitor_transmission_status_handler make_set_sender_monitor_transmission_status_handler(resources& resources, experimental::control_protocol_state& control_protocol_state, slog::base_gate& gate)
+    {
+        auto get_control_protocol_class_descriptor = nmos::make_get_control_protocol_class_descriptor_handler(control_protocol_state);
+        auto monitor_status_pending = nmos::make_monitor_status_pending_handler(control_protocol_state);
+
+        return [&resources, monitor_status_pending, get_control_protocol_class_descriptor, &gate](nc_oid oid, nmos::nc_transmission_status::status transmission_status, const utility::string_t& transmission_status_message)
+        {
+            return set_sender_monitor_transmission_status_with_delay(resources, oid, transmission_status, transmission_status_message, monitor_status_pending, get_control_protocol_class_descriptor, gate);
+        };
+    }
+
+    // Set sender monitor external synchronization status and external synchronization status message
+    set_sender_monitor_external_synchronization_status_handler make_set_sender_monitor_external_synchronization_status_handler(resources& resources, experimental::control_protocol_state& control_protocol_state, slog::base_gate& gate)
+    {
+        auto get_control_protocol_class_descriptor = nmos::make_get_control_protocol_class_descriptor_handler(control_protocol_state);
+        auto monitor_status_pending = nmos::make_monitor_status_pending_handler(control_protocol_state);
+
+        return [&resources, monitor_status_pending, get_control_protocol_class_descriptor, &gate](nc_oid oid, nmos::nc_synchronization_status::status external_synchronization_status, const utility::string_t& external_synchronization_status_message)
+        {
+            return set_sender_monitor_external_synchronization_status_with_delay(resources, oid, external_synchronization_status, external_synchronization_status_message, monitor_status_pending, get_control_protocol_class_descriptor, gate);
+        };
+    }
+
+    // Set sender monitor essence status and essence status message
+    set_sender_monitor_essence_status_handler make_set_sender_monitor_essence_status_handler(resources& resources, experimental::control_protocol_state& control_protocol_state, slog::base_gate& gate)
+    {
+        auto get_control_protocol_class_descriptor = nmos::make_get_control_protocol_class_descriptor_handler(control_protocol_state);
+        auto monitor_status_pending = nmos::make_monitor_status_pending_handler(control_protocol_state);
+
+        return [&resources, monitor_status_pending, get_control_protocol_class_descriptor, &gate](nc_oid oid, nmos::nc_essence_status::status essence_status, const utility::string_t& essence_status_message)
+        {
+            return set_sender_monitor_essence_status_with_delay(resources, oid, essence_status, essence_status_message, monitor_status_pending, get_control_protocol_class_descriptor, gate);
+        };
+    }
+
+    // Set sender monitor synchronization source id
+    set_sender_monitor_synchronization_source_id_handler make_set_sender_monitor_synchronization_source_id_handler(resources& resources, experimental::control_protocol_state& control_protocol_state, slog::base_gate& gate)
+    {
+        auto get_control_protocol_class_descriptor = nmos::make_get_control_protocol_class_descriptor_handler(control_protocol_state);
+
+        return [&resources, get_control_protocol_class_descriptor, &gate](nc_oid oid, const bst::optional<utility::string_t>& source_id)
+        {
+            return set_monitor_synchronization_source_id(resources, oid, source_id, get_control_protocol_class_descriptor, gate);
+        };
+    }
 }
