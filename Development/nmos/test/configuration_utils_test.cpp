@@ -380,7 +380,7 @@ BST_TEST_CASE(testApplyBackupDataSet)
     bool create_device_model_object_called = false;
 
     // callback stubs
-    nmos::get_read_only_modification_allow_list_handler get_read_only_modification_allow_list = [&](const nmos::resource& resource, const std::vector<utility::string_t>& target_role_path, const std::vector<nmos::nc_property_id>& property_ids)
+    nmos::get_read_only_modification_allow_list_handler get_read_only_modification_allow_list = [&](const nmos::resources& resources, const nmos::resource& resource, const std::vector<utility::string_t>& target_role_path, const std::vector<nmos::nc_property_id>& property_ids)
     {
         get_read_only_modification_allow_list_called = true;
         return property_ids;
@@ -949,7 +949,7 @@ BST_TEST_CASE(testApplyBackupDataSet_AddDeviceModelObject)
     bool create_device_model_object_called = false;
 
     // callback stubs
-    nmos::get_read_only_modification_allow_list_handler get_read_only_modification_allow_list = [&](const nmos::resource& resource, const std::vector<utility::string_t>& target_role_path, const std::vector<nmos::nc_property_id>& property_ids)
+    nmos::get_read_only_modification_allow_list_handler get_read_only_modification_allow_list = [&](const nmos::resources& resources, const nmos::resource& resource, const std::vector<utility::string_t>& target_role_path, const std::vector<nmos::nc_property_id>& property_ids)
     {
         get_read_only_modification_allow_list_called = true;
         return property_ids;
@@ -1177,7 +1177,7 @@ BST_TEST_CASE(testApplyBackupDataSet_NegativeTests)
     bool create_device_model_object_called = false;
 
     // callback stubs
-    nmos::get_read_only_modification_allow_list_handler get_read_only_modification_allow_list = [&](const nmos::resource& resource, const std::vector<utility::string_t>& target_role_path, const std::vector<nmos::nc_property_id>& property_ids)
+    nmos::get_read_only_modification_allow_list_handler get_read_only_modification_allow_list = [&](const nmos::resources& resources, const nmos::resource& resource, const std::vector<utility::string_t>& target_role_path, const std::vector<nmos::nc_property_id>& property_ids)
     {
         get_read_only_modification_allow_list_called = true;
         return property_ids;
@@ -1488,7 +1488,7 @@ BST_TEST_CASE(testModifyRebuildableBlock)
     bool create_device_model_object_called = false;
 
     // callback stubs
-    nmos::get_read_only_modification_allow_list_handler get_read_only_modification_allow_list = [&](const nmos::resource& resource, const std::vector<utility::string_t>& target_role_path, const std::vector<nmos::nc_property_id>& property_ids)
+    nmos::get_read_only_modification_allow_list_handler get_read_only_modification_allow_list = [&](const nmos::resources& resources, const nmos::resource& resource, const std::vector<utility::string_t>& target_role_path, const std::vector<nmos::nc_property_id>& property_ids)
     {
         get_read_only_modification_allow_list_called = true;
         return property_ids;

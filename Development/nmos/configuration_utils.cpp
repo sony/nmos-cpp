@@ -115,7 +115,7 @@ namespace nmos
                             }
                         }
 
-                        const auto allow_list_read_only_property_ids = get_read_only_modification_allow_list(resource, target_role_path_array, read_only_property_ids);
+                        const auto allow_list_read_only_property_ids = get_read_only_modification_allow_list(resources, resource, target_role_path_array, read_only_property_ids);
 
                         const auto& allowed_property_values = boost::copy_range<std::set<web::json::value>>(filtered_property_values
                             | boost::adaptors::filtered([&property_restore_notices, get_control_protocol_class_descriptor, class_id, allow_list_read_only_property_ids](const web::json::value& property_value)

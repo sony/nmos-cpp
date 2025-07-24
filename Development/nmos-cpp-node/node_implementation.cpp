@@ -1747,9 +1747,9 @@ nmos::control_protocol_property_changed_handler make_node_implementation_control
 
 // IS-14 Device Configuration callback
 // This function should generate a fingerprint that can be used for subsequent validation.
-nmos::create_validation_fingerprint_handler make_create_validation_fingerprint_handler(const nmos::resources& resources, slog::base_gate& gate)
+nmos::create_validation_fingerprint_handler make_create_validation_fingerprint_handler(slog::base_gate& gate)
 {
-    return [&resources, &gate](const nmos::resources& resources, const nmos::resource& resource)
+    return [&gate](const nmos::resources& resources, const nmos::resource& resource)
     {
         return U("Sony nmos-cpp node");
     };
@@ -1757,9 +1757,9 @@ nmos::create_validation_fingerprint_handler make_create_validation_fingerprint_h
 
 // IS-14 Device Configuration callback
 // This function called by a validate or restore and can be used to validate a validation fingerprint. Returning false will fail the validate or restore operation.
-nmos::validate_validation_fingerprint_handler make_validate_validation_fingerprint_handler(const nmos::resources& resources, slog::base_gate& gate)
+nmos::validate_validation_fingerprint_handler make_validate_validation_fingerprint_handler(slog::base_gate& gate)
 {
-    return [&resources, &gate](const nmos::resources& resources, const nmos::resource& resource, const utility::string_t& validation_fingerprint)
+    return [&gate](const nmos::resources& resources, const nmos::resource& resource, const utility::string_t& validation_fingerprint)
     {
         return true;
     };
@@ -1769,9 +1769,9 @@ nmos::validate_validation_fingerprint_handler make_validate_validation_fingerpri
 // This function is called when the Device Configuration API is attempting to modify
 // the read only properties of a rebuildable Device Model object. This callback returns an "allow list" of property ids
 // for properties that can be updated - the "allowed" read only property will be updated according to backup dataset received.
-nmos::get_read_only_modification_allow_list_handler make_get_read_only_modification_allow_list_handler(nmos::resources& resources, slog::base_gate& gate)
+nmos::get_read_only_modification_allow_list_handler make_get_read_only_modification_allow_list_handler(slog::base_gate& gate)
 {
-    return [&resources, &gate](const nmos::resource& resource, const std::vector<utility::string_t>& target_role_path, const std::vector<nmos::nc_property_id>& property_ids)
+    return [&gate](const nmos::resources& resources, const nmos::resource& resource, const std::vector<utility::string_t>& target_role_path, const std::vector<nmos::nc_property_id>& property_ids)
     {
         // Use this function to create allow list of property ids for properties in the object should be modified by the configuration API
         slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::stash_category(impl::categories::node_implementation) << "Do filter_property_holders";
@@ -1974,9 +1974,9 @@ nmos::experimental::node_implementation make_node_implementation(nmos::node_mode
         .on_validate_channelmapping_output_map(make_node_implementation_map_validator()) // may be omitted if not required
         .on_channelmapping_activated(make_node_implementation_channelmapping_activation_handler(gate))
         .on_control_protocol_property_changed(make_node_implementation_control_protocol_property_changed_handler(gate)) // may be omitted if IS-12 not required
-        .on_create_validation_fingerprint(make_create_validation_fingerprint_handler(model.control_protocol_resources, gate))
-        .on_validate_validation_fingerprint(make_validate_validation_fingerprint_handler(model.control_protocol_resources, gate))
-        .on_get_read_only_modification_allow_list(make_get_read_only_modification_allow_list_handler(model.control_protocol_resources, gate)) // may be omitted if either IS-14 not required, or IS-14 Rebuild functionality not required
+        .on_create_validation_fingerprint(make_create_validation_fingerprint_handler(gate))
+        .on_validate_validation_fingerprint(make_validate_validation_fingerprint_handler(gate))
+        .on_get_read_only_modification_allow_list(make_get_read_only_modification_allow_list_handler(gate)) // may be omitted if either IS-14 not required, or IS-14 Rebuild functionality not required
         .on_remove_device_model_object(make_remove_device_model_object_handler(model, gate)) // may be omitted if either IS-14 not required, or IS-14 Rebuild functionality not required
         .on_create_device_model_object(make_create_device_model_object_handler(model, gate)); // may be omitted if either IS-14 not required, or IS-14 Rebuild functionality not required
 }

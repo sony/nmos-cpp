@@ -27,7 +27,7 @@ namespace nmos
 
     // This callback is invoked if attempting to modify read only properties when restoring a configuration.
     // This function return a vector of property ids of the read only properties allowed to be modified
-    typedef std::function<std::vector<nmos::nc_property_id>(const nmos::resource& resource, const std::vector<utility::string_t>& role_path, const std::vector<nmos::nc_property_id>& property_ids)> get_read_only_modification_allow_list_handler;
+    typedef std::function<std::vector<nmos::nc_property_id>(const nmos::resources& resources, const nmos::resource& resource, const std::vector<utility::string_t>& role_path, const std::vector<nmos::nc_property_id>& property_ids)> get_read_only_modification_allow_list_handler;
 
     // This callback is invoked if attempting to remove a device model object when restoring a configuration.
     // This function calls back before an object is removed from the device model.
