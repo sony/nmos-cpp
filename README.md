@@ -12,6 +12,7 @@ This repository contains an implementation of the [AMWA Networked Media Open Spe
 - [AMWA IS-09 NMOS System Parameters Specification](https://specs.amwa.tv/is-09/) (originally defined in JT-NM TR-1001-1:2018 Annex A)
 - [AMWA IS-10 NMOS Authorization Specification](https://specs.amwa.tv/is-10/)
 - [AMWA IS-12 AMWA IS-12 NMOS Control Protocol](https://specs.amwa.tv/is-12/)
+- [AMWA IS-14 AMWA IS-14 NMOS Device Configuration Specification](https://specs.amwa.tv/is-14/)
 - [AMWA BCP-002-01 NMOS Grouping Recommendations - Natural Grouping](https://specs.amwa.tv/bcp-002-01/)
 - [AMWA BCP-002-02 NMOS Asset Distinguishing Information](https://specs.amwa.tv/bcp-002-02/)
 - [AMWA BCP-003-01 Secure Communication in NMOS Systems](https://specs.amwa.tv/bcp-003-01/)
@@ -127,6 +128,7 @@ The implementation is designed to be extended. Development is ongoing, following
 
 Recent activity on the project (newest first):
 
+- Added support for the IS-14 NMOS Device Configuration
 - Added support for the IS-12 NMOS Control Protocol
 - Update to Conan 2; Conan 1.X is no longer supported
 - Added support for IS-10 Authorization
