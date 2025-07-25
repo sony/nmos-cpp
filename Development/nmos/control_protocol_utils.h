@@ -42,7 +42,17 @@ namespace nmos
             const utility::string_t& status_pending_received_time_field_name,
             get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor,
             slog::base_gate& gate);
-
+        bool set_monitor_status_with_delay(resources& resources, nc_oid oid, const web::json::value& status, const utility::string_t& status_message,
+             const nc_property_id& status_property_id,
+             const nc_property_id& status_message_property_id,
+             const nc_property_id& status_transition_counter_property_id,
+             const utility::string_t& status_pending_field_name,
+             const utility::string_t& status_message_pending_time_field_name,
+             const utility::string_t& status_pending_received_time_field_name,
+             long long current_time,
+             monitor_status_pending_handler monitor_status_pending,
+             get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor,
+             slog::base_gate& gate);
         bool update_receiver_monitor_overall_status(resources& resources, nc_oid oid, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, slog::base_gate& gate);
         bool update_sender_monitor_overall_status(resources& resources, nc_oid oid, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, slog::base_gate& gate);
     }
