@@ -50,6 +50,7 @@ namespace
 
         auto earliest_necessary_update = (nmos::tai_clock::time_point::max)();
 
+        std::cerr << "Waiting for the shutdown signal\n";
         for (;;)
         {
             nmos::details::wait_until(condition, lock, earliest_necessary_update, [&] { return shutdown; });
@@ -72,11 +73,13 @@ namespace
             {
                 auto lock = model.write_lock();
                 model.shutdown = true;
+                std::cerr << "\nSignal shutdown\n";
                 break;
             }
-            catch (...)
+            catch (const std::exception& e)
             {
                 // ignore lock failure
+                std::cerr << "shutdown error: " << e.what() << std::endl;
             }
         }
 
@@ -94,7 +97,9 @@ BST_TEST_CASE(testConditionVariableWait)
     // start a wait thread
     std::thread wait_thread(wait);
 
-    // start a large number of lock_then_unlock threads to exhaust the lock limit
+    // wait 500 milliseconds before starting a large number of lock_then_unlock threads to exhaust the lock limit
+    std::this_thread::sleep_for(std::chrono::milliseconds(500));
+
     std::vector<std::thread> threads;
     for (auto idx = 0; idx < max_threads; idx++)
     {
