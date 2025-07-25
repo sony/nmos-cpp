@@ -327,14 +327,7 @@ namespace nmos
             }
 
             // send the messages without the lock on resources
-            try
-            {
-                details::reverse_lock_guard<nmos::write_lock> unlock{ lock };
-            }
-            catch (const std::exception& e)
-            {
-                slog::log<slog::severities::error>(gate, SLOG_FLF) << "Unlock error: " << e.what();
-            }
+            details::reverse_lock_guard<nmos::write_lock> unlock{ lock };
 
             if (!outgoing_messages.empty()) slog::log<slog::severities::info>(gate, SLOG_FLF) << "Sending " << outgoing_messages.size() << " websocket messages";
 
