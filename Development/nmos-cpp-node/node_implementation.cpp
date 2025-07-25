@@ -1336,6 +1336,7 @@ void node_implementation_run(nmos::node_model& model, nmos::experimental::contro
     const auto seed_id = nmos::experimental::fields::seed_id(model.settings);
     const auto how_many = impl::fields::how_many(model.settings);
     const auto sender_ports = impl::parse_ports(impl::fields::senders(model.settings));
+    const auto rtp_sender_ports = boost::copy_range<std::vector<impl::port>>(sender_ports | boost::adaptors::filtered(impl::is_rtp_port));
     const auto ws_sender_ports = boost::copy_range<std::vector<impl::port>>(sender_ports | boost::adaptors::filtered(impl::is_ws_port));
     const auto rtp_receiver_ports = boost::copy_range<std::vector<impl::port>>(impl::parse_ports(impl::fields::receivers(model.settings)) | boost::adaptors::filtered(impl::is_rtp_port));
 
@@ -1348,6 +1349,12 @@ void node_implementation_run(nmos::node_model& model, nmos::experimental::contro
     auto set_receiver_monitor_stream_status = nmos::make_set_receiver_monitor_stream_status_handler(control_protocol_resources, control_protocol_state, gate);
     auto set_receiver_monitor_synchronization_source_id = nmos::make_set_receiver_monitor_synchronization_source_id_handler(control_protocol_resources, control_protocol_state, gate);
 
+    auto set_sender_monitor_link_status = nmos::make_set_sender_monitor_link_status_handler(control_protocol_resources, control_protocol_state, gate);
+    auto set_sender_monitor_transmission_status = nmos::make_set_sender_monitor_transmission_status_handler(control_protocol_resources, control_protocol_state, gate);
+    auto set_sender_monitor_external_synchronization_status = nmos::make_set_sender_monitor_external_synchronization_status_handler(control_protocol_resources, control_protocol_state, gate);
+    auto set_sender_monitor_essence_status = nmos::make_set_sender_monitor_essence_status_handler(control_protocol_resources, control_protocol_state, gate);
+    auto set_sender_monitor_synchronization_source_id = nmos::make_set_sender_monitor_synchronization_source_id_handler(control_protocol_resources, control_protocol_state, gate);
+
     // start background tasks to intermittently update the state of the event sources, to cause events to be emitted to connected receivers
 
     nmos::details::seed_generator events_seeder;
@@ -1356,10 +1363,10 @@ void node_implementation_run(nmos::node_model& model, nmos::experimental::contro
     auto cancellation_source = pplx::cancellation_token_source();
 
     auto token = cancellation_source.get_token();
-    auto events = pplx::do_while([&model, seed_id, how_many, ws_sender_ports, rtp_receiver_ports, get_control_protocol_property, set_receiver_monitor_link_status, set_receiver_monitor_connection_status, set_receiver_monitor_external_synchronization_status, set_receiver_monitor_stream_status, set_receiver_monitor_synchronization_source_id, events_engine, &gate, token]
+    auto events = pplx::do_while([&model, seed_id, how_many, ws_sender_ports, rtp_receiver_ports, rtp_sender_ports, get_control_protocol_property, set_receiver_monitor_link_status, set_receiver_monitor_connection_status, set_receiver_monitor_external_synchronization_status, set_receiver_monitor_stream_status, set_receiver_monitor_synchronization_source_id, set_sender_monitor_link_status, set_sender_monitor_transmission_status, set_sender_monitor_external_synchronization_status, set_sender_monitor_essence_status, set_sender_monitor_synchronization_source_id, events_engine, &gate, token]
     {
         const auto event_interval = std::uniform_real_distribution<>(0.5, 5.0)(*events_engine);
-        return pplx::complete_after(std::chrono::milliseconds(std::chrono::milliseconds::rep(1000 * event_interval)), token).then([&model, seed_id, how_many, ws_sender_ports, rtp_receiver_ports, get_control_protocol_property, set_receiver_monitor_link_status, set_receiver_monitor_connection_status, set_receiver_monitor_external_synchronization_status, set_receiver_monitor_stream_status, set_receiver_monitor_synchronization_source_id, events_engine, &gate]
+        return pplx::complete_after(std::chrono::milliseconds(std::chrono::milliseconds::rep(1000 * event_interval)), token).then([&model, seed_id, how_many, ws_sender_ports, rtp_receiver_ports, rtp_sender_ports, get_control_protocol_property, set_receiver_monitor_link_status, set_receiver_monitor_connection_status, set_receiver_monitor_external_synchronization_status, set_receiver_monitor_stream_status, set_receiver_monitor_synchronization_source_id, set_sender_monitor_link_status, set_sender_monitor_transmission_status, set_sender_monitor_external_synchronization_status, set_sender_monitor_essence_status, set_sender_monitor_synchronization_source_id, events_engine, &gate]
         {
             auto lock = model.write_lock();
 
@@ -1436,7 +1443,7 @@ void node_implementation_run(nmos::node_model& model, nmos::experimental::contro
                 if (counter.late_packet_counter.value < std::numeric_limits<uint64_t>::max()) ++counter.late_packet_counter.value;
             }
 
-            // example to set receiver monitors statuses
+            // example setting receiver monitor statuses
             {
                 auto& resources = model.control_protocol_resources;
                 for (int index = 0; index < how_many; ++index)
@@ -1503,7 +1510,73 @@ void node_implementation_run(nmos::node_model& model, nmos::experimental::contro
                     }
                 }
             }
+            // example setting sender monitor statuses
+            {
+                auto& resources = model.control_protocol_resources;
+                for (int index = 0; index < how_many; ++index)
+                {
+                    for (const auto& port : rtp_sender_ports)
+                    {
+                        const auto sender_id = impl::make_id(seed_id, nmos::types::sender, port, index);
 
+                        auto sender_monitor = nmos::find_control_protocol_resource(resources, nmos::types::nc_status_monitor, sender_id);
+                        if (resources.end() != sender_monitor)
+                        {
+                            const auto& oid = nmos::fields::nc::oid(sender_monitor->data);
+
+                            auto overall_status = get_control_protocol_property(oid, nmos::nc_status_monitor_overall_status_property_id);
+
+                            switch (rand() % 3)
+                            {
+                                case 0:
+                                {
+                                    const auto status = nmos::nc_link_status::status(nmos::nc_link_status::all_up + rand() % 3);
+                                    const auto status_message = status > nmos::nc_link_status::all_up ? U("NIC1, NIC2 are down") : U("");
+                                    set_sender_monitor_link_status(oid, status, status_message);
+                                    break;
+                                }
+                                case 1:
+                                {
+                                    if (overall_status.as_integer() != nmos::nc_overall_status::inactive)
+                                    {
+                                        const auto transmission_status = nmos::nc_transmission_status::status(nmos::nc_transmission_status::healthy + rand() % 3);
+                                        const auto transmission_status_message = transmission_status > nmos::nc_transmission_status::healthy ? U("Transmission errors detected") : U("");
+
+                                        set_sender_monitor_transmission_status(oid, transmission_status, transmission_status_message);
+                                    }
+                                    break;
+                                }
+                                case 2:
+                                {
+                                    const auto status = nmos::nc_synchronization_status::status(nmos::nc_synchronization_status::not_used + rand() % 4);
+                                    const auto status_message = status > nmos::nc_synchronization_status::healthy ? U("Source change from: 00:0c:ec:ff:fe:0a:2b:a1 on NIC1") : U("");
+                                    set_sender_monitor_external_synchronization_status(oid, status, status_message);
+                                    // update sender monitor synchronization source id if in-used
+                                    if (nmos::nc_synchronization_status::not_used != status)
+                                    {
+                                        if (nmos::nc_synchronization_status::healthy == status) set_sender_monitor_synchronization_source_id(oid, bst::optional<utility::string_t>{ U("internal") });
+                                        else set_sender_monitor_synchronization_source_id(oid, {});
+                                    }
+                                    break;
+                                }
+                                case 3:
+                                {
+                                    if (overall_status.as_integer() != nmos::nc_overall_status::inactive)
+                                    {
+                                        const auto status = nmos::nc_essence_status::status(nmos::nc_stream_status::healthy + rand() % 3);
+                                        const auto status_message = status > nmos::nc_essence_status::status::healthy ? U("No valid input signal on input SDI1") : U("");
+
+                                        set_sender_monitor_essence_status(oid, status, status_message);
+                                    }
+                                    break;
+                                }
+                                default:
+                                    break;
+                            }
+                        }
+                    }
+                }
+            }
             model.notify();
 
             return true;
