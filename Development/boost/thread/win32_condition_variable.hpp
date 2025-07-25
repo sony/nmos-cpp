@@ -66,6 +66,7 @@ namespace boost
                 }
                 ~relocker() BOOST_NOEXCEPT_IF(true)
                 {
+                    // make sure to acquire the lock before return
                     for (;;)
                     {
                         try
@@ -76,6 +77,7 @@ namespace boost
                         catch (...)
                         {
                             // ignore the lock exception, and try again
+                            std::this_thread::yield();
                         }
                     }
                 }
