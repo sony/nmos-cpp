@@ -33,8 +33,12 @@ namespace nmos
     // this callback should not throw exceptions, as the active transport parameters will already have been changed and those changes will not be rolled back
     typedef std::function<void(const nmos::resource& resource, const nmos::resource& connection_resource)> connection_activation_handler;
 
+    // a control_protocol_connection_activation_handler is a notification that the active parameters for the specified (IS-05) sender/connection_sender or receiver/connection_receiver have changed
+    // this callback should not throw exceptions
+    typedef std::function<void(const nmos::resource& resource, const nmos::resource& connection_resource)> control_protocol_connection_activation_handler;
+
     // callbacks from this function are called with the model locked, and may read but should not write directly to the model
-    void connection_activation_thread(nmos::node_model& model, connection_resource_auto_resolver resolve_auto, connection_sender_transportfile_setter set_transportfile, connection_activation_handler connection_activated, slog::base_gate& gate);
+    void connection_activation_thread(nmos::node_model& model, connection_resource_auto_resolver resolve_auto, connection_sender_transportfile_setter set_transportfile, connection_activation_handler connection_activated, control_protocol_connection_activation_handler control_protocol_connection_activation, slog::base_gate& gate);
 }
 
 #endif
