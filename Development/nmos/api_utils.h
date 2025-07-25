@@ -57,6 +57,8 @@ namespace nmos
         const route_pattern channelmapping_api = make_route_pattern(U("api"), U("channelmapping"));
         // IS-09 System API (originally specified in JT-NM TR-1001-1:2018 Annex A)
         const route_pattern system_api = make_route_pattern(U("api"), U("system"));
+        // IS-14 Configuration API
+        const route_pattern configuration_api = make_route_pattern(U("api"), U("configuration"));
 
         // API version pattern
         const route_pattern version = make_route_pattern(U("version"), U("v[0-9]+\\.[0-9]+"));
@@ -86,6 +88,11 @@ namespace nmos
         const route_pattern inputSubroute = make_route_pattern(U("inputSubroute"), U("properties|parent|channels|caps"));
         const route_pattern outputSubroute = make_route_pattern(U("outputSubroute"), U("properties|sourceid|channels|caps"));
         const route_pattern activationId = make_route_pattern(U("activationId"), U("[a-zA-Z0-9\\-_]+"));
+
+        // Configuration API
+        const route_pattern rolePath = make_route_pattern(U("rolePath"), U("root|root\\.[a-zA-Z0-9\\-_\\.]+"));
+        const route_pattern propertyId = make_route_pattern(U("propertyId"), U("[0-9]+p[0-9]+"));
+        const route_pattern methodId = make_route_pattern(U("methodId"), U("[0-9]+m[0-9]+"));
 
         // Common patterns
         const route_pattern resourceId = make_route_pattern(U("resourceId"), U("[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}"));

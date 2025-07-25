@@ -74,7 +74,7 @@ namespace nmos
     {
         return [&resources](const resource& connection_resource)
         {
-            auto found = find_control_protocol_resource(resources, nmos::types::nc_receiver_monitor, connection_resource.id);
+            auto found = nc::find_resource(resources, nmos::types::nc_receiver_monitor, connection_resource.id);
             if (resources.end() != found && nc_receiver_monitor_class_id == details::parse_nc_class_id(nmos::fields::nc::class_id(found->data)))
             {
                 // update receiver-monitor's connectionStatus and payloadStatus properties
@@ -91,7 +91,7 @@ namespace nmos
                     { nc_receiver_monitor_payload_status_property_id, nc_property_change_type::type::value_changed, payload_status }
                 });
 
-                modify_control_protocol_resource(resources, found->id, [&](nmos::resource& resource)
+                nc::modify_resource(resources, found->id, [&](nmos::resource& resource)
                 {
                     resource.data[nmos::fields::nc::connection_status] = connection_status;
                     resource.data[nmos::fields::nc::payload_status] = payload_status;

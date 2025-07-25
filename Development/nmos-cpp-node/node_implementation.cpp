@@ -19,6 +19,10 @@
 #include "nmos/channelmapping_resources.h"
 #include "nmos/clock_name.h"
 #include "nmos/colorspace.h"
+#include "nmos/configuration_handlers.h"
+#include "nmos/configuration_methods.h"
+#include "nmos/configuration_resources.h"
+#include "nmos/configuration_utils.h"
 #include "nmos/connection_resources.h"
 #include "nmos/connection_events_activation.h"
 #include "nmos/control_protocol_resources.h"
@@ -287,7 +291,7 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
 
         const auto is_control_protocol_resource = [&resource]() { return nmos::types::all_nc.end() != std::find(nmos::types::all_nc.begin(), nmos::types::all_nc.end(), resource.type); };
         const std::pair<nmos::id, nmos::type> id_type{ resource.id, resource.type };
-        const bool success = is_control_protocol_resource() ? insert_control_protocol_resource(resources, std::move(resource)).second : insert_resource(resources, std::move(resource)).second;
+        const bool success = is_control_protocol_resource() ? nmos::nc::insert_resource(resources, std::move(resource)).second : insert_resource(resources, std::move(resource)).second;
 
         if (success)
             slog::log<slog::severities::info>(gate, SLOG_FLF) << "Updated model with " << id_type;
@@ -930,7 +934,7 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
     if (0 <= nmos::fields::control_protocol_ws_port(model.settings))
     {
         // example to create a non-standard Gain control class
-        const auto gain_control_class_id = nmos::make_nc_class_id(nmos::nc_worker_class_id, 0, { 1 });
+        const auto gain_control_class_id = nmos::nc::make_class_id(nmos::nc_worker_class_id, 0, { 1 });
         const web::json::field_as_number gain_value{ U("gainValue") };
         {
             // Gain control class property descriptors
@@ -952,7 +956,7 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
         };
 
         // example to create a non-standard Example control class
-        const auto example_control_class_id = nmos::make_nc_class_id(nmos::nc_worker_class_id, 0, { 2 });
+        const auto example_control_class_id = nmos::nc::make_class_id(nmos::nc_worker_class_id, 0, { 2 });
         const web::json::field_as_number enum_property{ U("enumProperty") };
         const web::json::field_as_string string_property{ U("stringProperty") };
         const web::json::field_as_number number_property{ U("numberProperty") };
@@ -1171,7 +1175,7 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
         };
 
         // example to create a non-standard Temperature Sensor control class
-        const auto temperature_sensor_control_class_id = nmos::make_nc_class_id(nmos::nc_worker_class_id, 0, { 3 });
+        const auto temperature_sensor_control_class_id = nmos::nc::make_class_id(nmos::nc_worker_class_id, 0, { 3 });
         const web::json::field_as_number temperature{ U("temperature") };
         const web::json::field_as_string unit{ U("uint") };
         {
@@ -1204,9 +1208,14 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
 
         // example device manager
         auto device_manager = nmos::make_device_manager(++oid, model.settings);
+        // making an object rebuildable allows read only properties to be modified by the Configuration API in Rebuild mode
+        nmos::make_rebuildable(device_manager);
 
         // example class manager
         auto class_manager = nmos::make_class_manager(++oid, control_protocol_state);
+
+        // example bulk properties manager
+        auto bulk_properties_manager = nmos::make_bulk_properties_manager(++oid);
 
         // example stereo gain
         const auto stereo_gain_oid = ++oid;
@@ -1218,15 +1227,16 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
         // example left/right gains
         auto left_gain = make_gain_control(++oid, channel_gain_oid, U("left-gain"), U("Left gain"), U("Left channel gain"), value::null(), value::null(), 0.0);
         auto right_gain = make_gain_control(++oid, channel_gain_oid, U("right-gain"), U("Right gain"), U("Right channel gain"), value::null(), value::null(), 0.0);
+
         // add left-gain and right-gain to channel gain
-        nmos::push_back(channel_gain, left_gain);
-        nmos::push_back(channel_gain, right_gain);
+        nmos::nc::push_back(channel_gain, left_gain);
+        nmos::nc::push_back(channel_gain, right_gain);
 
         // example master-gain
-        auto master_gain = make_gain_control(++oid, channel_gain_oid, U("master-gain"), U("Master gain"), U("Master gain block"), value::null(), value::null(), 0.0);
+        auto master_gain = make_gain_control(++oid, stereo_gain_oid, U("master-gain"), U("Master gain"), U("Master gain block"), value::null(), value::null(), 0.0);
         // add channel-gain and master-gain to stereo-gain
-        nmos::push_back(stereo_gain, channel_gain);
-        nmos::push_back(stereo_gain, master_gain);
+        nmos::nc::push_back(stereo_gain, channel_gain);
+        nmos::nc::push_back(stereo_gain, master_gain);
 
         // example example-control
         auto example_control = make_example_control(++oid, nmos::root_block_oid, U("ExampleControl"), U("Example control worker"), U("Example control worker"),
@@ -1253,6 +1263,13 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
             { make_example_datatype(example_enum::Alpha, U("example"), 50, false), make_example_datatype(example_enum::Gamma, U("different"), 75, true) }
         );
 
+        const auto receiver_block_oid = ++oid;
+        auto receiver_block = nmos::make_block(receiver_block_oid, nmos::root_block_oid, U("receivers"), U("Receiver Monitors"), U("Receiver Monitors"));
+        // making a block rebuildable allows block members to be added or removed by the Configuration API in Rebuild mode
+        nmos::make_rebuildable(receiver_block);
+        // restrict the allowed classes for members of this block
+        nmos::set_block_allowed_member_classes(receiver_block, {nmos::nc_receiver_monitor_class_id});
+
         // example receiver-monitor(s)
         {
             int count = 0;
@@ -1265,10 +1282,11 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
                     utility::ostringstream_t role;
                     role << U("monitor-") << ++count;
                     const auto& receiver = nmos::find_resource(model.node_resources, receiver_id);
-                    const auto receiver_monitor = nmos::make_receiver_monitor(++oid, true, nmos::root_block_oid, role.str(), nmos::fields::label(receiver->data), nmos::fields::description(receiver->data), value_of({ { nmos::details::make_nc_touchpoint_nmos({nmos::ncp_nmos_resource_types::receiver, receiver_id}) } }));
-
+                    auto receiver_monitor = nmos::make_receiver_monitor(++oid, true, receiver_block_oid, role.str(), nmos::fields::label(receiver->data), nmos::fields::description(receiver->data), value_of({ { nmos::details::make_nc_touchpoint_nmos({nmos::ncp_touchpoint_resource_types::receiver, receiver_id}) } }));
+                    // optionally indicate dependencies within the device model
+                    nmos::set_object_dependency_paths(receiver_monitor, {{U("root"), U("receivers")}});
                     // add receiver-monitor to root-block
-                    nmos::push_back(root_block, receiver_monitor);
+                    nmos::nc::push_back(receiver_block, receiver_monitor);
                 }
             }
         }
@@ -1276,16 +1294,20 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
         // example temperature-sensor
         const auto temperature_sensor = make_temperature_sensor(++oid, nmos::root_block_oid, U("temperature-sensor"), U("Temperature Sensor"), U("Temperature Sensor block"), value::null(), value::null(), 0.0, U("Celsius"));
 
+        // add receiver monitor block
+        nmos::nc::push_back(root_block, receiver_block);
         // add temperature-sensor to root-block
-        nmos::push_back(root_block, temperature_sensor);
+        nmos::nc::push_back(root_block, temperature_sensor);
         // add example-control to root-block
-        nmos::push_back(root_block, example_control);
+        nmos::nc::push_back(root_block, example_control);
         // add stereo-gain to root-block
-        nmos::push_back(root_block, stereo_gain);
+        nmos::nc::push_back(root_block, stereo_gain);
         // add class-manager to root-block
-        nmos::push_back(root_block, class_manager);
+        nmos::nc::push_back(root_block, class_manager);
         // add device-manager to root-block
-        nmos::push_back(root_block, device_manager);
+        nmos::nc::push_back(root_block, device_manager);
+        // add bulk-properties-manager to root-block
+        nmos::nc::push_back(root_block, bulk_properties_manager);
 
         // insert control protocol resources to model
         insert_root_after(delay_millis, root_block, gate);
@@ -1355,7 +1377,7 @@ void node_implementation_run(nmos::node_model& model, slog::base_gate& gate)
 
             // update temperature sensor
             {
-                const auto temperature_sensor_control_class_id = nmos::make_nc_class_id(nmos::nc_worker_class_id, 0, { 3 });
+                const auto temperature_sensor_control_class_id = nmos::nc::make_class_id(nmos::nc_worker_class_id, 0, { 3 });
                 const web::json::field_as_number temperature{ U("temperature") };
 
                 auto& resources = model.control_protocol_resources;
@@ -1372,7 +1394,7 @@ void node_implementation_run(nmos::node_model& model, slog::base_gate& gate)
                         { {3, 1}, nmos::nc_property_change_type::type::value_changed, web::json::value(temp.scaled_value()) }
                     });
 
-                    nmos::modify_control_protocol_resource(model.control_protocol_resources, found->id, [&](nmos::resource& resource)
+                    nmos::nc::modify_resource(model.control_protocol_resources, found->id, [&](nmos::resource& resource)
                     {
                         resource.data[temperature] = temp.scaled_value();
 
@@ -1721,6 +1743,82 @@ nmos::control_protocol_property_changed_handler make_node_implementation_control
     };
 }
 
+// Example Device Configuration callbacks called when a rebuildable object is modified in Rebuild mode.
+
+// IS-14 Device Configuration callback
+// This function should generate a fingerprint that can be used for subsequent validation.
+nmos::create_validation_fingerprint_handler make_create_validation_fingerprint_handler(slog::base_gate& gate)
+{
+    return [&gate](const nmos::resources& resources, const nmos::resource& resource)
+    {
+        return U("Sony nmos-cpp node");
+    };
+}
+
+// IS-14 Device Configuration callback
+// This function called by a validate or restore and can be used to validate a validation fingerprint. Returning false will fail the validate or restore operation.
+nmos::validate_validation_fingerprint_handler make_validate_validation_fingerprint_handler(slog::base_gate& gate)
+{
+    return [&gate](const nmos::resources& resources, const nmos::resource& resource, const utility::string_t& validation_fingerprint)
+    {
+        return true;
+    };
+}
+
+// IS-14 Device Configuration callback
+// This function is called when the Device Configuration API is attempting to modify
+// the read only properties of a rebuildable Device Model object. This callback returns an "allow list" of property ids
+// for properties that can be updated - the "allowed" read only property will be updated according to backup dataset received.
+nmos::get_read_only_modification_allow_list_handler make_get_read_only_modification_allow_list_handler(slog::base_gate& gate)
+{
+    return [&gate](const nmos::resources& resources, const nmos::resource& resource, const std::vector<utility::string_t>& target_role_path, const std::vector<nmos::nc_property_id>& property_ids)
+    {
+        // Use this function to create allow list of property ids for properties in the object should be modified by the configuration API
+        slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::stash_category(impl::categories::node_implementation) << "Do filter_property_holders";
+
+        // Filter out any read only properties that should not be modified
+        return property_ids;
+    };
+}
+
+// IS-14 Device Configuration callback
+// This function is called before an object is deleted from the device model.
+// If this function returns true and validate is false then the object will be deleted.
+// If this function returns true/false or validate is true then the object will not be deleted.
+// If this function returns false an appropriate error will be passed to the calling client.
+nmos::remove_device_model_object_handler make_remove_device_model_object_handler(nmos::node_model& model, slog::base_gate& gate)
+{
+    return [&model, &gate](const nmos::resource& resource, const std::vector<utility::string_t>& role_path, bool validate)
+    {
+        // Perform application code functions here
+        // resource - device model object about to be deleted
+        // role_path - role path of device object about to be deleted
+        // validate - true when only checks are performed, false when checks and deletion are performed
+        return true;
+    };
+}
+
+// IS-14 Device Configuration callback
+// This function is called when an object is to be created.
+// The returned object is then added to the Device Model
+// This example shows the creation of a receiver monitor resource
+// In the Device Model the receivers block that contains the monitors must be rebuildable
+nmos::create_device_model_object_handler make_create_device_model_object_handler(nmos::node_model& model, slog::base_gate& gate)
+{
+    return[&model, &gate](const nmos::nc_class_id& class_id, nmos::nc_oid oid, bool constant_oid, nmos::nc_oid owner, const utility::string_t& role, const utility::string_t& user_label, const web::json::value& touchpoints, bool validate, const std::map<nmos::nc_property_id, web::json::value>& property_values)
+    {
+        if (touchpoints.size() != 1)
+        {
+            slog::log<slog::severities::error>(gate, SLOG_FLF) << "Either zero or more than one touchpoint found (ambiguous) when attempting to create " << role;
+            return nmos::control_protocol_resource(); // return empty resource on error
+        }
+        const auto& touchpoint_uuid = nmos::fields::nc::id(nmos::fields::nc::resource(*touchpoints.as_array().begin()));
+
+        // In the case of validate = true, the object created will not be added to the device model, but it's values will be checked against the backup dataset
+        return nmos::make_receiver_monitor(oid, true, owner, role, user_label, U(""), web::json::value_of({ {nmos::details::make_nc_touchpoint_nmos({nmos::ncp_touchpoint_resource_types::receiver, touchpoint_uuid.as_string()})} }));
+    };
+}
+
 namespace impl
 {
     nmos::interlace_mode get_interlace_mode(const nmos::settings& settings)
@@ -1875,5 +1973,10 @@ nmos::experimental::node_implementation make_node_implementation(nmos::node_mode
         .on_connection_activated(make_node_implementation_connection_activation_handler(model, gate))
         .on_validate_channelmapping_output_map(make_node_implementation_map_validator()) // may be omitted if not required
         .on_channelmapping_activated(make_node_implementation_channelmapping_activation_handler(gate))
-        .on_control_protocol_property_changed(make_node_implementation_control_protocol_property_changed_handler(gate)); // may be omitted if IS-12 not required
+        .on_control_protocol_property_changed(make_node_implementation_control_protocol_property_changed_handler(gate)) // may be omitted if IS-12 not required
+        .on_create_validation_fingerprint(make_create_validation_fingerprint_handler(gate))
+        .on_validate_validation_fingerprint(make_validate_validation_fingerprint_handler(gate))
+        .on_get_read_only_modification_allow_list(make_get_read_only_modification_allow_list_handler(gate)) // may be omitted if either IS-14 not required, or IS-14 Rebuild functionality not required
+        .on_remove_device_model_object(make_remove_device_model_object_handler(model, gate)) // may be omitted if either IS-14 not required, or IS-14 Rebuild functionality not required
+        .on_create_device_model_object(make_create_device_model_object_handler(model, gate)); // may be omitted if either IS-14 not required, or IS-14 Rebuild functionality not required
 }
