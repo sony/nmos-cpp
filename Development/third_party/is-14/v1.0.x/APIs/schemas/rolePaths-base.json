@@ -1,0 +1,10 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "array",
+  "description": "Describes the Configuration API /rolePaths base",
+  "title": "Configuration API /rolePaths base",
+  "items": {
+    "type": "string"
+  },
+  "uniqueItems": true
+}

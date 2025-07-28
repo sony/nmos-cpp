@@ -3,6 +3,7 @@
 
 #include <map>
 #include "cpprest/json_utils.h"
+#include "nmos/configuration_handlers.h"
 #include "nmos/control_protocol_handlers.h"
 #include "nmos/control_protocol_typedefs.h"
 #include "nmos/mutex.h"
@@ -58,8 +59,7 @@ namespace nmos
             nmos::read_lock read_lock() const { return nmos::read_lock{ mutex }; }
             nmos::write_lock write_lock() const { return nmos::write_lock{ mutex }; }
 
-            control_protocol_state(control_protocol_property_changed_handler property_changed);
-
+            control_protocol_state(control_protocol_property_changed_handler property_changed = nullptr, create_validation_fingerprint_handler create_validation_fingerprint = nullptr, validate_validation_fingerprint_handler validate_validation_fingerprintget_read_only_modification_allow_list_handler = nullptr, get_read_only_modification_allow_list_handler get_read_only_modification_allow_list = nullptr, remove_device_model_object_handler remove_device_model_object = nullptr, create_device_model_object_handler create_device_model_object = nullptr);
             // insert control class descriptor, false if class descriptor already inserted
             bool insert(const experimental::control_class_descriptor& control_class_descriptor);
             // erase control class of the given class id, false if the required class not found
