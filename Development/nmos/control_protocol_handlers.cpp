@@ -126,7 +126,7 @@ namespace nmos
 
         return [&resources, get_control_protocol_class_descriptor, &gate](nc_oid oid, const nc_property_id& property_id, const web::json::value& value)
         {
-            return set_control_protocol_property(resources, oid, property_id, value, get_control_protocol_class_descriptor, gate);
+            return set_control_protocol_property_and_notify(resources, oid, property_id, value, get_control_protocol_class_descriptor, gate);
         };
     }
 

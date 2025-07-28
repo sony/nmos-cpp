@@ -348,17 +348,17 @@ namespace nmos
 
             web::json::value json_status_message = status_message.size() ? web::json::value::string(status_message) : web::json::value::null();
 
-            set_control_protocol_property(resources, oid, status_property_id, status, get_control_protocol_class_descriptor, gate);
-            set_control_protocol_property(resources, oid, status_message_property_id, json_status_message, get_control_protocol_class_descriptor, gate);
+            set_control_protocol_property_and_notify(resources, oid, status_property_id, status, get_control_protocol_class_descriptor, gate);
+            set_control_protocol_property_and_notify(resources, oid, status_message_property_id, json_status_message, get_control_protocol_class_descriptor, gate);
             // Cancel any pending status updates
-            set_hidden_control_protocol_property(resources, oid, status_pending_received_time_field_name, web::json::value::number(0), gate);
+            set_control_protocol_property(resources, oid, status_pending_received_time_field_name, web::json::value::number(0), gate);
 
             // if status is "partially unhealthy" (2) or "unhealthy" (3) and less healthy than current state
             if (status > 1 && status > current_connection_status.as_integer())
             {
                 // increment transition_counter
                 auto transition_counter = get_control_protocol_property(resources, oid, status_transition_counter_property_id, get_control_protocol_class_descriptor, gate).as_integer();
-                set_control_protocol_property(resources, oid, status_transition_counter_property_id, ++transition_counter, get_control_protocol_class_descriptor, gate);
+                set_control_protocol_property_and_notify(resources, oid, status_transition_counter_property_id, ++transition_counter, get_control_protocol_class_descriptor, gate);
             }
             const auto& found = find_resource(resources, utility::s2us(std::to_string(oid)));
             if (resources.end() != found)
@@ -400,7 +400,7 @@ namespace nmos
                 {
                     // If the status message has changed then update only that
                     web::json::value json_status_message = status_message.size() ? web::json::value::string(status_message) : web::json::value::null();
-                    return set_control_protocol_property(resources, oid, status_message_property_id, json_status_message, get_control_protocol_class_descriptor, gate);
+                    return set_control_protocol_property_and_notify(resources, oid, status_message_property_id, json_status_message, get_control_protocol_class_descriptor, gate);
                 }
                 return true;
             }
@@ -447,14 +447,14 @@ namespace nmos
                     // only update  pending received time if not already set
                     if (pending_received_time.as_integer() == 0)
                     {
-                        if (!set_hidden_control_protocol_property(resources, oid, status_pending_received_time_field_name, current_time, gate))
+                        if (!set_control_protocol_property(resources, oid, status_pending_received_time_field_name, current_time, gate))
                         {
                             return false;
                         }
                     }
 
-                    if (set_hidden_control_protocol_property(resources, oid, status_pending_field_name, status, gate)
-                        && set_hidden_control_protocol_property(resources, oid, status_message_pending_time_field_name, json_status_message, gate))
+                    if (set_control_protocol_property(resources, oid, status_pending_field_name, status, gate)
+                        && set_control_protocol_property(resources, oid, status_message_pending_time_field_name, json_status_message, gate))
                     {
                         monitor_status_pending();
                         return true;
@@ -506,8 +506,8 @@ namespace nmos
             if (nc_connection_status::status::inactive == connection_status.as_integer() || nc_stream_status::status::inactive == stream_status.as_integer())
             {
                 // Overall status is set to Inactive
-                bool success = set_control_protocol_property(resources, oid, nc_status_monitor_overall_status_property_id, nc_overall_status::status::inactive, get_control_protocol_class_descriptor, gate);
-                return success && set_control_protocol_property(resources, oid, nc_status_monitor_overall_status_message_property_id, overall_status_message, get_control_protocol_class_descriptor, gate);
+                bool success = set_control_protocol_property_and_notify(resources, oid, nc_status_monitor_overall_status_property_id, nc_overall_status::status::inactive, get_control_protocol_class_descriptor, gate);
+                return success && set_control_protocol_property_and_notify(resources, oid, nc_status_monitor_overall_status_message_property_id, overall_status_message, get_control_protocol_class_descriptor, gate);
             }
 
             auto link_status = get_control_protocol_property(resources, oid, nc_receiver_monitor_link_status_property_id, get_control_protocol_class_descriptor, gate);
@@ -523,8 +523,8 @@ namespace nmos
             }
             // Find most unhealthy status
             auto overall_status = *std::max_element(statuses.begin(), statuses.end());
-            bool success = set_control_protocol_property(resources, oid, nc_status_monitor_overall_status_property_id, web::json::value::number(overall_status), get_control_protocol_class_descriptor, gate);
-            return success && set_control_protocol_property(resources, oid, nc_status_monitor_overall_status_message_property_id, overall_status_message, get_control_protocol_class_descriptor, gate);
+            bool success = set_control_protocol_property_and_notify(resources, oid, nc_status_monitor_overall_status_property_id, web::json::value::number(overall_status), get_control_protocol_class_descriptor, gate);
+            return success && set_control_protocol_property_and_notify(resources, oid, nc_status_monitor_overall_status_message_property_id, overall_status_message, get_control_protocol_class_descriptor, gate);
         }
 
         bool update_sender_monitor_overall_status(resources& resources, nc_oid oid, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, slog::base_gate& gate)
@@ -545,8 +545,8 @@ namespace nmos
             if (nc_transmission_status::status::inactive == transmission_status.as_integer() || nc_essence_status::status::inactive == essence_status.as_integer())
             {
                 // Overall status is set to Inactive
-                bool success = set_control_protocol_property(resources, oid, nc_status_monitor_overall_status_property_id, nc_overall_status::status::inactive, get_control_protocol_class_descriptor, gate);
-                return success && set_control_protocol_property(resources, oid, nc_status_monitor_overall_status_message_property_id, overall_status_message, get_control_protocol_class_descriptor, gate);
+                bool success = set_control_protocol_property_and_notify(resources, oid, nc_status_monitor_overall_status_property_id, nc_overall_status::status::inactive, get_control_protocol_class_descriptor, gate);
+                return success && set_control_protocol_property_and_notify(resources, oid, nc_status_monitor_overall_status_message_property_id, overall_status_message, get_control_protocol_class_descriptor, gate);
             }
 
             auto link_status = get_control_protocol_property(resources, oid, nc_receiver_monitor_link_status_property_id, get_control_protocol_class_descriptor, gate);
@@ -562,8 +562,8 @@ namespace nmos
             }
             // Find most unhealthy status
             auto overall_status = *std::max_element(statuses.begin(), statuses.end());
-            bool success = set_control_protocol_property(resources, oid, nc_status_monitor_overall_status_property_id, web::json::value::number(overall_status), get_control_protocol_class_descriptor, gate);
-            return success && set_control_protocol_property(resources, oid, nc_status_monitor_overall_status_message_property_id, overall_status_message, get_control_protocol_class_descriptor, gate);
+            bool success = set_control_protocol_property_and_notify(resources, oid, nc_status_monitor_overall_status_property_id, web::json::value::number(overall_status), get_control_protocol_class_descriptor, gate);
+            return success && set_control_protocol_property_and_notify(resources, oid, nc_status_monitor_overall_status_message_property_id, overall_status_message, get_control_protocol_class_descriptor, gate);
         }
     }
 
@@ -815,44 +815,6 @@ namespace nmos
         return result;
     }
 
-
-    bool modify_control_protocol_resource(resources& resources, const id& id, std::function<void(resource&)> modifier)
-    {
-        // note, model write lock should already be applied by the outer function, so access to control_protocol_resources is OK...
-
-        auto found = resources.find(id);
-        if (resources.end() == found || !found->has_data()) return false;
-
-        // "If an exception is thrown by some user-provided operation, then the element pointed to by position is erased."
-        // This seems too surprising, despite the fact that it means that a modification may have been partially completed,
-        // so capture and rethrow.
-        // See https://www.boost.org/doc/libs/1_68_0/libs/multi_index/doc/reference/ord_indices.html#modify
-        std::exception_ptr modifier_exception;
-
-        auto resource_updated = nmos::strictly_increasing_update(resources);
-        auto result = resources.modify(found, [&resource_updated, &modifier, &modifier_exception](resource& resource)
-        {
-            try
-            {
-                modifier(resource);
-            }
-            catch (...)
-            {
-                modifier_exception = std::current_exception();
-            }
-
-            // set the update timestamp
-            resource.updated = resource_updated;
-        });
-
-        if (modifier_exception)
-        {
-            std::rethrow_exception(modifier_exception);
-        }
-
-        return result;
-    }
-
     // modify a control protocol resource, and insert notification event to all subscriptions
     bool modify_control_protocol_resource(resources& resources, const id& id, std::function<void(resource&)> modifier, const web::json::value& notification_event)
     {
@@ -861,7 +823,7 @@ namespace nmos
         auto found = resources.find(id);
         if (resources.end() == found || !found->has_data()) return false;
 
-        auto pre = found->data;
+        auto pre = notification_event != web::json::value::null() ? found->data : web::json::value::null();
 
         // "If an exception is thrown by some user-provided operation, then the element pointed to by position is erased."
         // This seems too surprising, despite the fact that it means that a modification may have been partially completed,
@@ -885,7 +847,7 @@ namespace nmos
             resource.updated = resource_updated;
         });
 
-        if (result)
+        if (web::json::value::null() != notification_event && result)
         {
             auto& modified = *found;
             insert_notification_events(resources, modified.version, modified.downgrade_version, modified.type, pre, modified.data, notification_event);
@@ -1011,7 +973,7 @@ namespace nmos
         return web::json::value::null();
     }
 
-    bool set_control_protocol_property(resources& resources, nc_oid oid, const nc_property_id& property_id, const web::json::value& value, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, slog::base_gate& gate)
+    bool set_control_protocol_property_and_notify(resources& resources, nc_oid oid, const nc_property_id& property_id, const web::json::value& value, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, slog::base_gate& gate)
     {
         const auto& found = find_resource(resources, utility::s2us(std::to_string(oid)));
         if (resources.end() != found)
@@ -1047,6 +1009,23 @@ namespace nmos
         return false;
     }
 
+    bool set_control_protocol_property(resources& resources, nc_oid oid, const utility::string_t& property_name, const web::json::value& value, slog::base_gate& gate)
+    {
+        try
+        {
+            modify_control_protocol_resource(resources, utility::s2us(std::to_string(oid)), [&](nmos::resource& resource)
+            {
+                resource.data[property_name] = value;
+            });
+            return true;
+        }
+        catch (const nmos::control_protocol_exception& e)
+        {
+            slog::log<slog::severities::error>(gate, SLOG_FLF) << "Set property name : " << property_name.c_str() << " error: " << e.what();
+            return false;
+        }
+    }
+
     web::json::value get_control_protocol_property(const resources& resources, nc_oid oid, const utility::string_t& property_name, slog::base_gate& gate)
     {
         // get resource based on the oid
@@ -1059,31 +1038,6 @@ namespace nmos
         // unknown resource
         slog::log<slog::severities::error>(gate, SLOG_FLF) << "unknown control protocol resource: oid=" << oid;
         return web::json::value::null();
-    }
-
-    bool set_hidden_control_protocol_property(resources& resources, nc_oid oid, const utility::string_t& property_name, const web::json::value& value, slog::base_gate& gate)
-    {
-        const auto& found = find_resource(resources, utility::s2us(std::to_string(oid)));
-        if (resources.end() != found)
-        {
-            try
-            {
-                modify_control_protocol_resource(resources, found->id, [&](nmos::resource& resource)
-                {
-                    resource.data[property_name] = value;
-                });
-                return true;
-            }
-            catch (const nmos::control_protocol_exception& e)
-            {
-                slog::log<slog::severities::error>(gate, SLOG_FLF) << "Set property name : " << property_name.c_str() << " error: " << e.what();
-                return false;
-            }
-        }
-
-        // unknown resource
-        slog::log<slog::severities::error>(gate, SLOG_FLF) << "unknown control protocol resource: oid=" << oid;
-        return false;
     }
 
     // Set link status and link status message
@@ -1205,7 +1159,7 @@ namespace nmos
     bool set_monitor_synchronization_source_id(resources& resources, nc_oid oid, const bst::optional<utility::string_t>& source_id_, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, slog::base_gate& gate)
     {
         web::json::value source_id = source_id_ ? web::json::value::string(*source_id_) : web::json::value{};
-        return set_control_protocol_property(resources, oid, nc_receiver_monitor_synchronization_source_id_property_id, source_id, get_control_protocol_class_descriptor, gate);
+        return set_control_protocol_property_and_notify(resources, oid, nc_receiver_monitor_synchronization_source_id_property_id, source_id, get_control_protocol_class_descriptor, gate);
     }
 
     bool activate_monitor(resources& resources, nc_oid oid, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, nmos::get_control_protocol_method_descriptor_handler get_control_protocol_method_descriptor, slog::base_gate& gate)
@@ -1220,7 +1174,7 @@ namespace nmos
             const auto& class_id = details::parse_nc_class_id(nmos::fields::nc::class_id(found->data));
 
             auto activation_time = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
-            auto succeed = set_hidden_control_protocol_property(resources, oid, nmos::fields::nc::monitor_activation_time, activation_time, gate);
+            auto succeed = set_control_protocol_property(resources, oid, nmos::fields::nc::monitor_activation_time, activation_time, gate);
             // If autoResetCountersAndMessages set to true then reset the transition counters
             bool auto_reset_monitor{false};
 
@@ -1278,7 +1232,7 @@ namespace nmos
         {
             const auto& class_id = details::parse_nc_class_id(nmos::fields::nc::class_id(found->data));
 
-            auto succeed = set_hidden_control_protocol_property(resources, oid, nmos::fields::nc::monitor_activation_time, web::json::value::number(0), gate);
+            auto succeed = set_control_protocol_property(resources, oid, nmos::fields::nc::monitor_activation_time, web::json::value::number(0), gate);
 
             if (is_nc_sender_monitor(class_id))
             {

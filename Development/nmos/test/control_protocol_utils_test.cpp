@@ -46,7 +46,7 @@ BST_TEST_CASE(testGetSetControlProtocolProperty)
 
     auto test_label = U("ThisIsATest");
 
-	bool result = set_control_protocol_property(resources, class_manager_oid, nmos::nc_object_user_label_property_id, web::json::value::string(test_label), get_control_protocol_class_descriptor, gate);
+	bool result = set_control_protocol_property_and_notify(resources, class_manager_oid, nmos::nc_object_user_label_property_id, web::json::value::string(test_label), get_control_protocol_class_descriptor, gate);
 
 	BST_REQUIRE(result);
 
@@ -359,14 +359,14 @@ BST_TEST_CASE(testActivateDeactivateReceiverMonitor)
 
     {
         // autoResetCounterAndMessages will reset all counters and messages on activate, including calling back into application code
-        nmos::set_control_protocol_property(resources, monitor_oid, nmos::nc_receiver_monitor_auto_reset_monitor_property_id, web::json::value::boolean(true), get_control_protocol_class_descriptor, gate);
+        nmos::set_control_protocol_property_and_notify(resources, monitor_oid, nmos::nc_receiver_monitor_auto_reset_monitor_property_id, web::json::value::boolean(true), get_control_protocol_class_descriptor, gate);
 
         uint32_t transition_count = 10;
         // set transition counters
-        nmos::set_control_protocol_property(resources, monitor_oid, nmos::nc_receiver_monitor_link_status_transition_counter_property_id, web::json::value::number(transition_count), get_control_protocol_class_descriptor, gate);
-        nmos::set_control_protocol_property(resources, monitor_oid, nmos::nc_receiver_monitor_connection_status_transition_counter_property_id, web::json::value::number(transition_count), get_control_protocol_class_descriptor, gate);
-        nmos::set_control_protocol_property(resources, monitor_oid, nmos::nc_receiver_monitor_external_synchronization_status_transition_counter_property_id, web::json::value::number(transition_count), get_control_protocol_class_descriptor, gate);
-        nmos::set_control_protocol_property(resources, monitor_oid, nmos::nc_receiver_monitor_stream_status_transition_counter_property_id, web::json::value::number(transition_count), get_control_protocol_class_descriptor, gate);
+        nmos::set_control_protocol_property_and_notify(resources, monitor_oid, nmos::nc_receiver_monitor_link_status_transition_counter_property_id, web::json::value::number(transition_count), get_control_protocol_class_descriptor, gate);
+        nmos::set_control_protocol_property_and_notify(resources, monitor_oid, nmos::nc_receiver_monitor_connection_status_transition_counter_property_id, web::json::value::number(transition_count), get_control_protocol_class_descriptor, gate);
+        nmos::set_control_protocol_property_and_notify(resources, monitor_oid, nmos::nc_receiver_monitor_external_synchronization_status_transition_counter_property_id, web::json::value::number(transition_count), get_control_protocol_class_descriptor, gate);
+        nmos::set_control_protocol_property_and_notify(resources, monitor_oid, nmos::nc_receiver_monitor_stream_status_transition_counter_property_id, web::json::value::number(transition_count), get_control_protocol_class_descriptor, gate);
 
         // Do activatation
         nmos::activate_monitor(resources, monitor_oid, get_control_protocol_class_descriptor, get_control_protocol_method_descriptor, gate);
@@ -408,14 +408,14 @@ BST_TEST_CASE(testActivateDeactivateReceiverMonitor)
         reset_monitor_called = false;
 
         // disable autoResetCounterAndMessages
-        nmos::set_control_protocol_property(resources, monitor_oid, nmos::nc_receiver_monitor_auto_reset_monitor_property_id, web::json::value::boolean(false), get_control_protocol_class_descriptor, gate);
+        nmos::set_control_protocol_property_and_notify(resources, monitor_oid, nmos::nc_receiver_monitor_auto_reset_monitor_property_id, web::json::value::boolean(false), get_control_protocol_class_descriptor, gate);
 
         int32_t transition_count = 10;
         // set transition counters
-        nmos::set_control_protocol_property(resources, monitor_oid, nmos::nc_receiver_monitor_link_status_transition_counter_property_id, web::json::value::number(transition_count), get_control_protocol_class_descriptor, gate);
-        nmos::set_control_protocol_property(resources, monitor_oid, nmos::nc_receiver_monitor_connection_status_transition_counter_property_id, web::json::value::number(transition_count), get_control_protocol_class_descriptor, gate);
-        nmos::set_control_protocol_property(resources, monitor_oid, nmos::nc_receiver_monitor_external_synchronization_status_transition_counter_property_id, web::json::value::number(transition_count), get_control_protocol_class_descriptor, gate);
-        nmos::set_control_protocol_property(resources, monitor_oid, nmos::nc_receiver_monitor_stream_status_transition_counter_property_id, web::json::value::number(transition_count), get_control_protocol_class_descriptor, gate);
+        nmos::set_control_protocol_property_and_notify(resources, monitor_oid, nmos::nc_receiver_monitor_link_status_transition_counter_property_id, web::json::value::number(transition_count), get_control_protocol_class_descriptor, gate);
+        nmos::set_control_protocol_property_and_notify(resources, monitor_oid, nmos::nc_receiver_monitor_connection_status_transition_counter_property_id, web::json::value::number(transition_count), get_control_protocol_class_descriptor, gate);
+        nmos::set_control_protocol_property_and_notify(resources, monitor_oid, nmos::nc_receiver_monitor_external_synchronization_status_transition_counter_property_id, web::json::value::number(transition_count), get_control_protocol_class_descriptor, gate);
+        nmos::set_control_protocol_property_and_notify(resources, monitor_oid, nmos::nc_receiver_monitor_stream_status_transition_counter_property_id, web::json::value::number(transition_count), get_control_protocol_class_descriptor, gate);
 
         // Do activatation
         nmos::activate_monitor(resources, monitor_oid, get_control_protocol_class_descriptor, get_control_protocol_method_descriptor, gate);
@@ -721,14 +721,14 @@ BST_TEST_CASE(testActivateDeactivateSenderMonitor)
 
     {
         // autoResetCounterAndMessages will reset all counters and messages on activate, including calling back into application code
-        nmos::set_control_protocol_property(resources, monitor_oid, nmos::nc_sender_monitor_auto_reset_monitor_property_id, web::json::value::boolean(true), get_control_protocol_class_descriptor, gate);
+        nmos::set_control_protocol_property_and_notify(resources, monitor_oid, nmos::nc_sender_monitor_auto_reset_monitor_property_id, web::json::value::boolean(true), get_control_protocol_class_descriptor, gate);
 
         uint32_t transition_count = 10;
         // set transition counters
-        nmos::set_control_protocol_property(resources, monitor_oid, nmos::nc_sender_monitor_link_status_transition_counter_property_id, web::json::value::number(transition_count), get_control_protocol_class_descriptor, gate);
-        nmos::set_control_protocol_property(resources, monitor_oid, nmos::nc_sender_monitor_transmission_status_transition_counter_property_id, web::json::value::number(transition_count), get_control_protocol_class_descriptor, gate);
-        nmos::set_control_protocol_property(resources, monitor_oid, nmos::nc_sender_monitor_external_synchronization_status_transition_counter_property_id, web::json::value::number(transition_count), get_control_protocol_class_descriptor, gate);
-        nmos::set_control_protocol_property(resources, monitor_oid, nmos::nc_sender_monitor_essence_status_transition_counter_property_id, web::json::value::number(transition_count), get_control_protocol_class_descriptor, gate);
+        nmos::set_control_protocol_property_and_notify(resources, monitor_oid, nmos::nc_sender_monitor_link_status_transition_counter_property_id, web::json::value::number(transition_count), get_control_protocol_class_descriptor, gate);
+        nmos::set_control_protocol_property_and_notify(resources, monitor_oid, nmos::nc_sender_monitor_transmission_status_transition_counter_property_id, web::json::value::number(transition_count), get_control_protocol_class_descriptor, gate);
+        nmos::set_control_protocol_property_and_notify(resources, monitor_oid, nmos::nc_sender_monitor_external_synchronization_status_transition_counter_property_id, web::json::value::number(transition_count), get_control_protocol_class_descriptor, gate);
+        nmos::set_control_protocol_property_and_notify(resources, monitor_oid, nmos::nc_sender_monitor_essence_status_transition_counter_property_id, web::json::value::number(transition_count), get_control_protocol_class_descriptor, gate);
 
         // Do activatation
         nmos::activate_monitor(resources, monitor_oid, get_control_protocol_class_descriptor, get_control_protocol_method_descriptor, gate);
@@ -770,14 +770,14 @@ BST_TEST_CASE(testActivateDeactivateSenderMonitor)
         reset_monitor_called = false;
 
         // disable autoResetCounterAndMessages
-        nmos::set_control_protocol_property(resources, monitor_oid, nmos::nc_sender_monitor_auto_reset_monitor_property_id, web::json::value::boolean(false), get_control_protocol_class_descriptor, gate);
+        nmos::set_control_protocol_property_and_notify(resources, monitor_oid, nmos::nc_sender_monitor_auto_reset_monitor_property_id, web::json::value::boolean(false), get_control_protocol_class_descriptor, gate);
 
         int32_t transition_count = 10;
         // set transition counters
-        nmos::set_control_protocol_property(resources, monitor_oid, nmos::nc_sender_monitor_link_status_transition_counter_property_id, web::json::value::number(transition_count), get_control_protocol_class_descriptor, gate);
-        nmos::set_control_protocol_property(resources, monitor_oid, nmos::nc_sender_monitor_transmission_status_transition_counter_property_id, web::json::value::number(transition_count), get_control_protocol_class_descriptor, gate);
-        nmos::set_control_protocol_property(resources, monitor_oid, nmos::nc_sender_monitor_external_synchronization_status_transition_counter_property_id, web::json::value::number(transition_count), get_control_protocol_class_descriptor, gate);
-        nmos::set_control_protocol_property(resources, monitor_oid, nmos::nc_sender_monitor_essence_status_transition_counter_property_id, web::json::value::number(transition_count), get_control_protocol_class_descriptor, gate);
+        nmos::set_control_protocol_property_and_notify(resources, monitor_oid, nmos::nc_sender_monitor_link_status_transition_counter_property_id, web::json::value::number(transition_count), get_control_protocol_class_descriptor, gate);
+        nmos::set_control_protocol_property_and_notify(resources, monitor_oid, nmos::nc_sender_monitor_transmission_status_transition_counter_property_id, web::json::value::number(transition_count), get_control_protocol_class_descriptor, gate);
+        nmos::set_control_protocol_property_and_notify(resources, monitor_oid, nmos::nc_sender_monitor_external_synchronization_status_transition_counter_property_id, web::json::value::number(transition_count), get_control_protocol_class_descriptor, gate);
+        nmos::set_control_protocol_property_and_notify(resources, monitor_oid, nmos::nc_sender_monitor_essence_status_transition_counter_property_id, web::json::value::number(transition_count), get_control_protocol_class_descriptor, gate);
 
         // Do activatation
         nmos::activate_monitor(resources, monitor_oid, get_control_protocol_class_descriptor, get_control_protocol_method_descriptor, gate);
@@ -865,7 +865,7 @@ BST_TEST_CASE(testSetMonitorStatusWithDelay)
     {
         // Status should change with no delay to Inactive
         // Initial stream status of healthy
-        nmos::set_hidden_control_protocol_property(resources, monitor_oid, nmos::fields::nc::stream_status, 1, gate);
+        nmos::set_control_protocol_property(resources, monitor_oid, nmos::fields::nc::stream_status, 1, gate);
 
         // Set stream stream status to inactive at t=0
         bool success = nmos::details::set_monitor_status_with_delay(resources, monitor_oid, 0, U(""),
@@ -889,8 +889,8 @@ BST_TEST_CASE(testSetMonitorStatusWithDelay)
         // Status should change to Inactive with no delay
 
         // Initial stream status of healthy and monitor activation time to t=0
-        nmos::set_hidden_control_protocol_property(resources, monitor_oid, nmos::fields::nc::monitor_activation_time, 0, gate);
-        nmos::set_hidden_control_protocol_property(resources, monitor_oid, nmos::fields::nc::stream_status, 1, gate);
+        nmos::set_control_protocol_property(resources, monitor_oid, nmos::fields::nc::monitor_activation_time, 0, gate);
+        nmos::set_control_protocol_property(resources, monitor_oid, nmos::fields::nc::stream_status, 1, gate);
 
         long long current_time = 1;
         // Set stream stream status to inactive at t=1 - within initial status_reporting_delay period
@@ -920,8 +920,8 @@ BST_TEST_CASE(testSetMonitorStatusWithDelay)
         // Any unhealthy status updates should be pending
         //
         // Initial stream status of healthy and monitor activation time to t=0
-        nmos::set_hidden_control_protocol_property(resources, monitor_oid, nmos::fields::nc::monitor_activation_time, 0, gate);
-        nmos::set_hidden_control_protocol_property(resources, monitor_oid, nmos::fields::nc::stream_status, 1, gate);
+        nmos::set_control_protocol_property(resources, monitor_oid, nmos::fields::nc::monitor_activation_time, 0, gate);
+        nmos::set_control_protocol_property(resources, monitor_oid, nmos::fields::nc::stream_status, 1, gate);
 
         long long current_time = 1;
         int expected_status = 3;
@@ -953,8 +953,8 @@ BST_TEST_CASE(testSetMonitorStatusWithDelay)
         // Status updates from healthy to unhealthy after initial reporting delay should happen with no delay
         //
         // Initial stream status of healthy and monitor activation time to t=0
-        nmos::set_hidden_control_protocol_property(resources, monitor_oid, nmos::fields::nc::monitor_activation_time, 0, gate);
-        nmos::set_hidden_control_protocol_property(resources, monitor_oid, nmos::fields::nc::stream_status, 1, gate);
+        nmos::set_control_protocol_property(resources, monitor_oid, nmos::fields::nc::monitor_activation_time, 0, gate);
+        nmos::set_control_protocol_property(resources, monitor_oid, nmos::fields::nc::stream_status, 1, gate);
 
         long long current_time = 5;
         int expected_status = 3;
@@ -983,8 +983,8 @@ BST_TEST_CASE(testSetMonitorStatusWithDelay)
         // Status updates from partailly unhealthy to unhealthy after initial reporting delay should happen with no delay
         //
         // Initial stream status of partially unhealthy and monitor activation time to t=0
-        nmos::set_hidden_control_protocol_property(resources, monitor_oid, nmos::fields::nc::monitor_activation_time, 0, gate);
-        nmos::set_hidden_control_protocol_property(resources, monitor_oid, nmos::fields::nc::stream_status, 2, gate);
+        nmos::set_control_protocol_property(resources, monitor_oid, nmos::fields::nc::monitor_activation_time, 0, gate);
+        nmos::set_control_protocol_property(resources, monitor_oid, nmos::fields::nc::stream_status, 2, gate);
 
         long long current_time = 5;
         int expected_status = 3;
@@ -1014,8 +1014,8 @@ BST_TEST_CASE(testSetMonitorStatusWithDelay)
         //
         // Initial stream status of partially unhealthy and monitor activation time to t=0
         int initial_status = 2;
-        nmos::set_hidden_control_protocol_property(resources, monitor_oid, nmos::fields::nc::monitor_activation_time, 0, gate);
-        nmos::set_hidden_control_protocol_property(resources, monitor_oid, nmos::fields::nc::stream_status, initial_status, gate);
+        nmos::set_control_protocol_property(resources, monitor_oid, nmos::fields::nc::monitor_activation_time, 0, gate);
+        nmos::set_control_protocol_property(resources, monitor_oid, nmos::fields::nc::stream_status, initial_status, gate);
 
         long long current_time = 5;
         int expected_status = 1;
@@ -1048,15 +1048,15 @@ BST_TEST_CASE(testSetMonitorStatusWithDelay)
         //
         // Initial stream status of partially unhealthy and monitor activation time to t=0
         int initial_status = 2;
-        nmos::set_hidden_control_protocol_property(resources, monitor_oid, nmos::fields::nc::monitor_activation_time, 0, gate);
-        nmos::set_hidden_control_protocol_property(resources, monitor_oid, nmos::fields::nc::stream_status, initial_status, gate);
+        nmos::set_control_protocol_property(resources, monitor_oid, nmos::fields::nc::monitor_activation_time, 0, gate);
+        nmos::set_control_protocol_property(resources, monitor_oid, nmos::fields::nc::stream_status, initial_status, gate);
 
         long long current_time = 9;
         int expected_status = 1;
         long long received_time = 8;
         // Status already pending with healthy state at t=8
-        nmos::set_hidden_control_protocol_property(resources, monitor_oid, nmos::fields::nc::stream_status_pending, expected_status, gate);
-        nmos::set_hidden_control_protocol_property(resources, monitor_oid, nmos::fields::nc::stream_status_pending_received_time, received_time, gate);
+        nmos::set_control_protocol_property(resources, monitor_oid, nmos::fields::nc::stream_status_pending, expected_status, gate);
+        nmos::set_control_protocol_property(resources, monitor_oid, nmos::fields::nc::stream_status_pending_received_time, received_time, gate);
 
         // Set stream stream status to healthy at t=9 - healthy status already pending
         bool success = nmos::details::set_monitor_status_with_delay(resources, monitor_oid, expected_status, U(""),
@@ -1088,9 +1088,9 @@ BST_TEST_CASE(testSetMonitorStatusWithDelay)
         // Initial stream status of healthy and monitor activation time to t=0
         int initial_status = 1;
         utility::string_t initial_status_message = U("initial status message");
-        nmos::set_hidden_control_protocol_property(resources, monitor_oid, nmos::fields::nc::monitor_activation_time, 0, gate);
-        nmos::set_hidden_control_protocol_property(resources, monitor_oid, nmos::fields::nc::stream_status, initial_status, gate);
-        nmos::set_hidden_control_protocol_property(resources, monitor_oid, nmos::fields::nc::stream_status_message, web::json::value::string(initial_status_message), gate);
+        nmos::set_control_protocol_property(resources, monitor_oid, nmos::fields::nc::monitor_activation_time, 0, gate);
+        nmos::set_control_protocol_property(resources, monitor_oid, nmos::fields::nc::stream_status, initial_status, gate);
+        nmos::set_control_protocol_property(resources, monitor_oid, nmos::fields::nc::stream_status_message, web::json::value::string(initial_status_message), gate);
 
         long long current_time = 9;
         utility::string_t updated_status_message = U("updated status message");
