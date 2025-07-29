@@ -10,8 +10,8 @@
 #include <boost/thread/win32/condition_variable.hpp>
 
 // Note: Windows `boost::condition_variable_any::wait` throws nested lock exceptions when `boost::shared_mutex` has reached the
-// maximum number of exclusive_waiting locks. This problem occurrs inside the `boost::basic_condition_variable`'s do_wait_until(...),
-// when relocker is out scope. This could cause program termination due to unhandled exception.
+// maximum number of exclusive_waiting locks. This problem occurs inside the `boost::basic_condition_variable`'s do_wait_until(...),
+// when relocker is out scope. This could cause program termination due to unhanded exception.
 // This modified version of `condition_variable_any` presented below addresses the issues mentioned earlier.
 namespace boost
 {
@@ -52,14 +52,7 @@ namespace boost
                 {
                     if (!_unlocked)
                     {
-                        try
-                        {
-                            _lock.unlock();
-                        }
-                        catch (...)
-                        {
-                            // ignore, threat this as unlocked
-                        }
+                        _lock.unlock();
                         _unlocked = true;
                     }
                 }
@@ -73,13 +66,19 @@ namespace boost
                 }
                 ~relocker() BOOST_NOEXCEPT_IF(true)
                 {
-                    try
+                    // make sure to acquire the lock before return
+                    for (;;)
                     {
-                        lock();
-                    }
-                    catch (...)
-                    {
-                        // ignore the lock exception. This could cause program termination due to unhandled exceptions
+                        try
+                        {
+                            lock();
+                            break;
+                        }
+                        catch (...)
+                        {
+                            // ignore the lock exception, and try again
+                            std::this_thread::yield();
+                        }
                     }
                 }
             };
