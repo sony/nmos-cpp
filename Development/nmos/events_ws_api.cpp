@@ -506,7 +506,7 @@ namespace nmos
             details::reverse_lock_guard<nmos::read_lock> unlock(lock);
             // note 1, without atomic upgrade, another thread may preempt hence the need to recalculate expire_health/forget_health and least_health
             // note 2, the try-catch block is used here because the Windows version of the `boost::shared_mutex::lock` throws lock exceptions when
-            //         it has reached the maximum number of 128 exclusive_waiting locks. Another implementation could be replacing the initial
+            //         it has reached the maximum number of 128 exclusive_waiting locks. As an alternative we could replace the initial
             //         model.read_lock() with model.write_lock(). Then, we could remove the reverse_lock_guard for switching from read_lock to write_lock.
             for (;;)
             {
