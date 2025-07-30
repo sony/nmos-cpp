@@ -206,7 +206,7 @@ namespace nmos
                     auto result = nmos::details::make_nc_method_result_error({ nmos::nc_method_status::method_not_implemented }, U("not implemented"));
                     if (get_read_only_modification_allow_list && remove_device_model_object && create_device_model_object)
                     {
-                        result = validate_set_properties_by_path(resources, resource, data_set, recurse, restore_mode, get_control_protocol_class_descriptor, validate_validation_fingerprint, get_read_only_modification_allow_list, remove_device_model_object, create_device_model_object);
+                        result = validate_set_properties_by_path(resources, resource, data_set, recurse, restore_mode, get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor, validate_validation_fingerprint, get_read_only_modification_allow_list, remove_device_model_object, create_device_model_object);
 
                         const auto& status = nmos::fields::nc::status(result);
                         if (!web::http::is_error_status_code((web::http::status_code)status) && is_deprecated)
@@ -233,7 +233,7 @@ namespace nmos
                     auto result = nmos::details::make_nc_method_result_error({ nmos::nc_method_status::method_not_implemented }, U("callbacks not implemented"));
                     if (get_read_only_modification_allow_list && remove_device_model_object && create_device_model_object)
                     {
-                        result = set_properties_by_path(resources, resource, data_set, recurse, restore_mode, get_control_protocol_class_descriptor, validate_validation_fingerprint, get_read_only_modification_allow_list, remove_device_model_object, create_device_model_object);
+                        result = set_properties_by_path(resources, resource, data_set, recurse, restore_mode, get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor, validate_validation_fingerprint, get_read_only_modification_allow_list, remove_device_model_object, create_device_model_object);
 
                         const auto& status = nmos::fields::nc::status(result);
                         if (!web::http::is_error_status_code((web::http::status_code)status) && is_deprecated)

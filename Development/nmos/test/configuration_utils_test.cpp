@@ -341,6 +341,7 @@ BST_TEST_CASE(testApplyBackupDataSet)
     nmos::resources resources;
     nmos::experimental::control_protocol_state control_protocol_state;
     nmos::get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor = nmos::make_get_control_protocol_class_descriptor_handler(control_protocol_state);
+    nmos::get_control_protocol_datatype_descriptor_handler get_control_protocol_datatype_descriptor= nmos::make_get_control_protocol_datatype_descriptor_handler(control_protocol_state);
 
     // Create Device Model
     // root
@@ -423,7 +424,7 @@ BST_TEST_CASE(testApplyBackupDataSet)
         const value restore_mode{ nmos::nc_restore_mode::restore_mode::modify };
 
         const auto& resource = nmos::nc::find_resource_by_role_path(resources, target_role_path.as_array());
-        auto output = nmos::apply_backup_data_set(resources, *resource, object_properties_holders.as_array(), recurse, restore_mode, validate, get_control_protocol_class_descriptor, get_read_only_modification_allow_list, remove_device_model_object, create_device_model_object);
+        auto output = nmos::apply_backup_data_set(resources, *resource, object_properties_holders.as_array(), recurse, restore_mode, validate, get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor, get_read_only_modification_allow_list, remove_device_model_object, create_device_model_object);
 
         // expectation is there will be a result for each of the object_properties_holders i.e. one
         BST_REQUIRE_EQUAL(1, output.as_array().size());
@@ -463,7 +464,7 @@ BST_TEST_CASE(testApplyBackupDataSet)
         bool validate = true;
 
         const auto& resource = nmos::nc::find_resource_by_role_path(resources, target_role_path.as_array());
-        auto output = nmos::apply_backup_data_set(resources, *resource, object_properties_holders.as_array(), recurse, restore_mode, validate, get_control_protocol_class_descriptor, get_read_only_modification_allow_list, remove_device_model_object, create_device_model_object);
+        auto output = nmos::apply_backup_data_set(resources, *resource, object_properties_holders.as_array(), recurse, restore_mode, validate, get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor, get_read_only_modification_allow_list, remove_device_model_object, create_device_model_object);
 
         // expectation is there will be a result for each of the object_properties_holders i.e. one
         BST_REQUIRE_EQUAL(1, output.as_array().size());
@@ -503,7 +504,7 @@ BST_TEST_CASE(testApplyBackupDataSet)
         bool validate = true;
 
         const auto& resource = nmos::nc::find_resource_by_role_path(resources, target_role_path.as_array());
-        const auto output = nmos::apply_backup_data_set(resources, *resource, object_properties_holders.as_array(), recurse, restore_mode, validate, get_control_protocol_class_descriptor, get_read_only_modification_allow_list, remove_device_model_object, create_device_model_object);
+        const auto output = nmos::apply_backup_data_set(resources, *resource, object_properties_holders.as_array(), recurse, restore_mode, validate, get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor, get_read_only_modification_allow_list, remove_device_model_object, create_device_model_object);
 
         // expectation is there will be a result for each of the object_properties_holders i.e. one
         BST_REQUIRE_EQUAL(1, output.as_array().size());
@@ -555,7 +556,7 @@ BST_TEST_CASE(testApplyBackupDataSet)
         bool validate = true;
 
         const auto& resource = nmos::nc::find_resource_by_role_path(resources, target_role_path.as_array());
-        const auto output = nmos::apply_backup_data_set(resources, *resource, object_properties_holders.as_array(), recurse, restore_mode, validate, get_control_protocol_class_descriptor, get_read_only_modification_allow_list, remove_device_model_object, create_device_model_object);
+        const auto output = nmos::apply_backup_data_set(resources, *resource, object_properties_holders.as_array(), recurse, restore_mode, validate, get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor, get_read_only_modification_allow_list, remove_device_model_object, create_device_model_object);
 
         // expectation is there will be a result for each of the object_properties_holders i.e. one
         BST_REQUIRE_EQUAL(1, output.as_array().size());
@@ -603,7 +604,7 @@ BST_TEST_CASE(testApplyBackupDataSet)
         const value restore_mode{ nmos::nc_restore_mode::restore_mode::rebuild };
 
         const auto& resource = nmos::nc::find_resource_by_role_path(resources, target_role_path.as_array());
-        const auto output = nmos::apply_backup_data_set(resources, *resource, object_properties_holders.as_array(), recurse, restore_mode, validate, get_control_protocol_class_descriptor, get_read_only_modification_allow_list, remove_device_model_object, create_device_model_object);
+        const auto output = nmos::apply_backup_data_set(resources, *resource, object_properties_holders.as_array(), recurse, restore_mode, validate, get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor, get_read_only_modification_allow_list, remove_device_model_object, create_device_model_object);
 
         // expectation is there will be a result for each of the object_properties_holders i.e. one
         BST_REQUIRE_EQUAL(1, output.as_array().size());
@@ -658,7 +659,7 @@ BST_TEST_CASE(testApplyBackupDataSet)
         const value restore_mode{ nmos::nc_restore_mode::restore_mode::rebuild };
 
         const auto& resource = nmos::nc::find_resource_by_role_path(resources, target_role_path.as_array());
-        const auto output = nmos::apply_backup_data_set(resources, *resource, object_properties_holders.as_array(), recurse, restore_mode, validate, get_control_protocol_class_descriptor, get_read_only_modification_allow_list, remove_device_model_object, create_device_model_object);
+        const auto output = nmos::apply_backup_data_set(resources, *resource, object_properties_holders.as_array(), recurse, restore_mode, validate, get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor, get_read_only_modification_allow_list, remove_device_model_object, create_device_model_object);
 
         // expectation is there will be a result for each of the object_properties_holders i.e. one for the block and one each for the monitors
         BST_REQUIRE_EQUAL(3, output.as_array().size());
@@ -712,7 +713,7 @@ BST_TEST_CASE(testApplyBackupDataSet)
         const value restore_mode{ nmos::nc_restore_mode::restore_mode::rebuild };
 
         const auto& resource = nmos::nc::find_resource_by_role_path(resources, target_role_path.as_array());
-        const auto output = nmos::apply_backup_data_set(resources, *resource, object_properties_holders.as_array(), recurse, restore_mode, validate, get_control_protocol_class_descriptor, get_read_only_modification_allow_list, remove_device_model_object, create_device_model_object);
+        const auto output = nmos::apply_backup_data_set(resources, *resource, object_properties_holders.as_array(), recurse, restore_mode, validate, get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor, get_read_only_modification_allow_list, remove_device_model_object, create_device_model_object);
 
         // expectation no object_properties_holders as not in the restore scope
         BST_REQUIRE_EQUAL(0, output.as_array().size());
@@ -732,6 +733,7 @@ BST_TEST_CASE(testApplyBackupDataSet_WithoutCallbacks)
     nmos::resources resources;
     nmos::experimental::control_protocol_state control_protocol_state;
     nmos::get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor = nmos::make_get_control_protocol_class_descriptor_handler(control_protocol_state);
+    nmos::get_control_protocol_datatype_descriptor_handler get_control_protocol_datatype_descriptor= nmos::make_get_control_protocol_datatype_descriptor_handler(control_protocol_state);
 
     // Create Device Model
     // root
@@ -786,7 +788,7 @@ BST_TEST_CASE(testApplyBackupDataSet_WithoutCallbacks)
         const value restore_mode{ nmos::nc_restore_mode::restore_mode::modify };
 
         const auto& resource = nmos::nc::find_resource_by_role_path(resources, target_role_path.as_array());
-        const auto output = nmos::apply_backup_data_set(resources, *resource, object_properties_holders.as_array(), recurse, restore_mode, validate, get_control_protocol_class_descriptor, get_read_only_modification_allow_list, remove_device_model_object, create_device_model_object);
+        const auto output = nmos::apply_backup_data_set(resources, *resource, object_properties_holders.as_array(), recurse, restore_mode, validate, get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor, get_read_only_modification_allow_list, remove_device_model_object, create_device_model_object);
 
         // expectation is there will be a result for each of the object_properties_holders i.e. one
         BST_REQUIRE_EQUAL(1, output.as_array().size());
@@ -813,7 +815,7 @@ BST_TEST_CASE(testApplyBackupDataSet_WithoutCallbacks)
         const value restore_mode{ nmos::nc_restore_mode::restore_mode::rebuild };
 
         const auto& resource = nmos::nc::find_resource_by_role_path(resources, target_role_path.as_array());
-        const auto output = nmos::apply_backup_data_set(resources, *resource, object_properties_holders.as_array(), recurse, restore_mode, validate, get_control_protocol_class_descriptor, get_read_only_modification_allow_list, remove_device_model_object, create_device_model_object);
+        const auto output = nmos::apply_backup_data_set(resources, *resource, object_properties_holders.as_array(), recurse, restore_mode, validate, get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor, get_read_only_modification_allow_list, remove_device_model_object, create_device_model_object);
 
         // expectation is there will be a result for each of the object_properties_holders i.e. one
         BST_REQUIRE_EQUAL(1, output.as_array().size());
@@ -844,7 +846,7 @@ BST_TEST_CASE(testApplyBackupDataSet_WithoutCallbacks)
         bool validate = true;
 
         const auto& resource = nmos::nc::find_resource_by_role_path(resources, target_role_path.as_array());
-        const auto output = nmos::apply_backup_data_set(resources, *resource, object_properties_holders.as_array(), recurse, restore_mode, validate, get_control_protocol_class_descriptor, get_read_only_modification_allow_list, remove_device_model_object, create_device_model_object);
+        const auto output = nmos::apply_backup_data_set(resources, *resource, object_properties_holders.as_array(), recurse, restore_mode, validate, get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor, get_read_only_modification_allow_list, remove_device_model_object, create_device_model_object);
 
         // expectation is there will be a result for each of the object_properties_holders i.e. one
         BST_REQUIRE_EQUAL(1, output.as_array().size());
@@ -880,7 +882,7 @@ BST_TEST_CASE(testApplyBackupDataSet_WithoutCallbacks)
         const value restore_mode{ nmos::nc_restore_mode::restore_mode::rebuild };
 
         const auto& resource = nmos::nc::find_resource_by_role_path(resources, target_role_path.as_array());
-        const auto output = nmos::apply_backup_data_set(resources, *resource, object_properties_holders.as_array(), recurse, restore_mode, validate, get_control_protocol_class_descriptor, get_read_only_modification_allow_list, remove_device_model_object, create_device_model_object);
+        const auto output = nmos::apply_backup_data_set(resources, *resource, object_properties_holders.as_array(), recurse, restore_mode, validate, get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor, get_read_only_modification_allow_list, remove_device_model_object, create_device_model_object);
 
         // expectation is there will be a result for each of the object_properties_holder
         BST_CHECK_EQUAL(2, output.as_array().size());
@@ -910,6 +912,7 @@ BST_TEST_CASE(testApplyBackupDataSet_AddDeviceModelObject)
     nmos::resources resources;
     nmos::experimental::control_protocol_state control_protocol_state;
     nmos::get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor = nmos::make_get_control_protocol_class_descriptor_handler(control_protocol_state);
+    nmos::get_control_protocol_datatype_descriptor_handler get_control_protocol_datatype_descriptor= nmos::make_get_control_protocol_datatype_descriptor_handler(control_protocol_state);
 
     // Create Device Model
     // root
@@ -1015,7 +1018,7 @@ BST_TEST_CASE(testApplyBackupDataSet_AddDeviceModelObject)
         const value restore_mode{ nmos::nc_restore_mode::restore_mode::rebuild };
 
         const auto& resource = nmos::nc::find_resource_by_role_path(resources, target_role_path.as_array());
-        const auto output = nmos::apply_backup_data_set(resources, *resource, object_properties_holders.as_array(), recurse, restore_mode, validate, get_control_protocol_class_descriptor, get_read_only_modification_allow_list, remove_device_model_object, create_device_model_object);
+        const auto output = nmos::apply_backup_data_set(resources, *resource, object_properties_holders.as_array(), recurse, restore_mode, validate, get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor, get_read_only_modification_allow_list, remove_device_model_object, create_device_model_object);
 
         // expectation is there will be a result for each of the object_properties_holders i.e. one for the block and one each for the monitors
         BST_REQUIRE_EQUAL(3, output.as_array().size());
@@ -1084,7 +1087,7 @@ BST_TEST_CASE(testApplyBackupDataSet_AddDeviceModelObject)
         const value restore_mode{ nmos::nc_restore_mode::restore_mode::rebuild };
 
         const auto& resource = nmos::nc::find_resource_by_role_path(resources, target_role_path.as_array());
-        const auto output = nmos::apply_backup_data_set(resources, *resource, object_properties_holders.as_array(), recurse, restore_mode, validate, get_control_protocol_class_descriptor, get_read_only_modification_allow_list, remove_device_model_object, create_device_model_object);
+        const auto output = nmos::apply_backup_data_set(resources, *resource, object_properties_holders.as_array(), recurse, restore_mode, validate, get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor, get_read_only_modification_allow_list, remove_device_model_object, create_device_model_object);
 
         // expectation is there will be a result for each of the object_properties_holders i.e. one for the block and one each for the monitors
         BST_REQUIRE_EQUAL(3, output.as_array().size());
@@ -1138,6 +1141,7 @@ BST_TEST_CASE(testApplyBackupDataSet_NegativeTests)
     nmos::resources resources;
     nmos::experimental::control_protocol_state control_protocol_state;
     nmos::get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor = nmos::make_get_control_protocol_class_descriptor_handler(control_protocol_state);
+    nmos::get_control_protocol_datatype_descriptor_handler get_control_protocol_datatype_descriptor= nmos::make_get_control_protocol_datatype_descriptor_handler(control_protocol_state);
 
     // Create Device Model
     // root
@@ -1221,7 +1225,7 @@ BST_TEST_CASE(testApplyBackupDataSet_NegativeTests)
         const value restore_mode{ nmos::nc_restore_mode::restore_mode::rebuild };
 
         const auto& resource = nmos::nc::find_resource_by_role_path(resources, target_role_path.as_array());
-        const auto output = nmos::apply_backup_data_set(resources, *resource, object_properties_holders.as_array(), recurse, restore_mode, validate, get_control_protocol_class_descriptor, get_read_only_modification_allow_list, remove_device_model_object, create_device_model_object);
+        const auto output = nmos::apply_backup_data_set(resources, *resource, object_properties_holders.as_array(), recurse, restore_mode, validate, get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor, get_read_only_modification_allow_list, remove_device_model_object, create_device_model_object);
 
         // expectation is there will be a result for each of the object_properties_holders i.e. one
         BST_REQUIRE_EQUAL(1, output.as_array().size());
@@ -1269,7 +1273,7 @@ BST_TEST_CASE(testApplyBackupDataSet_NegativeTests)
         const value restore_mode{ nmos::nc_restore_mode::restore_mode::rebuild };
 
         const auto& resource = nmos::nc::find_resource_by_role_path(resources, target_role_path.as_array());
-        const auto output = nmos::apply_backup_data_set(resources, *resource, object_properties_holders.as_array(), recurse, restore_mode, validate, get_control_protocol_class_descriptor, get_read_only_modification_allow_list, remove_device_model_object, create_device_model_object);
+        const auto output = nmos::apply_backup_data_set(resources, *resource, object_properties_holders.as_array(), recurse, restore_mode, validate, get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor, get_read_only_modification_allow_list, remove_device_model_object, create_device_model_object);
 
         // expectation is there will be a result for each of the object_properties_holders
         BST_CHECK_EQUAL(2, output.as_array().size());
@@ -1342,7 +1346,7 @@ BST_TEST_CASE(testApplyBackupDataSet_NegativeTests)
         const value restore_mode{ nmos::nc_restore_mode::restore_mode::rebuild };
 
         const auto& resource = nmos::nc::find_resource_by_role_path(resources, target_role_path.as_array());
-        const auto output = nmos::apply_backup_data_set(resources, *resource, object_properties_holders.as_array(), recurse, restore_mode, validate, get_control_protocol_class_descriptor, get_read_only_modification_allow_list, remove_device_model_object, create_device_model_object);
+        const auto output = nmos::apply_backup_data_set(resources, *resource, object_properties_holders.as_array(), recurse, restore_mode, validate, get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor, get_read_only_modification_allow_list, remove_device_model_object, create_device_model_object);
 
         // expectation is there will be a result for each of the object_properties_holders i.e. one for the block and one each for the monitors
         BST_CHECK_EQUAL(4, output.as_array().size());
@@ -1416,7 +1420,7 @@ BST_TEST_CASE(testApplyBackupDataSet_NegativeTests)
         const value restore_mode{ nmos::nc_restore_mode::restore_mode::rebuild };
 
         const auto& resource = nmos::nc::find_resource_by_role_path(resources, target_role_path.as_array());
-        const auto output = nmos::apply_backup_data_set(resources, *resource, object_properties_holders.as_array(), recurse, restore_mode, validate, get_control_protocol_class_descriptor, get_read_only_modification_allow_list, remove_device_model_object, create_device_model_object);
+        const auto output = nmos::apply_backup_data_set(resources, *resource, object_properties_holders.as_array(), recurse, restore_mode, validate, get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor, get_read_only_modification_allow_list, remove_device_model_object, create_device_model_object);
 
         // expectation is there will be a result for each of the object_properties_holders
         BST_CHECK_EQUAL(3, output.as_array().size());

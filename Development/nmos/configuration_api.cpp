@@ -673,12 +673,12 @@ namespace nmos
             });
 
         // PATCH /rolePaths/{rolePath}/bulkProperties - invokes validation_set_properties_by_path method
-        configuration_api.support(U("/rolePaths/") + nmos::patterns::rolePath.pattern + U("/bulkProperties/?"), methods::PATCH, [&model, get_control_protocol_class_descriptor, get_read_only_modification_allow_list, validate_validation_fingerprint, remove_device_model_object, create_device_model_object, &gate_](http_request req, http_response res, const string_t&, const route_parameters& parameters)
+        configuration_api.support(U("/rolePaths/") + nmos::patterns::rolePath.pattern + U("/bulkProperties/?"), methods::PATCH, [&model, get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor, get_read_only_modification_allow_list, validate_validation_fingerprint, remove_device_model_object, create_device_model_object, &gate_](http_request req, http_response res, const string_t&, const route_parameters& parameters)
             {
                 const auto role_path = parameters.at(nmos::patterns::rolePath.name);
                 const nmos::api_version version = nmos::parse_api_version(parameters.at(nmos::patterns::version.name));
 
-                return details::extract_json(req, gate_).then([res, &model, role_path, get_control_protocol_class_descriptor, get_read_only_modification_allow_list, validate_validation_fingerprint, remove_device_model_object, create_device_model_object, version, &gate_](value body) mutable
+                return details::extract_json(req, gate_).then([res, &model, role_path, get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor, get_read_only_modification_allow_list, validate_validation_fingerprint, remove_device_model_object, create_device_model_object, version, &gate_](value body) mutable
                     {
                         auto lock = model.read_lock();
                         auto& resources = model.control_protocol_resources;
@@ -698,7 +698,7 @@ namespace nmos
                                 const auto& restore_mode = nmos::fields::nc::restore_mode(arguments);
                                 const auto& backup_data_set = nmos::fields::nc::data_set(arguments);
 
-                                method_result = validate_set_properties_by_path(resources, *resource, backup_data_set, recurse, restore_mode, get_control_protocol_class_descriptor, validate_validation_fingerprint, get_read_only_modification_allow_list, remove_device_model_object, create_device_model_object);
+                                method_result = validate_set_properties_by_path(resources, *resource, backup_data_set, recurse, restore_mode, get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor, validate_validation_fingerprint, get_read_only_modification_allow_list, remove_device_model_object, create_device_model_object);
 
                                 auto status = nmos::fields::nc::status(method_result);
                                 if (nc_method_status::ok == status || nc_method_status::method_deprecated == status) { code = status_codes::OK; }
@@ -737,12 +737,12 @@ namespace nmos
             });
 
         // PUT /rolePaths/{rolePath}/bulkProperties - invokes set_properties_by_path method
-        configuration_api.support(U("/rolePaths/") + nmos::patterns::rolePath.pattern + U("/bulkProperties/?"), methods::PUT, [&model, get_control_protocol_class_descriptor, validate_validation_fingerprint,  get_read_only_modification_allow_list, remove_device_model_object, create_device_model_object, &gate_](http_request req, http_response res, const string_t&, const route_parameters& parameters)
+        configuration_api.support(U("/rolePaths/") + nmos::patterns::rolePath.pattern + U("/bulkProperties/?"), methods::PUT, [&model, get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor, validate_validation_fingerprint,  get_read_only_modification_allow_list, remove_device_model_object, create_device_model_object, &gate_](http_request req, http_response res, const string_t&, const route_parameters& parameters)
             {
                 const auto role_path = parameters.at(nmos::patterns::rolePath.name);
                 const nmos::api_version version = nmos::parse_api_version(parameters.at(nmos::patterns::version.name));
 
-                return details::extract_json(req, gate_).then([res, &model, role_path, get_control_protocol_class_descriptor, validate_validation_fingerprint, get_read_only_modification_allow_list, remove_device_model_object, create_device_model_object, version, &gate_](value body) mutable
+                return details::extract_json(req, gate_).then([res, &model, role_path, get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor, validate_validation_fingerprint, get_read_only_modification_allow_list, remove_device_model_object, create_device_model_object, version, &gate_](value body) mutable
                     {
                         auto lock = model.write_lock();
                         auto& resources = model.control_protocol_resources;
@@ -762,7 +762,7 @@ namespace nmos
                                 const auto& restore_mode = nmos::fields::nc::restore_mode(arguments);
                                 const auto& backup_data_set = nmos::fields::nc::data_set(arguments);
 
-                                method_result = set_properties_by_path(resources, *resource, backup_data_set, recurse, restore_mode, get_control_protocol_class_descriptor, validate_validation_fingerprint, get_read_only_modification_allow_list, remove_device_model_object, create_device_model_object);
+                                method_result = set_properties_by_path(resources, *resource, backup_data_set, recurse, restore_mode, get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor, validate_validation_fingerprint, get_read_only_modification_allow_list, remove_device_model_object, create_device_model_object);
 
                                 code = status_codes::OK;
 

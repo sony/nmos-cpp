@@ -54,7 +54,7 @@ namespace nmos
             return false;
         }
 
-        web::json::value modify_device_model_object(nmos::resources& resources, const nmos::resource& resource, const web::json::array& target_role_path, const web::json::value& target_object_properties_holder, const web::json::value& restore_mode, bool validate, nmos::get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, nmos::get_read_only_modification_allow_list_handler get_read_only_modification_allow_list)
+        web::json::value modify_device_model_object(nmos::resources& resources, const nmos::resource& resource, const web::json::array& target_role_path, const web::json::value& target_object_properties_holder, const web::json::value& restore_mode, bool validate, nmos::get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, nmos::get_control_protocol_datatype_descriptor_handler get_control_protocol_datatype_descriptor, nmos::get_read_only_modification_allow_list_handler get_read_only_modification_allow_list)
         {
             const auto& class_id = nmos::details::parse_nc_class_id(nmos::fields::nc::class_id(resource.data));
 
@@ -159,19 +159,39 @@ namespace nmos
 
                 // hmmm, ideally we would pass the value into modify_resource with the validate
                 // flag, so that it's subject to property contraints and also the application code can decide if it's a legal value
-                if (!validate)
+                const auto& value = nmos::fields::nc::value(property_value);
+                try
                 {
-                    // modify control protocol resources
-                    const auto& value = nmos::fields::nc::value(property_value);
+                    nmos::nc::details::constraints_validation(value, nc::details::get_runtime_property_constraints(property_id, resource.data.at(nmos::fields::nc::runtime_property_constraints)), nmos::fields::nc::constraints(property_descriptor), {nc::details::get_datatype_descriptor(property_descriptor.at(nmos::fields::nc::type_name), get_control_protocol_datatype_descriptor), get_control_protocol_datatype_descriptor});
 
-                    nc::modify_resource(resources, resource.id, [&](nmos::resource& resource_)
+                    if (!validate)
+                    {
+                        // modify control protocol resources
+                        nc::modify_resource(resources, resource.id, [&](nmos::resource& resource_)
                         {
                             resource_.data[nmos::fields::nc::name(property_descriptor)] = value;
 
-                        }, nmos::make_property_changed_event(nmos::fields::nc::oid(resource.data), { {property_id, nmos::nc_property_change_type::type::value_changed, value} }));
+                        }, nmos::make_property_changed_event(nmos::fields::nc::oid(resource.data), {{property_id, nmos::nc_property_change_type::type::value_changed, value}}));
+                    }
+                }
+                catch(const nmos::control_protocol_exception& e)
+                {
+                    // Generate notice for this property
+                    utility::stringstream_t ss;
+                    ss << U("property error: ") << e.what();
+                    const auto& property_restore_notice = nmos::details::make_nc_property_restore_notice(property_id, nmos::fields::nc::name(property_descriptor), nmos::nc_property_restore_notice_type::error, ss.str());
+                    web::json::push_back(property_restore_notices, property_restore_notice);
                 }
             }
-            return nmos::make_object_properties_set_validation(target_role_path, nmos::nc_restore_validation_status::ok, property_restore_notices.as_array(), U("OK"));
+            // If there are any error notices, then give an overall error status for object properties set validation
+            const auto& error_notices = boost::copy_range<std::set<web::json::value>>(property_restore_notices.as_array()
+                | boost::adaptors::filtered([&](const web::json::value& notice)
+                    {
+                        return nmos::fields::nc::notice_type(notice) == nmos::nc_property_restore_notice_type::error;
+                    })
+            );
+            const auto object_status = error_notices.size() ? nmos::nc_restore_validation_status::failed : nmos::nc_restore_validation_status::ok;
+            return nmos::make_object_properties_set_validation(target_role_path, object_status, property_restore_notices.as_array(), U("OK"));
         }
 
         web::json::value modify_rebuildable_block(nmos::resources& resources, object_properties_map& object_properties_holder_map, const nmos::resource& resource, const web::json::array& target_role_path, const web::json::value& block_object_properties_holder, bool validate, nmos::get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, nmos::remove_device_model_object_handler remove_device_model_object, nmos::create_device_model_object_handler create_device_model_object)
@@ -661,7 +681,7 @@ namespace nmos
         return web::json::value_from_elements(target_object_properties_holders).as_array();
     }
 
-    web::json::value apply_backup_data_set(nmos::resources& resources, const nmos::resource& resource, const web::json::array& object_properties_holders, bool recurse, const web::json::value& restore_mode, bool validate, nmos::get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, nmos::get_read_only_modification_allow_list_handler get_read_only_modification_allow_list, nmos::remove_device_model_object_handler remove_device_model_object, nmos::create_device_model_object_handler create_device_model_object)
+    web::json::value apply_backup_data_set(nmos::resources& resources, const nmos::resource& resource, const web::json::array& object_properties_holders, bool recurse, const web::json::value& restore_mode, bool validate, nmos::get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, nmos::get_control_protocol_datatype_descriptor_handler get_control_protocol_datatype_descriptor, nmos::get_read_only_modification_allow_list_handler get_read_only_modification_allow_list, nmos::remove_device_model_object_handler remove_device_model_object, nmos::create_device_model_object_handler create_device_model_object)
     {
         auto object_properties_set_validation_values = web::json::value::array();
 
@@ -749,7 +769,7 @@ namespace nmos
             }
             else
             {
-                const auto object_properties_set_validation = details::modify_device_model_object(resources, *r, role_path, object_properties_holder, restore_mode, validate, get_control_protocol_class_descriptor, get_read_only_modification_allow_list);
+                const auto object_properties_set_validation = details::modify_device_model_object(resources, *r, role_path, object_properties_holder, restore_mode, validate, get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor, get_read_only_modification_allow_list);
                 web::json::push_back(object_properties_set_validation_values, object_properties_set_validation);
             }
 
