@@ -21,8 +21,8 @@ namespace nmos
 {
     namespace experimental
     {
-        // Construct a server instance for an NMOS Node, implementing the IS-04 Node API, IS-05 Connection API, IS-07 Events API, IS-10 Authorization API, IS-12 control protocol ws API
-        // and the experimental Logging API and Settings API, according to the specified data models and callbacks
+        // Construct a server instance for an NMOS Node, implementing the IS-04 Node API, IS-05 Connection API, IS-07 Events API, IS-08 Audio Channel Mapping API, IS-10 Authorization API,
+        // IS-12 Control & Monitoring Protocol Websocket API and the experimental Logging API and Settings API, according to the specified data models and callbacks
         nmos::server make_node_server(nmos::node_model& node_model, nmos::experimental::node_implementation node_implementation, nmos::experimental::log_model& log_model, slog::base_gate& gate)
         {
             // Log the API addresses we'll be using

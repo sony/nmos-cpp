@@ -69,16 +69,16 @@ The following configurations, defined by the [build-test](.github/workflows/src/
 | Linux    | Ubuntu 22.04 (GCC 11.2.0) | Avahi                              | Secure Communications<br/>IS-10 Authorization<br/>Multicast DNS-SD |
 | Linux    | Ubuntu 22.04 (GCC 11.2.0) | Avahi                              | Secure Communications<br/>IS-10 Authorization<br/>Unicast DNS-SD   |
 | Linux    | Ubuntu 22.04 (GCC 11.2.0) | mDNSResponder                      | Secure Communications<br/>IS-10 Authorization<br/>Multicast DNS-SD |
-| Linux    | Ubuntu 14.04 (GCC 4.8.4)  | mDNSResponder, not using Conan     | Secure Communications<br/>IS-10 Authorization<br/>Multicast DNS-SD |
-| Windows  | Server 2019 (VS 2019)     | Bonjour (mDNSResponder), WinHTTP   | Secure Communications<br/>IS-10 Authorization<br/>Multicast DNS-SD |
 | Windows  | Server 2022 (VS 2022)     | Bonjour (mDNSResponder), ASIO      | Secure Communications<br/>Multicast DNS-SD                         |
 | Windows  | Server 2022 (VS 2022)     | Bonjour (mDNSResponder), ASIO      | Secure Communications<br/>IS-10 Authorization<br/>Multicast DNS-SD |
-| macOS    | 11 (AppleClang 13.0)      | Bonjour (mDNSResponder)            | Secure Communications<br/>IS-10 Authorization<br/>Multicast DNS-SD |
+| Windows  | Server 2022 (VS 2022)     | Bonjour (mDNSResponder), WinHTTP   | Secure Communications<br/>Multicast DNS-SD                         |
+| Windows  | Server 2022 (VS 2022)     | Bonjour (mDNSResponder), WinHTTP   | Secure Communications<br/>IS-10 Authorization<br/>Multicast DNS-SD |
 
 The [AMWA NMOS API Testing Tool](https://github.com/AMWA-TV/nmos-testing) is automatically run against the APIs of the **nmos-cpp-node** and **nmos-cpp-registry** applications.
 
 **Test Suite/Status:**
 [![BCP-003-01][BCP-003-01-badge]][BCP-003-01-sheet]
+[![BCP-006-01-01][BCP-006-01-01-badge]][BCP-006-01-01-sheet]
 [![IS-04-01][IS-04-01-badge]][IS-04-01-sheet]
 [![IS-04-02][IS-04-02-badge]][IS-04-02-sheet]
 [![IS-04-03][IS-04-03-badge]][IS-04-03-sheet]
@@ -90,8 +90,10 @@ The [AMWA NMOS API Testing Tool](https://github.com/AMWA-TV/nmos-testing) is aut
 [![IS-08-02][IS-08-02-badge]][IS-08-02-sheet]
 [![IS-09-01][IS-09-01-badge]][IS-09-01-sheet]
 [![IS-09-02][IS-09-02-badge]][IS-09-02-sheet]
+[![IS-12-01][IS-12-01-badge]][IS-12-01-sheet]
 
 [BCP-003-01-badge]: https://raw.githubusercontent.com/sony/nmos-cpp/badges/BCP-003-01.svg
+[BCP-006-01-01-badge]: https://raw.githubusercontent.com/sony/nmos-cpp/badges/BCP-006-01-01.svg
 [IS-04-01-badge]: https://raw.githubusercontent.com/sony/nmos-cpp/badges/IS-04-01.svg
 [IS-04-02-badge]: https://raw.githubusercontent.com/sony/nmos-cpp/badges/IS-04-02.svg
 [IS-04-03-badge]: https://raw.githubusercontent.com/sony/nmos-cpp/badges/IS-04-03.svg
@@ -103,7 +105,9 @@ The [AMWA NMOS API Testing Tool](https://github.com/AMWA-TV/nmos-testing) is aut
 [IS-08-02-badge]: https://raw.githubusercontent.com/sony/nmos-cpp/badges/IS-08-02.svg
 [IS-09-01-badge]: https://raw.githubusercontent.com/sony/nmos-cpp/badges/IS-09-01.svg
 [IS-09-02-badge]: https://raw.githubusercontent.com/sony/nmos-cpp/badges/IS-09-02.svg
+[IS-12-01-badge]: https://raw.githubusercontent.com/sony/nmos-cpp/badges/IS-12-01.svg
 [BCP-003-01-sheet]: https://docs.google.com/spreadsheets/d/1UgZoI0lGCMDn9-zssccf2Azil3WN6jogroMT8Wh6H64/edit#gid=468090822
+[BCP-006-01-01-sheet]: https://docs.google.com/spreadsheets/d/1UgZoI0lGCMDn9-zssccf2Azil3WN6jogroMT8Wh6H64/edit?gid=1835994800
 [IS-04-01-sheet]: https://docs.google.com/spreadsheets/d/1UgZoI0lGCMDn9-zssccf2Azil3WN6jogroMT8Wh6H64/edit#gid=0
 [IS-04-02-sheet]: https://docs.google.com/spreadsheets/d/1UgZoI0lGCMDn9-zssccf2Azil3WN6jogroMT8Wh6H64/edit#gid=1838684224
 [IS-04-03-sheet]: https://docs.google.com/spreadsheets/d/1UgZoI0lGCMDn9-zssccf2Azil3WN6jogroMT8Wh6H64/edit#gid=1174955447
@@ -115,6 +119,7 @@ The [AMWA NMOS API Testing Tool](https://github.com/AMWA-TV/nmos-testing) is aut
 [IS-08-02-sheet]: https://docs.google.com/spreadsheets/d/1UgZoI0lGCMDn9-zssccf2Azil3WN6jogroMT8Wh6H64/edit#gid=1558470201
 [IS-09-01-sheet]: https://docs.google.com/spreadsheets/d/1UgZoI0lGCMDn9-zssccf2Azil3WN6jogroMT8Wh6H64/edit#gid=919453974
 [IS-09-02-sheet]: https://docs.google.com/spreadsheets/d/1UgZoI0lGCMDn9-zssccf2Azil3WN6jogroMT8Wh6H64/edit#gid=2135469955
+[IS-12-01-sheet]: https://docs.google.com/spreadsheets/d/1UgZoI0lGCMDn9-zssccf2Azil3WN6jogroMT8Wh6H64/edit?gid=1026699230
 
 ### Recent Activity
 
