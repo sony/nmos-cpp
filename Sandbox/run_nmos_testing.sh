@@ -221,9 +221,9 @@ do_run_test IS-12-01 $expected_disabled_IS_12_01 --host "${host}" "${host}" null
 
 do_run_test BCP-006-01-01 $expected_disabled_BCP_006_01_01 --host "${host}" --port 1080 --version v1.3
 
-do_run_test BCP-008-01 $expected_disabled_BCP_008_01_01 --host "${host}" "${host}" "${host}" null --port 1080 1080 1082 0 --version v1.3 v1.1 v1.0 v1.0 --urlpath null null x-nmos/ncp/v1.0 null
+do_run_test BCP-008-01-01 $expected_disabled_BCP_008_01_01 --host "${host}" "${host}" "${host}" null --port 1080 1080 1082 0 --version v1.3 v1.1 v1.0 v1.0 --urlpath null null x-nmos/ncp/v1.0 null
 
-do_run_test BCP-008-02 $expected_disabled_BCP_008_02_01 --host "${host}" "${host}" "${host}" null --port 1080 1080 1082 0 --version v1.3 v1.1 v1.0 v1.0 --urlpath null null x-nmos/ncp/v1.0 null
+do_run_test BCP-008-02-01 $expected_disabled_BCP_008_02_01 --host "${host}" "${host}" "${host}" null --port 1080 1080 1082 0 --version v1.3 v1.1 v1.0 v1.0 --urlpath null null x-nmos/ncp/v1.0 null
 
 # Run Registry tests (leave Node running)
 "${registry_command}" "{\"pri\":0,\"http_port\":8088 ${common_params} ${registry_params}}" > ${results_dir}/registryoutput 2>&1 &
