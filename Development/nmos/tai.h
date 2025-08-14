@@ -28,7 +28,7 @@ namespace nmos
         // tai_clock::time_point (or tai_clock::duration, since NMOS uses relative timestamps in a few places)
     };
 
-    // tai_clock is a std::chrono Clock for generating and manipulating tai timestamps
+    // tai_clock is a bst::chrono Clock for generating and manipulating tai timestamps
     struct tai_clock
     {
         // "It is suggested (although not mandated) that these timestamps are stored with nanosecond resolution."
@@ -45,6 +45,8 @@ namespace nmos
         // Unfortunately, this clock is based on the system_clock, so may not produce monotonically increasing
         // time points; nmos::strictly_increasing_update is used to prevent duplicate values in nmos::resources
         static const bool is_steady = bst::chrono::system_clock::is_steady;
+
+        static const duration tai_offset() { return bst::chrono::seconds(37); }
 
         static time_point now()
         {
@@ -71,9 +73,7 @@ namespace nmos
             // and https://cr.yp.to/proto/utctai.html
             // and https://www.iers.org/SharedDocs/News/EN/BulletinC.html
             // and https://www.ietf.org/timezones/data/leap-seconds.list
-            static const duration tai_offset = bst::chrono::seconds(37);
-
-            return time_point(tai_offset + bst::chrono::system_clock::now().time_since_epoch());
+            return time_point(tai_offset() + bst::chrono::system_clock::now().time_since_epoch());
         }
     };
 
