@@ -701,7 +701,15 @@ namespace nmos
         add_api_finally_handler(api_, hsts, gate);
         auto api = [api_, &gate](web::http::http_request req) mutable
         {
+            // hmm, in Windows,the boost version of the time_point::now sometimes returns the same value after a small incrementation.
+            // This issue does not seem to be happening in the std::chrono implementation.
+#if defined(_WIN32) && defined (BST_THREAD_BOOST)
+            // calculate received_time using std::chrono
+            const auto now = tai_clock::time_point(tai_clock::duration(std::chrono::system_clock::now().time_since_epoch().count() + tai_clock::tai_offset().count()));
+            req.headers().add(details::received_time, nmos::make_version(tai_from_time_point(now)));
+#else
             req.headers().add(details::received_time, nmos::make_version());
+#endif
             slog::log<slog::severities::too_much_info>(gate, SLOG_FLF)
                 << stash_remote_address(req.remote_address())
                 << stash_http_method(req.method())
