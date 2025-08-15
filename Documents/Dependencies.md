@@ -32,12 +32,12 @@ Specific instructions for [cross-compiling for Raspberry Pi](Raspberry-Pi.md) ar
 
 ### CMake
 
-1. Download and install a recent [CMake stable release](https://cmake.org/download/#latest) for your platform  
+1. Download and install a recent [CMake stable release](https://cmake.org/download/#latest) for your platform
    Notes:
-   - Currently, CMake 3.24 or higher is required in order to use the Conan package manager; version 3.28.3 (latest release at the time) has been tested
+   - Currently, CMake 3.24 or higher is required in order to use the Conan package manager; version 4.1.0 (latest release at the time) has been tested
    - Pre-built binary distributions are available for many platforms
-   - On Linux distributions, e.g. Ubuntu 14.04 LTS (long-term support), the pre-built binary version available via ``apt-get`` may be too out-of-date  
-     Fetch, build and install a suitable version:  
+   - On Linux distributions, e.g. Ubuntu 14.04 LTS (long-term support), the pre-built binary version available via ``apt-get`` may be too out-of-date
+     Fetch, build and install a suitable version:
      ```sh
      wget "https://cmake.org/files/v3.24/cmake-3.24.2.tar.gz"
      tar -zxvf cmake-3.24.2.tar.gz
@@ -53,9 +53,9 @@ Specific instructions for [cross-compiling for Raspberry Pi](Raspberry-Pi.md) ar
 
 By default nmos-cpp uses [Conan](https://conan.io) to download most of its dependencies.
 
-1. Install Python 3 if necessary  
+1. Install Python 3 if necessary
    Note: The Python scripts directory needs to be added to the `PATH`, so the Conan executable can be found
-2. Install or upgrade Conan using `pip install --upgrade conan~=2.0.5`  
+2. Install or upgrade Conan using `pip install --upgrade conan~=2.0.5`
    Notes:
    - On some platforms with Python 2 and Python 3 both installed this may need to be `pip3 install --upgrade conan~=2.0.5`
    - Conan 2.0.5 or higher is required; dependencies may require a higher version; version 2.0.17 (latest release at the time) has been tested
@@ -72,7 +72,7 @@ If using Conan, this section can be skipped.
 <details>
 <summary>If not using Conan...</summary>
 
-1. Download a [recent release](http://www.boost.org/users/download/)  
+1. Download a [recent release](http://www.boost.org/users/download/)
    Notes:
    - Several Boost releases have been tested, including Version 1.83.0 (latest release at the time) and Version 1.54.0
    - On Linux distributions, a Boost libraries package may already be installed, e.g. Ubuntu 14.04 LTS has Version 1.54.0
@@ -127,8 +127,8 @@ If using Conan, this section can be skipped.
 <summary>If not using Conan...</summary>
 
 1. Get the source code
-   - Clone the [repo](https://github.com/Microsoft/cpprestsdk/) and its submodules, and check out the v2.10.19 tag  
-     The ``git clone`` command option ``--recurse-submodules`` (formerly ``--recursive``) simplifies [cloning a project with submodules](https://git-scm.com/book/en/v2/Git-Tools-Submodules#_cloning_submodules).  
+   - Clone the [repo](https://github.com/Microsoft/cpprestsdk/) and its submodules, and check out the v2.10.19 tag
+     The ``git clone`` command option ``--recurse-submodules`` (formerly ``--recursive``) simplifies [cloning a project with submodules](https://git-scm.com/book/en/v2/Git-Tools-Submodules#_cloning_submodules).
      For example:
      ```
      git clone --recurse-submodules --branch v2.10.19 https://github.com/Microsoft/cpprestsdk <home-dir>/cpprestsdk
@@ -150,7 +150,7 @@ If using Conan, this section can be skipped.
        and *``<home-dir>``*``/boost_1_83_0/x64/lib`` respectively to match the suggested ``b2`` command
    - Due to interactions with other dependencies, it may also be necessary to explicitly set ``WERROR`` (BOOL) to ``0`` so that compiler warnings are not treated as errors
    - To speed up the build by omitting the C++ REST SDK sample apps and test suite, set ``BUILD_SAMPLES`` and ``BUILD_TESTS`` (BOOL) to ``0`` (false)
-3. Use CMake to generate build/project files, and then build *and* install  
+3. Use CMake to generate build/project files, and then build *and* install
    "Visual Studio 14 2015 Win64" and more recent Visual Studio generators have been tested
 
 **Windows**
@@ -230,14 +230,14 @@ If using Conan, this section can be skipped.
 The C++ REST SDK depends on [OpenSSL](https://www.openssl.org/) (to implement secure HTTP and/or secure WebSockets).
 The nmos-cpp codebase also uses OpenSSL directly to implement the specific requirements of [AMWA BCP-003-01 Secure Communication in NMOS Systems](https://specs.amwa.tv/bcp-003-01/) and [AMWA BCP-003-02 Authorization in NMOS Systems](https://specs.amwa.tv/bcp-003-02/).
 
-OpenSSL version 3 is recommended, and version 3.2.1 (latest release at the time) has been tested.
+OpenSSL version 3 is recommended, and version 3.5.2 (latest release at the time) has been tested.
 It is currently also possible to use OpenSSL v1.1.1, although [this OpenSSL release is now end of life](https://www.openssl.org/blog/blog/2023/09/11/eol-111/index.html).
 
-1. Download and install a recent release  
+1. Download and install a recent release
    Notes:
-   - On Windows, an installer can be downloaded from [Shining Light Productions - Win32 OpenSSL](https://slproweb.com/products/Win32OpenSSL.html)  
-     The Win64 OpenSSL v3.2.1 installer (latest release at the time) has been tested
-   - On Linux distributions, an OpenSSL package may already be available  
+   - On Windows, an installer can be downloaded from [Shining Light Productions - Win32 OpenSSL](https://slproweb.com/products/Win32OpenSSL.html)
+     The Win64 OpenSSL v3.5.2 installer (latest release at the time) has been tested
+   - On Linux distributions, an OpenSSL package may already be available
      For example, Ubuntu 22.04 LTS includes OpenSSL v3.0.2
 
 </details>
@@ -279,7 +279,7 @@ On Windows:
 3. The critical files for building this software are:
    - *Bonjour SDK\Include\dns_sd.h*
    - *Bonjour SDK\Lib\x64\dnssd.lib*
-4. The Bonjour service itself needs to be installed on the system where this software is run  
+4. The Bonjour service itself needs to be installed on the system where this software is run
    The installer is included in the SDK:
    - *Bonjour SDK\Installer\Bonjour64.msi*
 
