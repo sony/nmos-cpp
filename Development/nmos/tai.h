@@ -46,7 +46,7 @@ namespace nmos
         // time points; nmos::strictly_increasing_update is used to prevent duplicate values in nmos::resources
         static const bool is_steady = bst::chrono::system_clock::is_steady;
 
-        // UTC is 37 seconds behind TAI; see comments below for details 
+        // UTC is 37 seconds behind TAI; see comments below for details
         static const duration tai_offset() { return bst::chrono::seconds(37); }
 
         static time_point now()
@@ -72,8 +72,8 @@ namespace nmos
             // and https://en.wikipedia.org/wiki/International_Atomic_Time
             // and https://github.com/HowardHinnant/date/issues/129
             // and https://cr.yp.to/proto/utctai.html
-            // and https://www.iers.org/SharedDocs/News/EN/BulletinC.html
-            // and https://www.ietf.org/timezones/data/leap-seconds.list
+            // and https://datacenter.iers.org/data/latestVersion/bulletinC.txt
+            // and https://data.iana.org/time-zones/data/leap-seconds.list
             return time_point(tai_offset() + bst::chrono::system_clock::now().time_since_epoch());
         }
     };
