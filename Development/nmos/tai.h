@@ -46,6 +46,7 @@ namespace nmos
         // time points; nmos::strictly_increasing_update is used to prevent duplicate values in nmos::resources
         static const bool is_steady = bst::chrono::system_clock::is_steady;
 
+        // UTC is 37 seconds behind TAI; see comments below for details 
         static const duration tai_offset() { return bst::chrono::seconds(37); }
 
         static time_point now()
