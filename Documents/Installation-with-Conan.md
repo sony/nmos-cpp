@@ -5,7 +5,7 @@ For many platforms, a binary package is available from Conan Center Index so it 
 
 1. Install conan:
    ```sh
-   pip install --upgrade conan~=2.0.5
+   pip install --upgrade conan~=2.19.1
    ```
 
    `pip` is the package installer for Python. Install Python 3 if necessary.
