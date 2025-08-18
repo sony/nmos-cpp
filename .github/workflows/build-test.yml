@@ -285,8 +285,6 @@ jobs:
           "-DCONAN_INSTALL_ARGS:STRING=\"--build=missing\;${{ env.CONAN_INSTALL_EXTRA_ARGS }}\;--lockfile-out=conan.lock\"" \
           >> $GITHUB_ENV
         cat $GITHUB_ENV
-        # list all avaiable openssl since v3.2.1
-        conan list "openssl/[>=3.2.1]" -r=conancenter
 
     - name: setup developer command prompt for Microsoft Visual C++
       if: runner.os == 'Windows'
