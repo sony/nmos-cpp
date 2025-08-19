@@ -6,7 +6,7 @@
 
 #include "bst/test/test.h"
 
-namespace
+namespace test_condition_variable
 {
     struct test_model
     {
@@ -95,7 +95,7 @@ BST_TEST_CASE(testConditionVariableWait)
     const int max_threads{ 500 };
 
     // start a wait thread
-    std::thread wait_thread(wait);
+    std::thread wait_thread(test_condition_variable::wait);
 
     // wait 500 milliseconds before starting a large number of lock_then_unlock threads to exhaust the lock limit
     std::this_thread::sleep_for(std::chrono::milliseconds(500));
@@ -103,18 +103,18 @@ BST_TEST_CASE(testConditionVariableWait)
     std::vector<std::thread> threads;
     for (auto idx = 0; idx < max_threads; idx++)
     {
-        threads.push_back(std::thread(lock_then_unlock));
+        threads.push_back(std::thread(test_condition_variable::lock_then_unlock));
     }
 
     // send a lot of notifications to wake up the wait thread
     // to wake the wait thread when lock limit is exhausted
     for (auto idx = 0; idx < 100; idx++)
     {
-        model.notify();
+        test_condition_variable::model.notify();
     }
 
     // start the thread to pause 1 second before signal a shutdown
-    std::thread shutdown_thread(shutdown, std::chrono::seconds{ 1 });
+    std::thread shutdown_thread(test_condition_variable::shutdown, std::chrono::seconds{ 1 });
 
     shutdown_thread.join();
     wait_thread.join();
