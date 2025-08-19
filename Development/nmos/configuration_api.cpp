@@ -534,7 +534,7 @@ namespace nmos
                                     if (nc_method_status::ok == status || nc_method_status::method_deprecated == status) { code = status_codes::OK; }
                                     else if (status / 100 == 4) { code = status_codes::BadRequest; } // 4xx error
                                     else if (status / 100 == 5) { code = status_codes::InternalError; } // 5xx error
-                                    else { code = status; }
+                                    else { code = static_cast<web::http::status_code>(status); }
                                 }
                                 catch (const nmos::control_protocol_exception& e)
                                 {
@@ -649,7 +649,7 @@ namespace nmos
                         if (nc_method_status::ok == status || nc_method_status::method_deprecated == status) { code = status_codes::OK; }
                         else if (status / 100 == 4) { code = status_codes::BadRequest; } // 4xx error
                         else if (status / 100 == 5) { code = status_codes::InternalError; } // 5xx error
-                        else { code = status; }
+                        else { code = static_cast<web::http::status_code>(status); }
                     }
                     catch (const nmos::control_protocol_exception& e)
                     {
@@ -704,7 +704,7 @@ namespace nmos
                                 if (nc_method_status::ok == status || nc_method_status::method_deprecated == status) { code = status_codes::OK; }
                                 else if (status / 100 == 4) { code = status_codes::BadRequest; } // 4xx error
                                 else if (status / 100 == 5) { code = status_codes::InternalError; } // 5xx error
-                                else { code = status; }
+                                else { code = static_cast<web::http::status_code>(status); }
                             }
                             catch (const nmos::control_protocol_exception& e)
                             {
