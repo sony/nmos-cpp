@@ -435,7 +435,7 @@ BST_TEST_CASE(testApplyBackupDataSet)
         BST_CHECK(!remove_device_model_object_called);
         BST_CHECK(!create_device_model_object_called);
     }
-    const auto connection_status_property_descriptor = nmos::details::make_nc_property_descriptor(U("connectionStatusMessage"), nmos::nc_receiver_monitor_connection_status_message_property_id, U("connectionStatusMessage"), U("NcString"), true, false, false, false, web::json::value::null());
+    const auto connection_status_property_descriptor = nmos::details::make_nc_property_descriptor(U("connectionStatusMessage"), nmos::nc_receiver_monitor_connection_status_message_property_id, nmos::fields::nc::connection_status_message, U("NcString"), true, false, false, false, web::json::value::null());
     {
         // Check get_read_only_modification_allow_list_handler is called when changing a read only property of rebuildable object in Rebuild mode
         //
@@ -513,8 +513,8 @@ BST_TEST_CASE(testApplyBackupDataSet)
         BST_REQUIRE_EQUAL(1, property_restore_notices.size());
 
         const auto& notice = *property_restore_notices.begin();
-        BST_CHECK_EQUAL(nmos::nc_property_id(3, 2), nmos::details::parse_nc_property_id(nmos::fields::nc::id(notice)));
-        BST_CHECK_EQUAL(U("connectionStatusMessage"), nmos::fields::nc::name(notice));
+        BST_CHECK_EQUAL(nmos::nc_receiver_monitor_connection_status_message_property_id, nmos::details::parse_nc_property_id(nmos::fields::nc::id(notice)));
+        BST_CHECK_EQUAL(nmos::fields::nc::connection_status_message.key, nmos::fields::nc::name(notice));
         BST_CHECK_EQUAL(nmos::nc_property_restore_notice_type::error, nmos::fields::nc::notice_type(notice));
         BST_CHECK_NE(U(""), nmos::fields::nc::notice_message(notice));
 
@@ -565,8 +565,8 @@ BST_TEST_CASE(testApplyBackupDataSet)
         BST_REQUIRE_EQUAL(1, property_restore_notices.size());
 
         const auto& notice = *property_restore_notices.begin();
-        BST_CHECK_EQUAL(nmos::nc_property_id(3, 2), nmos::details::parse_nc_property_id(nmos::fields::nc::id(notice)));
-        BST_CHECK_EQUAL(U("connectionStatusMessage"), nmos::fields::nc::name(notice));
+        BST_CHECK_EQUAL(nmos::nc_receiver_monitor_connection_status_message_property_id, nmos::details::parse_nc_property_id(nmos::fields::nc::id(notice)));
+        BST_CHECK_EQUAL(nmos::fields::nc::connection_status_message.key, nmos::fields::nc::name(notice));
         BST_CHECK_EQUAL(nmos::nc_property_restore_notice_type::error, nmos::fields::nc::notice_type(notice));
         BST_CHECK_NE(U(""), nmos::fields::nc::notice_message(notice));
 
@@ -824,7 +824,7 @@ BST_TEST_CASE(testApplyBackupDataSet_WithoutCallbacks)
         const auto role_path = value_of({ U("root"), U("receivers"), U("mon1") });
         auto property_holders = value::array();
         // This is a read only property
-        const auto property_descriptor = nmos::details::make_nc_property_descriptor(U("connectionStatusMessage"), nmos::nc_receiver_monitor_connection_status_message_property_id, U("connectionStatusMessage"), U("NcString"), true, false, false, false, web::json::value::null());
+        const auto property_descriptor = nmos::details::make_nc_property_descriptor(U("connectionStatusMessage"), nmos::nc_receiver_monitor_connection_status_message_property_id, nmos::fields::nc::connection_status_message, U("NcString"), true, false, false, false, web::json::value::null());
         const auto property_holder = nmos::details::make_nc_property_holder(nmos::nc_receiver_monitor_connection_status_message_property_id, property_descriptor, value(U("change this value")));
         push_back(property_holders, property_holder);
         const auto object_properties_holder = nmos::details::make_nc_object_properties_holder(role_path.as_array(), property_holders.as_array(), value::array().as_array(), value::array().as_array(), false);
