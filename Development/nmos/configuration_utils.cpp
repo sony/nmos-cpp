@@ -15,7 +15,7 @@ namespace nmos
 {
     namespace details
     {
-        bool is_property_value_valid(web::json::value& property_restore_notices, const web::json::value& property_value, const web::json::value& property_descriptor, const web::json::value& restore_mode, bool is_rebuildable)
+        bool is_property_value_valid(web::json::value& property_restore_notices, const web::json::value& property_value, const web::json::value& property_descriptor, nmos::nc_restore_mode::restore_mode restore_mode, bool is_rebuildable)
         {
             const nmos::nc_property_id& property_id = nmos::details::parse_nc_property_id(nmos::fields::nc::id(property_descriptor));
             bool is_valid = true;
@@ -54,7 +54,7 @@ namespace nmos
             return false;
         }
 
-        web::json::value modify_device_model_object(nmos::resources& resources, const nmos::resource& resource, const web::json::array& target_role_path, const web::json::value& target_object_properties_holder, const web::json::value& restore_mode, bool validate, nmos::get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, nmos::get_control_protocol_datatype_descriptor_handler get_control_protocol_datatype_descriptor, nmos::get_read_only_modification_allow_list_handler get_read_only_modification_allow_list)
+        web::json::value modify_device_model_object(nmos::resources& resources, const nmos::resource& resource, const web::json::array& target_role_path, const web::json::value& target_object_properties_holder, nmos::nc_restore_mode::restore_mode restore_mode, bool validate, nmos::get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, nmos::get_control_protocol_datatype_descriptor_handler get_control_protocol_datatype_descriptor, nmos::get_read_only_modification_allow_list_handler get_read_only_modification_allow_list)
         {
             const auto& class_id = nmos::details::parse_nc_class_id(nmos::fields::nc::class_id(resource.data));
 
@@ -76,7 +76,7 @@ namespace nmos
             );
             auto property_modify_list = web::json::value_from_elements(filtered_property_values).as_array();
 
-            if (nmos::nc_restore_mode::rebuild == restore_mode.as_integer())
+            if (nmos::nc_restore_mode::rebuild == restore_mode)
             {
                 // Find any read only properties
                 const auto& read_only_property_values = boost::copy_range<std::set<web::json::value>>(filtered_property_values
@@ -681,7 +681,7 @@ namespace nmos
         return web::json::value_from_elements(target_object_properties_holders).as_array();
     }
 
-    web::json::value apply_backup_data_set(nmos::resources& resources, const nmos::resource& resource, const web::json::array& object_properties_holders, bool recurse, const web::json::value& restore_mode, bool validate, nmos::get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, nmos::get_control_protocol_datatype_descriptor_handler get_control_protocol_datatype_descriptor, nmos::get_read_only_modification_allow_list_handler get_read_only_modification_allow_list, nmos::remove_device_model_object_handler remove_device_model_object, nmos::create_device_model_object_handler create_device_model_object)
+    web::json::value apply_backup_data_set(nmos::resources& resources, const nmos::resource& resource, const web::json::array& object_properties_holders, bool recurse, nmos::nc_restore_mode::restore_mode restore_mode, bool validate, nmos::get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, nmos::get_control_protocol_datatype_descriptor_handler get_control_protocol_datatype_descriptor, nmos::get_read_only_modification_allow_list_handler get_read_only_modification_allow_list, nmos::remove_device_model_object_handler remove_device_model_object, nmos::create_device_model_object_handler create_device_model_object)
     {
         auto object_properties_set_validation_values = web::json::value::array();
 

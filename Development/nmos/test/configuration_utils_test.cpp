@@ -417,7 +417,7 @@ BST_TEST_CASE(testApplyBackupDataSet)
         const auto target_role_path = value_of({ U("root"), U("receivers")});
         bool recurse = true;
         bool validate = true;
-        const value restore_mode{ nmos::nc_restore_mode::restore_mode::modify };
+        const auto restore_mode = nmos::nc_restore_mode::restore_mode::modify;
 
         const auto& resource = nmos::nc::find_resource_by_role_path(resources, target_role_path.as_array());
         auto output = nmos::apply_backup_data_set(resources, *resource, object_properties_holders.as_array(), recurse, restore_mode, validate, get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor, get_read_only_modification_allow_list, remove_device_model_object, create_device_model_object);
@@ -455,7 +455,7 @@ BST_TEST_CASE(testApplyBackupDataSet)
         // must be a more efficient way of initializing these role paths
         const auto target_role_path = value_of({ U("root"), U("receivers") });
         bool recurse = true;
-        const value restore_mode{ nmos::nc_restore_mode::restore_mode::rebuild };
+        const auto restore_mode = nmos::nc_restore_mode::restore_mode::rebuild;
         bool validate = true;
 
         const auto& resource = nmos::nc::find_resource_by_role_path(resources, target_role_path.as_array());
@@ -494,7 +494,7 @@ BST_TEST_CASE(testApplyBackupDataSet)
         // must be a more efficient way of initializing these role paths
         const auto target_role_path = value_of({ U("root"), U("receivers") });
         bool recurse = true;
-        const value restore_mode{ nmos::nc_restore_mode::restore_mode::rebuild };
+        const auto restore_mode = nmos::nc_restore_mode::restore_mode::rebuild;
         bool validate = true;
 
         const auto& resource = nmos::nc::find_resource_by_role_path(resources, target_role_path.as_array());
@@ -545,7 +545,7 @@ BST_TEST_CASE(testApplyBackupDataSet)
         // must be a more efficient way of initializing these role paths
         const auto target_role_path = value_of({ U("root"), U("receivers") });
         bool recurse = true;
-        const value restore_mode{ nmos::nc_restore_mode::restore_mode::modify };
+        const auto restore_mode = nmos::nc_restore_mode::restore_mode::modify;
         bool validate = true;
 
         const auto& resource = nmos::nc::find_resource_by_role_path(resources, target_role_path.as_array());
@@ -594,7 +594,7 @@ BST_TEST_CASE(testApplyBackupDataSet)
         const auto target_role_path = value_of({ U("root"), U("receivers") });
         bool recurse = true;
         bool validate = true;
-        const value restore_mode{ nmos::nc_restore_mode::restore_mode::rebuild };
+        const auto restore_mode = nmos::nc_restore_mode::restore_mode::rebuild;
 
         const auto& resource = nmos::nc::find_resource_by_role_path(resources, target_role_path.as_array());
         const auto output = nmos::apply_backup_data_set(resources, *resource, object_properties_holders.as_array(), recurse, restore_mode, validate, get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor, get_read_only_modification_allow_list, remove_device_model_object, create_device_model_object);
@@ -649,7 +649,7 @@ BST_TEST_CASE(testApplyBackupDataSet)
         const auto target_role_path = value_of({ U("root"), U("receivers") });
         bool recurse = true;
         bool validate = true;
-        const value restore_mode{ nmos::nc_restore_mode::restore_mode::rebuild };
+        const auto restore_mode = nmos::nc_restore_mode::restore_mode::rebuild;
 
         const auto& resource = nmos::nc::find_resource_by_role_path(resources, target_role_path.as_array());
         const auto output = nmos::apply_backup_data_set(resources, *resource, object_properties_holders.as_array(), recurse, restore_mode, validate, get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor, get_read_only_modification_allow_list, remove_device_model_object, create_device_model_object);
@@ -703,7 +703,7 @@ BST_TEST_CASE(testApplyBackupDataSet)
         const auto target_role_path = value_of({ U("root"), U("receivers") });
         bool recurse = true;
         bool validate = true;
-        const value restore_mode{ nmos::nc_restore_mode::restore_mode::rebuild };
+        const auto restore_mode = nmos::nc_restore_mode::restore_mode::rebuild;
 
         const auto& resource = nmos::nc::find_resource_by_role_path(resources, target_role_path.as_array());
         const auto output = nmos::apply_backup_data_set(resources, *resource, object_properties_holders.as_array(), recurse, restore_mode, validate, get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor, get_read_only_modification_allow_list, remove_device_model_object, create_device_model_object);
@@ -776,7 +776,7 @@ BST_TEST_CASE(testApplyBackupDataSet_WithoutCallbacks)
         const auto target_role_path = value_of({ U("root"), U("receivers") });
         bool recurse = true;
         bool validate = true;
-        const value restore_mode{ nmos::nc_restore_mode::restore_mode::modify };
+        const auto restore_mode = nmos::nc_restore_mode::restore_mode::modify;
 
         const auto& resource = nmos::nc::find_resource_by_role_path(resources, target_role_path.as_array());
         const auto output = nmos::apply_backup_data_set(resources, *resource, object_properties_holders.as_array(), recurse, restore_mode, validate, get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor, get_read_only_modification_allow_list, remove_device_model_object, create_device_model_object);
@@ -803,7 +803,7 @@ BST_TEST_CASE(testApplyBackupDataSet_WithoutCallbacks)
         const auto target_role_path = value_of({ U("root"), U("receivers") });
         bool recurse = true;
         bool validate = true;
-        const value restore_mode{ nmos::nc_restore_mode::restore_mode::rebuild };
+        const auto restore_mode = nmos::nc_restore_mode::restore_mode::rebuild;
 
         const auto& resource = nmos::nc::find_resource_by_role_path(resources, target_role_path.as_array());
         const auto output = nmos::apply_backup_data_set(resources, *resource, object_properties_holders.as_array(), recurse, restore_mode, validate, get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor, get_read_only_modification_allow_list, remove_device_model_object, create_device_model_object);
@@ -832,7 +832,7 @@ BST_TEST_CASE(testApplyBackupDataSet_WithoutCallbacks)
         // must be a more efficient way of initializing these role paths
         const auto target_role_path = value_of({ U("root"), U("receivers") });
         bool recurse = true;
-        const value restore_mode{ nmos::nc_restore_mode::restore_mode::rebuild };
+        const auto restore_mode = nmos::nc_restore_mode::restore_mode::rebuild;
         bool validate = true;
 
         const auto& resource = nmos::nc::find_resource_by_role_path(resources, target_role_path.as_array());
@@ -869,7 +869,7 @@ BST_TEST_CASE(testApplyBackupDataSet_WithoutCallbacks)
         const auto target_role_path = value_of({ U("root"), U("receivers") });
         bool recurse = true;
         bool validate = true;
-        const value restore_mode{ nmos::nc_restore_mode::restore_mode::rebuild };
+        const auto restore_mode = nmos::nc_restore_mode::restore_mode::rebuild;
 
         const auto& resource = nmos::nc::find_resource_by_role_path(resources, target_role_path.as_array());
         const auto output = nmos::apply_backup_data_set(resources, *resource, object_properties_holders.as_array(), recurse, restore_mode, validate, get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor, get_read_only_modification_allow_list, remove_device_model_object, create_device_model_object);
@@ -1003,7 +1003,7 @@ BST_TEST_CASE(testApplyBackupDataSet_AddDeviceModelObject)
         const auto target_role_path = value_of({ U("root"), U("receivers") });
         bool recurse = true;
         bool validate = true;
-        const value restore_mode{ nmos::nc_restore_mode::restore_mode::rebuild };
+        const auto restore_mode = nmos::nc_restore_mode::restore_mode::rebuild;
 
         const auto& resource = nmos::nc::find_resource_by_role_path(resources, target_role_path.as_array());
         const auto output = nmos::apply_backup_data_set(resources, *resource, object_properties_holders.as_array(), recurse, restore_mode, validate, get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor, get_read_only_modification_allow_list, remove_device_model_object, create_device_model_object);
@@ -1072,7 +1072,7 @@ BST_TEST_CASE(testApplyBackupDataSet_AddDeviceModelObject)
         const auto target_role_path = value_of({ U("root"), U("receivers") });
         bool recurse = true;
         bool validate = true;
-        const value restore_mode{ nmos::nc_restore_mode::restore_mode::rebuild };
+        const auto restore_mode = nmos::nc_restore_mode::restore_mode::rebuild;
 
         const auto& resource = nmos::nc::find_resource_by_role_path(resources, target_role_path.as_array());
         const auto output = nmos::apply_backup_data_set(resources, *resource, object_properties_holders.as_array(), recurse, restore_mode, validate, get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor, get_read_only_modification_allow_list, remove_device_model_object, create_device_model_object);
@@ -1208,7 +1208,7 @@ BST_TEST_CASE(testApplyBackupDataSet_NegativeTests)
         const auto target_role_path = value_of({ U("root"), U("receivers") });
         bool recurse = true;
         bool validate = true;
-        const value restore_mode{ nmos::nc_restore_mode::restore_mode::rebuild };
+        const auto restore_mode = nmos::nc_restore_mode::restore_mode::rebuild;
 
         const auto& resource = nmos::nc::find_resource_by_role_path(resources, target_role_path.as_array());
         const auto output = nmos::apply_backup_data_set(resources, *resource, object_properties_holders.as_array(), recurse, restore_mode, validate, get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor, get_read_only_modification_allow_list, remove_device_model_object, create_device_model_object);
@@ -1256,7 +1256,7 @@ BST_TEST_CASE(testApplyBackupDataSet_NegativeTests)
         const auto target_role_path = value_of({ U("root"), U("receivers") });
         bool recurse = true;
         bool validate = true;
-        const value restore_mode{ nmos::nc_restore_mode::restore_mode::rebuild };
+        const auto restore_mode = nmos::nc_restore_mode::restore_mode::rebuild;
 
         const auto& resource = nmos::nc::find_resource_by_role_path(resources, target_role_path.as_array());
         const auto output = nmos::apply_backup_data_set(resources, *resource, object_properties_holders.as_array(), recurse, restore_mode, validate, get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor, get_read_only_modification_allow_list, remove_device_model_object, create_device_model_object);
@@ -1329,7 +1329,7 @@ BST_TEST_CASE(testApplyBackupDataSet_NegativeTests)
         const auto target_role_path = value_of({ U("root"), U("receivers") });
         bool recurse = true;
         bool validate = true;
-        const value restore_mode{ nmos::nc_restore_mode::restore_mode::rebuild };
+        const auto restore_mode = nmos::nc_restore_mode::restore_mode::rebuild;
 
         const auto& resource = nmos::nc::find_resource_by_role_path(resources, target_role_path.as_array());
         const auto output = nmos::apply_backup_data_set(resources, *resource, object_properties_holders.as_array(), recurse, restore_mode, validate, get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor, get_read_only_modification_allow_list, remove_device_model_object, create_device_model_object);
@@ -1403,7 +1403,7 @@ BST_TEST_CASE(testApplyBackupDataSet_NegativeTests)
         const auto target_role_path = value_of({ U("root"), U("receivers") });
         bool recurse = true;
         bool validate = true;
-        const value restore_mode{ nmos::nc_restore_mode::restore_mode::rebuild };
+        const auto restore_mode = nmos::nc_restore_mode::restore_mode::rebuild;
 
         const auto& resource = nmos::nc::find_resource_by_role_path(resources, target_role_path.as_array());
         const auto output = nmos::apply_backup_data_set(resources, *resource, object_properties_holders.as_array(), recurse, restore_mode, validate, get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor, get_read_only_modification_allow_list, remove_device_model_object, create_device_model_object);

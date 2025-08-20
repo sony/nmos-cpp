@@ -698,7 +698,7 @@ namespace nmos
                                 const auto& restore_mode = nmos::fields::nc::restore_mode(arguments);
                                 const auto& backup_data_set = nmos::fields::nc::data_set(arguments);
 
-                                method_result = validate_set_properties_by_path(resources, *resource, backup_data_set, recurse, restore_mode, get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor, validate_validation_fingerprint, get_read_only_modification_allow_list, remove_device_model_object, create_device_model_object);
+                                method_result = validate_set_properties_by_path(resources, *resource, backup_data_set, recurse, static_cast<nmos::nc_restore_mode::restore_mode>(restore_mode), get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor, validate_validation_fingerprint, get_read_only_modification_allow_list, remove_device_model_object, create_device_model_object);
 
                                 auto status = nmos::fields::nc::status(method_result);
                                 if (nc_method_status::ok == status || nc_method_status::method_deprecated == status) { code = status_codes::OK; }
@@ -762,7 +762,7 @@ namespace nmos
                                 const auto& restore_mode = nmos::fields::nc::restore_mode(arguments);
                                 const auto& backup_data_set = nmos::fields::nc::data_set(arguments);
 
-                                method_result = set_properties_by_path(resources, *resource, backup_data_set, recurse, restore_mode, get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor, validate_validation_fingerprint, get_read_only_modification_allow_list, remove_device_model_object, create_device_model_object);
+                                method_result = set_properties_by_path(resources, *resource, backup_data_set, recurse, static_cast<nmos::nc_restore_mode::restore_mode>(restore_mode), get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor, validate_validation_fingerprint, get_read_only_modification_allow_list, remove_device_model_object, create_device_model_object);
 
                                 code = status_codes::OK;
 
