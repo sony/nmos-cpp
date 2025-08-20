@@ -451,9 +451,8 @@ BST_TEST_CASE(testApplyBackupDataSet)
         auto object_properties_holders = value::array();
         const auto role_path = value_of({ U("root"), U("receivers"), U("mon1") });
         auto property_holders = value::array();
-        const nmos::nc_property_id property_id(2, 1);
         // This is a read only property
-        const auto property_holder = nmos::details::make_nc_property_holder(nmos::nc_receiver_monitor_connection_status_message_property_id, connection_status_property_descriptor, value("change this value"));
+        const auto property_holder = nmos::details::make_nc_property_holder(nmos::nc_receiver_monitor_connection_status_message_property_id, connection_status_property_descriptor, value(U("change this value")));
         push_back(property_holders, property_holder);
         const auto object_properties_holder = nmos::details::make_nc_object_properties_holder(role_path.as_array(), property_holders.as_array(), value::array().as_array(), value::array().as_array(), false);
         push_back(object_properties_holders, object_properties_holder);
@@ -491,9 +490,8 @@ BST_TEST_CASE(testApplyBackupDataSet)
         auto object_properties_holders = value::array();
         const auto role_path = value_of({ U("root"), U("receivers"), U("mon2") });
         auto property_holders = value::array();
-        const nmos::nc_property_id property_id(2, 1);
         // This is a read only property
-        const auto property_holder = nmos::details::make_nc_property_holder(nmos::nc_receiver_monitor_connection_status_message_property_id, connection_status_property_descriptor, value("change this value"));
+        const auto property_holder = nmos::details::make_nc_property_holder(nmos::nc_receiver_monitor_connection_status_message_property_id, connection_status_property_descriptor, value(U("change this value")));
         push_back(property_holders, property_holder);
         const auto object_properties_holder = nmos::details::make_nc_object_properties_holder(role_path.as_array(), property_holders.as_array(), value::array().as_array(), value::array().as_array(), false);
         push_back(object_properties_holders, object_properties_holder);
@@ -542,11 +540,10 @@ BST_TEST_CASE(testApplyBackupDataSet)
         auto object_properties_holders = value::array();
         const auto role_path = value_of({ U("root"), U("receivers"), U("mon1") });
         auto property_holders = value::array();
-        const nmos::nc_property_id property_id(2, 1);
         // This is a read only property
-        push_back(property_holders, nmos::details::make_nc_property_holder(nmos::nc_receiver_monitor_connection_status_message_property_id, connection_status_property_descriptor, value("change this value")));
+        push_back(property_holders, nmos::details::make_nc_property_holder(nmos::nc_receiver_monitor_connection_status_message_property_id, connection_status_property_descriptor, value(U("change this value"))));
         // This is a writable property
-        push_back(property_holders, nmos::details::make_nc_property_holder(nmos::nc_worker_enabled_property_id, enabled_property_descriptor, false));
+        push_back(property_holders, nmos::details::make_nc_property_holder(nmos::nc_worker_enabled_property_id, enabled_property_descriptor, value::boolean(false)));
         const auto object_properties_holder = nmos::details::make_nc_object_properties_holder(role_path.as_array(), property_holders.as_array(), value::array().as_array(), value::array().as_array(), false);
         push_back(object_properties_holders, object_properties_holder);
         // must be a more efficient way of initializing these role paths
@@ -778,7 +775,7 @@ BST_TEST_CASE(testApplyBackupDataSet_WithoutCallbacks)
         auto object_properties_holders = value::array();
         const auto role_path = value_of({ U("root"), U("receivers"), U("mon1") });
         auto property_holders = value::array();
-        const auto property_holder = nmos::details::make_nc_property_holder(nmos::nc_worker_enabled_property_id, enabled_property_descriptor, false);
+        const auto property_holder = nmos::details::make_nc_property_holder(nmos::nc_worker_enabled_property_id, enabled_property_descriptor, value::boolean(false));
         push_back(property_holders, property_holder);
         const auto object_properties_holder = nmos::details::make_nc_object_properties_holder(role_path.as_array(), property_holders.as_array(), value::array().as_array(), value::array().as_array(), false);
         push_back(object_properties_holders, object_properties_holder);
@@ -805,7 +802,7 @@ BST_TEST_CASE(testApplyBackupDataSet_WithoutCallbacks)
         auto object_properties_holders = value::array();
         const auto role_path = value_of({ U("root"), U("receivers"), U("mon1") });
         auto property_holders = value::array();
-        const auto property_holder = nmos::details::make_nc_property_holder(nmos::nc_worker_enabled_property_id, enabled_property_descriptor, false);
+        const auto property_holder = nmos::details::make_nc_property_holder(nmos::nc_worker_enabled_property_id, enabled_property_descriptor, value::boolean(false));
         push_back(property_holders, property_holder);
         const auto object_properties_holder = nmos::details::make_nc_object_properties_holder(role_path.as_array(), property_holders.as_array(), value::array().as_array(), value::array().as_array(), false);
         push_back(object_properties_holders, object_properties_holder);
@@ -832,10 +829,9 @@ BST_TEST_CASE(testApplyBackupDataSet_WithoutCallbacks)
         auto object_properties_holders = value::array();
         const auto role_path = value_of({ U("root"), U("receivers"), U("mon1") });
         auto property_holders = value::array();
-        const nmos::nc_property_id property_id(2, 1);
         // This is a read only property
         const auto property_descriptor = nmos::details::make_nc_property_descriptor(U("connectionStatusMessage"), nmos::nc_receiver_monitor_connection_status_message_property_id, U("connectionStatusMessage"), U("NcString"), true, false, false, false, web::json::value::null());
-        const auto property_holder = nmos::details::make_nc_property_holder(nmos::nc_receiver_monitor_connection_status_message_property_id, property_descriptor, value("change this value"));
+        const auto property_holder = nmos::details::make_nc_property_holder(nmos::nc_receiver_monitor_connection_status_message_property_id, property_descriptor, value(U("change this value")));
         push_back(property_holders, property_holder);
         const auto object_properties_holder = nmos::details::make_nc_object_properties_holder(role_path.as_array(), property_holders.as_array(), value::array().as_array(), value::array().as_array(), false);
         push_back(object_properties_holders, object_properties_holder);
