@@ -125,6 +125,7 @@ namespace nmos
     }
 
     // NcRestoreMode
+    // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/device-configuration/#ncrestoremode
     namespace nc_restore_mode
     {
         enum restore_mode
@@ -135,6 +136,7 @@ namespace nmos
     }
 
     // NcRestoreValidationStatus
+    // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/device-configuration/#ncrestorevalidationstatus
     namespace nc_restore_validation_status
     {
         enum status
@@ -147,6 +149,7 @@ namespace nmos
     }
 
     // NcPropertyRestoreNoticeType
+    // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/device-configuration/#ncpropertyrestorenoticetype
     namespace nc_property_restore_notice_type
     {
         enum type
