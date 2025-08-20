@@ -76,6 +76,9 @@ namespace nmos
         // push control protocol resource into other control protocol NcBlock resource
         void push_back(control_protocol_resource& nc_block_resource, const control_protocol_resource& resource);
 
+        // insert root block and all sub control protocol resources
+        void insert_root(resources& resources, control_protocol_resource& root);
+
         // insert a control protocol resource
         std::pair<resources::iterator, bool> insert_resource(resources& resources, resource&& resource);
 
@@ -85,7 +88,7 @@ namespace nmos
         // erase a control protocol resource
         resources::size_type erase_resource(resources& resources, const id& id);
 
-        // find the control protocol resource which is assoicated with the given IS-04/IS-05/IS-08 resource id
+        // find the control protocol resource which is associated with the given IS-04/IS-05/IS-08 resource id
         resources::const_iterator find_resource(resources& resources, type type, const id& id);
 
         // find resource based on role path.

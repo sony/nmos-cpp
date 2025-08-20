@@ -311,11 +311,9 @@ BST_TEST_CASE(testGetRolePath)
     nmos::nc::push_back(root_block, receivers);
     // add class-manager to root-block
     nmos::nc::push_back(root_block, class_manager);
-    insert_resource(resources, std::move(root_block));
-    insert_resource(resources, std::move(class_manager));
-    insert_resource(resources, std::move(receivers));
-    insert_resource(resources, std::move(monitor1));
-    insert_resource(resources, std::move(monitor2));
+
+    // insert root block and all sub control protocol resources to resource list
+    nmos::nc::insert_root(resources, root_block);
 
     auto expected_role_paths = value::array();
     push_back(expected_role_paths, value_of({ U("root") }));
@@ -370,11 +368,9 @@ BST_TEST_CASE(testApplyBackupDataSet)
     nmos::nc::push_back(root_block, receivers);
     // add class-manager to root-block
     nmos::nc::push_back(root_block, class_manager);
-    insert_resource(resources, std::move(root_block));
-    insert_resource(resources, std::move(class_manager));
-    insert_resource(resources, std::move(receivers));
-    insert_resource(resources, std::move(monitor1));
-    insert_resource(resources, std::move(monitor2));
+
+    // insert root block and all sub control protocol resources to resource list
+    nmos::nc::insert_root(resources, root_block);
 
     bool get_read_only_modification_allow_list_called = false;
     bool remove_device_model_object_called = false;
@@ -756,11 +752,9 @@ BST_TEST_CASE(testApplyBackupDataSet_WithoutCallbacks)
     nmos::nc::push_back(root_block, receivers);
     // add class-manager to root-block
     nmos::nc::push_back(root_block, class_manager);
-    insert_resource(resources, std::move(root_block));
-    insert_resource(resources, std::move(class_manager));
-    insert_resource(resources, std::move(receivers));
-    insert_resource(resources, std::move(monitor1));
-    insert_resource(resources, std::move(monitor2));
+
+    // insert root block and all sub control protocol resources to resource list
+    nmos::nc::insert_root(resources, root_block);
 
     // undefined callback stubs
     nmos::get_read_only_modification_allow_list_handler get_read_only_modification_allow_list;
@@ -937,11 +931,9 @@ BST_TEST_CASE(testApplyBackupDataSet_AddDeviceModelObject)
     nmos::nc::push_back(root_block, receivers);
     // add class-manager to root-block
     nmos::nc::push_back(root_block, class_manager);
-    insert_resource(resources, std::move(root_block));
-    insert_resource(resources, std::move(class_manager));
-    insert_resource(resources, std::move(receivers));
-    insert_resource(resources, std::move(monitor1));
-    insert_resource(resources, std::move(monitor2));
+
+    // insert root block and all sub control protocol resources to resource list
+    nmos::nc::insert_root(resources, root_block);
 
     bool get_read_only_modification_allow_list_called = false;
     bool remove_device_model_object_called = false;
@@ -1166,11 +1158,9 @@ BST_TEST_CASE(testApplyBackupDataSet_NegativeTests)
     nmos::nc::push_back(root_block, receivers);
     // add class-manager to root-block
     nmos::nc::push_back(root_block, class_manager);
-    insert_resource(resources, std::move(root_block));
-    insert_resource(resources, std::move(class_manager));
-    insert_resource(resources, std::move(receivers));
-    insert_resource(resources, std::move(monitor1));
-    insert_resource(resources, std::move(monitor2));
+
+    // insert root block and all sub control protocol resources to resource list
+    nmos::nc::insert_root(resources, root_block);
 
     bool get_read_only_modification_allow_list_called = false;
     bool remove_device_model_object_called = false;
@@ -1477,11 +1467,9 @@ BST_TEST_CASE(testModifyRebuildableBlock)
     nmos::nc::push_back(root_block, receivers);
     // add class-manager to root-block
     nmos::nc::push_back(root_block, class_manager);
-    insert_resource(resources, std::move(root_block));
-    insert_resource(resources, std::move(class_manager));
-    insert_resource(resources, std::move(receivers));
-    insert_resource(resources, std::move(monitor1));
-    insert_resource(resources, std::move(monitor2));
+
+    // insert root block and all sub control protocol resources to resource list
+    nmos::nc::insert_root(resources, root_block);
 
     bool get_read_only_modification_allow_list_called = false;
     bool remove_device_model_object_called = false;

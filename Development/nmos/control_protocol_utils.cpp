@@ -590,7 +590,7 @@ namespace nmos
         // push a control protocol resource into other control protocol NcBlock resource
         void push_back(control_protocol_resource& nc_block_resource, const control_protocol_resource& resource)
         {
-            // note, model write lock should aleady be applied by the outer function, so access to control_protocol_resources is OK...
+            // note, model write lock should already be applied by the outer function, so access to control_protocol_resources is OK...
 
             using web::json::value;
 
@@ -603,6 +603,27 @@ namespace nmos
                 nmos::details::make_nc_block_member_descriptor(nmos::fields::description(child), nmos::fields::nc::role(child), nmos::fields::nc::oid(child), nmos::fields::nc::constant_oid(child), nmos::details::parse_nc_class_id(nmos::fields::nc::class_id(child)), nmos::fields::nc::user_label(child), nmos::fields::nc::oid(parent)));
 
             nc_block_resource.resources.push_back(resource);
+        }
+
+        // insert root block and all sub control protocol resources
+        void insert_root(resources& resources, control_protocol_resource& root)
+        {
+            // note, model write lock should already be applied by the outer function, so access to control_protocol_resources is OK...
+
+            std::function<void(nmos::resources& resources, nmos::control_protocol_resource& resource)> insert_resources;
+
+            insert_resources = [&insert_resources](nmos::resources& resources, nmos::control_protocol_resource& resource)
+            {
+                for (auto& r : resource.resources)
+                {
+                    insert_resources(resources, r);
+                    nmos::nc::insert_resource(resources, std::move(r));
+                }
+                resource.resources.clear();
+            };
+
+            insert_resources(resources, root);
+            nmos::nc::insert_resource(resources, std::move(root));
         }
 
         // insert a control protocol resource
@@ -625,7 +646,7 @@ namespace nmos
         // modify a control protocol resource, and insert notification event to all subscriptions
         bool modify_resource(resources& resources, const id& id, std::function<void(resource&)> modifier, const web::json::value& notification_event)
         {
-            // note, model write lock should aleady be applied by the outer function, so access to control_protocol_resources is OK...
+            // note, model write lock should already be applied by the outer function, so access to control_protocol_resources is OK...
 
             auto found = resources.find(id);
             if (resources.end() == found || !found->has_data()) return false;

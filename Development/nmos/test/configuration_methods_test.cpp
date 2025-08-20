@@ -56,11 +56,9 @@ BST_TEST_CASE(testGetPropertiesByPath)
     nmos::nc::push_back(root_block, receivers);
     // add class-manager to root-block
     nmos::nc::push_back(root_block, class_manager);
-    insert_resource(resources, std::move(root_block));
-    insert_resource(resources, std::move(class_manager));
-    insert_resource(resources, std::move(receivers));
-    insert_resource(resources, std::move(monitor1));
-    insert_resource(resources, std::move(monitor2));
+
+    // insert root block and all sub control protocol resources to resource list
+    nmos::nc::insert_root(resources, root_block);
 
     {
         create_validation_fingerprint_called = false;
