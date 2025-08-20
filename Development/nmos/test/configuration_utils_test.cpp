@@ -510,7 +510,7 @@ BST_TEST_CASE(testApplyBackupDataSet)
         const auto object_properties_set_validation = output.as_array().at(0);
 
         // make sure the validation status propagates from the callback
-        BST_CHECK_EQUAL(nmos::nc_restore_validation_status::ok, nmos::fields::nc::status(object_properties_set_validation));
+        BST_CHECK_EQUAL(nmos::nc_restore_validation_status::failed, nmos::fields::nc::status(object_properties_set_validation));
 
         const auto& property_restore_notices = nmos::fields::nc::notices(object_properties_set_validation);
         // expectation a single notice for the read only property that couldn't be changed
@@ -560,9 +560,9 @@ BST_TEST_CASE(testApplyBackupDataSet)
 
         const auto object_properties_set_validation = output.as_array().at(0);
 
-        // expect overall status for object to be OK as although the read only property change should fail
-        // the writable property should succeed
-        BST_CHECK_EQUAL(nmos::nc_restore_validation_status::ok, nmos::fields::nc::status(object_properties_set_validation));
+        // expect overall status for object to be failed as although the writable property should succeed,
+        // the read only property change should fail with an error notice
+        BST_CHECK_EQUAL(nmos::nc_restore_validation_status::failed, nmos::fields::nc::status(object_properties_set_validation));
 
         const auto& property_restore_notices = nmos::fields::nc::notices(object_properties_set_validation);
         // expectation a single notice for the read only property that couldn't be changed
