@@ -76,7 +76,7 @@ BST_TEST_CASE(testIsBlockModified)
     push_back(role_path, U("root"));
     push_back(role_path, U("receivers"));
 
-    const auto block_members_property_descriptor = nmos::details::make_nc_property_descriptor(U("members"), nmos::nc_block_members_property_id, U("members"), U("NcBlockMemberDescriptor"), true, false, true, false, web::json::value::null());
+    const auto block_members_property_descriptor = nmos::details::make_nc_property_descriptor(U("members"), nmos::nc_block_members_property_id, nmos::fields::nc::members, U("NcBlockMemberDescriptor"), true, false, true, false, web::json::value::null());
 
     // Members unchanged
     {
@@ -226,7 +226,7 @@ BST_TEST_CASE(testGetObjectPropertiesHolder)
     using web::json::value_of;
     using web::json::value;
 
-    const auto enabled_property_descriptor = nmos::details::make_nc_property_descriptor(U("enabled"), nmos::nc_worker_enabled_property_id, U("enabled"), U("NcBoolean"), false, false, false, false, web::json::value::null());
+    const auto enabled_property_descriptor = nmos::details::make_nc_property_descriptor(U("enabled"), nmos::nc_worker_enabled_property_id, nmos::fields::nc::enabled, U("NcBoolean"), false, false, false, false, web::json::value::null());
 
     // Create Object Properties Holder
     auto object_properties_holders = value::array();
@@ -401,8 +401,8 @@ BST_TEST_CASE(testApplyBackupDataSet)
         return nmos::control_protocol_resource({ nmos::is12_versions::v1_0, nmos::types::nc_block, std::move(data), true });
     };
 
-    const auto enabled_property_descriptor = nmos::details::make_nc_property_descriptor(U("enabled"), nmos::nc_worker_enabled_property_id, U("enabled"), U("NcBoolean"), false, false, false, false, web::json::value::null());
-    const auto class_id_property_descriptor = nmos::details::make_nc_property_descriptor(U("classId"), nmos::nc_object_class_id_property_id, U("classId"), U("NcClassId"), true, false, false, false, web::json::value::null());
+    const auto enabled_property_descriptor = nmos::details::make_nc_property_descriptor(U("enabled"), nmos::nc_worker_enabled_property_id, nmos::fields::nc::enabled, U("NcBoolean"), false, false, false, false, web::json::value::null());
+    const auto class_id_property_descriptor = nmos::details::make_nc_property_descriptor(U("classId"), nmos::nc_object_class_id_property_id, nmos::fields::nc::class_id, U("NcClassId"), true, false, false, false, web::json::value::null());
     {
         // Check the successful modification of the "enabled" flag of mon1's worker base class in Modify mode
         //
@@ -574,7 +574,7 @@ BST_TEST_CASE(testApplyBackupDataSet)
         BST_CHECK(!remove_device_model_object_called);
         BST_CHECK(!create_device_model_object_called);
     }
-    const auto block_members_property_descriptor = nmos::details::make_nc_property_descriptor(U("members"), nmos::nc_block_members_property_id, U("members"), U("NcBlockMemberDescriptor"), true, false, true, false, web::json::value::null());
+    const auto block_members_property_descriptor = nmos::details::make_nc_property_descriptor(U("members"), nmos::nc_block_members_property_id, nmos::fields::nc::members, U("NcBlockMemberDescriptor"), true, false, true, false, web::json::value::null());
     {
         // Check remove_device_model_object_called is called when trying to modify a rebuildable block
         //
@@ -611,7 +611,7 @@ BST_TEST_CASE(testApplyBackupDataSet)
         BST_CHECK(remove_device_model_object_called);
         BST_CHECK(!create_device_model_object_called);
     }
-    const auto oid_property_descriptor = nmos::details::make_nc_property_descriptor(U("oid"), nmos::nc_object_oid_property_id, U("oid"), U("NcOid"), true, false, false, false, web::json::value::null());
+    const auto oid_property_descriptor = nmos::details::make_nc_property_descriptor(U("oid"), nmos::nc_object_oid_property_id, nmos::fields::nc::oid, U("NcOid"), true, false, false, false, web::json::value::null());
     {
         // Check create_device_model_object_called is called when trying to modify a rebuildable block
         //
@@ -761,7 +761,7 @@ BST_TEST_CASE(testApplyBackupDataSet_WithoutCallbacks)
     nmos::remove_device_model_object_handler remove_device_model_object;
     nmos::create_device_model_object_handler create_device_model_object;
 
-    const auto enabled_property_descriptor = nmos::details::make_nc_property_descriptor(U("enabled"), nmos::nc_worker_enabled_property_id, U("enabled"), U("NcBoolean"), false, false, false, false, web::json::value::null());
+    const auto enabled_property_descriptor = nmos::details::make_nc_property_descriptor(U("enabled"), nmos::nc_worker_enabled_property_id, nmos::fields::nc::enabled, U("NcBoolean"), false, false, false, false, web::json::value::null());
     {
         // Check that Modify mode is unaffected by undefined Rebuild mode callbacks
         //
@@ -847,8 +847,8 @@ BST_TEST_CASE(testApplyBackupDataSet_WithoutCallbacks)
         BST_CHECK_EQUAL(nmos::nc_restore_validation_status::failed, nmos::fields::nc::status(object_properties_set_validation));
     }
     {
-        const auto block_members_property_descriptor = nmos::details::make_nc_property_descriptor(U("members"), nmos::nc_block_members_property_id, U("members"), U("NcBlockMemberDescriptor"), true, false, true, false, web::json::value::null());
-        const auto oid_property_descriptor = nmos::details::make_nc_property_descriptor(U("oid"), nmos::nc_object_oid_property_id, U("oid"), U("NcOid"), true, false, false, false, web::json::value::null());
+        const auto block_members_property_descriptor = nmos::details::make_nc_property_descriptor(U("members"), nmos::nc_block_members_property_id, nmos::fields::nc::members, U("NcBlockMemberDescriptor"), true, false, true, false, web::json::value::null());
+        const auto oid_property_descriptor = nmos::details::make_nc_property_descriptor(U("oid"), nmos::nc_object_oid_property_id, nmos::fields::nc::oid, U("NcOid"), true, false, false, false, web::json::value::null());
         // Check undefined create_device_model_object and remove_device_model_object causes an unsupported error when attempting to modify a rebuildable block
         //
         // Create Object Properties Holder
@@ -964,9 +964,9 @@ BST_TEST_CASE(testApplyBackupDataSet_AddDeviceModelObject)
         return nmos::control_protocol_resource({ nmos::is12_versions::v1_0, nmos::types::nc_block, std::move(data), true });
     };
 
-    const auto block_members_property_descriptor = nmos::details::make_nc_property_descriptor(U("members"), nmos::nc_block_members_property_id, U("members"), U("NcBlockMemberDescriptor"), true, false, true, false, web::json::value::null());
-    const auto oid_property_descriptor = nmos::details::make_nc_property_descriptor(U("oid"), nmos::nc_object_oid_property_id, U("oid"), U("NcOid"), true, false, false, false, web::json::value::null());
-    const auto class_id_property_descriptor = nmos::details::make_nc_property_descriptor(U("classId"), nmos::nc_object_class_id_property_id, U("classId"), U("NcClassId"), true, false, false, false, web::json::value::null());
+    const auto block_members_property_descriptor = nmos::details::make_nc_property_descriptor(U("members"), nmos::nc_block_members_property_id, nmos::fields::nc::members, U("NcBlockMemberDescriptor"), true, false, true, false, web::json::value::null());
+    const auto oid_property_descriptor = nmos::details::make_nc_property_descriptor(U("oid"), nmos::nc_object_oid_property_id, nmos::fields::nc::oid, U("NcOid"), true, false, false, false, web::json::value::null());
+    const auto class_id_property_descriptor = nmos::details::make_nc_property_descriptor(U("classId"), nmos::nc_object_class_id_property_id, nmos::fields::nc::class_id, U("NcClassId"), true, false, false, false, web::json::value::null());
     {
         // Handle constant oid clash
         //
@@ -1187,8 +1187,8 @@ BST_TEST_CASE(testApplyBackupDataSet_NegativeTests)
         // Simulate error on adding object to device model
         return nmos::control_protocol_resource();
     };
-    const auto block_members_property_descriptor = nmos::details::make_nc_property_descriptor(U("members"), nmos::nc_block_members_property_id, U("members"), U("NcBlockMemberDescriptor"), true, false, true, false, web::json::value::null());
-    const auto oid_property_descriptor = nmos::details::make_nc_property_descriptor(U("oid"), nmos::nc_object_oid_property_id, U("oid"), U("NcOid"), true, false, false, false, web::json::value::null());
+    const auto block_members_property_descriptor = nmos::details::make_nc_property_descriptor(U("members"), nmos::nc_block_members_property_id, nmos::fields::nc::members, U("NcBlockMemberDescriptor"), true, false, true, false, web::json::value::null());
+    const auto oid_property_descriptor = nmos::details::make_nc_property_descriptor(U("oid"), nmos::nc_object_oid_property_id, nmos::fields::nc::oid, U("NcOid"), true, false, false, false, web::json::value::null());
     {
         // Check remove_device_model_object_called error is handled when attempting to modify a rebuildable block
         //
@@ -1499,9 +1499,9 @@ BST_TEST_CASE(testModifyRebuildableBlock)
 
         return nmos::control_protocol_resource({ nmos::is12_versions::v1_0, nmos::types::nc_block, std::move(data), true });
     };
-    const auto block_members_property_descriptor = nmos::details::make_nc_property_descriptor(U("members"), nmos::nc_block_members_property_id, U("members"), U("NcBlockMemberDescriptor"), true, false, true, false, web::json::value::null());
-    const auto oid_property_descriptor = nmos::details::make_nc_property_descriptor(U("oid"), nmos::nc_object_oid_property_id, U("oid"), U("NcOid"), true, false, false, false, web::json::value::null());
-    const auto class_id_property_descriptor = nmos::details::make_nc_property_descriptor(U("classId"), nmos::nc_object_class_id_property_id, U("classId"), U("NcClassId"), true, false, false, false, web::json::value::null());
+    const auto block_members_property_descriptor = nmos::details::make_nc_property_descriptor(U("members"), nmos::nc_block_members_property_id, nmos::fields::nc::members, U("NcBlockMemberDescriptor"), true, false, true, false, web::json::value::null());
+    const auto oid_property_descriptor = nmos::details::make_nc_property_descriptor(U("oid"), nmos::nc_object_oid_property_id, nmos::fields::nc::oid, U("NcOid"), true, false, false, false, web::json::value::null());
+    const auto class_id_property_descriptor = nmos::details::make_nc_property_descriptor(U("classId"), nmos::nc_object_class_id_property_id, nmos::fields::nc::class_id, U("NcClassId"), true, false, false, false, web::json::value::null());
 
     // No class id specified in the objet properties holder for new monitor causes an error
     {
