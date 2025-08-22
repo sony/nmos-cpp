@@ -168,8 +168,7 @@ namespace nmos
             { U("nc_manager"), nmos::types::nc_manager },
             { U("nc_device_manager"), nmos::types::nc_device_manager },
             { U("nc_class_manager"), nmos::types::nc_class_manager },
-            { U("nc_receiver_monitor"), nmos::types::nc_receiver_monitor },
-            { U("nc_receiver_monitor_protected"), nmos::types::nc_receiver_monitor_protected },
+            { U("nc_status_monitor"), nmos::types::nc_status_monitor }, // this is commonly used for nc_receiver_monitor and nc_sender_monitor
             { U("nc_ident_beacon"), nmos::types::nc_ident_beacon }
         };
         return types_from_resourceType.at(resourceType);
@@ -195,8 +194,7 @@ namespace nmos
             { nmos::types::nc_manager, U("nc_manager") },
             { nmos::types::nc_device_manager, U("nc_device_manager") },
             { nmos::types::nc_class_manager, U("nc_class_manager") },
-            { nmos::types::nc_receiver_monitor, U("nc_receiver_monitor") },
-            { nmos::types::nc_receiver_monitor_protected, U("nc_receiver_monitor_protected") },
+            { nmos::types::nc_status_monitor, U("nc_status_monitor") }, // this is commonly used for nc_receiver_monitor and nc_sender_monitor
             { nmos::types::nc_ident_beacon, U("nc_ident_beacon") }
         };
         return resourceTypes_from_type.at(type);

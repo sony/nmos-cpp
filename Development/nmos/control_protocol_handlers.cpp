@@ -77,24 +77,21 @@ namespace nmos
             auto found = nc::find_resource(resources, nmos::types::nc_receiver_monitor, connection_resource.id);
             if (resources.end() != found && nc_receiver_monitor_class_id == details::parse_nc_class_id(nmos::fields::nc::class_id(found->data)))
             {
-                // update receiver-monitor's connectionStatus and payloadStatus properties
+                // update receiver-monitor's connectionStatus property
 
                 const auto active = nmos::fields::master_enable(nmos::fields::endpoint_active(connection_resource.data));
-                const web::json::value connection_status = active ? nc_connection_status::connected : nc_connection_status::disconnected;
-                const web::json::value payload_status = active ? nc_payload_status::payload_ok : nc_payload_status::undefined;
+                const web::json::value connection_status = active ? nc_connection_status::healthy : nc_connection_status::inactive;
 
-                // hmm, maybe updating connectionStatusMessage and payloadStatusMessage too
+                // hmm, maybe updating other statuses and messages, such as the link_status, external_synchronization_status, stream_status etc...
 
                 const auto property_changed_event = make_property_changed_event(nmos::fields::nc::oid(found->data),
                 {
                     { nc_receiver_monitor_connection_status_property_id, nc_property_change_type::type::value_changed, connection_status },
-                    { nc_receiver_monitor_payload_status_property_id, nc_property_change_type::type::value_changed, payload_status }
                 });
 
                 nc::modify_resource(resources, found->id, [&](nmos::resource& resource)
                 {
                     resource.data[nmos::fields::nc::connection_status] = connection_status;
-                    resource.data[nmos::fields::nc::payload_status] = payload_status;
 
                 }, property_changed_event);
             }

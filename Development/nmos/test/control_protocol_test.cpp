@@ -690,7 +690,7 @@ BST_TEST_CASE(testFindProperty)
         BST_REQUIRE(property.is_null());
     }
     {
-        // invalid - find unknown propertry in NcBlock
+        // invalid - find unknown property in NcBlock
         auto property = nmos::nc::find_property_descriptor(invalid_property_id, nc_block_class_id, get_control_protocol_class_descriptor);
         BST_REQUIRE(property.is_null());
     }
