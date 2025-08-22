@@ -258,7 +258,7 @@ namespace nmos
                                     {
                                         const auto& class_id = nmos::details::parse_nc_class_id(nmos::fields::nc::class_id(resource->data));
 
-                                        // find the relevent method handler to execute
+                                        // find the relevant method handler to execute
                                         // method tuple definition described in control_protocol_handlers.h
                                         auto method = get_control_protocol_method_descriptor(class_id, method_id);
                                         auto& nc_method_descriptor = method.first;
@@ -270,7 +270,7 @@ namespace nmos
                                                 // do method arguments constraints validation
                                                 method_parameters_contraints_validation(arguments, nc_method_descriptor, get_control_protocol_datatype_descriptor);
 
-                                                // execute the relevant control method handler, then accumulating up their response to reponses
+                                                // execute the relevant control method handler, then accumulating up their response to responses
                                                 // wrap the NcMethodResuls here
                                                 nc_method_result = control_method_handler(resources, *resource, arguments, nmos::fields::nc::is_deprecated(nc_method_descriptor), gate);
                                             }
@@ -285,7 +285,7 @@ namespace nmos
                                         }
                                         else
                                         {
-                                            // unknown methodId
+                                            // unknown methodId, or method not implemented
                                             utility::ostringstream_t ss;
                                             ss << U("unsupported method_id: ") << nmos::fields::nc::method_id(cmd).serialize()
                                                 << U(" for control class class_id: ") << resource->data.at(nmos::fields::nc::class_id).serialize();
