@@ -299,22 +299,42 @@ namespace nmos
                     to_vector(make_nc_ident_beacon_events())) },
                 // Monitoring feature set
                 // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/monitoring/#control-classes
+                // NcStatusMonitor
+                { nc_status_monitor_class_id, make_control_class_descriptor(U("NcStatusMonitor class descriptor"), nc_status_monitor_class_id, U("NcStatusMonitor"),
+                    // NcReceiverMonitor properties
+                    to_vector(make_nc_status_monitor_properties()),
+                    // NcReceiverMonitor methods
+                    to_methods_vector(make_nc_status_monitor_methods(), {}),
+                    // NcReceiverMonitor events
+                    to_vector(make_nc_status_monitor_events())) },
                 // NcReceiverMonitor
                 { nc_receiver_monitor_class_id, make_control_class_descriptor(U("NcReceiverMonitor class descriptor"), nc_receiver_monitor_class_id, U("NcReceiverMonitor"),
                     // NcReceiverMonitor properties
                     to_vector(make_nc_receiver_monitor_properties()),
                     // NcReceiverMonitor methods
-                    to_methods_vector(make_nc_receiver_monitor_methods(), {}),
+                    to_methods_vector(make_nc_receiver_monitor_methods(),
+                    {
+                        // link NcReceiverMonitor method_ids with method functions
+                        { nc_receiver_monitor_get_lost_packet_counters_method_id, nullptr },
+                        { nc_receiver_monitor_get_late_packet_counters_method_id, nullptr },
+                        { nc_receiver_monitor_reset_monitor_method_id, nullptr }
+                    }),
                     // NcReceiverMonitor events
                     to_vector(make_nc_receiver_monitor_events())) },
-                // NcReceiverMonitorProtected
-                { nc_receiver_monitor_protected_class_id, make_control_class_descriptor(U("NcReceiverMonitorProtected class descriptor"), nc_receiver_monitor_protected_class_id, U("NcReceiverMonitorProtected"),
-                    // NcReceiverMonitorProtected properties
-                    to_vector(make_nc_receiver_monitor_protected_properties()),
-                    // NcReceiverMonitorProtected methods
-                    to_methods_vector(make_nc_receiver_monitor_protected_methods(), {}),
-                    // NcReceiverMonitorProtected events
-                    to_vector(make_nc_receiver_monitor_protected_events())) }
+                // NcSenderMonitor
+                { nc_sender_monitor_class_id, make_control_class_descriptor(U("NcSenderMonitor class descriptor"), nc_sender_monitor_class_id, U("NcSenderMonitor"),
+                    // NcSenderMonitor properties
+                    to_vector(make_nc_sender_monitor_properties()),
+                    // NcSenderMonitor methods
+                    to_methods_vector(make_nc_sender_monitor_methods(),
+                    {
+                        // link NcSenderMonitor method_ids with method functions
+                        // TODO: implement actual GetTransmissionError and ResetCountersAndMessages function
+                        { nc_sender_monitor_get_transmission_error_counters_method_id, nullptr },
+                        { nc_sender_monitor_reset_monitor_method_id, nullptr }
+                    }),
+                    // NcSenderMonitor events
+                    to_vector(make_nc_sender_monitor_events())) }
             };
 
             // setup the standard datatypes
@@ -393,7 +413,14 @@ namespace nmos
                 // Monitoring feature set
                 // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/monitoring/#datatypes
                 { U("NcConnectionStatus"), {make_nc_connection_status_datatype()} },
-                { U("NcPayloadStatus"), {make_nc_payload_status_datatype()} }
+                { U("NcCounter"), {make_nc_counter_datatype()} },
+                { U("NcEssenceStatus"), {make_nc_essence_status_datatype()} },
+                { U("NcLinkStatus"), {make_nc_link_status_datatype()} },
+                { U("NcMethodResultCounters"), {make_nc_method_result_counters_datatype()} },
+                { U("NcOverallStatus"), {make_nc_overall_status_datatype()} },
+                { U("NcSynchronizationStatus"), {make_nc_synchronization_status_datatype()} },
+                { U("NcStreamStatus"), {make_nc_stream_status_datatype()} },
+                { U("NcTransmissionStatus"), {make_nc_transmission_status_datatype()} }
             };
         }
 
