@@ -1,0 +1,5 @@
+{
+  "type": "object",
+  "description": "NcMethodResultPropertyValue with the contents of the property",
+  "title": "NcMethodResultPropertyValue"
+}

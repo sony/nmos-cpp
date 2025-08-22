@@ -269,6 +269,7 @@ namespace nmos
             const web::json::field_as_array touchpoints{ U("touchpoints") };
             const web::json::field_as_array runtime_property_constraints{ U("runtimePropertyConstraints") };
             const web::json::field_as_bool recurse{ U("recurse") };
+            const web::json::field_as_bool include_descriptors{ U("includeDescriptors") };
             const web::json::field_as_bool enabled{ U("enabled") };
             const web::json::field_as_array members{ U("members") };
             const web::json::field_as_string description{ U("description") };
@@ -304,7 +305,7 @@ namespace nmos
             const web::json::field_as_bool is_sequence{ U("isSequence") };
             const web::json::field_as_bool is_deprecated{ U("isDeprecated") };
             const web::json::field_as_bool is_constant{ U("isConstant") };
-            const web::json::field_as_string parent_type{ U("parentType") };
+            const web::json::field_as_value parent_type{ U("parentType") };
             const web::json::field_as_string event_datatype{ U("eventDatatype") };
             const web::json::field_as_string result_datatype{ U("resultDatatype") };
             const web::json::field_as_array parameters{ U("parameters") };
@@ -373,6 +374,18 @@ namespace nmos
             const web::json::field_as_integer overall_status{ U("overallStatus") };
             const web::json::field_as_value overall_status_message{ U("overallStatusMessage") };
             const web::json::field_as_integer status_reporting_delay{ U("statusReportingDelay") };
+            const web::json::field_as_array values{ U("values") };
+            const web::json::field_as_string validation_fingerprint{ U("validationFingerprint") };
+            const web::json::field_as_value status_message{ U("statusMessage") };
+            const web::json::field_as_value descriptor{U("descriptor")};
+            const web::json::field_as_value data_set{ U("dataSet") }; // NcBulkPropertiesHolder
+            const web::json::field_as_bool is_rebuildable{ U("isRebuildable") };
+            const web::json::field_as_integer notice_type{ U("noticeType") };
+            const web::json::field_as_string notice_message{ U("noticeMessage") };
+            const web::json::field_as_array notices{ U("notices") };
+            const web::json::field_as_integer restore_mode{ U("restoreMode") };
+            const web::json::field_as_array dependency_paths{ U("dependencyPaths") };
+            const web::json::field_as_array allowed_members_classes{ U("allowedMembersClasses") };
         }
 
         // NMOS Parameter Registers

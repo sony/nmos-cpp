@@ -1,7 +1,9 @@
 #include "nmos/control_protocol_state.h"
 
+#include "cpprest/http_utils.h"
 #include "nmos/control_protocol_methods.h"
 #include "nmos/control_protocol_resource.h"
+#include "nmos/configuration_methods.h"
 
 namespace nmos
 {
@@ -89,9 +91,9 @@ namespace nmos
         {
             nmos::experimental::control_protocol_method_handler make_nc_get_handler(get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor)
             {
-                return [get_control_protocol_class_descriptor](nmos::resources& resources, const nmos::resource& resource, const web::json::value& arguments, bool is_deprecated, slog::base_gate& gate)
+                return [get_control_protocol_class_descriptor](nmos::resources&, const nmos::resource& resource, const web::json::value& arguments, bool is_deprecated, slog::base_gate& gate)
                 {
-                    return get(resources, resource, arguments, is_deprecated, get_control_protocol_class_descriptor, gate);
+                    return get(resource, arguments, is_deprecated, get_control_protocol_class_descriptor, gate);
                 };
             }
             nmos::experimental::control_protocol_method_handler make_nc_set_handler(get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor_handler get_control_protocol_datatype_descriptor, control_protocol_property_changed_handler property_changed)
@@ -103,9 +105,9 @@ namespace nmos
             }
             nmos::experimental::control_protocol_method_handler make_nc_get_sequence_item_handler(get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor)
             {
-                return [get_control_protocol_class_descriptor](nmos::resources& resources, const nmos::resource& resource, const web::json::value& arguments, bool is_deprecated, slog::base_gate& gate)
+                return [get_control_protocol_class_descriptor](nmos::resources&, const nmos::resource& resource, const web::json::value& arguments, bool is_deprecated, slog::base_gate& gate)
                 {
-                    return get_sequence_item(resources, resource, arguments, is_deprecated, get_control_protocol_class_descriptor, gate);
+                    return get_sequence_item(resource, arguments, is_deprecated, get_control_protocol_class_descriptor, gate);
                 };
             }
             nmos::experimental::control_protocol_method_handler make_nc_set_sequence_item_handler(get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor_handler get_control_protocol_datatype_descriptor, control_protocol_property_changed_handler property_changed)
@@ -131,9 +133,9 @@ namespace nmos
             }
             nmos::experimental::control_protocol_method_handler make_nc_get_sequence_length_handler(get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor)
             {
-                return [get_control_protocol_class_descriptor](nmos::resources& resources, const nmos::resource& resource, const web::json::value& arguments, bool is_deprecated, slog::base_gate& gate)
+                return [get_control_protocol_class_descriptor](nmos::resources&, const nmos::resource& resource, const web::json::value& arguments, bool is_deprecated, slog::base_gate& gate)
                 {
-                    return get_sequence_length(resources, resource, arguments, is_deprecated, get_control_protocol_class_descriptor, gate);
+                    return get_sequence_length(resource, arguments, is_deprecated, get_control_protocol_class_descriptor, gate);
                 };
             }
             nmos::experimental::control_protocol_method_handler make_nc_get_member_descriptors_handler()
@@ -166,24 +168,86 @@ namespace nmos
             }
             nmos::experimental::control_protocol_method_handler make_nc_get_control_class_handler(get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor)
             {
-                return [get_control_protocol_class_descriptor](nmos::resources& resources, const nmos::resource& resource, const web::json::value& arguments, bool is_deprecated, slog::base_gate& gate)
+                return [get_control_protocol_class_descriptor](nmos::resources&, const nmos::resource&, const web::json::value& arguments, bool is_deprecated, slog::base_gate& gate)
                 {
-                    return get_control_class(resources, resource, arguments, is_deprecated, get_control_protocol_class_descriptor, gate);
+                    return get_control_class(arguments, is_deprecated, get_control_protocol_class_descriptor, gate);
                 };
             }
             nmos::experimental::control_protocol_method_handler make_nc_get_datatype_handler(get_control_protocol_datatype_descriptor_handler get_control_protocol_datatype_descriptor)
             {
-                return [get_control_protocol_datatype_descriptor](nmos::resources& resources, const nmos::resource& resource, const web::json::value& arguments, bool is_deprecated, slog::base_gate& gate)
+                return [get_control_protocol_datatype_descriptor](nmos::resources&, const nmos::resource&, const web::json::value& arguments, bool is_deprecated, slog::base_gate& gate)
                 {
-                    return get_datatype(resources, resource, arguments, is_deprecated, get_control_protocol_datatype_descriptor, gate);
+                    return get_datatype(arguments, is_deprecated, get_control_protocol_datatype_descriptor, gate);
+                };
+            }
+            nmos::experimental::control_protocol_method_handler make_nc_get_properties_by_path_handler(get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor_handler get_control_protocol_datatype_descriptor, create_validation_fingerprint_handler create_validation_fingerprint)
+            {
+                return [get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor, create_validation_fingerprint](nmos::resources& resources, const nmos::resource& resource, const web::json::value& arguments, bool is_deprecated, slog::base_gate& gate)
+                {
+                    bool recurse = nmos::fields::nc::recurse(arguments);
+                    bool include_descriptors = nmos::fields::nc::include_descriptors(arguments);
+
+                    return nmos::get_properties_by_path(resources, resource, recurse, include_descriptors, get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor, create_validation_fingerprint);
+                };
+            }
+            nmos::experimental::control_protocol_method_handler make_nc_validate_set_properties_by_path_handler(get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor_handler get_control_protocol_datatype_descriptor, validate_validation_fingerprint_handler validate_validation_fingerprint, get_read_only_modification_allow_list_handler get_read_only_modification_allow_list, remove_device_model_object_handler remove_device_model_object, create_device_model_object_handler create_device_model_object)
+            {
+                return [&get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor, get_read_only_modification_allow_list, validate_validation_fingerprint, remove_device_model_object, create_device_model_object](nmos::resources& resources, const nmos::resource& resource, const web::json::value& arguments, bool is_deprecated, slog::base_gate& gate)
+                {
+                    bool recurse = nmos::fields::nc::recurse(arguments);
+                    const auto& restore_mode = nmos::fields::nc::restore_mode(arguments);
+                    const auto& data_set = nmos::fields::nc::data_set(arguments);
+
+                    if (data_set.is_null())
+                    {
+                        return nmos::details::make_nc_method_result_error({ nc_method_status::parameter_error }, U("Null dataSet parameter"));
+                    }
+
+                    auto result = nmos::details::make_nc_method_result_error({ nmos::nc_method_status::method_not_implemented }, U("not implemented"));
+                    if (get_read_only_modification_allow_list && remove_device_model_object && create_device_model_object)
+                    {
+                        result = validate_set_properties_by_path(resources, resource, data_set, recurse, static_cast<nmos::nc_restore_mode::restore_mode>(restore_mode), get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor, validate_validation_fingerprint, get_read_only_modification_allow_list, remove_device_model_object, create_device_model_object);
+
+                        const auto& status = nmos::fields::nc::status(result);
+                        if (!web::http::is_error_status_code((web::http::status_code)status) && is_deprecated)
+                        {
+                            return nmos::details::make_nc_method_result({ nmos::nc_method_status::method_deprecated }, nmos::fields::nc::value(result));
+                        }
+                    }
+                    return result;
+                };
+            }
+            nmos::experimental::control_protocol_method_handler make_nc_set_properties_by_path_handler(get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor_handler get_control_protocol_datatype_descriptor, validate_validation_fingerprint_handler validate_validation_fingerprint, get_read_only_modification_allow_list_handler get_read_only_modification_allow_list, remove_device_model_object_handler remove_device_model_object, create_device_model_object_handler create_device_model_object)
+            {
+                return [get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor, validate_validation_fingerprint, get_read_only_modification_allow_list, remove_device_model_object, create_device_model_object](nmos::resources& resources, const nmos::resource& resource, const web::json::value& arguments, bool is_deprecated, slog::base_gate& gate)
+                {
+                    bool recurse = nmos::fields::nc::recurse(arguments);
+                    const auto& restore_mode = nmos::fields::nc::restore_mode(arguments);
+                    const auto& data_set = nmos::fields::nc::data_set(arguments);
+
+                    if (data_set.is_null())
+                    {
+                        return nmos::details::make_nc_method_result_error({ nc_method_status::parameter_error }, U("Null dataSet parameter"));
+                    }
+
+                    auto result = nmos::details::make_nc_method_result_error({ nmos::nc_method_status::method_not_implemented }, U("callbacks not implemented"));
+                    if (get_read_only_modification_allow_list && remove_device_model_object && create_device_model_object)
+                    {
+                        result = set_properties_by_path(resources, resource, data_set, recurse, static_cast<nmos::nc_restore_mode::restore_mode>(restore_mode), get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor, validate_validation_fingerprint, get_read_only_modification_allow_list, remove_device_model_object, create_device_model_object);
+
+                        const auto& status = nmos::fields::nc::status(result);
+                        if (!web::http::is_error_status_code((web::http::status_code)status) && is_deprecated)
+                        {
+                            return nmos::details::make_nc_method_result({ nmos::nc_method_status::method_deprecated }, nmos::fields::nc::value(result));
+                        }
+                    }
+                    return result;
                 };
             }
         }
 
-        control_protocol_state::control_protocol_state(control_protocol_property_changed_handler property_changed)
+        control_protocol_state::control_protocol_state(control_protocol_property_changed_handler property_changed, create_validation_fingerprint_handler create_validation_fingerprint, validate_validation_fingerprint_handler validate_validation_fingerprint, get_read_only_modification_allow_list_handler get_read_only_modification_allow_list, remove_device_model_object_handler remove_device_model_object, create_device_model_object_handler create_device_model_object)
         {
-            using web::json::value;
-
             auto to_vector = [](const web::json::value& data)
             {
                 if (!data.is_null())
@@ -334,7 +398,17 @@ namespace nmos
                         { nc_sender_monitor_reset_monitor_method_id, nullptr }
                     }),
                     // NcSenderMonitor events
-                    to_vector(make_nc_sender_monitor_events())) }
+                    to_vector(make_nc_sender_monitor_events())) },
+                // NcBulkPropertiesManager
+                { nc_bulk_properties_manager_class_id, make_control_class_descriptor(U("NcBulkPropertiesManager class descriptor"), nc_bulk_properties_manager_class_id, U("NcBulkPropertiesManager"), U("BulkPropertiesManager"),
+                    to_vector(make_nc_bulk_properties_manager_properties()),
+                    to_methods_vector(make_nc_bulk_properties_manager_methods(),
+                    {
+                        { nc_bulk_properties_manager_get_properties_by_path_method_id, details::make_nc_get_properties_by_path_handler(make_get_control_protocol_class_descriptor_handler(*this), make_get_control_protocol_datatype_descriptor_handler(*this), create_validation_fingerprint)},
+                        { nc_bulk_properties_manager_validate_set_properties_by_path_method_id, details::make_nc_validate_set_properties_by_path_handler(make_get_control_protocol_class_descriptor_handler(*this), make_get_control_protocol_datatype_descriptor_handler(*this), validate_validation_fingerprint, get_read_only_modification_allow_list, remove_device_model_object, create_device_model_object) },
+                        { nc_bulk_properties_manager_set_properties_by_path_method_id, details::make_nc_set_properties_by_path_handler(make_get_control_protocol_class_descriptor_handler(*this), make_get_control_protocol_datatype_descriptor_handler(*this), validate_validation_fingerprint, get_read_only_modification_allow_list, remove_device_model_object, create_device_model_object) }
+                    }),
+                    to_vector(make_nc_bulk_properties_manager_events())) }
             };
 
             // setup the standard datatypes
@@ -420,7 +494,19 @@ namespace nmos
                 { U("NcOverallStatus"), {make_nc_overall_status_datatype()} },
                 { U("NcSynchronizationStatus"), {make_nc_synchronization_status_datatype()} },
                 { U("NcStreamStatus"), {make_nc_stream_status_datatype()} },
-                { U("NcTransmissionStatus"), {make_nc_transmission_status_datatype()} }
+                { U("NcTransmissionStatus"), {make_nc_transmission_status_datatype()} },
+                // Device configuration feature set
+                // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/device-configuration/#datatypes
+                { U("NcRestoreMode"), {make_nc_restore_mode_datatype()} },
+                { U("NcPropertyHolder"), {make_nc_property_holder_datatype()} },
+                { U("NcObjectPropertiesHolder"), {make_nc_object_properties_holder_datatype()} },
+                { U("NcBulkPropertiesHolder"), {make_nc_bulk_properties_holder_datatype()} },
+                { U("NcRestoreValidationStatus"), {make_nc_restore_validation_status_datatype()} },
+                { U("NcPropertyRestoreNoticeType"), {make_nc_property_restore_notice_type_datatype()} },
+                { U("NcPropertyRestoreNotice"), {make_nc_property_restore_notice_datatype()} },
+                { U("NcObjectPropertiesSetValidation"), {make_nc_object_properties_set_validation_datatype()} },
+                { U("NcMethodResultBulkPropertiesHolder"), {make_nc_method_result_bulk_properties_holder_datatype()} },
+                { U("NcMethodResultObjectPropertiesSetValidation"), {make_nc_method_result_object_properties_set_validation_datatype()} }
             };
         }
 
