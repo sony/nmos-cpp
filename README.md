@@ -18,6 +18,8 @@ This repository contains an implementation of the [AMWA Networked Media Open Spe
 - [AMWA BCP-003-02 Authorization in NMOS Systems](https://specs.amwa.tv/bcp-003-02/)
 - [AMWA BCP-004-01 NMOS Receiver Capabilities](https://specs.amwa.tv/bcp-004-01/)
 - [AMWA BCP-006-01 NMOS With JPEG XS](https://specs.amwa.tv/bcp-006-01/)
+- [AMWA BCP-008-01 NMOS Receiver Status](https://specs.amwa.tv/bcp-008-01/)
+- [AMWA BCP-008-02 NMOS Sender Status](https://specs.amwa.tv/bcp-008-02/)
 - [AMWA MS-05-01 NMOS Control Architecture](https://specs.amwa.tv/ms-05-01/)
 - [AMWA MS-05-02 NMOS Control Framework](https://specs.amwa.tv/ms-05-02/)
 
@@ -79,6 +81,8 @@ The [AMWA NMOS API Testing Tool](https://github.com/AMWA-TV/nmos-testing) is aut
 **Test Suite/Status:**
 [![BCP-003-01][BCP-003-01-badge]][BCP-003-01-sheet]
 [![BCP-006-01-01][BCP-006-01-01-badge]][BCP-006-01-01-sheet]
+[![BCP-008-01-01][BCP-008-01-01-badge]][BCP-008-01-01-sheet]
+[![BCP-008-02-01][BCP-008-02-01-badge]][BCP-008-02-01-sheet]
 [![IS-04-01][IS-04-01-badge]][IS-04-01-sheet]
 [![IS-04-02][IS-04-02-badge]][IS-04-02-sheet]
 [![IS-04-03][IS-04-03-badge]][IS-04-03-sheet]
@@ -94,6 +98,8 @@ The [AMWA NMOS API Testing Tool](https://github.com/AMWA-TV/nmos-testing) is aut
 
 [BCP-003-01-badge]: https://raw.githubusercontent.com/sony/nmos-cpp/badges/BCP-003-01.svg
 [BCP-006-01-01-badge]: https://raw.githubusercontent.com/sony/nmos-cpp/badges/BCP-006-01-01.svg
+[BCP-008-01-01-badge]: https://raw.githubusercontent.com/sony/nmos-cpp/badges/BCP-008-01-01.svg
+[BCP-008-02-01-badge]: https://raw.githubusercontent.com/sony/nmos-cpp/badges/BCP-008-02-01.svg
 [IS-04-01-badge]: https://raw.githubusercontent.com/sony/nmos-cpp/badges/IS-04-01.svg
 [IS-04-02-badge]: https://raw.githubusercontent.com/sony/nmos-cpp/badges/IS-04-02.svg
 [IS-04-03-badge]: https://raw.githubusercontent.com/sony/nmos-cpp/badges/IS-04-03.svg
@@ -108,6 +114,8 @@ The [AMWA NMOS API Testing Tool](https://github.com/AMWA-TV/nmos-testing) is aut
 [IS-12-01-badge]: https://raw.githubusercontent.com/sony/nmos-cpp/badges/IS-12-01.svg
 [BCP-003-01-sheet]: https://docs.google.com/spreadsheets/d/1UgZoI0lGCMDn9-zssccf2Azil3WN6jogroMT8Wh6H64/edit#gid=468090822
 [BCP-006-01-01-sheet]: https://docs.google.com/spreadsheets/d/1UgZoI0lGCMDn9-zssccf2Azil3WN6jogroMT8Wh6H64/edit?gid=1835994800
+[BCP-008-01-01-sheet]: https://docs.google.com/spreadsheets/d/1UgZoI0lGCMDn9-zssccf2Azil3WN6jogroMT8Wh6H64/edit?gid=1290589116
+[BCP-008-02-01-sheet]: https://docs.google.com/spreadsheets/d/1UgZoI0lGCMDn9-zssccf2Azil3WN6jogroMT8Wh6H64/edit?gid=582384563
 [IS-04-01-sheet]: https://docs.google.com/spreadsheets/d/1UgZoI0lGCMDn9-zssccf2Azil3WN6jogroMT8Wh6H64/edit#gid=0
 [IS-04-02-sheet]: https://docs.google.com/spreadsheets/d/1UgZoI0lGCMDn9-zssccf2Azil3WN6jogroMT8Wh6H64/edit#gid=1838684224
 [IS-04-03-sheet]: https://docs.google.com/spreadsheets/d/1UgZoI0lGCMDn9-zssccf2Azil3WN6jogroMT8Wh6H64/edit#gid=1174955447
