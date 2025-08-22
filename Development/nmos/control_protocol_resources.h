@@ -43,7 +43,7 @@ namespace nmos
         uint32_t status_reporting_delay = 3,
         bool auto_reset_monitor = true
     );
-
+    //
     // create Sender Monitor resource
     control_protocol_resource make_sender_monitor(nc_oid oid, bool constant_oid, nmos::nc_oid owner, const utility::string_t& role, const utility::string_t& user_label, const utility::string_t& description, const web::json::value& touchpoints = web::json::value::null(), const web::json::value& runtime_property_constraints = web::json::value::null(), bool enabled = true,
         nc_overall_status::status overall_status = nc_overall_status::status::inactive,

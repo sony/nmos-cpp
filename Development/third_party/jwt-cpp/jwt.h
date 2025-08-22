@@ -37,10 +37,6 @@
 #include <utility>
 #include <vector>
 
-#if __cplusplus > 201103L
-#include <codecvt>
-#endif
-
 #if __cplusplus >= 201402L
 #ifdef __has_include
 #if __has_include(<experimental/type_traits>)
@@ -51,6 +47,7 @@
 
 #if OPENSSL_VERSION_NUMBER >= 0x30000000L // 3.0.0
 #define JWT_OPENSSL_3_0
+#include <openssl/param_build.h>
 #elif OPENSSL_VERSION_NUMBER >= 0x10101000L // 1.1.1
 #define JWT_OPENSSL_1_1_1
 #elif OPENSSL_VERSION_NUMBER >= 0x10100000L // 1.1.0
@@ -76,7 +73,7 @@
 #endif
 
 /**
- * \brief JSON Web Token
+ * \brief JSON Web Token.
  *
  * A namespace to contain everything related to handling JSON Web Tokens, JWT for short,
  * as a part of [RFC7519](https://tools.ietf.org/html/rfc7519), or alternatively for
@@ -120,7 +117,9 @@ namespace jwt {
 			load_key_bio_write,
 			load_key_bio_read,
 			create_mem_bio_failed,
-			no_key_provided
+			no_key_provided,
+			set_rsa_failed,
+			create_context_failed
 		};
 		/**
 		 * \brief Error category for RSA errors
@@ -141,6 +140,8 @@ namespace jwt {
 					case rsa_error::load_key_bio_read: return "failed to load key: bio read failed";
 					case rsa_error::create_mem_bio_failed: return "failed to create memory bio";
 					case rsa_error::no_key_provided: return "at least one of public or private key need to be present";
+					case rsa_error::set_rsa_failed: return "set modulus and exponent to RSA failed";
+					case rsa_error::create_context_failed: return "failed to create context";
 					default: return "unknown RSA error";
 					}
 				}
@@ -148,7 +149,9 @@ namespace jwt {
 			static rsa_error_cat cat;
 			return cat;
 		}
-
+		/**
+		 * \brief Converts JWT-CPP errors into generic STL error_codes
+		 */
 		inline std::error_code make_error_code(rsa_error e) { return {static_cast<int>(e), rsa_error_category()}; }
 		/**
 		 * \brief Errors related to processing of RSA signatures
@@ -161,7 +164,14 @@ namespace jwt {
 			no_key_provided,
 			invalid_key_size,
 			invalid_key,
-			create_context_failed
+			create_context_failed,
+			cert_load_failed,
+			get_key_failed,
+			write_key_failed,
+			write_cert_failed,
+			convert_to_pem_failed,
+			unknown_curve,
+			set_ecdsa_failed
 		};
 		/**
 		 * \brief Error category for ECDSA errors
@@ -181,6 +191,13 @@ namespace jwt {
 					case ecdsa_error::invalid_key_size: return "invalid key size";
 					case ecdsa_error::invalid_key: return "invalid key";
 					case ecdsa_error::create_context_failed: return "failed to create context";
+					case ecdsa_error::cert_load_failed: return "error loading cert into memory";
+					case ecdsa_error::get_key_failed: return "error getting key from certificate";
+					case ecdsa_error::write_key_failed: return "error writing key data in PEM format";
+					case ecdsa_error::write_cert_failed: return "error writing cert data in PEM format";
+					case ecdsa_error::convert_to_pem_failed: return "failed to convert key to pem";
+					case ecdsa_error::unknown_curve: return "unknown curve";
+					case ecdsa_error::set_ecdsa_failed: return "set parameters to ECDSA failed";
 					default: return "unknown ECDSA error";
 					}
 				}
@@ -188,7 +205,9 @@ namespace jwt {
 			static ecdsa_error_cat cat;
 			return cat;
 		}
-
+		/**
+		 * \brief Converts JWT-CPP errors into generic STL error_codes
+		 */
 		inline std::error_code make_error_code(ecdsa_error e) { return {static_cast<int>(e), ecdsa_error_category()}; }
 
 		/**
@@ -237,7 +256,9 @@ namespace jwt {
 			static verification_error_cat cat;
 			return cat;
 		}
-
+		/**
+		 * \brief Converts JWT-CPP errors into generic STL error_codes
+		 */
 		inline std::error_code make_error_code(signature_verification_error e) {
 			return {static_cast<int>(e), signature_verification_error_category()};
 		}
@@ -305,7 +326,9 @@ namespace jwt {
 			static signature_generation_error_cat cat = {};
 			return cat;
 		}
-
+		/**
+		 * \brief Converts JWT-CPP errors into generic STL error_codes
+		 */
 		inline std::error_code make_error_code(signature_generation_error e) {
 			return {static_cast<int>(e), signature_generation_error_category()};
 		}
@@ -348,11 +371,15 @@ namespace jwt {
 			static token_verification_error_cat cat = {};
 			return cat;
 		}
-
+		/**
+		 * \brief Converts JWT-CPP errors into generic STL error_codes
+		 */
 		inline std::error_code make_error_code(token_verification_error e) {
 			return {static_cast<int>(e), token_verification_error_category()};
 		}
-
+		/**
+		 * \brief Raises an exception if any JWT-CPP error codes are active
+		 */
 		inline void throw_if_error(std::error_code ec) {
 			if (ec) {
 				if (ec.category() == rsa_error_category()) throw rsa_exception(ec);
@@ -397,6 +424,9 @@ namespace jwt {
 		 */
 		class evp_pkey_handle {
 		public:
+			/**
+			 * \brief Creates a null key pointer.
+			 */
 			constexpr evp_pkey_handle() noexcept = default;
 #ifdef JWT_OPENSSL_1_0_0
 			/**
@@ -480,6 +510,17 @@ namespace jwt {
 			);
 		}
 
+		template<typename error_category = error::rsa_error>
+		std::string write_bio_to_string(std::unique_ptr<BIO, decltype(&BIO_free_all)>& bio_out, std::error_code& ec) {
+			char* ptr = nullptr;
+			auto len = BIO_get_mem_data(bio_out.get(), &ptr);
+			if (len <= 0 || ptr == nullptr) {
+				ec = error_category::convert_to_pem_failed;
+				return {};
+			}
+			return {ptr, static_cast<size_t>(len)};
+		}
+
 		inline std::unique_ptr<EVP_MD_CTX, void (*)(EVP_MD_CTX*)> make_evp_md_ctx() {
 			return
 #ifdef JWT_OPENSSL_1_0_0
@@ -492,54 +533,52 @@ namespace jwt {
 		/**
 		 * \brief Extract the public key of a pem certificate
 		 *
-		 * \param certstr	String containing the certificate encoded as pem
-		 * \param pw		Password used to decrypt certificate (leave empty if not encrypted)
-		 * \param ec		error_code for error_detection (gets cleared if no error occurred)
+		 * \tparam error_category	jwt::error enum category to match with the keys being used
+		 * \param certstr			String containing the certificate encoded as pem
+		 * \param pw				Password used to decrypt certificate (leave empty if not encrypted)
+		 * \param ec				error_code for error_detection (gets cleared if no error occurred)
 		 */
-		inline std::string extract_pubkey_from_cert(const std::string& certstr, const std::string& pw,
-													std::error_code& ec) {
+		template<typename error_category = error::rsa_error>
+		std::string extract_pubkey_from_cert(const std::string& certstr, const std::string& pw, std::error_code& ec) {
 			ec.clear();
 			auto certbio = make_mem_buf_bio(certstr);
 			auto keybio = make_mem_buf_bio();
 			if (!certbio || !keybio) {
-				ec = error::rsa_error::create_mem_bio_failed;
+				ec = error_category::create_mem_bio_failed;
 				return {};
 			}
 
 			std::unique_ptr<X509, decltype(&X509_free)> cert(
 				PEM_read_bio_X509(certbio.get(), nullptr, nullptr, const_cast<char*>(pw.c_str())), X509_free);
 			if (!cert) {
-				ec = error::rsa_error::cert_load_failed;
+				ec = error_category::cert_load_failed;
 				return {};
 			}
 			std::unique_ptr<EVP_PKEY, decltype(&EVP_PKEY_free)> key(X509_get_pubkey(cert.get()), EVP_PKEY_free);
 			if (!key) {
-				ec = error::rsa_error::get_key_failed;
+				ec = error_category::get_key_failed;
 				return {};
 			}
 			if (PEM_write_bio_PUBKEY(keybio.get(), key.get()) == 0) {
-				ec = error::rsa_error::write_key_failed;
+				ec = error_category::write_key_failed;
 				return {};
 			}
-			char* ptr = nullptr;
-			auto len = BIO_get_mem_data(keybio.get(), &ptr);
-			if (len <= 0 || ptr == nullptr) {
-				ec = error::rsa_error::convert_to_pem_failed;
-				return {};
-			}
-			return {ptr, static_cast<size_t>(len)};
+
+			return write_bio_to_string<error_category>(keybio, ec);
 		}
 
 		/**
 		 * \brief Extract the public key of a pem certificate
 		 *
-		 * \param certstr	String containing the certificate encoded as pem
-		 * \param pw		Password used to decrypt certificate (leave empty if not encrypted)
-		 * \throw			rsa_exception if an error occurred
+		 * \tparam error_category	jwt::error enum category to match with the keys being used
+		 * \param certstr			String containing the certificate encoded as pem
+		 * \param pw				Password used to decrypt certificate (leave empty if not encrypted)
+		 * \throw					templated error_category's type exception if an error occurred
 		 */
-		inline std::string extract_pubkey_from_cert(const std::string& certstr, const std::string& pw = "") {
+		template<typename error_category = error::rsa_error>
+		std::string extract_pubkey_from_cert(const std::string& certstr, const std::string& pw = "") {
 			std::error_code ec;
-			auto res = extract_pubkey_from_cert(certstr, pw, ec);
+			auto res = extract_pubkey_from_cert<error_category>(certstr, pw, ec);
 			error::throw_if_error(ec);
 			return res;
 		}
@@ -568,23 +607,16 @@ namespace jwt {
 				return {};
 			}
 
-			char* ptr = nullptr;
-			const auto len = BIO_get_mem_data(certbio.get(), &ptr);
-			if (len <= 0 || ptr == nullptr) {
-				ec = error::rsa_error::convert_to_pem_failed;
-				return {};
-			}
-
-			return {ptr, static_cast<size_t>(len)};
+			return write_bio_to_string(certbio, ec);
 		}
 
 		/**
 		 * \brief Convert the certificate provided as base64 DER to PEM.
 		 *
 		 * This is useful when using with JWKs as x5c claim is encoded as base64 DER. More info
-		 * (here)[https://tools.ietf.org/html/rfc7517#section-4.7]
+		 * [here](https://tools.ietf.org/html/rfc7517#section-4.7).
 		 *
-		 * \tparam Decode is callabled, taking a string_type and returns a string_type.
+		 * \tparam Decode is callable, taking a string_type and returns a string_type.
 		 * It should ensure the padding of the input and then base64 decode and return
 		 * the results.
 		 *
@@ -604,9 +636,9 @@ namespace jwt {
 		 * \brief Convert the certificate provided as base64 DER to PEM.
 		 *
 		 * This is useful when using with JWKs as x5c claim is encoded as base64 DER. More info
-		 * (here)[https://tools.ietf.org/html/rfc7517#section-4.7]
+		 * [here](https://tools.ietf.org/html/rfc7517#section-4.7)
 		 *
-		 * \tparam Decode is callabled, taking a string_type and returns a string_type.
+		 * \tparam Decode is callable, taking a string_type and returns a string_type.
 		 * It should ensure the padding of the input and then base64 decode and return
 		 * the results.
 		 *
@@ -626,7 +658,6 @@ namespace jwt {
 		 * \brief Convert the certificate provided as DER to PEM.
 		 *
 		 * \param cert_der_str 	String containing the DER certificate
-		 * \param decode 		The function to decode the cert
 		 * \throw				rsa_exception if an error occurred
 		 */
 		inline std::string convert_der_to_pem(const std::string& cert_der_str) {
@@ -641,7 +672,7 @@ namespace jwt {
 		 * \brief Convert the certificate provided as base64 DER to PEM.
 		 *
 		 * This is useful when using with JWKs as x5c claim is encoded as base64 DER. More info
-		 * (here)[https://tools.ietf.org/html/rfc7517#section-4.7]
+		 * [here](https://tools.ietf.org/html/rfc7517#section-4.7)
 		 *
 		 * \param cert_base64_der_str 	String containing the certificate encoded as base64 DER
 		 * \param ec					error_code for error_detection (gets cleared if no error occurs)
@@ -657,7 +688,7 @@ namespace jwt {
 		 * \brief Convert the certificate provided as base64 DER to PEM.
 		 *
 		 * This is useful when using with JWKs as x5c claim is encoded as base64 DER. More info
-		 * (here)[https://tools.ietf.org/html/rfc7517#section-4.7]
+		 * [here](https://tools.ietf.org/html/rfc7517#section-4.7)
 		 *
 		 * \param cert_base64_der_str 	String containing the certificate encoded as base64 DER
 		 * \throw						rsa_exception if an error occurred
@@ -674,30 +705,32 @@ namespace jwt {
 		 *
 		 * The string should contain a pem encoded certificate or public key
 		 *
+		 * \tparam error_category	jwt::error enum category to match with the keys being used
 		 * \param key		String containing the certificate encoded as pem
 		 * \param password	Password used to decrypt certificate (leave empty if not encrypted)
 		 * \param ec		error_code for error_detection (gets cleared if no error occurs)
 		 */
-		inline evp_pkey_handle load_public_key_from_string(const std::string& key, const std::string& password,
-														   std::error_code& ec) {
+		template<typename error_category = error::rsa_error>
+		evp_pkey_handle load_public_key_from_string(const std::string& key, const std::string& password,
+													std::error_code& ec) {
 			ec.clear();
 			auto pubkey_bio = make_mem_buf_bio();
 			if (!pubkey_bio) {
-				ec = error::rsa_error::create_mem_bio_failed;
+				ec = error_category::create_mem_bio_failed;
 				return {};
 			}
 			if (key.substr(0, 27) == "-----BEGIN CERTIFICATE-----") {
-				auto epkey = helper::extract_pubkey_from_cert(key, password, ec);
+				auto epkey = helper::extract_pubkey_from_cert<error_category>(key, password, ec);
 				if (ec) return {};
 				const int len = static_cast<int>(epkey.size());
 				if (BIO_write(pubkey_bio.get(), epkey.data(), len) != len) {
-					ec = error::rsa_error::load_key_bio_write;
+					ec = error_category::load_key_bio_write;
 					return {};
 				}
 			} else {
 				const int len = static_cast<int>(key.size());
 				if (BIO_write(pubkey_bio.get(), key.data(), len) != len) {
-					ec = error::rsa_error::load_key_bio_write;
+					ec = error_category::load_key_bio_write;
 					return {};
 				}
 			}
@@ -705,7 +738,7 @@ namespace jwt {
 			evp_pkey_handle pkey(PEM_read_bio_PUBKEY(
 				pubkey_bio.get(), nullptr, nullptr,
 				(void*)password.data())); // NOLINT(google-readability-casting) requires `const_cast`
-			if (!pkey) ec = error::rsa_error::load_key_bio_read;
+			if (!pkey) ec = error_category::load_key_bio_read;
 			return pkey;
 		}
 
@@ -714,13 +747,15 @@ namespace jwt {
 		 *
 		 * The string should contain a pem encoded certificate or public key
 		 *
-		 * \param key		String containing the certificate or key encoded as pem
-		 * \param password	Password used to decrypt certificate or key (leave empty if not encrypted)
-		 * \throw			rsa_exception if an error occurred
+		 * \tparam error_category	jwt::error enum category to match with the keys being used
+		 * \param key				String containing the certificate encoded as pem
+		 * \param password			Password used to decrypt certificate (leave empty if not encrypted)
+		 * \throw					Templated error_category's type exception if an error occurred
 		 */
+		template<typename error_category = error::rsa_error>
 		inline evp_pkey_handle load_public_key_from_string(const std::string& key, const std::string& password = "") {
 			std::error_code ec;
-			auto res = load_public_key_from_string(key, password, ec);
+			auto res = load_public_key_from_string<error_category>(key, password, ec);
 			error::throw_if_error(ec);
 			return res;
 		}
@@ -728,38 +763,43 @@ namespace jwt {
 		/**
 		 * \brief Load a private key from a string.
 		 *
-		 * \param key		String containing a private key as pem
-		 * \param password	Password used to decrypt key (leave empty if not encrypted)
-		 * \param ec		error_code for error_detection (gets cleared if no error occurs)
+		 * \tparam error_category	jwt::error enum category to match with the keys being used
+		 * \param key				String containing a private key as pem
+		 * \param password			Password used to decrypt key (leave empty if not encrypted)
+		 * \param ec				error_code for error_detection (gets cleared if no error occurs)
 		 */
+		template<typename error_category = error::rsa_error>
 		inline evp_pkey_handle load_private_key_from_string(const std::string& key, const std::string& password,
 															std::error_code& ec) {
-			auto privkey_bio = make_mem_buf_bio();
-			if (!privkey_bio) {
-				ec = error::rsa_error::create_mem_bio_failed;
+			ec.clear();
+			auto private_key_bio = make_mem_buf_bio();
+			if (!private_key_bio) {
+				ec = error_category::create_mem_bio_failed;
 				return {};
 			}
 			const int len = static_cast<int>(key.size());
-			if (BIO_write(privkey_bio.get(), key.data(), len) != len) {
-				ec = error::rsa_error::load_key_bio_write;
+			if (BIO_write(private_key_bio.get(), key.data(), len) != len) {
+				ec = error_category::load_key_bio_write;
 				return {};
 			}
 			evp_pkey_handle pkey(
-				PEM_read_bio_PrivateKey(privkey_bio.get(), nullptr, nullptr, const_cast<char*>(password.c_str())));
-			if (!pkey) ec = error::rsa_error::load_key_bio_read;
+				PEM_read_bio_PrivateKey(private_key_bio.get(), nullptr, nullptr, const_cast<char*>(password.c_str())));
+			if (!pkey) ec = error_category::load_key_bio_read;
 			return pkey;
 		}
 
 		/**
 		 * \brief Load a private key from a string.
 		 *
-		 * \param key		String containing a private key as pem
-		 * \param password	Password used to decrypt key (leave empty if not encrypted)
-		 * \throw			rsa_exception if an error occurred
+		 * \tparam error_category	jwt::error enum category to match with the keys being used
+		 * \param key				String containing a private key as pem
+		 * \param password			Password used to decrypt key (leave empty if not encrypted)
+		 * \throw					Templated error_category's type exception if an error occurred
 		 */
+		template<typename error_category = error::rsa_error>
 		inline evp_pkey_handle load_private_key_from_string(const std::string& key, const std::string& password = "") {
 			std::error_code ec;
-			auto res = load_private_key_from_string(key, password, ec);
+			auto res = load_private_key_from_string<error_category>(key, password, ec);
 			error::throw_if_error(ec);
 			return res;
 		}
@@ -768,6 +808,8 @@ namespace jwt {
 		 * \brief Load a public key from a string.
 		 *
 		 * The string should contain a pem encoded certificate or public key
+		 *
+		 * \deprecated Use the templated version helper::load_private_key_from_string with error::ecdsa_error
 		 *
 		 * \param key		String containing the certificate encoded as pem
 		 * \param password	Password used to decrypt certificate (leave empty if not encrypted)
@@ -775,90 +817,7 @@ namespace jwt {
 		 */
 		inline evp_pkey_handle load_public_ec_key_from_string(const std::string& key, const std::string& password,
 															  std::error_code& ec) {
-			ec.clear();
-			auto pubkey_bio = make_mem_buf_bio();
-			if (!pubkey_bio) {
-				ec = error::ecdsa_error::create_mem_bio_failed;
-				return {};
-			}
-			if (key.substr(0, 27) == "-----BEGIN CERTIFICATE-----") {
-				auto epkey = helper::extract_pubkey_from_cert(key, password, ec);
-				if (ec) return {};
-				const int len = static_cast<int>(epkey.size());
-				if (BIO_write(pubkey_bio.get(), epkey.data(), len) != len) {
-					ec = error::ecdsa_error::load_key_bio_write;
-					return {};
-				}
-			} else {
-				const int len = static_cast<int>(key.size());
-				if (BIO_write(pubkey_bio.get(), key.data(), len) != len) {
-					ec = error::ecdsa_error::load_key_bio_write;
-					return {};
-				}
-			}
-
-			evp_pkey_handle pkey(PEM_read_bio_PUBKEY(
-				pubkey_bio.get(), nullptr, nullptr,
-				(void*)password.data())); // NOLINT(google-readability-casting) requires `const_cast`
-			if (!pkey) ec = error::ecdsa_error::load_key_bio_read;
-			return pkey;
-		}
-
-		/**
-		 * \brief Load a public key from a string.
-		 *
-		 * The string should contain a pem encoded certificate or public key
-		 *
-		 * \param key		String containing the certificate or key encoded as pem
-		 * \param password	Password used to decrypt certificate or key (leave empty if not encrypted)
-		 * \throw			ecdsa_exception if an error occurred
-		 */
-		inline evp_pkey_handle load_public_ec_key_from_string(const std::string& key,
-															  const std::string& password = "") {
-			std::error_code ec;
-			auto res = load_public_ec_key_from_string(key, password, ec);
-			error::throw_if_error(ec);
-			return res;
-		}
-
-		/**
-		 * \brief Load a private key from a string.
-		 *
-		 * \param key		String containing a private key as pem
-		 * \param password	Password used to decrypt key (leave empty if not encrypted)
-		 * \param ec		error_code for error_detection (gets cleared if no error occurs)
-		 */
-		inline evp_pkey_handle load_private_ec_key_from_string(const std::string& key, const std::string& password,
-															   std::error_code& ec) {
-			auto privkey_bio = make_mem_buf_bio();
-			if (!privkey_bio) {
-				ec = error::ecdsa_error::create_mem_bio_failed;
-				return {};
-			}
-			const int len = static_cast<int>(key.size());
-			if (BIO_write(privkey_bio.get(), key.data(), len) != len) {
-				ec = error::ecdsa_error::load_key_bio_write;
-				return {};
-			}
-			evp_pkey_handle pkey(
-				PEM_read_bio_PrivateKey(privkey_bio.get(), nullptr, nullptr, const_cast<char*>(password.c_str())));
-			if (!pkey) ec = error::ecdsa_error::load_key_bio_read;
-			return pkey;
-		}
-
-		/**
-		 * \brief Load a private key from a string.
-		 *
-		 * \param key		String containing a private key as pem
-		 * \param password	Password used to decrypt key (leave empty if not encrypted)
-		 * \throw			ecdsa_exception if an error occurred
-		 */
-		inline evp_pkey_handle load_private_ec_key_from_string(const std::string& key,
-															   const std::string& password = "") {
-			std::error_code ec;
-			auto res = load_private_ec_key_from_string(key, password, ec);
-			error::throw_if_error(ec);
-			return res;
+			return load_public_key_from_string<error::ecdsa_error>(key, password, ec);
 		}
 
 		/**
@@ -882,13 +841,490 @@ namespace jwt {
 		/**
 		 * Convert an std::string to a OpenSSL BIGNUM
 		 * \param raw String to convert
+		 * \param ec  error_code for error_detection (gets cleared if no error occurs)
+		 * \return BIGNUM representation
+		 */
+		inline std::unique_ptr<BIGNUM, decltype(&BN_free)> raw2bn(const std::string& raw, std::error_code& ec) {
+			auto bn =
+				BN_bin2bn(reinterpret_cast<const unsigned char*>(raw.data()), static_cast<int>(raw.size()), nullptr);
+			// https://www.openssl.org/docs/man1.1.1/man3/BN_bin2bn.html#RETURN-VALUES
+			if (!bn) {
+				ec = error::rsa_error::set_rsa_failed;
+				return {nullptr, BN_free};
+			}
+			return {bn, BN_free};
+		}
+		/**
+		 * Convert an std::string to a OpenSSL BIGNUM
+		 * \param raw String to convert
 		 * \return BIGNUM representation
 		 */
 		inline std::unique_ptr<BIGNUM, decltype(&BN_free)> raw2bn(const std::string& raw) {
-			return std::unique_ptr<BIGNUM, decltype(&BN_free)>(
-				BN_bin2bn(reinterpret_cast<const unsigned char*>(raw.data()), static_cast<int>(raw.size()), nullptr),
-				BN_free);
+			std::error_code ec;
+			auto res = raw2bn(raw, ec);
+			error::throw_if_error(ec);
+			return res;
 		}
+
+		/**
+		 * \brief Load a public key from a string.
+		 *
+		 * The string should contain a pem encoded certificate or public key
+		 *
+		 * \deprecated Use the templated version helper::load_private_key_from_string with error::ecdsa_error
+		 *
+		 * \param key		String containing the certificate or key encoded as pem
+		 * \param password	Password used to decrypt certificate or key (leave empty if not encrypted)
+		 * \throw			ecdsa_exception if an error occurred
+		 */
+		inline evp_pkey_handle load_public_ec_key_from_string(const std::string& key,
+															  const std::string& password = "") {
+			std::error_code ec;
+			auto res = load_public_key_from_string<error::ecdsa_error>(key, password, ec);
+			error::throw_if_error(ec);
+			return res;
+		}
+
+		/**
+		 * \brief Load a private key from a string.
+		 *
+		 * \deprecated Use the templated version helper::load_private_key_from_string with error::ecdsa_error
+		 *
+		 * \param key		String containing a private key as pem
+		 * \param password	Password used to decrypt key (leave empty if not encrypted)
+		 * \param ec		error_code for error_detection (gets cleared if no error occurs)
+		 */
+		inline evp_pkey_handle load_private_ec_key_from_string(const std::string& key, const std::string& password,
+															   std::error_code& ec) {
+			return load_private_key_from_string<error::ecdsa_error>(key, password, ec);
+		}
+
+		/**
+		* \brief create public key from modulus and exponent. This is defined in
+		* [RFC 7518 Section 6.3](https://www.rfc-editor.org/rfc/rfc7518#section-6.3)
+		* Using the required "n" (Modulus) Parameter and "e" (Exponent) Parameter.
+		*
+		 * \tparam Decode is callable, taking a string_type and returns a string_type.
+		 * It should ensure the padding of the input and then base64url decode and
+		 * return the results.
+		* \param modulus	string containing base64url encoded modulus
+		* \param exponent	string containing base64url encoded exponent
+		* \param decode 	The function to decode the RSA parameters
+		* \param ec			error_code for error_detection (gets cleared if no error occur
+		* \return 			public key in PEM format
+		*/
+		template<typename Decode>
+		std::string create_public_key_from_rsa_components(const std::string& modulus, const std::string& exponent,
+														  Decode decode, std::error_code& ec) {
+			ec.clear();
+			auto decoded_modulus = decode(modulus);
+			auto decoded_exponent = decode(exponent);
+
+			auto n = helper::raw2bn(decoded_modulus, ec);
+			if (ec) return {};
+			auto e = helper::raw2bn(decoded_exponent, ec);
+			if (ec) return {};
+
+#if defined(JWT_OPENSSL_3_0)
+			// OpenSSL deprecated mutable keys and there is a new way for making them
+			// https://mta.openssl.org/pipermail/openssl-users/2021-July/013994.html
+			// https://www.openssl.org/docs/man3.1/man3/OSSL_PARAM_BLD_new.html#Example-2
+			std::unique_ptr<OSSL_PARAM_BLD, decltype(&OSSL_PARAM_BLD_free)> param_bld(OSSL_PARAM_BLD_new(),
+																					  OSSL_PARAM_BLD_free);
+			if (!param_bld) {
+				ec = error::rsa_error::create_context_failed;
+				return {};
+			}
+
+			if (OSSL_PARAM_BLD_push_BN(param_bld.get(), "n", n.get()) != 1 ||
+				OSSL_PARAM_BLD_push_BN(param_bld.get(), "e", e.get()) != 1) {
+				ec = error::rsa_error::set_rsa_failed;
+				return {};
+			}
+
+			std::unique_ptr<OSSL_PARAM, decltype(&OSSL_PARAM_free)> params(OSSL_PARAM_BLD_to_param(param_bld.get()),
+																		   OSSL_PARAM_free);
+			if (!params) {
+				ec = error::rsa_error::set_rsa_failed;
+				return {};
+			}
+
+			std::unique_ptr<EVP_PKEY_CTX, decltype(&EVP_PKEY_CTX_free)> ctx(
+				EVP_PKEY_CTX_new_from_name(nullptr, "RSA", nullptr), EVP_PKEY_CTX_free);
+			if (!ctx) {
+				ec = error::rsa_error::create_context_failed;
+				return {};
+			}
+
+			// https://www.openssl.org/docs/man3.0/man3/EVP_PKEY_fromdata.html#EXAMPLES
+			// Error codes based on https://www.openssl.org/docs/manmaster/man3/EVP_PKEY_fromdata_init.html#RETURN-VALUES
+			EVP_PKEY* pkey = NULL;
+			if (EVP_PKEY_fromdata_init(ctx.get()) <= 0 ||
+				EVP_PKEY_fromdata(ctx.get(), &pkey, EVP_PKEY_KEYPAIR, params.get()) <= 0) {
+				// It's unclear if this can fail after allocating but free it anyways
+				// https://www.openssl.org/docs/man3.0/man3/EVP_PKEY_fromdata.html
+				EVP_PKEY_free(pkey);
+
+				ec = error::rsa_error::cert_load_failed;
+				return {};
+			}
+
+			// Transfer ownership so we get ref counter and cleanup
+			evp_pkey_handle rsa(pkey);
+
+#else
+			std::unique_ptr<RSA, decltype(&RSA_free)> rsa(RSA_new(), RSA_free);
+
+#if defined(JWT_OPENSSL_1_1_1) || defined(JWT_OPENSSL_1_1_0)
+			// After this RSA_free will also free the n and e big numbers
+			// See https://github.com/Thalhammer/jwt-cpp/pull/298#discussion_r1282619186
+			if (RSA_set0_key(rsa.get(), n.get(), e.get(), nullptr) == 1) {
+				// This can only fail we passed in NULL for `n` or `e`
+				// https://github.com/openssl/openssl/blob/d6e4056805f54bb1a0ef41fa3a6a35b70c94edba/crypto/rsa/rsa_lib.c#L396
+				// So to make sure there is no memory leak, we hold the references
+				n.release();
+				e.release();
+			} else {
+				ec = error::rsa_error::set_rsa_failed;
+				return {};
+			}
+#elif defined(JWT_OPENSSL_1_0_0)
+			rsa->e = e.release();
+			rsa->n = n.release();
+			rsa->d = nullptr;
+#endif
+#endif
+
+			auto pub_key_bio = make_mem_buf_bio();
+			if (!pub_key_bio) {
+				ec = error::rsa_error::create_mem_bio_failed;
+				return {};
+			}
+
+			auto write_pem_to_bio =
+#if defined(JWT_OPENSSL_3_0)
+				// https://www.openssl.org/docs/man3.1/man3/PEM_write_bio_RSA_PUBKEY.html
+				&PEM_write_bio_PUBKEY;
+#else
+				&PEM_write_bio_RSA_PUBKEY;
+#endif
+			if (write_pem_to_bio(pub_key_bio.get(), rsa.get()) != 1) {
+				ec = error::rsa_error::load_key_bio_write;
+				return {};
+			}
+
+			return write_bio_to_string<error::rsa_error>(pub_key_bio, ec);
+		}
+
+		/**
+		* Create public key from modulus and exponent. This is defined in
+		* [RFC 7518 Section 6.3](https://www.rfc-editor.org/rfc/rfc7518#section-6.3)
+		* Using the required "n" (Modulus) Parameter and "e" (Exponent) Parameter.
+		*
+		 * \tparam Decode is callable, taking a string_type and returns a string_type.
+		 * It should ensure the padding of the input and then base64url decode and
+		 * return the results.
+		* \param modulus	string containing base64url encoded modulus
+		* \param exponent	string containing base64url encoded exponent
+		* \param decode 	The function to decode the RSA parameters
+		* \return public key in PEM format
+		*/
+		template<typename Decode>
+		std::string create_public_key_from_rsa_components(const std::string& modulus, const std::string& exponent,
+														  Decode decode) {
+			std::error_code ec;
+			auto res = create_public_key_from_rsa_components(modulus, exponent, decode, ec);
+			error::throw_if_error(ec);
+			return res;
+		}
+
+#ifndef JWT_DISABLE_BASE64
+		/**
+		* Create public key from modulus and exponent. This is defined in
+		* [RFC 7518 Section 6.3](https://www.rfc-editor.org/rfc/rfc7518#section-6.3)
+		* Using the required "n" (Modulus) Parameter and "e" (Exponent) Parameter.
+		*
+		* \param modulus	string containing base64 encoded modulus
+		* \param exponent	string containing base64 encoded exponent
+		* \param ec			error_code for error_detection (gets cleared if no error occur
+		* \return public key in PEM format
+		*/
+		inline std::string create_public_key_from_rsa_components(const std::string& modulus,
+																 const std::string& exponent, std::error_code& ec) {
+			auto decode = [](const std::string& token) {
+				return base::decode<alphabet::base64url>(base::pad<alphabet::base64url>(token));
+			};
+			return create_public_key_from_rsa_components(modulus, exponent, std::move(decode), ec);
+		}
+		/**
+		* Create public key from modulus and exponent. This is defined in
+		* [RFC 7518 Section 6.3](https://www.rfc-editor.org/rfc/rfc7518#section-6.3)
+		* Using the required "n" (Modulus) Parameter and "e" (Exponent) Parameter.
+		*
+		* \param modulus	string containing base64url encoded modulus
+		* \param exponent	string containing base64url encoded exponent
+		* \return public key in PEM format
+		*/
+		inline std::string create_public_key_from_rsa_components(const std::string& modulus,
+																 const std::string& exponent) {
+			std::error_code ec;
+			auto res = create_public_key_from_rsa_components(modulus, exponent, ec);
+			error::throw_if_error(ec);
+			return res;
+		}
+#endif
+		/**
+		 * \brief Load a private key from a string.
+		 *
+		 * \deprecated Use the templated version helper::load_private_key_from_string with error::ecdsa_error
+		 *
+		 * \param key		String containing a private key as pem
+		 * \param password	Password used to decrypt key (leave empty if not encrypted)
+		 * \throw			ecdsa_exception if an error occurred
+		 */
+		inline evp_pkey_handle load_private_ec_key_from_string(const std::string& key,
+															   const std::string& password = "") {
+			std::error_code ec;
+			auto res = load_private_key_from_string<error::ecdsa_error>(key, password, ec);
+			error::throw_if_error(ec);
+			return res;
+		}
+
+#if defined(JWT_OPENSSL_3_0)
+
+		/**
+		 * \brief Convert a curve name to a group name.
+		 *
+		 * \param curve	string containing curve name
+		 * \param ec	error_code for error_detection
+		 * \return 		group name
+		 */
+		inline std::string curve2group(const std::string curve, std::error_code& ec) {
+			if (curve == "P-256") {
+				return "prime256v1";
+			} else if (curve == "P-384") {
+				return "secp384r1";
+			} else if (curve == "P-521") {
+				return "secp521r1";
+			} else {
+				ec = jwt::error::ecdsa_error::unknown_curve;
+				return {};
+			}
+		}
+
+#else
+
+		/**
+		 * \brief Convert a curve name to an ID.
+		 *
+		 * \param curve	string containing curve name
+		 * \param ec	error_code for error_detection
+		 * \return 		ID
+		 */
+		inline int curve2nid(const std::string curve, std::error_code& ec) {
+			if (curve == "P-256") {
+				return NID_X9_62_prime256v1;
+			} else if (curve == "P-384") {
+				return NID_secp384r1;
+			} else if (curve == "P-521") {
+				return NID_secp521r1;
+			} else {
+				ec = jwt::error::ecdsa_error::unknown_curve;
+				return {};
+			}
+		}
+
+#endif
+
+		/**
+		 * Create public key from curve name and coordinates. This is defined in
+		 * [RFC 7518 Section 6.2](https://www.rfc-editor.org/rfc/rfc7518#section-6.2)
+		 * Using the required "crv" (Curve), "x" (X Coordinate) and "y" (Y Coordinate) Parameters.
+		 *
+		 * \tparam Decode is callable, taking a string_type and returns a string_type.
+		 * It should ensure the padding of the input and then base64url decode and
+		 * return the results.
+		 * \param curve	string containing curve name
+		 * \param x		string containing base64url encoded x coordinate
+		 * \param y		string containing base64url encoded y coordinate
+		 * \param decode	The function to decode the RSA parameters
+		 * \param ec		error_code for error_detection (gets cleared if no error occur
+		 * \return 		public key in PEM format
+		 */
+		template<typename Decode>
+		std::string create_public_key_from_ec_components(const std::string& curve, const std::string& x,
+														 const std::string& y, Decode decode, std::error_code& ec) {
+			ec.clear();
+			auto decoded_x = decode(x);
+			auto decoded_y = decode(y);
+
+#if defined(JWT_OPENSSL_3_0)
+			// OpenSSL deprecated mutable keys and there is a new way for making them
+			// https://mta.openssl.org/pipermail/openssl-users/2021-July/013994.html
+			// https://www.openssl.org/docs/man3.1/man3/OSSL_PARAM_BLD_new.html#Example-2
+			std::unique_ptr<OSSL_PARAM_BLD, decltype(&OSSL_PARAM_BLD_free)> param_bld(OSSL_PARAM_BLD_new(),
+																					  OSSL_PARAM_BLD_free);
+			if (!param_bld) {
+				ec = error::ecdsa_error::create_context_failed;
+				return {};
+			}
+
+			std::string group = helper::curve2group(curve, ec);
+			if (ec) return {};
+
+			// https://github.com/openssl/openssl/issues/16270#issuecomment-895734092
+			std::string pub = std::string("\x04").append(decoded_x).append(decoded_y);
+
+			if (OSSL_PARAM_BLD_push_utf8_string(param_bld.get(), "group", group.data(), group.size()) != 1 ||
+				OSSL_PARAM_BLD_push_octet_string(param_bld.get(), "pub", pub.data(), pub.size()) != 1) {
+				ec = error::ecdsa_error::set_ecdsa_failed;
+				return {};
+			}
+
+			std::unique_ptr<OSSL_PARAM, decltype(&OSSL_PARAM_free)> params(OSSL_PARAM_BLD_to_param(param_bld.get()),
+																		   OSSL_PARAM_free);
+			if (!params) {
+				ec = error::ecdsa_error::set_ecdsa_failed;
+				return {};
+			}
+
+			std::unique_ptr<EVP_PKEY_CTX, decltype(&EVP_PKEY_CTX_free)> ctx(
+				EVP_PKEY_CTX_new_from_name(nullptr, "EC", nullptr), EVP_PKEY_CTX_free);
+			if (!ctx) {
+				ec = error::ecdsa_error::create_context_failed;
+				return {};
+			}
+
+			// https://www.openssl.org/docs/man3.0/man3/EVP_PKEY_fromdata.html#EXAMPLES
+			// Error codes based on https://www.openssl.org/docs/manmaster/man3/EVP_PKEY_fromdata_init.html#RETURN-VALUES
+			EVP_PKEY* pkey = NULL;
+			if (EVP_PKEY_fromdata_init(ctx.get()) <= 0 ||
+				EVP_PKEY_fromdata(ctx.get(), &pkey, EVP_PKEY_KEYPAIR, params.get()) <= 0) {
+				// It's unclear if this can fail after allocating but free it anyways
+				// https://www.openssl.org/docs/man3.0/man3/EVP_PKEY_fromdata.html
+				EVP_PKEY_free(pkey);
+
+				ec = error::ecdsa_error::cert_load_failed;
+				return {};
+			}
+
+			// Transfer ownership so we get ref counter and cleanup
+			evp_pkey_handle ecdsa(pkey);
+
+#else
+			int nid = helper::curve2nid(curve, ec);
+			if (ec) return {};
+
+			auto qx = helper::raw2bn(decoded_x, ec);
+			if (ec) return {};
+			auto qy = helper::raw2bn(decoded_y, ec);
+			if (ec) return {};
+
+			std::unique_ptr<EC_GROUP, decltype(&EC_GROUP_free)> ecgroup(EC_GROUP_new_by_curve_name(nid), EC_GROUP_free);
+			if (!ecgroup) {
+				ec = error::ecdsa_error::set_ecdsa_failed;
+				return {};
+			}
+
+			EC_GROUP_set_asn1_flag(ecgroup.get(), OPENSSL_EC_NAMED_CURVE);
+
+			std::unique_ptr<EC_POINT, decltype(&EC_POINT_free)> ecpoint(EC_POINT_new(ecgroup.get()), EC_POINT_free);
+			if (!ecpoint ||
+				EC_POINT_set_affine_coordinates_GFp(ecgroup.get(), ecpoint.get(), qx.get(), qy.get(), nullptr) != 1) {
+				ec = error::ecdsa_error::set_ecdsa_failed;
+				return {};
+			}
+
+			std::unique_ptr<EC_KEY, decltype(&EC_KEY_free)> ecdsa(EC_KEY_new(), EC_KEY_free);
+			if (!ecdsa || EC_KEY_set_group(ecdsa.get(), ecgroup.get()) != 1 ||
+				EC_KEY_set_public_key(ecdsa.get(), ecpoint.get()) != 1) {
+				ec = error::ecdsa_error::set_ecdsa_failed;
+				return {};
+			}
+
+#endif
+
+			auto pub_key_bio = make_mem_buf_bio();
+			if (!pub_key_bio) {
+				ec = error::ecdsa_error::create_mem_bio_failed;
+				return {};
+			}
+
+			auto write_pem_to_bio =
+#if defined(JWT_OPENSSL_3_0)
+				// https://www.openssl.org/docs/man3.1/man3/PEM_write_bio_EC_PUBKEY.html
+				&PEM_write_bio_PUBKEY;
+#else
+				&PEM_write_bio_EC_PUBKEY;
+#endif
+			if (write_pem_to_bio(pub_key_bio.get(), ecdsa.get()) != 1) {
+				ec = error::ecdsa_error::load_key_bio_write;
+				return {};
+			}
+
+			return write_bio_to_string<error::ecdsa_error>(pub_key_bio, ec);
+		}
+
+		/**
+		* Create public key from curve name and coordinates. This is defined in
+		* [RFC 7518 Section 6.2](https://www.rfc-editor.org/rfc/rfc7518#section-6.2)
+		* Using the required "crv" (Curve), "x" (X Coordinate) and "y" (Y Coordinate) Parameters.
+		*
+		 * \tparam Decode is callable, taking a string_type and returns a string_type.
+		 * It should ensure the padding of the input and then base64url decode and
+		 * return the results.
+		* \param curve	string containing curve name
+		* \param x		string containing base64url encoded x coordinate
+		* \param y		string containing base64url encoded y coordinate
+		* \param decode The function to decode the RSA parameters
+		* \return public key in PEM format
+		*/
+		template<typename Decode>
+		std::string create_public_key_from_ec_components(const std::string& curve, const std::string& x,
+														 const std::string& y, Decode decode) {
+			std::error_code ec;
+			auto res = create_public_key_from_ec_components(curve, x, y, decode, ec);
+			error::throw_if_error(ec);
+			return res;
+		}
+
+#ifndef JWT_DISABLE_BASE64
+		/**
+		* Create public key from curve name and coordinates. This is defined in
+		* [RFC 7518 Section 6.2](https://www.rfc-editor.org/rfc/rfc7518#section-6.2)
+		* Using the required "crv" (Curve), "x" (X Coordinate) and "y" (Y Coordinate) Parameters.
+		*
+		* \param curve	string containing curve name
+		* \param x		string containing base64url encoded x coordinate
+		* \param y		string containing base64url encoded y coordinate
+		* \param ec		error_code for error_detection (gets cleared if no error occur
+		* \return public key in PEM format
+		*/
+		inline std::string create_public_key_from_ec_components(const std::string& curve, const std::string& x,
+																const std::string& y, std::error_code& ec) {
+			auto decode = [](const std::string& token) {
+				return base::decode<alphabet::base64url>(base::pad<alphabet::base64url>(token));
+			};
+			return create_public_key_from_ec_components(curve, x, y, std::move(decode), ec);
+		}
+		/**
+		* Create public key from curve name and coordinates. This is defined in
+		* [RFC 7518 Section 6.2](https://www.rfc-editor.org/rfc/rfc7518#section-6.2)
+		* Using the required "crv" (Curve), "x" (X Coordinate) and "y" (Y Coordinate) Parameters.
+		*
+		* \param curve	string containing curve name
+		* \param x		string containing base64url encoded x coordinate
+		* \param y		string containing base64url encoded y coordinate
+		* \return public key in PEM format
+		*/
+		inline std::string create_public_key_from_ec_components(const std::string& curve, const std::string& x,
+																const std::string& y) {
+			std::error_code ec;
+			auto res = create_public_key_from_ec_components(curve, x, y, ec);
+			error::throw_if_error(ec);
+			return res;
+		}
+#endif
 	} // namespace helper
 
 	/**
@@ -897,14 +1333,16 @@ namespace jwt {
 	 * JWT (JSON Web Tokens) signatures are typically used as the payload for a JWS (JSON Web Signature) or
 	 * JWE (JSON Web Encryption). Both of these use various cryptographic as specified by
 	 * [RFC7518](https://tools.ietf.org/html/rfc7518) and are exposed through the a [JOSE
-	 * Header](https://tools.ietf.org/html/rfc7515#section-4) which points to one of the JWA (JSON Web
-	 * Algorithms)(https://tools.ietf.org/html/rfc7518#section-3.1)
+	 * Header](https://tools.ietf.org/html/rfc7515#section-4) which points to one of the JWA [JSON Web
+	 * Algorithms](https://tools.ietf.org/html/rfc7518#section-3.1)
 	 */
 	namespace algorithm {
 		/**
 		 * \brief "none" algorithm.
 		 *
 		 * Returns and empty signature and checks if the given signature is empty.
+		 * See [RFC 7518 Section 3.6](https://datatracker.ietf.org/doc/html/rfc7518#section-3.6)
+		 * for more information.
 		 */
 		struct none {
 			/**
@@ -934,6 +1372,7 @@ namespace jwt {
 		struct hmacsha {
 			/**
 			 * Construct new hmac algorithm
+			 *
 			 * \param key Key to use for HMAC
 			 * \param md Pointer to hash function
 			 * \param name Name of the algorithm
@@ -942,6 +1381,7 @@ namespace jwt {
 				: secret(std::move(key)), md(md), alg_name(std::move(name)) {}
 			/**
 			 * Sign jwt data
+			 *
 			 * \param data The data to sign
 			 * \param ec error_code filled with details on error
 			 * \return HMAC signature for the given data
@@ -962,6 +1402,7 @@ namespace jwt {
 			}
 			/**
 			 * Check if signature is valid
+			 *
 			 * \param data The data to check signature against
 			 * \param signature Signature provided by the jwt
 			 * \param ec Filled with details about failure.
@@ -982,12 +1423,13 @@ namespace jwt {
 			}
 			/**
 			 * Returns the algorithm name provided to the constructor
+			 *
 			 * \return algorithm's name
 			 */
 			std::string name() const { return alg_name; }
 
 		private:
-			/// HMAC secrect
+			/// HMAC secret
 			const std::string secret;
 			/// HMAC hash generator
 			const EVP_MD* (*md)();
@@ -1000,6 +1442,7 @@ namespace jwt {
 		struct rsa {
 			/**
 			 * Construct new rsa algorithm
+			 *
 			 * \param public_key RSA public key in PEM format
 			 * \param private_key RSA private key or empty string if not available. If empty, signing will always fail.
 			 * \param public_key_password Password to decrypt public key pem.
@@ -1052,6 +1495,7 @@ namespace jwt {
 			}
 			/**
 			 * Check if signature is valid
+			 *
 			 * \param data The data to check signature against
 			 * \param signature Signature provided by the jwt
 			 * \param ec Filled with details on failure
@@ -1252,7 +1696,6 @@ namespace jwt {
 				}
 
 #ifdef JWT_OPENSSL_1_0_0
-
 				auto rr = helper::bn2raw(sig->r);
 				auto rs = helper::bn2raw(sig->s);
 #else
@@ -1271,8 +1714,10 @@ namespace jwt {
 
 			std::string p1363_to_der_signature(const std::string& signature, std::error_code& ec) const {
 				ec.clear();
-				auto r = helper::raw2bn(signature.substr(0, signature.size() / 2));
-				auto s = helper::raw2bn(signature.substr(signature.size() / 2));
+				auto r = helper::raw2bn(signature.substr(0, signature.size() / 2), ec);
+				if (ec) return {};
+				auto s = helper::raw2bn(signature.substr(signature.size() / 2), ec);
+				if (ec) return {};
 
 				ECDSA_SIG* psig;
 #ifdef JWT_OPENSSL_1_0_0
@@ -1607,11 +2052,14 @@ namespace jwt {
 			explicit hs512(std::string key) : hmacsha(std::move(key), EVP_sha512, "HS512") {}
 		};
 		/**
-		 * RS256 algorithm
+		 * RS256 algorithm.
+		 *
+		 * This data structure is used to describe the RSA256 and can be used to verify JWTs
 		 */
 		struct rs256 : public rsa {
 			/**
-			 * Construct new instance of algorithm
+			 * \brief Construct new instance of algorithm
+			 *
 			 * \param public_key RSA public key in PEM format
 			 * \param private_key RSA private key or empty string if not available. If empty, signing will always fail.
 			 * \param public_key_password Password to decrypt public key pem.
@@ -1817,9 +2265,11 @@ namespace jwt {
 	 */
 	namespace json {
 		/**
-		 * \brief Generic JSON types used in JWTs
+		 * \brief Categories for the various JSON types used in JWTs
 		 *
-		 * This enum is to abstract the third party underlying types
+		 * This enum is to abstract the third party underlying types and allows the library
+		 * to identify the different structures and reason about them without needing a "concept"
+		 * to capture that defintion to compare against a concrete type.
 		 */
 		enum class type { boolean, integer, number, string, array, object };
 	} // namespace json
@@ -2009,11 +2459,13 @@ namespace jwt {
 		struct is_valid_json_array {
 			template<typename T>
 			using value_type_t = typename T::value_type;
+			using front_base_type = typename std::decay<decltype(std::declval<array_type>().front())>::type;
 
 			static constexpr auto value = std::is_constructible<value_type, array_type>::value &&
 										  is_iterable<array_type>::value &&
 										  is_detected<value_type_t, array_type>::value &&
-										  std::is_same<typename array_type::value_type, value_type>::value;
+										  std::is_same<typename array_type::value_type, value_type>::value &&
+										  std::is_same<front_base_type, value_type>::value;
 		};
 
 		template<typename string_type, typename integer_type>
@@ -2097,7 +2549,7 @@ namespace jwt {
 	class basic_claim {
 		/**
 		 * The reason behind this is to provide an expressive abstraction without
-		 * over complexifying the API. For more information take the time to read
+		 * over complicating the API. For more information take the time to read
 		 * https://github.com/nlohmann/json/issues/774. It maybe be expanded to
 		 * support custom string types.
 		 */
@@ -2111,12 +2563,15 @@ namespace jwt {
 										 typename json_traits::array_type, typename json_traits::string_type,
 										 typename json_traits::number_type, typename json_traits::integer_type,
 										 typename json_traits::boolean_type>::value,
-			"must staisfy json container requirements");
+			"must satisfy json container requirements");
 		static_assert(details::is_valid_traits<json_traits>::value, "traits must satisfy requirements");
 
 		typename json_traits::value_type val;
 
 	public:
+		/**
+		 * Order list of strings
+		 */
 		using set_t = std::set<typename json_traits::string_type>;
 
 		basic_claim() = default;
@@ -2533,7 +2988,7 @@ namespace jwt {
 		/**
 		 * \brief Parses a given token
 		 *
-		 * \tparam Decode is callabled, taking a string_type and returns a string_type.
+		 * \tparam Decode is callable, taking a string_type and returns a string_type.
 		 * It should ensure the padding of the input and then base64url decode and
 		 * return the results.
 		 * \param token The token to parse
@@ -2630,13 +3085,20 @@ namespace jwt {
 	 * Builder class to build and sign a new token
 	 * Use jwt::create() to get an instance of this class.
 	 */
-	template<typename json_traits>
+	template<typename Clock, typename json_traits>
 	class builder {
 		typename json_traits::object_type header_claims;
 		typename json_traits::object_type payload_claims;
 
+		/// Instance of clock type
+		Clock clock;
+
 	public:
-		builder() = default;
+		/**
+		 * Constructor for building a new builder instance
+		 * \param c Clock instance
+		 */
+		JWT_CLAIM_EXPLICIT builder(Clock c) : clock(c) {}
 		/**
 		 * Set a header claim.
 		 * \param id Name of the claim
@@ -2752,6 +3214,15 @@ namespace jwt {
 		 */
 		builder& set_expires_at(const date& d) { return set_payload_claim("exp", basic_claim<json_traits>(d)); }
 		/**
+		 * Set expires at claim to @p d from the current moment
+		 * \param d token expiration timeout
+		 * \return *this to allow for method chaining
+		 */
+		template<class Rep>
+		builder& set_expires_in(const std::chrono::duration<Rep>& d) {
+			return set_payload_claim("exp", basic_claim<json_traits>(clock.now() + d));
+		}
+		/**
 		 * Set not before claim
 		 * \param d First valid time
 		 * \return *this to allow for method chaining
@@ -2763,6 +3234,11 @@ namespace jwt {
 		 * \return *this to allow for method chaining
 		 */
 		builder& set_issued_at(const date& d) { return set_payload_claim("iat", basic_claim<json_traits>(d)); }
+		/**
+		 * Set issued at claim to the current moment
+		 * \return *this to allow for method chaining
+		 */
+		builder& set_issued_now() { return set_issued_at(clock.now()); }
 		/**
 		 * Set id claim
 		 * \param str ID to set
@@ -2865,17 +3341,22 @@ namespace jwt {
 		struct verify_context {
 			verify_context(date ctime, const decoded_jwt<json_traits>& j, size_t l)
 				: current_time(ctime), jwt(j), default_leeway(l) {}
-			// Current time, retrieved from the verifiers clock and cached for performance and consistency
+			/// Current time, retrieved from the verifiers clock and cached for performance and consistency
 			date current_time;
-			// The jwt passed to the verifier
+			/// The jwt passed to the verifier
 			const decoded_jwt<json_traits>& jwt;
-			// The configured default leeway for this verification
+			/// The configured default leeway for this verification
 			size_t default_leeway{0};
 
-			// The claim key to apply this comparison on
+			/// The claim key to apply this comparison on
 			typename json_traits::string_type claim_key{};
 
-			// Helper method to get a claim from the jwt in this context
+			/**
+			 * \brief Helper method to get a claim from the jwt in this context
+			 * \param in_header check JWT header or payload sections
+			 * \param ec std::error_code which will indicate if any error occure
+			 * \return basic_claim if it was present otherwise empty
+			 */
 			basic_claim<json_traits> get_claim(bool in_header, std::error_code& ec) const {
 				if (in_header) {
 					if (!jwt.has_header_claim(claim_key)) {
@@ -2891,6 +3372,13 @@ namespace jwt {
 					return jwt.get_payload_claim(claim_key);
 				}
 			}
+			/**
+			 * Helper method to get a claim of a specific type from the jwt in this context
+			 * \param in_header check JWT header or payload sections
+			 * \param t the expected type of the claim
+			 * \param ec std::error_code which will indicate if any error occure
+			 * \return basic_claim if it was present otherwise empty
+		 	 */
 			basic_claim<json_traits> get_claim(bool in_header, json::type t, std::error_code& ec) const {
 				auto c = get_claim(in_header, ec);
 				if (ec) return {};
@@ -2900,7 +3388,18 @@ namespace jwt {
 				}
 				return c;
 			}
+			/**
+			 * \brief Helper method to get a payload claim from the jwt
+			 * \param ec std::error_code which will indicate if any error occure
+			 * \return basic_claim if it was present otherwise empty
+		 	 */
 			basic_claim<json_traits> get_claim(std::error_code& ec) const { return get_claim(false, ec); }
+			/**
+			 * \brief Helper method to get a payload claim of a specific type from the jwt
+			 * \param t the expected type of the claim
+			 * \param ec std::error_code which will indicate if any error occure
+			 * \return basic_claim if it was present otherwise empty
+		 	 */
 			basic_claim<json_traits> get_claim(json::type t, std::error_code& ec) const {
 				return get_claim(false, t, ec);
 			}
@@ -2970,7 +3469,7 @@ namespace jwt {
 
 		/**
 		 * Checks if the given set is a subset of the set inside the token.
-		 * If the token value is a string it is traited as a set of a single element.
+		 * If the token value is a string it is treated as a set with a single element.
 		 * The comparison is case sensitive.
 		 */
 		template<typename json_traits, bool in_header = false>
@@ -3062,7 +3561,7 @@ namespace jwt {
 	public:
 		using basic_claim_t = basic_claim<json_traits>;
 		/**
-		 * Verification function
+		 * \brief Verification function data structure.
 		 *
 		 * This gets passed the current verifier, a reference to the decoded jwt, a reference to the key of this claim,
 		 * as well as a reference to an error_code.
@@ -3169,7 +3668,7 @@ namespace jwt {
 		 *
 		 * According to [RFC 7519 Section 5.1](https://datatracker.ietf.org/doc/html/rfc7519#section-5.1),
 		 * This parameter is ignored by JWT implementations; any processing of this parameter is performed by the JWT application.
-		 * Check is casesensitive.
+		 * Check is case sensitive.
 		 *
 		 * \param type Type Header Parameter to check for.
 		 * \param locale Localization functionality to use when comparing
@@ -3181,7 +3680,7 @@ namespace jwt {
 
 		/**
 		 * Set an issuer to check for.
-		 * Check is casesensitive.
+		 * Check is case sensitive.
 		 * \param iss Issuer to check for.
 		 * \return *this to allow chaining
 		 */
@@ -3191,7 +3690,7 @@ namespace jwt {
 
 		/**
 		 * Set a subject to check for.
-		 * Check is casesensitive.
+		 * Check is case sensitive.
 		 * \param sub Subject to check for.
 		 * \return *this to allow chaining
 		 */
@@ -3221,7 +3720,7 @@ namespace jwt {
 		}
 		/**
 		 * Set an id to check for.
-		 * Check is casesensitive.
+		 * Check is case sensitive.
 		 * \param id ID to check for.
 		 * \return *this to allow chaining
 		 */
@@ -3229,6 +3728,11 @@ namespace jwt {
 
 		/**
 		 * Specify a claim to check for using the specified operation.
+		 * This is helpful for implementating application specific authentication checks
+		 * such as the one seen in partial-claim-verifier.cpp
+		 *
+		 * \snippet{trimleft} partial-claim-verifier.cpp verifier check custom claim
+		 *
 		 * \param name Name of the claim to check for
 		 * \param fn Function to use for verifying the claim
 		 * \return *this to allow chaining
@@ -3240,6 +3744,10 @@ namespace jwt {
 
 		/**
 		 * Specify a claim to check for equality (both type & value).
+		 * See the private-claims.cpp example.
+		 *
+		 * \snippet{trimleft} private-claims.cpp verify exact claim
+		 *
 		 * \param name Name of the claim to check for
 		 * \param c Claim to check for
 		 * \return *this to allow chaining
@@ -3249,7 +3757,15 @@ namespace jwt {
 		}
 
 		/**
-		 * Add an algorithm available for checking.
+		 * \brief Add an algorithm available for checking.
+		 *
+		 * This is used to handle incomming tokens for predefined algorithms
+		 * which the authorization server is provided. For example a small system
+		 * where only a single RSA key-pair is used to sign tokens
+		 *
+		 * \snippet{trimleft} example/rsa-verify.cpp allow rsa algorithm
+		 *
+		 * \tparam Algorithm any algorithm such as those provided by jwt::algorithm
 		 * \param alg Algorithm to allow
 		 * \return *this to allow chaining
 		 */
@@ -3475,7 +3991,7 @@ namespace jwt {
 		bool has_x5t_sha256() const noexcept { return has_jwk_claim("x5t#S256"); }
 
 		/**
-		 * Check if a jwks claim is present
+		 * Check if a jwk claim is present
 		 * \return true if claim was present, false otherwise
 		 */
 		bool has_jwk_claim(const typename json_traits::string_type& name) const noexcept {
@@ -3483,7 +3999,7 @@ namespace jwt {
 		}
 
 		/**
-		 * Get jwks claim
+		 * Get jwk claim by name
 		 * \return Requested claim
 		 * \throw std::runtime_error If claim was not present
 		 */
@@ -3491,6 +4007,10 @@ namespace jwt {
 			return jwk_claims.get_claim(name);
 		}
 
+		/**
+		* Check if the jwk has any claims
+		* \return true is any claim is present
+		 */
 		bool empty() const noexcept { return jwk_claims.empty(); }
 
 		/**
@@ -3513,11 +4033,24 @@ namespace jwt {
 	template<typename json_traits>
 	class jwks {
 	public:
-		using jwk_t = jwk<json_traits>;
-		using jwt_vector_t = std::vector<jwk_t>;
-		using iterator = typename jwt_vector_t::iterator;
-		using const_iterator = typename jwt_vector_t::const_iterator;
+		/// JWK instance template specialization
+		using jwks_t = jwk<json_traits>;
+		/// Type specialization for the vector of JWK
+		using jwks_vector_t = std::vector<jwks_t>;
+		using iterator = typename jwks_vector_t::iterator;
+		using const_iterator = typename jwks_vector_t::const_iterator;
 
+		/**
+		 * Default constructor producing an empty object without any keys
+		 */
+		jwks() = default;
+
+		/**
+		 * Parses a string buffer to extract the JWKS.
+		 * \param str buffer containing JSON object representing a JWKS
+		 * \throw error::invalid_json_exception or underlying JSON implation error if the JSON is
+		 *        invalid with regards to the JWKS specification
+		*/
 		JWT_CLAIM_EXPLICIT jwks(const typename json_traits::string_type& str) {
 			typename json_traits::value_type parsed_val;
 			if (!json_traits::parse(parsed_val, str)) throw error::invalid_json_exception();
@@ -3527,7 +4060,7 @@ namespace jwt {
 
 			auto jwk_list = jwks_json.get_claim("keys").as_array();
 			std::transform(jwk_list.begin(), jwk_list.end(), std::back_inserter(jwk_claims),
-						   [](const typename json_traits::value_type& val) { return jwk_t{val}; });
+						   [](const typename json_traits::value_type& val) { return jwks_t{val}; });
 		}
 
 		iterator begin() { return jwk_claims.begin(); }
@@ -3550,17 +4083,17 @@ namespace jwt {
 		 * \return Requested jwk by key_id
 		 * \throw std::runtime_error If jwk was not present
 		 */
-		jwk_t get_jwk(const typename json_traits::string_type& key_id) const {
+		jwks_t get_jwk(const typename json_traits::string_type& key_id) const {
 			const auto maybe = find_by_kid(key_id);
 			if (maybe == end()) throw error::claim_not_present_exception();
 			return *maybe;
 		}
 
 	private:
-		jwt_vector_t jwk_claims;
+		jwks_vector_t jwk_claims;
 
 		const_iterator find_by_kid(const typename json_traits::string_type& key_id) const noexcept {
-			return std::find_if(cbegin(), cend(), [key_id](const jwk_t& jwk) {
+			return std::find_if(cbegin(), cend(), [key_id](const jwks_t& jwk) {
 				if (!jwk.has_key_id()) { return false; }
 				return jwk.get_key_id() == key_id;
 			});
@@ -3578,14 +4111,31 @@ namespace jwt {
 	}
 
 	/**
+	 * Create a builder using the given clock
+	 * \param c Clock instance to use
+	 * \return builder instance
+	 */
+	template<typename Clock, typename json_traits>
+	builder<Clock, json_traits> create(Clock c) {
+		return builder<Clock, json_traits>(c);
+	}
+
+	/**
 	 * Default clock class using std::chrono::system_clock as a backend.
 	 */
 	struct default_clock {
+		/**
+		 * Gets the current system time
+		 * \return time_point of the host system
+		 */
 		date now() const { return date::clock::now(); }
 	};
 
 	/**
-	 * Create a verifier using the given clock
+	 * Create a verifier using the default_clock.
+	 *
+	 *
+	 *
 	 * \param c Clock instance to use
 	 * \return verifier instance
 	 */
@@ -3598,12 +4148,18 @@ namespace jwt {
 	 * Return a builder instance to create a new token
 	 */
 	template<typename json_traits>
-	builder<json_traits> create() {
-		return builder<json_traits>();
+	builder<default_clock, json_traits> create(default_clock c = {}) {
+		return builder<default_clock, json_traits>(c);
 	}
 
 	/**
-	 * Decode a token
+	 * \brief Decode a token. This can be used to to help access important feild like 'x5c'
+	 * for verifying tokens. See associated example rsa-verify.cpp for more details.
+	 *
+	 * \tparam json_traits JSON implementation traits
+	 * \tparam Decode is callable, taking a string_type and returns a string_type.
+	 *         It should ensure the padding of the input and then base64url decode and
+	 *         return the results.
 	 * \param token Token to decode
 	 * \param decode function that will pad and base64url decode the token
 	 * \return Decoded token
@@ -3616,7 +4172,10 @@ namespace jwt {
 	}
 
 	/**
-	 * Decode a token
+	 * Decode a token. This can be used to to help access important feild like 'x5c'
+	 * for verifying tokens. See associated example rsa-verify.cpp for more details.
+	 *
+	 * \tparam json_traits JSON implementation traits
 	 * \param token Token to decode
 	 * \return Decoded token
 	 * \throw std::invalid_argument Token is not in correct format
@@ -3626,15 +4185,29 @@ namespace jwt {
 	decoded_jwt<json_traits> decode(const typename json_traits::string_type& token) {
 		return decoded_jwt<json_traits>(token);
 	}
-
+	/**
+	 * Parse a single JSON Web Key
+	 * \tparam json_traits JSON implementation traits
+	 * \param jwk_ string buffer containing the JSON object
+	 * \return Decoded jwk
+	 */
 	template<typename json_traits>
-	jwk<json_traits> parse_jwk(const typename json_traits::string_type& token) {
-		return jwk<json_traits>(token);
+	jwk<json_traits> parse_jwk(const typename json_traits::string_type& jwk_) {
+		return jwk<json_traits>(jwk_);
 	}
-
+	/**
+	 * Parse a JSON Web Key Set. This can be used to to help access
+	 * important feild like 'x5c' for verifying tokens. See example
+	 * jwks-verify.cpp for more information.
+	 *
+	 * \tparam json_traits JSON implementation traits
+	 * \param jwks_ string buffer containing the JSON object
+	 * \return Parsed JSON object containing the data of the JWK SET string
+	 * \throw std::runtime_error Token is not in correct format
+	 */
 	template<typename json_traits>
-	jwks<json_traits> parse_jwks(const typename json_traits::string_type& token) {
-		return jwks<json_traits>(token);
+	jwks<json_traits> parse_jwks(const typename json_traits::string_type& jwks_) {
+		return jwks<json_traits>(jwks_);
 	}
 } // namespace jwt
 

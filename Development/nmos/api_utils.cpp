@@ -168,8 +168,7 @@ namespace nmos
             { U("nc_manager"), nmos::types::nc_manager },
             { U("nc_device_manager"), nmos::types::nc_device_manager },
             { U("nc_class_manager"), nmos::types::nc_class_manager },
-            { U("nc_status_monitor"), nmos::types::nc_status_monitor },
-            { U("nc_receiver_monitor"), nmos::types::nc_receiver_monitor },
+            { U("nc_status_monitor"), nmos::types::nc_status_monitor }, // this is commonly used for nc_receiver_monitor and nc_sender_monitor
             { U("nc_ident_beacon"), nmos::types::nc_ident_beacon }
         };
         return types_from_resourceType.at(resourceType);
@@ -195,8 +194,7 @@ namespace nmos
             { nmos::types::nc_manager, U("nc_manager") },
             { nmos::types::nc_device_manager, U("nc_device_manager") },
             { nmos::types::nc_class_manager, U("nc_class_manager") },
-            { nmos::types::nc_status_monitor, U("nc_status_monitor") },
-            { nmos::types::nc_receiver_monitor, U("nc_receiver_monitor") },
+            { nmos::types::nc_status_monitor, U("nc_status_monitor") }, // this is commonly used for nc_receiver_monitor and nc_sender_monitor
             { nmos::types::nc_ident_beacon, U("nc_ident_beacon") }
         };
         return resourceTypes_from_type.at(type);
@@ -701,7 +699,15 @@ namespace nmos
         add_api_finally_handler(api_, hsts, gate);
         auto api = [api_, &gate](web::http::http_request req) mutable
         {
+            // hmm, in Windows, the boost version of the time_point::now sometimes returns the same value after a small time increment.
+            // This issue does not seem to happen in the std::chrono implementation.
+#if defined(_WIN32) && defined (BST_THREAD_BOOST)
+            // calculate received_time using std::chrono
+            const auto now = tai_clock::time_point(tai_clock::duration(std::chrono::system_clock::now().time_since_epoch().count() + tai_clock::tai_offset().count()));
+            req.headers().add(details::received_time, nmos::make_version(tai_from_time_point(now)));
+#else
             req.headers().add(details::received_time, nmos::make_version());
+#endif
             slog::log<slog::severities::too_much_info>(gate, SLOG_FLF)
                 << stash_remote_address(req.remote_address())
                 << stash_http_method(req.method())

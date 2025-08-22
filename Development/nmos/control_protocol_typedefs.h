@@ -114,7 +114,7 @@ namespace nmos
     }
 
     // NcEssenceStatus
-    // TODO: link
+    // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/monitoring/#ncessencestatus
     namespace nc_essence_status
     {
         enum status
@@ -126,8 +126,8 @@ namespace nmos
         };
     }
 
-    //NcLinkStatus
-    // TODO: link
+    // NcLinkStatus
+    // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/monitoring/#nclinkstatus
     namespace nc_link_status
     {
         enum status
@@ -139,7 +139,7 @@ namespace nmos
     }
 
     // NcOverallStatus
-    // TODO: link
+    // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/monitoring/#ncoverallstatus
     namespace nc_overall_status
     {
         enum status
@@ -151,8 +151,8 @@ namespace nmos
         };
     }
 
-    //NcSynchronizationStatus
-    // TODO: link
+    // NcSynchronizationStatus
+    // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/monitoring/#ncsynchronizationstatus
     namespace nc_synchronization_status
     {
         enum status
@@ -164,8 +164,8 @@ namespace nmos
         };
     }
 
-    //NcStreamStatus
-    // TODO: add link
+    // NcStreamStatus
+    // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/monitoring/#ncstreamstatus
     namespace nc_stream_status
     {
         enum status
@@ -177,8 +177,8 @@ namespace nmos
         };
     }
 
-    //NcTransmissionStatus
-    // TODO: add link
+    // NcTransmissionStatus
+    // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/monitoring/#nctransmissionstatus
     namespace nc_transmission_status
     {
         enum status
@@ -238,12 +238,12 @@ namespace nmos
     const nc_method_id nc_class_manager_get_control_class_method_id(3, 1);
     const nc_method_id nc_class_manager_get_datatype_method_id(3, 2);
     // NcMethodIds for NcReceiverMonitor
-    // TODO: link
+    // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/monitoring/#ncreceivermonitor
     const nc_method_id nc_receiver_monitor_get_lost_packet_counters_method_id(4, 1);
     const nc_method_id nc_receiver_monitor_get_late_packet_counters_method_id(4, 2);
     const nc_method_id nc_receiver_monitor_reset_monitor_method_id(4, 3);
     // NcMethodIds for NcSenderMonitor
-    // TODO: link
+    // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/monitoring/#ncsendermonitor
     const nc_method_id nc_sender_monitor_get_transmission_error_counters_method_id(4, 1);
     const nc_method_id nc_sender_monitor_reset_monitor_method_id(4, 2);
 
@@ -287,7 +287,7 @@ namespace nmos
     const nc_property_id nc_status_monitor_overall_status_property_id(3, 1);
     const nc_property_id nc_status_monitor_overall_status_message_property_id(3, 2);
     const nc_property_id nc_status_monitor_status_reporting_delay(3, 3);
-    // NcPropertyIds for NcReceiverMonitor
+    // NcPropertyids for NcReceiverMonitor
     // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/monitoring/#ncreceivermonitor
     const nc_property_id nc_receiver_monitor_link_status_property_id(4, 1);
     const nc_property_id nc_receiver_monitor_link_status_message_property_id(4, 2);
@@ -370,7 +370,7 @@ namespace nmos
     const nc_class_id nc_class_manager_class_id({ 1, 3, 2 });
     // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/identification/#ncidentbeacon
     const nc_class_id nc_ident_beacon_class_id({ 1, 2, 1 });
-    // TODO: link
+    // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/monitoring/#ncstatusmonitor
     const nc_class_id nc_status_monitor_class_id({ 1, 2, 2 });
     // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/monitoring/#ncreceivermonitor
     const nc_class_id nc_receiver_monitor_class_id({ 1, 2, 2, 1 });

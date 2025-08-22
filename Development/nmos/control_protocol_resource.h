@@ -179,8 +179,10 @@ namespace nmos
 
         // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/monitoring/#ncstatusmonitor
         web::json::value make_nc_status_monitor(const nc_class_id& class_id, nc_oid oid, bool constant_oid, nc_oid owner, const utility::string_t& role, const utility::string_t& user_label, const utility::string_t& description, const web::json::value& touchpoints, const web::json::value& runtime_property_constraints, bool enabled, nc_overall_status::status overall_status, const utility::string_t& overall_status_message, uint64_t status_reporting_delay);
+
         // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/monitoring/#ncreceivermonitor
         web::json::value make_receiver_monitor(const nc_class_id& class_id, nc_oid oid, bool constant_oid, nc_oid owner, const utility::string_t& role, const utility::string_t& user_label, const utility::string_t& description, const web::json::value& touchpoints, const web::json::value& runtime_property_constraints, bool enabled, nc_overall_status::status overall_status, const utility::string_t& overall_status_message, nc_link_status::status link_status, const utility::string_t& link_status_message, nc_connection_status::status connection_status, const utility::string_t& connection_status_message, nc_synchronization_status::status external_synchronization_status, const utility::string_t& external_synchronization_status_message, const web::json::value& synchronization_source_id, nc_stream_status::status stream_status, const utility::string_t& stream_status_message, uint32_t status_reporting_delay, bool auto_reset_monitor);
+
         // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/monitoring/#ncsendermonitor
         web::json::value make_sender_monitor(const nc_class_id& class_id, nc_oid oid, bool constant_oid, nc_oid owner, const utility::string_t& role, const utility::string_t& user_label, const utility::string_t& description, const web::json::value& touchpoints, const web::json::value& runtime_property_constraints, bool enabled, nc_overall_status::status overall_status, const utility::string_t& overall_status_message, nc_link_status::status link_status, const utility::string_t& link_status_message, nc_transmission_status::status transmission_status, const utility::string_t& transmission_status_message, nc_synchronization_status::status external_synchronization_status, const utility::string_t& external_synchronization_status_message, const web::json::value& synchronization_source_id, nc_essence_status::status essence_status, const utility::string_t& essence_status_message, uint32_t status_reporting_delay, bool auto_reset_monitor);
 
@@ -242,7 +244,7 @@ namespace nmos
     // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/monitoring/#ncsendermonitor
     web::json::value make_nc_sender_monitor_class();
 
-    // control classes proprties/methods/events
+    // control classes properties/methods/events
     // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncobject
     web::json::value make_nc_object_properties();
     web::json::value make_nc_object_methods();
@@ -267,9 +269,8 @@ namespace nmos
     web::json::value make_nc_class_manager_properties();
     web::json::value make_nc_class_manager_methods();
     web::json::value make_nc_class_manager_events();
-
     // Monitoring feature set control classes
-    // TODO: link
+    // https://specs.amwa.tv/nmos-control-feature-sets/branches/main/monitoring/#ncstatusmonitor
     web::json::value make_nc_status_monitor_properties();
     web::json::value make_nc_status_monitor_methods();
     web::json::value make_nc_status_monitor_events();
@@ -433,21 +434,21 @@ namespace nmos
     //
     // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/monitoring/#ncconnectionstatus
     web::json::value make_nc_connection_status_datatype();
-    // TODO: link
+    // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/monitoring/#ncessencestatus
     web::json::value make_nc_essence_status_datatype();
-    // TODO: link
+    // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/monitoring/#ncoverallstatus
     web::json::value make_nc_overall_status_datatype();
-    // TODO: link
+    // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/monitoring/#nclinkstatus
     web::json::value make_nc_link_status_datatype();
-    // TODO: link
+    // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/monitoring/#ncsynchronizationstatus
     web::json::value make_nc_synchronization_status_datatype();
-    // TODO: link
+    // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/monitoring/#ncstreamstatus
     web::json::value make_nc_stream_status_datatype();
-    // TODO: link
+    // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/monitoring/#nccounter
     web::json::value make_nc_counter_datatype();
-    // TODO: link
+    // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/monitoring/#nctransmissionstatus
     web::json::value make_nc_transmission_status_datatype();
-    // TODO: link
+    // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/monitoring/#ncmethodresultcounters
     web::json::value make_nc_method_result_counters_datatype();
 }
 

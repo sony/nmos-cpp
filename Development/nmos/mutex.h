@@ -1,6 +1,7 @@
 #ifndef NMOS_MUTEX_H
 #define NMOS_MUTEX_H
 
+#include <mutex>
 #include "bst/shared_mutex.h"
 
 namespace nmos

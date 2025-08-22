@@ -40,7 +40,7 @@ namespace
         std::cerr << "*";
     }
 
-    void wait()
+    void wait_for_shutdown()
     {
         int waken_up_count{ 0 };
 
@@ -94,8 +94,8 @@ BST_TEST_CASE(testConditionVariableWait)
 {
     const int max_threads{ 500 };
 
-    // start a wait thread
-    std::thread wait_thread(wait);
+    // start a wait for shutdown thread
+    std::thread wait_thread(wait_for_shutdown);
 
     // wait 500 milliseconds before starting a large number of lock_then_unlock threads to exhaust the lock limit
     std::this_thread::sleep_for(std::chrono::milliseconds(500));

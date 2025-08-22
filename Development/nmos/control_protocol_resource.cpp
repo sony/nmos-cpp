@@ -738,7 +738,7 @@ namespace nmos
             return data;
         }
 
-        // TODO: add link
+        // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/monitoring/#ncstatusmonitor
         web::json::value make_nc_status_monitor(const nc_class_id& class_id, nc_oid oid, bool constant_oid, nc_oid owner, const utility::string_t& role, const utility::string_t& user_label, const utility::string_t& description, const web::json::value& touchpoints, const web::json::value& runtime_property_constraints, bool enabled, nc_overall_status::status overall_status, const utility::string_t& overall_status_message, uint64_t status_reporting_delay)
         {
             using web::json::value;
@@ -791,7 +791,7 @@ namespace nmos
             return data;
         }
 
-        // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/monitoring/#ncreceivermonitor
+        // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/monitoring/#ncsendermonitor
         web::json::value make_sender_monitor(const nc_class_id& class_id, nc_oid oid, bool constant_oid, nc_oid owner, const utility::string_t& role, const utility::string_t& user_label, const utility::string_t& description, const web::json::value& touchpoints, const web::json::value& runtime_property_constraints, bool enabled, nc_overall_status::status overall_status, const utility::string_t& overall_status_message, nc_link_status::status link_status, const utility::string_t& link_status_message, nc_transmission_status::status transmission_status, const utility::string_t& transmission_status_message, nc_synchronization_status::status external_synchronization_status, const utility::string_t& external_synchronization_status_message, const web::json::value& synchronization_source_id, nc_essence_status::status essence_status, const utility::string_t& essence_status_message, uint32_t status_reporting_delay, bool auto_reset_monitor)
         {
             using web::json::value;
@@ -1233,7 +1233,7 @@ namespace nmos
         return value::array();
     }
 
-    // TODO: add link
+    // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/monitoring/#ncstatusmonitor
     web::json::value make_nc_status_monitor_properties()
     {
         using web::json::value;
@@ -1420,7 +1420,7 @@ namespace nmos
     }
 
     // Monitoring feature set control classes
-    // TODO: link
+    // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/monitoring/#ncstatusmonitor
     web::json::value make_nc_status_monitor_class()
     {
         using web::json::value;
@@ -2169,8 +2169,7 @@ namespace nmos
 
     // Monitoring datatype defintions
     //
-
-    // TODO: link
+    // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/monitoring/#ncconnectionstatus
     web::json::value make_nc_connection_status_datatype()
     {
         using web::json::value;
@@ -2180,9 +2179,9 @@ namespace nmos
         web::json::push_back(items, details::make_nc_enum_item_descriptor(U("Active and healthy"), U("Healthy"), nc_connection_status::status::healthy));
         web::json::push_back(items, details::make_nc_enum_item_descriptor(U("Active and partially healthy"), U("PartiallyHealthy"), nc_connection_status::status::partially_healthy));
         web::json::push_back(items, details::make_nc_enum_item_descriptor(U("Active and unhealthy"), U("Unhealthy"), nc_connection_status::status::unhealthy));
-        return details::make_nc_datatype_descriptor_enum(U("Connection status enum data typee"), U("NcConnectionStatus"), items, value::null());
+        return details::make_nc_datatype_descriptor_enum(U("Connection status enum data type"), U("NcConnectionStatus"), items, value::null());
     }
-    // TODO: link
+    // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/monitoring/#nccounter
     web::json::value make_nc_counter_datatype()
     {
         using web::json::value;
@@ -2193,7 +2192,7 @@ namespace nmos
         web::json::push_back(fields, details::make_nc_field_descriptor(U("Description"), nmos::fields::nc::description, U("NcString"), true, false, value::null()));
         return details::make_nc_datatype_descriptor_struct(U("Counter data type"), U("NcCounter"), fields, value::null());
     }
-    // TOO: link
+    // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/monitoring/#ncessencestatus
     web::json::value make_nc_essence_status_datatype()
     {
         using web::json::value;
@@ -2205,7 +2204,7 @@ namespace nmos
         web::json::push_back(items, details::make_nc_enum_item_descriptor(U("Active and unhealthy"), U("Unhealthy"), nc_essence_status::status::unhealthy));
         return details::make_nc_datatype_descriptor_enum(U("Essence status enum data type"), U("NcEssenceStatus"), items, value::null());
     }
-    // TODO: link
+    // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/monitoring/#nclinkstatus
     web::json::value make_nc_link_status_datatype()
     {
         using web::json::value;
@@ -2216,7 +2215,7 @@ namespace nmos
         web::json::push_back(items, details::make_nc_enum_item_descriptor(U("All the associated network interfaces are down"), U("AllDown"), nc_link_status::status::all_down));
         return details::make_nc_datatype_descriptor_enum(U("Link status enum data type"), U("NcLinkStatus"), items, value::null());
     }
-    // TODO: link
+    // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/monitoring/#ncoverallstatus
     web::json::value make_nc_overall_status_datatype()
     {
         using web::json::value;
@@ -2228,7 +2227,7 @@ namespace nmos
         web::json::push_back(items, details::make_nc_enum_item_descriptor(U("The overall status is unhealthy"), U("Unhealthy"), nc_overall_status::status::unhealthy));
         return details::make_nc_datatype_descriptor_enum(U("Overall status enum data type"), U("NcOverallStatus"), items, value::null());
     }
-    // TODO: link
+    // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/monitoring/#ncsynchronizationstatus
     web::json::value make_nc_synchronization_status_datatype()
     {
         using web::json::value;
@@ -2240,7 +2239,7 @@ namespace nmos
         web::json::push_back(items, details::make_nc_enum_item_descriptor(U("Not locked to a synchronization source"), U("Unhealthy"), nc_synchronization_status::status::unhealthy));
         return details::make_nc_datatype_descriptor_enum(U("Synchronization status enum data type"), U("NcSynchronizationStatus"), items, value::null());
     }
-    // TODO: link
+    // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/monitoring/#ncstreamstatus
     web::json::value make_nc_stream_status_datatype()
     {
         using web::json::value;
@@ -2252,7 +2251,7 @@ namespace nmos
         web::json::push_back(items, details::make_nc_enum_item_descriptor(U("Active and unhealthy"), U("Unhealthy"), nc_stream_status::status::unhealthy));
         return details::make_nc_datatype_descriptor_enum(U("Stream status enum data type"), U("NcStreamStatus"), items, value::null());
     }
-    // TODO: link
+    // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/monitoring/#nctransmissionstatus
     web::json::value make_nc_transmission_status_datatype()
     {
         using web::json::value;
@@ -2264,7 +2263,7 @@ namespace nmos
         web::json::push_back(items, details::make_nc_enum_item_descriptor(U("Active and unhealthy"), U("Unhealthy"), nc_transmission_status::status::unhealthy));
         return details::make_nc_datatype_descriptor_enum(U("Transmission status enum data type"), U("NcTransmissionStatus"), items, value::null());
     }
-    // TOO: link
+    // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/monitoring/#ncmethodresultcounters
     web::json::value make_nc_method_result_counters_datatype()
     {
         using web::json::value;
