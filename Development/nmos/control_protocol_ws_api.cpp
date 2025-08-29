@@ -256,7 +256,7 @@ namespace nmos
                                     auto resource = nmos::find_resource(resources, utility::s2us(std::to_string(oid)));
                                     if (resources.end() != resource)
                                     {
-                                        const auto& class_id = nmos::details::parse_nc_class_id(nmos::fields::nc::class_id(resource->data));
+                                        const auto class_id = nmos::details::parse_nc_class_id(nmos::fields::nc::class_id(resource->data));
 
                                         // find the relevant method handler to execute
                                         // method tuple definition described in control_protocol_handlers.h

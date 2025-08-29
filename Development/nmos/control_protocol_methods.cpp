@@ -529,7 +529,7 @@ namespace nmos
 
         using web::json::value;
 
-        const auto& class_id = details::parse_nc_class_id(nmos::fields::nc::class_id(arguments)); // Class id to search for
+        const auto class_id = details::parse_nc_class_id(nmos::fields::nc::class_id(arguments)); // Class id to search for
         const auto& include_derived = nmos::fields::nc::include_derived(arguments); // If TRUE it will also include derived class descriptors
         const auto& recurse = nmos::fields::nc::recurse(arguments); // TRUE to search nested blocks
 
@@ -555,7 +555,7 @@ namespace nmos
     {
         using web::json::value;
 
-        const auto& class_id = details::parse_nc_class_id(nmos::fields::nc::class_id(arguments)); // Class id to search for
+        const auto class_id = details::parse_nc_class_id(nmos::fields::nc::class_id(arguments)); // Class id to search for
         const auto& include_inherited = nmos::fields::nc::include_inherited(arguments); // If set the descriptor would contain all inherited elements
 
         slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Get a single class descriptor: " << "class_id: " << nmos::details::make_nc_class_id(class_id).serialize();
