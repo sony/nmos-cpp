@@ -497,7 +497,7 @@ namespace nmos
 
             auto match = [&](const web::json::value& descriptor)
             {
-                const auto& class_id = nmos::details::parse_nc_class_id(nmos::fields::nc::class_id(descriptor));
+                const auto class_id = nmos::details::parse_nc_class_id(nmos::fields::nc::class_id(descriptor));
 
                 if (include_derived) { return !boost::find_first(class_id, class_id_).empty(); }
                 else { return class_id == class_id_; }
