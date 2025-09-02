@@ -12,6 +12,8 @@
 #include "nmos/is10_schemas/is10_schemas.h"
 #include "nmos/is12_versions.h"
 #include "nmos/is12_schemas/is12_schemas.h"
+#include "nmos/is13_versions.h"
+#include "nmos/is13_schemas/is13_schemas.h"
 #include "nmos/type.h"
 
 namespace nmos
@@ -168,6 +170,23 @@ namespace nmos
             const web::uri controlprotocolapi_base_message_schema_uri = make_schema_uri(tag, _XPLATSTR("base-message.json"));
             const web::uri controlprotocolapi_command_message_schema_uri = make_schema_uri(tag, _XPLATSTR("command-message.json"));
             const web::uri controlprotocolapi_subscription_message_schema_uri = make_schema_uri(tag, _XPLATSTR("subscription-message.json"));
+        }
+    }
+
+    namespace is13_schemas
+    {
+        web::uri make_schema_uri(const utility::string_t& tag, const utility::string_t& ref = {})
+        {
+            return{ _XPLATSTR("https://github.com/AMWA-TV/is-13/raw/") + tag + _XPLATSTR("/APIs/schemas/") + ref };
+        }
+
+        // See https://github.com/AMWA-TV/is-13/blob/v1.0-dev/APIs/schemas/
+        namespace v1_0
+        {
+            using namespace nmos::is13_schemas::v1_0_dev;
+            const utility::string_t tag(_XPLATSTR("v1.0-dev"));
+
+            const web::uri annotationapi_resource_core_patch_request_uri = make_schema_uri(tag, _XPLATSTR("resource_core_patch.json"));
         }
     }
 }
@@ -391,6 +410,17 @@ namespace nmos
             };
         }
 
+        static std::map<web::uri, web::json::value> make_is13_schemas()
+        {
+            using namespace nmos::is13_schemas;
+
+            return
+            {
+                // v1.0
+                { make_schema_uri(v1_0::tag, _XPLATSTR("resource_core_patch.json")), make_schema(v1_0::resource_core_patch) }
+            };
+        }
+
         inline void merge(std::map<web::uri, web::json::value>& to, std::map<web::uri, web::json::value>&& from)
         {
             to.insert(from.begin(), from.end()); // std::map::merge in C++17
@@ -404,6 +434,7 @@ namespace nmos
             merge(result, make_is09_schemas());
             merge(result, make_is10_schemas());
             merge(result, make_is12_schemas());
+            merge(result, make_is13_schemas());
             return result;
         }
 
@@ -508,6 +539,11 @@ namespace nmos
         web::uri make_controlprotocolapi_subscription_message_schema_uri(const nmos::api_version& version)
         {
             return is12_schemas::v1_0::controlprotocolapi_subscription_message_schema_uri;
+        }
+
+        web::uri make_annotationapi_resource_core_patch_request_schema_uri(const nmos::api_version& version)
+        {
+            return is13_schemas::v1_0::annotationapi_resource_core_patch_request_uri;
         }
 
         // load the json schema for the specified base URI

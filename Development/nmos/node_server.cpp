@@ -1,6 +1,7 @@
 #include "nmos/node_server.h"
 
 #include "cpprest/ws_utils.h"
+#include "nmos/annotation_api.h"
 #include "nmos/api_utils.h"
 #include "nmos/channelmapping_activation.h"
 #include "nmos/control_protocol_ws_api.h"
@@ -60,6 +61,7 @@ namespace nmos
             nmos::node_api_target_handler target_handler = nmos::make_node_api_target_handler(node_model, node_implementation.load_ca_certificates, node_implementation.parse_transport_file, node_implementation.validate_staged, node_implementation.get_authorization_bearer_token);
             auto validate_authorization = node_implementation.validate_authorization;
             node_server.api_routers[{ {}, nmos::fields::node_port(node_model.settings) }].mount({}, nmos::make_node_api(node_model, target_handler, validate_authorization ? validate_authorization(nmos::experimental::scopes::node) : nullptr, gate));
+            node_server.api_routers[{ {}, nmos::fields::annotation_port(node_model.settings) }].mount({}, nmos::make_annotation_api(node_model, node_implementation.merge_annotation_patch, gate));
             node_server.api_routers[{ {}, nmos::experimental::fields::manifest_port(node_model.settings) }].mount({}, nmos::experimental::make_manifest_api(node_model, gate));
 
             // Configure the Connection API

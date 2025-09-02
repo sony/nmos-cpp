@@ -1,0 +1,20 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "description": "Describes the Annotation API node resource",
+  "title": "Annotation API node resource",
+  "items": {
+    "type": "string",
+    "enum": [
+      "self/",
+      "sources/",
+      "flows/",
+      "devices/",
+      "senders/",
+      "receivers/"
+    ]
+  },
+  "minItems": 6,
+  "maxItems": 6,
+  "uniqueItems": true
+}

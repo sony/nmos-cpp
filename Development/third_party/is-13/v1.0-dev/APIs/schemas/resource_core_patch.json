@@ -1,0 +1,29 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "description": "Describes the foundations of all NMOS resources",
+  "title": "Base resource",
+  "additionalProperties": false,
+  "properties": {
+    "label": {
+      "description": "Freeform string label for the resource. Set to null to restore default label.",
+      "type": ["null", "string"]
+    },
+    "description": {
+      "description": "Detailed description of the resource. Set to null to restore default description.",
+      "type": ["null", "string"]
+    },
+    "tags": {
+      "description": "Key value set of freeform string tags to aid in filtering resources. Set to null to restore default tags. Values should be represented as an array of strings. Can be empty. Set to null to delete or restore default values for a tag.",
+      "type": ["null", "object"],
+      "patternProperties": {
+        "": {
+          "type": ["null", "array"],
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}

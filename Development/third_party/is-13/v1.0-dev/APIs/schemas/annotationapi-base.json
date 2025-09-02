@@ -1,0 +1,15 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "description": "Describes the Annotation API base resource",
+  "title": "Annotation API base resource",
+  "items": {
+    "type": "string",
+    "enum": [
+      "node/"
+    ]
+  },
+  "minItems": 1,
+  "maxItems": 1,
+  "uniqueItems": true
+}

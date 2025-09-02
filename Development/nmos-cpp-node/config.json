@@ -107,6 +107,9 @@
     // is12_versions [node]: used to specify the enabled API versions for a version-locked configuration
     //"is12_versions": ["v1.0"],
 
+    // is13_versions [node]: used to specify the enabled API versions for a version-locked configuration
+    //"is13_versions": ["v1.0"],
+
     // pri [registry, node]: used for the 'pri' TXT record; specifying nmos::service_priorities::no_priority (maximum value) disables advertisement completely
     //"pri": 100,
 
@@ -145,6 +148,7 @@
     //"events_port": 3216,
     //"events_ws_port": 3217,
     //"channelmapping_port": 3215,
+    //"annotation_port": 3212,
     // system_port [node]: used to construct request URLs for the System API (if not discovered via DNS-SD)
     //"system_port": 10641,
     // control_protocol_ws_port [node]: used to construct request URLs for the Control Protocol websocket, or negative to disable the control protocol features
