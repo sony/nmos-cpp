@@ -160,7 +160,7 @@ int main(int argc, char* argv[])
 
         node_server.thread_functions.push_back([&] { node_implementation_thread(node_model, control_protocol_state, gate); });
 
-        // only configure receiver monitor behaviour thread if supporting control protocol
+        // only configure receiver/sender monitor behaviour thread if supporting control protocol
         if (0 <= nmos::fields::control_protocol_ws_port(node_model.settings))
         {
             node_server.thread_functions.push_back([&] { control_protocol_behaviour_thread(node_model, control_protocol_state, gate); });

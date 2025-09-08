@@ -62,7 +62,7 @@ namespace nmos
 
                 slog::log<slog::severities::info>(gate, SLOG_FLF) << "Monitor status pending";
 
-                // Check statuses of receivers
+                // Check statuses of receivers and senders
                 // Get root block
                 const auto found = nmos::find_resource_if(control_protocol_resources, nmos::types::nc_block, [&](const nmos::resource& resource)
                 {
@@ -169,7 +169,7 @@ namespace nmos
                     {
                         auto lock = state.write_lock();
                         state.monitor_status_pending = false;
-                        slog::log<slog::severities::too_much_info>(gate, SLOG_FLF) << "No more receiver monitors statuses are pending";
+                        slog::log<slog::severities::too_much_info>(gate, SLOG_FLF) << "No more receiver/sender monitors statuses are pending";
                     }
                 }
             }
