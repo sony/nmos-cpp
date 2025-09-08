@@ -336,7 +336,7 @@ namespace nmos
         }
 
         // Set status and status message
-        bool set_monitor_status(resources& resources, nc_oid oid, const web::json::value& status, const utility::string_t& status_message,
+        bool set_monitor_status(resources& resources, nc_oid oid, int status, const utility::string_t& status_message,
             const nc_property_id& status_property_id,
             const nc_property_id& status_message_property_id,
             const nc_property_id& status_transition_counter_property_id,
@@ -1069,7 +1069,7 @@ namespace nmos
             gate);
     }
 
-    bool set_receiver_monitor_connection_status(resources& resources, nc_oid oid, const web::json::value& connection_status, const utility::string_t& connection_status_message, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, slog::base_gate& gate)
+    bool set_receiver_monitor_connection_status(resources& resources, nc_oid oid, nmos::nc_connection_status::status connection_status, const utility::string_t& connection_status_message, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, slog::base_gate& gate)
     {
         return details::set_monitor_status(resources, oid, connection_status, connection_status_message,
             nc_receiver_monitor_connection_status_property_id,
@@ -1284,7 +1284,7 @@ namespace nmos
     }
 
     // Set transmission status and transmission status message
-    bool set_sender_monitor_transmission_status(resources& resources, nc_oid oid, const web::json::value& transmission_status, const utility::string_t& transmission_status_message, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, slog::base_gate& gate)
+    bool set_sender_monitor_transmission_status(resources& resources, nc_oid oid, nmos::nc_transmission_status::status transmission_status, const utility::string_t& transmission_status_message, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, slog::base_gate& gate)
     {
          return details::set_monitor_status(resources, oid, transmission_status, transmission_status_message,
             nc_sender_monitor_transmission_status_property_id,

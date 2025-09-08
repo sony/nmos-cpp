@@ -144,7 +144,7 @@ namespace nmos
                                         const auto& status = get_control_protocol_property(control_protocol_resources, oid, domain_status.status_pending_field_name, gate);
                                         const auto& status_message = get_control_protocol_property(control_protocol_resources, oid, domain_status.status_message_pending_field_name, gate);
                                         const auto& status_message_string = status_message == web::json::value::null() ? U("") : status_message.as_string();
-                                        details::set_monitor_status(control_protocol_resources, oid, status, status_message_string,
+                                        details::set_monitor_status(control_protocol_resources, oid, status.as_integer(), status_message_string,
                                             domain_status.status_property_id,
                                             domain_status.status_message_property_id,
                                             domain_status.status_transition_counter_property_id,
