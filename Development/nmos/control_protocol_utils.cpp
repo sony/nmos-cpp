@@ -963,7 +963,7 @@ namespace nmos
         {
             // find the relevant nc_property_descriptor
             const auto& property = find_property_descriptor(property_id, details::parse_nc_class_id(nmos::fields::nc::class_id(found->data)), get_control_protocol_class_descriptor);
-            if (!property.is_null())
+            if (!property.is_null() && found->has_data() && found->data.has_field(nmos::fields::nc::name(property)))
             {
                 return found->data.at(nmos::fields::nc::name(property));
             }
