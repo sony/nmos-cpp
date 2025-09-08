@@ -372,43 +372,50 @@ namespace nmos
             return false;
         }
 
-        // Set status and status message
-        bool set_monitor_status_with_delay(resources& resources, nc_oid oid, const web::json::value& status, const utility::string_t& status_message,
+        // Set monitor status and status message
+        bool set_monitor_status_with_delay(resources& resources, nc_oid oid, int status, const utility::string_t& status_message,
             const nc_property_id& status_property_id,
             const nc_property_id& status_message_property_id,
             const nc_property_id& status_transition_counter_property_id,
             const utility::string_t& status_pending_field_name,
             const utility::string_t& status_message_pending_time_field_name,
             const utility::string_t& status_pending_received_time_field_name,
-            long long current_time,
+            long long now_time,
             monitor_status_pending_handler monitor_status_pending,
             get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor,
             slog::base_gate& gate)
         {
-            const auto current_status = get_control_protocol_property(resources, oid, status_property_id, get_control_protocol_class_descriptor, gate);
+            const auto& current_status = get_control_protocol_property(resources, oid, status_property_id, get_control_protocol_class_descriptor, gate);
             if (current_status.is_null())
             {
-                // should never happen, missing receiver monitor status property
-                slog::log<slog::severities::error>(gate, SLOG_FLF) << U("receiver monitor status property: {level=") << status_property_id.level << U(", index=") << status_property_id.index << U("} not found");
+                // should never happen, missing receiver/sender monitor status property
+                slog::log<slog::severities::error>(gate, SLOG_FLF) << U("receiver/sender monitor status property: {level=") << status_property_id.level << U(", index=") << status_property_id.index << U("} not found");
                 return false;
             }
 
-            if (status == current_status)
+            // has the status message changed?
+            if (status == current_status.as_integer())
             {
+                // status has no changed
+
+                // has status message changed?
                 const auto& current_status_message = get_control_protocol_property(resources, oid, status_message_property_id, get_control_protocol_class_descriptor, gate);
-                if (current_status_message.as_string() != status_message)
+                if ((current_status_message.is_null() && status_message.size()) || (!current_status_message.is_null() && current_status_message.as_string() != status_message))
                 {
                     // If the status message has changed then update only that
                     web::json::value json_status_message = status_message.size() ? web::json::value::string(status_message) : web::json::value::null();
                     return set_control_protocol_property_and_notify(resources, oid, status_message_property_id, json_status_message, get_control_protocol_class_descriptor, gate);
                 }
+                // no update required, no changes on status or status message
                 return true;
             }
+
+            // status has changed
 
             utility::string_t updated_status_message = status_message;
 
             // if status is "healthy" then preserve the previous status message
-            if (1 == status.as_integer() && status_message.size() == 0)
+            if (1 == status && status_message.size() == 0)
             {
                 // Get existing status message and prepend with "Previously: "
                 const auto& current_status_message = get_control_protocol_property(resources, oid, status_message_property_id, get_control_protocol_class_descriptor, gate);
@@ -420,18 +427,17 @@ namespace nmos
                     updated_status_message = ss.str();
                 }
             }
-            // if status or current state is "inactive" (0)
-            if (0 == status.as_integer() || 0 == current_status.as_integer())
+            // if status or current state is "inactive" (0), update status and status message immediately
+            if (0 == status || 0 == current_status.as_integer())
             {
                 return set_monitor_status(resources, oid, status, updated_status_message, status_property_id, status_message_property_id, status_transition_counter_property_id, status_pending_received_time_field_name, get_control_protocol_class_descriptor, gate);
             }
             else
             {
-                //const auto current_time = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
-                const auto activation_time = get_control_protocol_property(resources, oid, nmos::fields::nc::monitor_activation_time, gate);
-                const auto status_reporting_delay = get_control_protocol_property(resources, oid, nc_status_monitor_status_reporting_delay, get_control_protocol_class_descriptor, gate);
+                const auto& activation_time = get_control_protocol_property(resources, oid, nmos::fields::nc::monitor_activation_time, gate);
+                const auto& status_reporting_delay = get_control_protocol_property(resources, oid, nc_status_monitor_status_reporting_delay, get_control_protocol_class_descriptor, gate);
 
-                if (status > current_status.as_integer() && current_time >(static_cast<long long>(activation_time.as_integer()) + status_reporting_delay.as_integer()))
+                if (status > current_status.as_integer() && now_time > (static_cast<long long>(activation_time.as_integer()) + status_reporting_delay.as_integer()))
                 {
                     // becoming less health and not in the initial activation state
                     // immediately set the status
@@ -444,10 +450,10 @@ namespace nmos
                     // set the status with delay
                     const auto& pending_received_time = get_control_protocol_property(resources, oid, status_pending_received_time_field_name, gate);
 
-                    // only update  pending received time if not already set
+                    // only update pending received time if not already set
                     if (pending_received_time.as_integer() == 0)
                     {
-                        if (!set_control_protocol_property(resources, oid, status_pending_received_time_field_name, current_time, gate))
+                        if (!set_control_protocol_property(resources, oid, status_pending_received_time_field_name, now_time, gate))
                         {
                             return false;
                         }
