@@ -1058,7 +1058,7 @@ namespace nmos
 
     bool set_receiver_monitor_link_status_with_delay(resources& resources, nc_oid oid, nmos::nc_link_status::status link_status, const utility::string_t& link_status_message, monitor_status_pending_handler monitor_status_pending, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, slog::base_gate& gate)
     {
-        const auto current_time = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
+        const auto now_time = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
 
         return details::set_monitor_status_with_delay(resources, oid, link_status, link_status_message,
             nc_receiver_monitor_link_status_property_id,
@@ -1067,7 +1067,7 @@ namespace nmos
             nmos::fields::nc::link_status_pending,
             nmos::fields::nc::link_status_message_pending,
             nmos::fields::nc::link_status_pending_received_time,
-            current_time,
+            now_time,
             monitor_status_pending,
             get_control_protocol_class_descriptor,
             gate);
@@ -1086,7 +1086,7 @@ namespace nmos
 
     bool set_receiver_monitor_connection_status_with_delay(resources& resources, nc_oid oid, nmos::nc_connection_status::status connection_status, const utility::string_t& connection_status_message, monitor_status_pending_handler monitor_status_pending, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, slog::base_gate& gate)
     {
-        const auto current_time = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
+        const auto now_time = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
 
         return details::set_monitor_status_with_delay(resources, oid, connection_status, connection_status_message,
             nc_receiver_monitor_connection_status_property_id,
@@ -1095,7 +1095,7 @@ namespace nmos
             nmos::fields::nc::connection_status_pending,
             nmos::fields::nc::connection_status_message_pending,
             nmos::fields::nc::connection_status_pending_received_time,
-            current_time,
+            now_time,
             monitor_status_pending,
             get_control_protocol_class_descriptor,
             gate);
@@ -1115,7 +1115,7 @@ namespace nmos
 
     bool set_receiver_monitor_external_synchronization_status_with_delay(resources& resources, nc_oid oid, nmos::nc_synchronization_status::status external_synchronization_status, const utility::string_t& external_synchronization_status_message, monitor_status_pending_handler monitor_status_pending, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, slog::base_gate& gate)
     {
-        const auto current_time = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
+        const auto now_time = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
 
         return details::set_monitor_status_with_delay(resources, oid, external_synchronization_status, external_synchronization_status_message,
             nc_receiver_monitor_external_synchronization_status_property_id,
@@ -1124,7 +1124,7 @@ namespace nmos
             nmos::fields::nc::external_synchronization_status_pending,
             nmos::fields::nc::external_synchronization_status_message_pending,
             nmos::fields::nc::external_synchronization_status_pending_received_time,
-            current_time,
+            now_time,
             monitor_status_pending,
             get_control_protocol_class_descriptor,
             gate);
@@ -1144,7 +1144,7 @@ namespace nmos
 
     bool set_receiver_monitor_stream_status_with_delay(resources& resources, nc_oid oid, nmos::nc_stream_status::status stream_status, const utility::string_t& stream_status_message, monitor_status_pending_handler monitor_status_pending, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, slog::base_gate& gate)
     {
-        const auto current_time = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
+        const auto now_time = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
 
         return details::set_monitor_status_with_delay(resources, oid, stream_status, stream_status_message,
             nc_receiver_monitor_stream_status_property_id,
@@ -1153,7 +1153,7 @@ namespace nmos
             nmos::fields::nc::stream_status_pending,
             nmos::fields::nc::stream_status_message_pending,
             nmos::fields::nc::stream_status_pending_received_time,
-            current_time,
+            now_time,
             monitor_status_pending,
             get_control_protocol_class_descriptor,
             gate);
@@ -1272,7 +1272,7 @@ namespace nmos
     // Set link status and status message and apply status reporting delay
     bool set_sender_monitor_link_status_with_delay(resources& resources, nc_oid oid, nmos::nc_link_status::status link_status, const utility::string_t& link_status_message, monitor_status_pending_handler monitor_status_pending, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, slog::base_gate& gate)
     {
-        const auto current_time = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
+        const auto now_time = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
 
         return details::set_monitor_status_with_delay(resources, oid, link_status, link_status_message,
             nc_sender_monitor_link_status_property_id,
@@ -1281,7 +1281,7 @@ namespace nmos
             nmos::fields::nc::link_status_pending,
             nmos::fields::nc::link_status_message_pending,
             nmos::fields::nc::link_status_pending_received_time,
-            current_time,
+            now_time,
             monitor_status_pending,
             get_control_protocol_class_descriptor,
             gate);
@@ -1301,7 +1301,7 @@ namespace nmos
     // Set transmission status and status message and apply status reporting delay
     bool set_sender_monitor_transmission_status_with_delay(resources& resources, nc_oid oid, nmos::nc_transmission_status::status transmission_status, const utility::string_t& transmission_status_message, monitor_status_pending_handler monitor_status_pending, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, slog::base_gate& gate)
     {
-        const auto current_time = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
+        const auto now_time = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
 
         return details::set_monitor_status_with_delay(resources, oid, transmission_status, transmission_status_message,
             nc_sender_monitor_transmission_status_property_id,
@@ -1310,7 +1310,7 @@ namespace nmos
             nmos::fields::nc::transmission_status_pending,
             nmos::fields::nc::transmission_status_message_pending,
             nmos::fields::nc::transmission_status_pending_received_time,
-            current_time,
+            now_time,
             monitor_status_pending,
             get_control_protocol_class_descriptor,
             gate);
@@ -1330,7 +1330,7 @@ namespace nmos
     // Set external synchronization status and status message and apply status reporting delay
     bool set_sender_monitor_external_synchronization_status_with_delay(resources& resources, nc_oid oid, nmos::nc_synchronization_status::status external_synchronization_status, const utility::string_t& external_synchronization_status_message, monitor_status_pending_handler monitor_status_pending, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, slog::base_gate& gate)
     {
-        const auto current_time = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
+        const auto now_time = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
 
         return details::set_monitor_status_with_delay(resources, oid, external_synchronization_status, external_synchronization_status_message,
             nc_sender_monitor_external_synchronization_status_property_id,
@@ -1339,7 +1339,7 @@ namespace nmos
             nmos::fields::nc::external_synchronization_status_pending,
             nmos::fields::nc::external_synchronization_status_message_pending,
             nmos::fields::nc::external_synchronization_status_pending_received_time,
-            current_time,
+            now_time,
             monitor_status_pending,
             get_control_protocol_class_descriptor,
             gate);
@@ -1359,7 +1359,7 @@ namespace nmos
     // Set essence status and status message and apply status reporting delay
     bool set_sender_monitor_essence_status_with_delay(resources& resources, nc_oid oid, nmos::nc_essence_status::status essence_status, const utility::string_t& essence_status_message, monitor_status_pending_handler monitor_status_pending, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, slog::base_gate& gate)
     {
-        const auto current_time = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
+        const auto now_time = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
 
         return details::set_monitor_status_with_delay(resources, oid, essence_status, essence_status_message,
             nc_sender_monitor_essence_status_property_id,
@@ -1368,7 +1368,7 @@ namespace nmos
             nmos::fields::nc::essence_status_pending,
             nmos::fields::nc::essence_status_message_pending,
             nmos::fields::nc::essence_status_pending_received_time,
-            current_time,
+            now_time,
             monitor_status_pending,
             get_control_protocol_class_descriptor,
             gate);
