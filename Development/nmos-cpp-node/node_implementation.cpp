@@ -1463,6 +1463,7 @@ void node_implementation_run(nmos::node_model& model, nmos::experimental::contro
                             {
                                 case 0:
                                 {
+                                    // Change link status
                                     const auto status = nmos::nc_link_status::status(nmos::nc_link_status::all_up + rand() % 3);
                                     const auto status_message = status > nmos::nc_link_status::all_up ? U("NIC1, NIC2 are down") : U("");
                                     set_receiver_monitor_link_status(oid, status, status_message);
@@ -1470,6 +1471,7 @@ void node_implementation_run(nmos::node_model& model, nmos::experimental::contro
                                 }
                                 case 1:
                                 {
+                                    // Change connection status
                                     if (overall_status.as_integer() != nmos::nc_overall_status::inactive)
                                     {
                                         const auto connection_status = nmos::nc_connection_status::status(nmos::nc_connection_status::healthy + rand() % 3);
@@ -1481,6 +1483,7 @@ void node_implementation_run(nmos::node_model& model, nmos::experimental::contro
                                 }
                                 case 2:
                                 {
+                                    // Change synchronization status
                                     const auto status = nmos::nc_synchronization_status::status(nmos::nc_synchronization_status::not_used + rand() % 4);
                                     const auto status_message = status > nmos::nc_synchronization_status::healthy ? U("Source change from: 00:0c:ec:ff:fe:0a:2b:a1 on NIC1") : U("");
                                     set_receiver_monitor_external_synchronization_status(oid, status, status_message);
@@ -1494,6 +1497,7 @@ void node_implementation_run(nmos::node_model& model, nmos::experimental::contro
                                 }
                                 case 3:
                                 {
+                                    // Change stream status
                                     if (overall_status.as_integer() != nmos::nc_overall_status::inactive)
                                     {
                                         const auto status = nmos::nc_stream_status::status(nmos::nc_stream_status::healthy + rand() % 3);
@@ -1530,6 +1534,7 @@ void node_implementation_run(nmos::node_model& model, nmos::experimental::contro
                             {
                                 case 0:
                                 {
+                                    // Change link status
                                     const auto status = nmos::nc_link_status::status(nmos::nc_link_status::all_up + rand() % 3);
                                     const auto status_message = status > nmos::nc_link_status::all_up ? U("NIC1, NIC2 are down") : U("");
                                     set_sender_monitor_link_status(oid, status, status_message);
@@ -1537,6 +1542,7 @@ void node_implementation_run(nmos::node_model& model, nmos::experimental::contro
                                 }
                                 case 1:
                                 {
+                                    // Change transmission status
                                     if (overall_status.as_integer() != nmos::nc_overall_status::inactive)
                                     {
                                         const auto transmission_status = nmos::nc_transmission_status::status(nmos::nc_transmission_status::healthy + rand() % 3);
@@ -1548,6 +1554,7 @@ void node_implementation_run(nmos::node_model& model, nmos::experimental::contro
                                 }
                                 case 2:
                                 {
+                                    // Change synchronization status
                                     const auto status = nmos::nc_synchronization_status::status(nmos::nc_synchronization_status::not_used + rand() % 4);
                                     const auto status_message = status > nmos::nc_synchronization_status::healthy ? U("Source change from: 00:0c:ec:ff:fe:0a:2b:a1 on NIC1") : U("");
                                     set_sender_monitor_external_synchronization_status(oid, status, status_message);
@@ -1561,6 +1568,7 @@ void node_implementation_run(nmos::node_model& model, nmos::experimental::contro
                                 }
                                 case 3:
                                 {
+                                    // Change essence status
                                     if (overall_status.as_integer() != nmos::nc_overall_status::inactive)
                                     {
                                         const auto status = nmos::nc_essence_status::status(nmos::nc_stream_status::healthy + rand() % 3);

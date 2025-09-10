@@ -393,11 +393,9 @@ namespace nmos
                 return false;
             }
 
-            // has the status message changed?
+            // check whether the the status message changed when the status is unchanged
             if (status == current_status.as_integer())
             {
-                // status has no changed
-
                 // has status message changed?
                 const auto& current_status_message = get_control_protocol_property(resources, oid, status_message_property_id, get_control_protocol_class_descriptor, gate);
                 if ((current_status_message.is_null() && status_message.size()) || (!current_status_message.is_null() && current_status_message.as_string() != status_message))
