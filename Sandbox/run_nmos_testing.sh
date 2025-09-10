@@ -69,6 +69,7 @@ registry_params=",\
 node_params=",\
   \"label\":\"nmos-cpp-node\",\
   \"video_type\": \"video/jxsv\"\
+  \"simulate_status_monitor_activity\": false
   "
   
 if [[ "${config_secure}" == "True" ]]; then
