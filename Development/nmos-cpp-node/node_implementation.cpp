@@ -120,6 +120,9 @@ namespace impl
 
         // smpte2022_7: controls whether senders and receivers have one leg (false) or two legs (true, default)
         const web::json::field_as_bool_or smpte2022_7{ U("smpte2022_7"), true };
+
+        // simulate_status_monitor_activity: when true status monitor statuses will change randomly after activation
+        const web::json::field_as_bool_or simulate_status_monitor_activity{U("simulate_status_monitor_activity"), true};
     }
 
     nmos::interlace_mode get_interlace_mode(const nmos::settings& settings);
@@ -1339,6 +1342,7 @@ void node_implementation_run(nmos::node_model& model, nmos::experimental::contro
     const auto rtp_sender_ports = boost::copy_range<std::vector<impl::port>>(sender_ports | boost::adaptors::filtered(impl::is_rtp_port));
     const auto ws_sender_ports = boost::copy_range<std::vector<impl::port>>(sender_ports | boost::adaptors::filtered(impl::is_ws_port));
     const auto rtp_receiver_ports = boost::copy_range<std::vector<impl::port>>(impl::parse_ports(impl::fields::receivers(model.settings)) | boost::adaptors::filtered(impl::is_rtp_port));
+    const auto simulate_status_monitor_activity = impl::fields::simulate_status_monitor_activity(model.settings);
 
     auto& control_protocol_resources = model.control_protocol_resources;
 
@@ -1363,10 +1367,10 @@ void node_implementation_run(nmos::node_model& model, nmos::experimental::contro
     auto cancellation_source = pplx::cancellation_token_source();
 
     auto token = cancellation_source.get_token();
-    auto events = pplx::do_while([&model, seed_id, how_many, ws_sender_ports, rtp_receiver_ports, rtp_sender_ports, get_control_protocol_property, set_receiver_monitor_link_status, set_receiver_monitor_connection_status, set_receiver_monitor_external_synchronization_status, set_receiver_monitor_stream_status, set_receiver_monitor_synchronization_source_id, set_sender_monitor_link_status, set_sender_monitor_transmission_status, set_sender_monitor_external_synchronization_status, set_sender_monitor_essence_status, set_sender_monitor_synchronization_source_id, events_engine, &gate, token]
+    auto events = pplx::do_while([&model, seed_id, how_many, simulate_status_monitor_activity, ws_sender_ports, rtp_receiver_ports, rtp_sender_ports, get_control_protocol_property, set_receiver_monitor_link_status, set_receiver_monitor_connection_status, set_receiver_monitor_external_synchronization_status, set_receiver_monitor_stream_status, set_receiver_monitor_synchronization_source_id, set_sender_monitor_link_status, set_sender_monitor_transmission_status, set_sender_monitor_external_synchronization_status, set_sender_monitor_essence_status, set_sender_monitor_synchronization_source_id, events_engine, &gate, token]
     {
         const auto event_interval = std::uniform_real_distribution<>(0.5, 5.0)(*events_engine);
-        return pplx::complete_after(std::chrono::milliseconds(std::chrono::milliseconds::rep(1000 * event_interval)), token).then([&model, seed_id, how_many, ws_sender_ports, rtp_receiver_ports, rtp_sender_ports, get_control_protocol_property, set_receiver_monitor_link_status, set_receiver_monitor_connection_status, set_receiver_monitor_external_synchronization_status, set_receiver_monitor_stream_status, set_receiver_monitor_synchronization_source_id, set_sender_monitor_link_status, set_sender_monitor_transmission_status, set_sender_monitor_external_synchronization_status, set_sender_monitor_essence_status, set_sender_monitor_synchronization_source_id, events_engine, &gate]
+        return pplx::complete_after(std::chrono::milliseconds(std::chrono::milliseconds::rep(1000 * event_interval)), token).then([&model, seed_id, how_many, simulate_status_monitor_activity, ws_sender_ports, rtp_receiver_ports, rtp_sender_ports, get_control_protocol_property, set_receiver_monitor_link_status, set_receiver_monitor_connection_status, set_receiver_monitor_external_synchronization_status, set_receiver_monitor_stream_status, set_receiver_monitor_synchronization_source_id, set_sender_monitor_link_status, set_sender_monitor_transmission_status, set_sender_monitor_external_synchronization_status, set_sender_monitor_essence_status, set_sender_monitor_synchronization_source_id, events_engine, &gate]
         {
             auto lock = model.write_lock();
 
@@ -1444,7 +1448,7 @@ void node_implementation_run(nmos::node_model& model, nmos::experimental::contro
             }
 
             // example setting receiver monitor statuses
-            {
+            if (simulate_status_monitor_activity) {
                 auto& resources = model.control_protocol_resources;
                 for (int index = 0; index < how_many; ++index)
                 {
@@ -1515,7 +1519,7 @@ void node_implementation_run(nmos::node_model& model, nmos::experimental::contro
                 }
             }
             // example setting sender monitor statuses
-            {
+            if (simulate_status_monitor_activity) {
                 auto& resources = model.control_protocol_resources;
                 for (int index = 0; index < how_many; ++index)
                 {
