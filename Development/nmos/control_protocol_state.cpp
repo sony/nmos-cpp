@@ -1,5 +1,6 @@
 #include "nmos/control_protocol_state.h"
 
+#include "cpprest/http_utils.h"
 #include "nmos/control_protocol_methods.h"
 #include "nmos/control_protocol_resource.h"
 
@@ -178,9 +179,31 @@ namespace nmos
                     return get_datatype(resources, resource, arguments, is_deprecated, get_control_protocol_datatype_descriptor, gate);
                 };
             }
+            nmos::experimental::control_protocol_method_handler make_nc_get_lost_packet_counters_handler(get_packet_counters_handler get_lost_packet_counters)
+            {
+                return [get_lost_packet_counters](nmos::resources& resources, const nmos::resource& resource, const web::json::value& arguments, bool is_deprecated, slog::base_gate& gate)
+                {
+                    return nmos::get_lost_packet_counters(resources, resource, arguments, is_deprecated, get_lost_packet_counters, gate);
+                };
+            }
+            nmos::experimental::control_protocol_method_handler make_nc_get_late_packet_counters_handler(get_packet_counters_handler get_late_packet_counters)
+            {
+                return [get_late_packet_counters](nmos::resources& resources, const nmos::resource& resource, const web::json::value& arguments, bool is_deprecated, slog::base_gate& gate)
+                {
+                    return nmos::get_late_packet_counters(resources, resource, arguments, is_deprecated, get_late_packet_counters, gate);
+                };
+            }
+            nmos::experimental::control_protocol_method_handler make_nc_reset_monitor_handler(get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, control_protocol_property_changed_handler property_changed, reset_monitor_handler reset_monitor)
+            {
+                return [get_control_protocol_class_descriptor, property_changed, reset_monitor](nmos::resources& resources, const nmos::resource& resource, const web::json::value& arguments, bool is_deprecated, slog::base_gate& gate)
+                {
+                    return nmos::reset_monitor(resources, resource, arguments, is_deprecated, get_control_protocol_class_descriptor, property_changed, reset_monitor, gate);
+                };
+            }
         }
 
-        control_protocol_state::control_protocol_state(control_protocol_property_changed_handler property_changed)
+        control_protocol_state::control_protocol_state(get_packet_counters_handler get_lost_packet_counters, get_packet_counters_handler get_late_packet_counters, reset_monitor_handler reset_monitor, control_protocol_property_changed_handler property_changed)
+        : monitor_status_pending(false)
         {
             using web::json::value;
 
@@ -315,9 +338,9 @@ namespace nmos
                     to_methods_vector(make_nc_receiver_monitor_methods(),
                     {
                         // link NcReceiverMonitor method_ids with method functions
-                        { nc_receiver_monitor_get_lost_packet_counters_method_id, nullptr },
-                        { nc_receiver_monitor_get_late_packet_counters_method_id, nullptr },
-                        { nc_receiver_monitor_reset_monitor_method_id, nullptr }
+                        { nc_receiver_monitor_get_lost_packet_counters_method_id, details::make_nc_get_lost_packet_counters_handler(get_lost_packet_counters)},
+                        { nc_receiver_monitor_get_late_packet_counters_method_id, details::make_nc_get_late_packet_counters_handler(get_late_packet_counters)},
+                        { nc_receiver_monitor_reset_monitor_method_id, details::make_nc_reset_monitor_handler(get_control_protocol_class_descriptor, property_changed, reset_monitor)}
                     }),
                     // NcReceiverMonitor events
                     to_vector(make_nc_receiver_monitor_events())) },
@@ -330,11 +353,12 @@ namespace nmos
                     {
                         // link NcSenderMonitor method_ids with method functions
                         // TODO: implement actual GetTransmissionError and ResetCountersAndMessages function
-                        { nc_sender_monitor_get_transmission_error_counters_method_id, nullptr },
-                        { nc_sender_monitor_reset_monitor_method_id, nullptr }
+                        { nc_sender_monitor_get_transmission_error_counters_method_id, details::make_nc_get_lost_packet_counters_handler(get_lost_packet_counters)},
+                        { nc_sender_monitor_reset_monitor_method_id, details::make_nc_reset_monitor_handler(get_control_protocol_class_descriptor, property_changed, reset_monitor)}
                     }),
                     // NcSenderMonitor events
-                    to_vector(make_nc_sender_monitor_events())) }
+                    to_vector(make_nc_sender_monitor_events()))
+                }
             };
 
             // setup the standard datatypes
