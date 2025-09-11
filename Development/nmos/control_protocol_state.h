@@ -53,13 +53,17 @@ namespace nmos
             // mutex to be used to protect the members from simultaneous access by multiple threads
             mutable nmos::mutex mutex;
 
+            // true : at least one of the receiver/sender monitors statuses is pending
+            // false: no more receiver/sender monitors statuses are pending
+            bool monitor_status_pending;
+
             experimental::control_class_descriptors control_class_descriptors;
             experimental::datatype_descriptors datatype_descriptors;
 
             nmos::read_lock read_lock() const { return nmos::read_lock{ mutex }; }
             nmos::write_lock write_lock() const { return nmos::write_lock{ mutex }; }
 
-            control_protocol_state(control_protocol_property_changed_handler property_changed = nullptr, create_validation_fingerprint_handler create_validation_fingerprint = nullptr, validate_validation_fingerprint_handler validate_validation_fingerprintget_read_only_modification_allow_list_handler = nullptr, get_read_only_modification_allow_list_handler get_read_only_modification_allow_list = nullptr, remove_device_model_object_handler remove_device_model_object = nullptr, create_device_model_object_handler create_device_model_object = nullptr);
+            control_protocol_state(control_protocol_property_changed_handler property_changed = nullptr, create_validation_fingerprint_handler create_validation_fingerprint = nullptr, validate_validation_fingerprint_handler validate_validation_fingerprintget_read_only_modification_allow_list_handler = nullptr, get_read_only_modification_allow_list_handler get_read_only_modification_allow_list = nullptr, remove_device_model_object_handler remove_device_model_object = nullptr, create_device_model_object_handler create_device_model_object = nullptr, get_packet_counters_handler get_lost_packet_counters = nullptr, get_packet_counters_handler get_late_packet_counters = nullptr, reset_monitor_handler reset_monitor = nullptr);
             // insert control class descriptor, false if class descriptor already inserted
             bool insert(const experimental::control_class_descriptor& control_class_descriptor);
             // erase control class of the given class id, false if the required class not found

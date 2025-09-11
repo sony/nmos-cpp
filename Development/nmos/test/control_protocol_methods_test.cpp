@@ -33,9 +33,9 @@ BST_TEST_CASE(testRemoveSequenceItem)
         // check that the property changed handler gets called
         property_changed_called = true;
     };
-    nmos::experimental::control_protocol_state control_protocol_state(property_changed);
-    nmos::get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor = nmos::make_get_control_protocol_class_descriptor_handler(control_protocol_state);
 
+    nmos::experimental::control_protocol_state control_protocol_state(property_changed, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr);
+    nmos::get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor = nmos::make_get_control_protocol_class_descriptor_handler(control_protocol_state);
 
     // Create simple non-standard class with writable sequence property
     const auto writable_sequence_class_id = nmos::nc::make_class_id(nmos::nc_worker_class_id, -1234, { 1000 });

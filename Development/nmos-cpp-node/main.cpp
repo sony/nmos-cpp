@@ -7,6 +7,7 @@
 #include "nmos/authorization_redirect_api.h"
 #include "nmos/authorization_state.h"
 #include "nmos/control_protocol_state.h"
+#include "nmos/control_protocol_behaviour.h"
 #include "nmos/jwks_uri_api.h"
 #include "nmos/log_gate.h"
 #include "nmos/model.h"
@@ -138,13 +139,17 @@ int main(int argc, char* argv[])
                 .on_request_authorization_code(nmos::experimental::make_request_authorization_code_handler(gate)); // may be omitted, only required for OAuth client which is using the Authorization Code Flow to obtain the access token
         }
 
-        nmos::experimental::control_protocol_state control_protocol_state(node_implementation.control_protocol_property_changed, node_implementation.create_validation_fingerprint, node_implementation.validate_validation_fingerprint, node_implementation.get_read_only_modification_allow_list, node_implementation.remove_device_model_object, node_implementation.create_device_model_object);
+        // only configure the following callbacks if IS-12/BCP-008-01 is required
+        // Note:
+        // the get_control_class_descriptor, get_control_datatype_descriptor and get_control_protocol_method_descriptor callbacks must be set up before executing the make_node_server
+		nmos::experimental::control_protocol_state control_protocol_state(node_implementation.control_protocol_property_changed, node_implementation.create_validation_fingerprint, node_implementation.validate_validation_fingerprint, node_implementation.get_read_only_modification_allow_list, node_implementation.remove_device_model_object, node_implementation.create_device_model_object, node_implementation.get_lost_packet_counters, node_implementation.get_late_packet_counters, node_implementation.reset_monitor);
         if (0 <= nmos::fields::control_protocol_ws_port(node_model.settings))
         {
             node_implementation
                 .on_get_control_class_descriptor(nmos::make_get_control_protocol_class_descriptor_handler(control_protocol_state))
                 .on_get_control_datatype_descriptor(nmos::make_get_control_protocol_datatype_descriptor_handler(control_protocol_state))
-                .on_get_control_protocol_method_descriptor(nmos::make_get_control_protocol_method_descriptor_handler(control_protocol_state));
+                .on_get_control_protocol_method_descriptor(nmos::make_get_control_protocol_method_descriptor_handler(control_protocol_state))
+                .on_monitor_activated(nmos::make_monitor_connection_activation_handler(node_model.control_protocol_resources, control_protocol_state, gate));
         }
 
         // Set up the node server
@@ -155,6 +160,11 @@ int main(int argc, char* argv[])
 
         node_server.thread_functions.push_back([&] { node_implementation_thread(node_model, control_protocol_state, gate); });
 
+        // only configure receiver/sender monitor behaviour thread if supporting control protocol
+        if (0 <= nmos::fields::control_protocol_ws_port(node_model.settings))
+        {
+            node_server.thread_functions.push_back([&] { control_protocol_behaviour_thread(node_model, control_protocol_state, gate); });
+        }
 // only implement communication with OCSP server if http_listener supports OCSP stapling
 // cf. preprocessor conditions in nmos::make_http_listener_config
 #if !defined(_WIN32) || defined(CPPREST_FORCE_HTTP_LISTENER_ASIO)

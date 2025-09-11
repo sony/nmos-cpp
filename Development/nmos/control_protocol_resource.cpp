@@ -1377,7 +1377,6 @@ namespace nmos
         using web::json::value;
 
         auto methods = value::array();
-        auto parameters = value::array();
         web::json::push_back(methods, details::make_nc_method_descriptor(U("Gets the lost packet counters"), nc_receiver_monitor_get_lost_packet_counters_method_id, U("GetLostPacketCounters"), U("NcMethodResultCounters"), value::array(), false));
         web::json::push_back(methods, details::make_nc_method_descriptor(U("Gets the late packet counters"), nc_receiver_monitor_get_late_packet_counters_method_id, U("GetLatePacketCounters"), U("NcMethodResultCounters"), value::array(), false));
         web::json::push_back(methods, details::make_nc_method_descriptor(U("Resets ALL counters"), nc_receiver_monitor_reset_monitor_method_id, U("ResetCountersAndMessages"), U("NcMethodResult"), value::array(), false));
@@ -1416,7 +1415,6 @@ namespace nmos
     }
     web::json::value make_nc_sender_monitor_methods()
     {
-        using web::json::value_of;
         using web::json::value;
 
         auto methods = value::array();

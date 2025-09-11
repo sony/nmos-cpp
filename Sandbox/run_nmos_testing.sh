@@ -39,6 +39,8 @@ expected_disabled_IS_09_01=0
 expected_disabled_IS_12_01=0
 expected_disabled_IS_14_01=1
 expected_disabled_BCP_006_01_01=0
+expected_disabled_BCP_008_01_01=0
+expected_disabled_BCP_008_02_01=0
 
 config_secure=`${run_python} -c $'from nmostesting import Config\nprint(Config.ENABLE_HTTPS)'` || (echo "error running python"; exit 1)
 config_dns_sd_mode=`${run_python} -c $'from nmostesting import Config\nprint(Config.DNS_SD_MODE)'` || (echo "error running python"; exit 1)
@@ -67,7 +69,8 @@ registry_params=",\
   "
 node_params=",\
   \"label\":\"nmos-cpp-node\",\
-  \"video_type\": \"video/jxsv\"\
+  \"video_type\": \"video/jxsv\",\
+  \"simulate_status_monitor_activity\":false\
   "
   
 if [[ "${config_secure}" == "True" ]]; then
@@ -222,6 +225,10 @@ do_run_test IS-12-01 $expected_disabled_IS_12_01 --host "${host}" "${host}" null
 do_run_test IS-14-01 $expected_disabled_IS_14_01 --host "${host}" "${host}" null null --port 1080 1080 0 0 --version v1.3 v1.0 v1.0 v1.0 --selector null null null null --ignore test_ms05_05
 
 do_run_test BCP-006-01-01 $expected_disabled_BCP_006_01_01 --host "${host}" --port 1080 --version v1.3
+
+do_run_test BCP-008-01-01 $expected_disabled_BCP_008_01_01 --host "${host}" "${host}" "${host}" null --port 1080 1080 1082 0 --version v1.3 v1.1 v1.0 v1.0 --urlpath null null x-nmos/ncp/v1.0 null
+
+do_run_test BCP-008-02-01 $expected_disabled_BCP_008_02_01 --host "${host}" "${host}" "${host}" null --port 1080 1080 1082 0 --version v1.3 v1.1 v1.0 v1.0 --urlpath null null x-nmos/ncp/v1.0 null
 
 # Run Registry tests (leave Node running)
 "${registry_command}" "{\"pri\":0,\"http_port\":8088 ${common_params} ${registry_params}}" > ${results_dir}/registryoutput 2>&1 &

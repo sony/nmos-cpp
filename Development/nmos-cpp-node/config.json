@@ -60,6 +60,9 @@
     // smpte2022_7: controls whether senders and receivers have one leg (false) or two legs (true, default)
     //"smpte2022_7": false,
 
+    // simulate_status_monitor_activity: when true status monitor statuses will change randomly after activation
+    //"simulate_status_monitor_activity": true,
+
     // Configuration settings and defaults for logging
 
     // error_log [registry, node]: filename for the error log or an empty string to write to stderr

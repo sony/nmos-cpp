@@ -98,6 +98,8 @@ namespace nmos
         };
     }
 
+    // BCP-008-01/02 enum types
+
     // NcConnectionStatus
     // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/monitoring/#ncconnectionstatus
     namespace nc_connection_status
