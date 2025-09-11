@@ -1208,8 +1208,6 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
 
         // example device manager
         auto device_manager = nmos::make_device_manager(++oid, model.settings);
-        // making an object rebuildable allows read only properties to be modified by the Configuration API in Rebuild mode
-        nmos::make_rebuildable(device_manager);
 
         // example class manager
         auto class_manager = nmos::make_class_manager(++oid, control_protocol_state);
@@ -1262,6 +1260,9 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
             { 0, 50, 80 },
             { make_example_datatype(example_enum::Alpha, U("example"), 50, false), make_example_datatype(example_enum::Gamma, U("different"), 75, true) }
         );
+
+        // making an object rebuildable allows read only properties to be modified by the Configuration API in Rebuild mode
+        nmos::make_rebuildable(example_control);
 
         const auto receiver_block_oid = ++oid;
         auto receiver_block = nmos::make_block(receiver_block_oid, nmos::root_block_oid, U("receivers"), U("Receiver Monitors"), U("Receiver Monitors"));
