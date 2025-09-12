@@ -78,10 +78,10 @@ namespace nmos
         bool is_class_manager(const nc_class_id& class_id);
 
 	    // is the given class_id a NcStatusMonitor
-	    bool is_nc_status_monitor(const nc_class_id& class_id);
+	    bool is_status_monitor(const nc_class_id& class_id);
 
 	    // is the given class_id a NcSenderMonitor
-	    bool is_nc_sender_monitor(const nc_class_id& class_id);
+	    bool is_sender_monitor(const nc_class_id& class_id);
 
 	    // construct NcClassId
 	    nc_class_id make_class_id(const nc_class_id& prefix, int32_t authority_key, const std::vector<int32_t>& suffix);
@@ -132,13 +132,13 @@ namespace nmos
         void insert_notification_events(resources& resources, const api_version& version, const api_version& downgrade_version, const type& type, const web::json::value& pre, const web::json::value& post, const web::json::value& event);
 
         // get property value given oid and property_id
-        web::json::value get_control_protocol_property(const resources& resources, nc_oid oid, const nc_property_id& property_id, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, slog::base_gate& gate);
+        web::json::value get_property(const resources& resources, nc_oid oid, const nc_property_id& property_id, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, slog::base_gate& gate);
 
         // set property value given oid and property_id and notify
-        bool set_control_protocol_property_and_notify(resources& resources, nc_oid oid, const nc_property_id& property_id, const web::json::value& value, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, slog::base_gate& gate);
+        bool set_property_and_notify(resources& resources, nc_oid oid, const nc_property_id& property_id, const web::json::value& value, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, slog::base_gate& gate);
 
         // set hidden property but don't notify, as property isn't part of class definition
-        bool set_control_protocol_property(resources& resources, nc_oid oid, const utility::string_t& property_name, const web::json::value& value, slog::base_gate& gate);
+        bool set_property(resources& resources, nc_oid oid, const utility::string_t& property_name, const web::json::value& value, slog::base_gate& gate);
 
         // Set link status and link status message
         bool set_receiver_monitor_link_status(resources& resources, nc_oid oid, nmos::nc_link_status::status link_status, const utility::string_t& link_status_message, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, slog::base_gate& gate);
@@ -189,7 +189,7 @@ namespace nmos
         bool set_sender_monitor_essence_status_with_delay(resources& resources, nc_oid oid, nmos::nc_essence_status::status essence_status, const utility::string_t& essence_status_message, monitor_status_pending_handler monitor_status_pending, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, slog::base_gate& gate);
 
         // Get property by name, rather than by property id. Used to get "hidden" resource properties
-        web::json::value get_control_protocol_property(const resources& resources, nc_oid oid, const utility::string_t& property_name, slog::base_gate& gate);
+        web::json::value get_property(const resources& resources, nc_oid oid, const utility::string_t& property_name, slog::base_gate& gate);
     }
 }
 

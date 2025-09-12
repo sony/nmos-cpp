@@ -92,7 +92,7 @@ namespace nmos
             const bool active = nmos::fields::master_enable(endpoint_active);
 
             auto found = nc::find_resource(resources, nmos::types::nc_status_monitor, connection_resource.id);
-            if (resources.end() != found && nmos::nc::is_nc_status_monitor(details::parse_nc_class_id(nmos::fields::nc::class_id(found->data))))
+            if (resources.end() != found && nmos::nc::is_status_monitor(details::parse_nc_class_id(nmos::fields::nc::class_id(found->data))))
             {
                 const auto& oid = nmos::fields::nc::oid(found->data);
 
@@ -116,7 +116,7 @@ namespace nmos
 
         return [&resources, get_control_protocol_class_descriptor, &gate](nc_oid oid, const nc_property_id& property_id)
         {
-            return nc::get_control_protocol_property(resources, oid, property_id, get_control_protocol_class_descriptor, gate);
+            return nc::get_property(resources, oid, property_id, get_control_protocol_class_descriptor, gate);
         };
     }
 
@@ -126,7 +126,7 @@ namespace nmos
 
         return [&resources, get_control_protocol_class_descriptor, &gate](nc_oid oid, const nc_property_id& property_id, const web::json::value& value)
         {
-            return nc::set_control_protocol_property_and_notify(resources, oid, property_id, value, get_control_protocol_class_descriptor, gate);
+            return nc::set_property_and_notify(resources, oid, property_id, value, get_control_protocol_class_descriptor, gate);
         };
     }
 

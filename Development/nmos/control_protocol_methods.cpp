@@ -69,7 +69,7 @@ namespace nmos
 
             // Special case for BCP-008-01/02 where it specifies that status monitors cannot be disabled
             if (nmos::fields::nc::name(property).c_str() == nmos::fields::nc::enabled.key
-                && nc::is_nc_status_monitor(details::parse_nc_class_id(nmos::fields::nc::class_id(resource.data)))
+                && nc::is_status_monitor(details::parse_nc_class_id(nmos::fields::nc::class_id(resource.data)))
                 && !val.as_bool())
             {
                 utility::ostringstream_t ss;
@@ -750,7 +750,7 @@ namespace nmos
         const auto& class_id = details::parse_nc_class_id(nmos::fields::nc::class_id(resource.data));
 
         // reset all counters
-        const std::vector<std::pair<nc_property_id, web::json::value>> property_values = nmos::nc::is_nc_sender_monitor(class_id) ? sender_property_values : receiver_property_values;
+        const std::vector<std::pair<nc_property_id, web::json::value>> property_values = nmos::nc::is_sender_monitor(class_id) ? sender_property_values : receiver_property_values;
 
         for (const auto& property_value : property_values)
         {
