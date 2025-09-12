@@ -1044,463 +1044,464 @@ namespace nmos
             const auto& touchpoint_uuid = nmos::fields::nc::id(nmos::fields::nc::resource(*touchpoints.as_array().begin()));
             return nmos::find_resource(resources, touchpoint_uuid.as_string());
         }
-    }
 
-    // insert 'value changed', 'sequence item added', 'sequence item changed' or 'sequence item removed' notification events into all grains whose subscriptions match the specified version, type and "pre" or "post" values
-    // this is used for the IS-12 propertry changed event
-    void insert_notification_events(nmos::resources& resources, const nmos::api_version& version, const nmos::api_version& downgrade_version, const nmos::type& type, const web::json::value& pre, const web::json::value& post, const web::json::value& event)
-    {
-        using web::json::value;
-
-        if (pre == post) return;
-
-        auto& by_type = resources.get<tags::type>();
-        const auto subscriptions = by_type.equal_range(details::has_data(nmos::types::subscription));
-
-        for (auto it = subscriptions.first; subscriptions.second != it; ++it)
+        // insert 'value changed', 'sequence item added', 'sequence item changed' or 'sequence item removed' notification events into all grains whose subscriptions match the specified version, type and "pre" or "post" values
+        // this is used for the IS-12 propertry changed event
+        void insert_notification_events(nmos::resources& resources, const nmos::api_version& version, const nmos::api_version& downgrade_version, const nmos::type& type, const web::json::value& pre, const web::json::value& post, const web::json::value& event)
         {
-            // for each subscription
-            const auto& subscription = *it;
+            using web::json::value;
 
-            // check whether the resource_path matches the resource type and the query parameters match either the "pre" or "post" resource
+            if (pre == post) return;
 
-            const auto resource_path = nmos::fields::resource_path(subscription.data);
-            const resource_query match(subscription.version, resource_path, nmos::fields::params(subscription.data));
+            auto& by_type = resources.get<tags::type>();
+            const auto subscriptions = by_type.equal_range(nmos::details::has_data(nmos::types::subscription));
 
-            const bool pre_match = match(version, downgrade_version, type, pre, resources);
-            const bool post_match = match(version, downgrade_version, type, post, resources);
-
-            if (!pre_match && !post_match) continue;
-
-            // add the event to the grain for each websocket connection to this subscription
-
-            for (const auto& id : subscription.sub_resources)
+            for (auto it = subscriptions.first; subscriptions.second != it; ++it)
             {
-                auto grain = find_resource(resources, { id, nmos::types::grain });
-                if (resources.end() == grain) continue; // check websocket connection is still open
+                // for each subscription
+                const auto& subscription = *it;
 
-                resources.modify(grain, [&resources, &event](nmos::resource& grain)
+                // check whether the resource_path matches the resource type and the query parameters match either the "pre" or "post" resource
+
+                const auto resource_path = nmos::fields::resource_path(subscription.data);
+                const resource_query match(subscription.version, resource_path, nmos::fields::params(subscription.data));
+
+                const bool pre_match = match(version, downgrade_version, type, pre, resources);
+                const bool post_match = match(version, downgrade_version, type, post, resources);
+
+                if (!pre_match && !post_match) continue;
+
+                // add the event to the grain for each websocket connection to this subscription
+
+                for (const auto& id : subscription.sub_resources)
                 {
-                    auto& events = nmos::fields::message_grain_data(grain.data);
-                    web::json::push_back(events, event);
-                    grain.updated = strictly_increasing_update(resources);
-                });
-            }
-        }
-    }
+                    auto grain = find_resource(resources, { id, nmos::types::grain });
+                    if (resources.end() == grain) continue; // check websocket connection is still open
 
-    web::json::value get_control_protocol_property(const resources& resources, nc_oid oid, const nc_property_id& property_id, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, slog::base_gate& gate)
-    {
-        // get resource based on the oid
-        const auto& found = find_resource(resources, utility::s2us(std::to_string(oid)));
-        if (resources.end() != found)
-        {
-            // find the relevant nc_property_descriptor
-            const auto& property = nc::find_property_descriptor(property_id, details::parse_nc_class_id(nmos::fields::nc::class_id(found->data)), get_control_protocol_class_descriptor);
-            if (!property.is_null() && found->has_data() && found->data.has_field(nmos::fields::nc::name(property)))
-            {
-                return found->data.at(nmos::fields::nc::name(property));
-            }
-        }
-        // unknown property
-        slog::log<slog::severities::error>(gate, SLOG_FLF) << U("unknown property: {level=") << property_id.level << U(", index=") << property_id.index << U("} to do Get");
-        return web::json::value::null();
-    }
-
-    bool set_control_protocol_property_and_notify(resources& resources, nc_oid oid, const nc_property_id& property_id, const web::json::value& value, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, slog::base_gate& gate)
-    {
-        const auto& found = find_resource(resources, utility::s2us(std::to_string(oid)));
-        if (resources.end() != found)
-        {
-            const auto& property = nc::find_property_descriptor(property_id, details::parse_nc_class_id(nmos::fields::nc::class_id(found->data)), get_control_protocol_class_descriptor);
-            if (!property.is_null())
-            {
-                try
-                {
-                    // update property
-                    nc::modify_resource(resources, found->id, [&](nmos::resource& resource)
+                    resources.modify(grain, [&resources, &event](nmos::resource& grain)
                     {
-                        resource.data[nmos::fields::nc::name(property)] = value;
-
-                    }, make_property_changed_event(oid, { { property_id, nc_property_change_type::type::value_changed, value } }));
-
-                    return true;
-                }
-                catch (const nmos::control_protocol_exception& e)
-                {
-                    slog::log<slog::severities::error>(gate, SLOG_FLF) << "Set property: {level=" << property_id.level << ", index=" << property_id.index << "}  error: " << e.what();
-                    return false;
+                        auto& events = nmos::fields::message_grain_data(grain.data);
+                        web::json::push_back(events, event);
+                        grain.updated = strictly_increasing_update(resources);
+                    });
                 }
             }
+        }
 
+        web::json::value get_control_protocol_property(const resources& resources, nc_oid oid, const nc_property_id& property_id, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, slog::base_gate& gate)
+        {
+            // get resource based on the oid
+            const auto& found = find_resource(resources, utility::s2us(std::to_string(oid)));
+            if (resources.end() != found)
+            {
+                // find the relevant nc_property_descriptor
+                const auto& property = nc::find_property_descriptor(property_id, nmos::details::parse_nc_class_id(nmos::fields::nc::class_id(found->data)), get_control_protocol_class_descriptor);
+                if (!property.is_null() && found->has_data() && found->data.has_field(nmos::fields::nc::name(property)))
+                {
+                    return found->data.at(nmos::fields::nc::name(property));
+                }
+            }
             // unknown property
-            slog::log<slog::severities::error>(gate, SLOG_FLF) << "unknown property: {level=" << property_id.level << ", index=" << property_id.index << "}  to do Set.";
-            return false;
+            slog::log<slog::severities::error>(gate, SLOG_FLF) << U("unknown property: {level=") << property_id.level << U(", index=") << property_id.index << U("} to do Get");
+            return web::json::value::null();
         }
 
-        // unknown resource
-        slog::log<slog::severities::error>(gate, SLOG_FLF) << "unknown control protocol resource: oid=" << oid;
-        return false;
-    }
-
-    bool set_control_protocol_property(resources& resources, nc_oid oid, const utility::string_t& property_name, const web::json::value& value, slog::base_gate& gate)
-    {
-        try
+        bool set_control_protocol_property_and_notify(resources& resources, nc_oid oid, const nc_property_id& property_id, const web::json::value& value, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, slog::base_gate& gate)
         {
-            nc::modify_resource(resources, utility::s2us(std::to_string(oid)), [&](nmos::resource& resource)
+            const auto& found = find_resource(resources, utility::s2us(std::to_string(oid)));
+            if (resources.end() != found)
             {
-                resource.data[property_name] = value;
-            });
-            return true;
-        }
-        catch (const nmos::control_protocol_exception& e)
-        {
-            slog::log<slog::severities::error>(gate, SLOG_FLF) << "Set property name : " << property_name.c_str() << " error: " << e.what();
-            return false;
-        }
-    }
-
-    web::json::value get_control_protocol_property(const resources& resources, nc_oid oid, const utility::string_t& property_name, slog::base_gate& gate)
-    {
-        // get resource based on the oid
-        const auto& found = find_resource(resources, utility::s2us(std::to_string(oid)));
-        if (resources.end() != found)
-        {
-            // find the relevant nc_property_descriptor
-            return found->data.at(property_name);
-        }
-        // unknown resource
-        slog::log<slog::severities::error>(gate, SLOG_FLF) << "unknown control protocol resource: oid=" << oid;
-        return web::json::value::null();
-    }
-
-    // Set link status and link status message
-    bool set_receiver_monitor_link_status(resources& resources, nc_oid oid, nmos::nc_link_status::status link_status, const utility::string_t& link_status_message, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, slog::base_gate& gate)
-    {
-        return nc::details::set_monitor_status(resources, oid, link_status, link_status_message,
-            nc_receiver_monitor_link_status_property_id,
-            nc_receiver_monitor_link_status_message_property_id,
-            nc_receiver_monitor_link_status_transition_counter_property_id,
-            nmos::fields::nc::link_status_pending_received_time,
-            get_control_protocol_class_descriptor,
-            gate);
-    }
-
-    bool set_receiver_monitor_link_status_with_delay(resources& resources, nc_oid oid, nmos::nc_link_status::status link_status, const utility::string_t& link_status_message, monitor_status_pending_handler monitor_status_pending, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, slog::base_gate& gate)
-    {
-        const auto now_time = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
-
-        return nc::details::set_monitor_status_with_delay(resources, oid, link_status, link_status_message,
-            nc_receiver_monitor_link_status_property_id,
-            nc_receiver_monitor_link_status_message_property_id,
-            nc_receiver_monitor_link_status_transition_counter_property_id,
-            nmos::fields::nc::link_status_pending,
-            nmos::fields::nc::link_status_message_pending,
-            nmos::fields::nc::link_status_pending_received_time,
-            now_time,
-            monitor_status_pending,
-            get_control_protocol_class_descriptor,
-            gate);
-    }
-
-    bool set_receiver_monitor_connection_status(resources& resources, nc_oid oid, nmos::nc_connection_status::status connection_status, const utility::string_t& connection_status_message, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, slog::base_gate& gate)
-    {
-        return nc::details::set_monitor_status(resources, oid, connection_status, connection_status_message,
-            nc_receiver_monitor_connection_status_property_id,
-            nc_receiver_monitor_connection_status_message_property_id,
-            nc_receiver_monitor_connection_status_transition_counter_property_id,
-            nmos::fields::nc::connection_status_pending_received_time,
-            get_control_protocol_class_descriptor,
-            gate);
-    }
-
-    bool set_receiver_monitor_connection_status_with_delay(resources& resources, nc_oid oid, nmos::nc_connection_status::status connection_status, const utility::string_t& connection_status_message, monitor_status_pending_handler monitor_status_pending, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, slog::base_gate& gate)
-    {
-        const auto now_time = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
-
-        return nc::details::set_monitor_status_with_delay(resources, oid, connection_status, connection_status_message,
-            nc_receiver_monitor_connection_status_property_id,
-            nc_receiver_monitor_connection_status_message_property_id,
-            nc_receiver_monitor_connection_status_transition_counter_property_id,
-            nmos::fields::nc::connection_status_pending,
-            nmos::fields::nc::connection_status_message_pending,
-            nmos::fields::nc::connection_status_pending_received_time,
-            now_time,
-            monitor_status_pending,
-            get_control_protocol_class_descriptor,
-            gate);
-    }
-
-    // Set external synchronization status and external synchronization status message
-    bool set_receiver_monitor_external_synchronization_status(resources& resources, nc_oid oid, nmos::nc_synchronization_status::status external_synchronization_status, const utility::string_t& external_synchronization_status_message, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, slog::base_gate& gate)
-    {
-        return nc::details::set_monitor_status(resources, oid, external_synchronization_status, external_synchronization_status_message,
-            nc_receiver_monitor_external_synchronization_status_property_id,
-            nc_receiver_monitor_external_synchronization_status_message_property_id,
-            nc_receiver_monitor_external_synchronization_status_transition_counter_property_id,
-            nmos::fields::nc::external_synchronization_status_pending_received_time,
-            get_control_protocol_class_descriptor,
-            gate);
-    }
-
-    bool set_receiver_monitor_external_synchronization_status_with_delay(resources& resources, nc_oid oid, nmos::nc_synchronization_status::status external_synchronization_status, const utility::string_t& external_synchronization_status_message, monitor_status_pending_handler monitor_status_pending, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, slog::base_gate& gate)
-    {
-        const auto now_time = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
-
-        return nc::details::set_monitor_status_with_delay(resources, oid, external_synchronization_status, external_synchronization_status_message,
-            nc_receiver_monitor_external_synchronization_status_property_id,
-            nc_receiver_monitor_external_synchronization_status_message_property_id,
-            nc_receiver_monitor_external_synchronization_status_transition_counter_property_id,
-            nmos::fields::nc::external_synchronization_status_pending,
-            nmos::fields::nc::external_synchronization_status_message_pending,
-            nmos::fields::nc::external_synchronization_status_pending_received_time,
-            now_time,
-            monitor_status_pending,
-            get_control_protocol_class_descriptor,
-            gate);
-    }
-
-    // Set stream status and stream status message
-    bool set_receiver_monitor_stream_status(resources& resources, nc_oid oid, nmos::nc_stream_status::status stream_status, const utility::string_t& stream_status_message, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, slog::base_gate& gate)
-    {
-        return nc::details::set_monitor_status(resources, oid, stream_status, stream_status_message,
-            nc_receiver_monitor_stream_status_property_id,
-            nc_receiver_monitor_stream_status_message_property_id,
-            nc_receiver_monitor_stream_status_transition_counter_property_id,
-            nmos::fields::nc::stream_status_pending_received_time,
-            get_control_protocol_class_descriptor,
-            gate);
-    }
-
-    bool set_receiver_monitor_stream_status_with_delay(resources& resources, nc_oid oid, nmos::nc_stream_status::status stream_status, const utility::string_t& stream_status_message, monitor_status_pending_handler monitor_status_pending, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, slog::base_gate& gate)
-    {
-        const auto now_time = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
-
-        return nc::details::set_monitor_status_with_delay(resources, oid, stream_status, stream_status_message,
-            nc_receiver_monitor_stream_status_property_id,
-            nc_receiver_monitor_stream_status_message_property_id,
-            nc_receiver_monitor_stream_status_transition_counter_property_id,
-            nmos::fields::nc::stream_status_pending,
-            nmos::fields::nc::stream_status_message_pending,
-            nmos::fields::nc::stream_status_pending_received_time,
-            now_time,
-            monitor_status_pending,
-            get_control_protocol_class_descriptor,
-            gate);
-    }
-
-    // Set synchronization source id
-    bool set_monitor_synchronization_source_id(resources& resources, nc_oid oid, const bst::optional<utility::string_t>& source_id_, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, slog::base_gate& gate)
-    {
-        web::json::value source_id = source_id_ ? web::json::value::string(*source_id_) : web::json::value{};
-        return set_control_protocol_property_and_notify(resources, oid, nc_receiver_monitor_synchronization_source_id_property_id, source_id, get_control_protocol_class_descriptor, gate);
-    }
-
-    bool activate_monitor(resources& resources, nc_oid oid, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, nmos::get_control_protocol_method_descriptor_handler get_control_protocol_method_descriptor, slog::base_gate& gate)
-    {
-        // A monitor is expected to go through a period of instability upon activation. Therefore, on monitor activation
-        // domain specific statuses offering an Inactive option MUST transition immediately to the Healthy state.
-        // Furthermore, after activation, as long as the monitor isn’t being deactivated, it MUST delay the reporting
-        // of non Healthy states for the duration specified by statusReportingDelay, and then transition to any other appropriate state.
-        const auto& found = find_resource(resources, utility::s2us(std::to_string(oid)));
-        if (resources.end() != found && nc::is_nc_status_monitor(details::parse_nc_class_id(nmos::fields::nc::class_id(found->data))))
-        {
-            const auto& class_id = details::parse_nc_class_id(nmos::fields::nc::class_id(found->data));
-
-            auto activation_time = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
-            auto succeed = set_control_protocol_property(resources, oid, nmos::fields::nc::monitor_activation_time, activation_time, gate);
-            // If autoResetCountersAndMessages set to true then reset the transition counters
-            bool auto_reset_monitor{false};
-
-            if (nc::is_nc_sender_monitor(class_id))
-            {
-                if (succeed) succeed = set_sender_monitor_transmission_status(resources, oid, nmos::nc_transmission_status::status::healthy, U("Sender activated"), get_control_protocol_class_descriptor, gate);
-                if (succeed) succeed = set_sender_monitor_essence_status(resources, oid, nmos::nc_essence_status::status::healthy, U("Sender activated"), get_control_protocol_class_descriptor, gate);
-            }
-            else
-            {
-                if (succeed) succeed = set_receiver_monitor_connection_status(resources, oid, nmos::nc_connection_status::status::healthy, U("Receiver activated"), get_control_protocol_class_descriptor, gate);
-                if (succeed) succeed = set_receiver_monitor_stream_status(resources, oid, nmos::nc_stream_status::status::healthy, U("Receiver activated"), get_control_protocol_class_descriptor, gate);
-            }
-
-            if (succeed)
-            {
-                auto auto_reset_property_id = nc::is_nc_sender_monitor(class_id) ? nmos::nc_sender_monitor_auto_reset_monitor_property_id : nmos::nc_receiver_monitor_auto_reset_monitor_property_id;
-                auto auto_reset_monitor_ = get_control_protocol_property(resources, oid, auto_reset_property_id, get_control_protocol_class_descriptor, gate);
-                if (auto_reset_monitor_.is_null()) succeed = false;
-                else auto_reset_monitor = auto_reset_monitor_.as_bool();
-            }
-
-            if (succeed && auto_reset_monitor)
-            {
-                auto reset_monitor_method_id = nc::is_nc_sender_monitor(class_id) ? nmos::nc_sender_monitor_reset_monitor_method_id : nmos::nc_receiver_monitor_reset_monitor_method_id;
-                // find the method_handler for the reset monitor method
-                auto method = get_control_protocol_method_descriptor(class_id, reset_monitor_method_id);
-                auto& nc_method_descriptor = method.first;
-                auto& reset_monitor = method.second;
-                if (reset_monitor)
+                const auto& property = nc::find_property_descriptor(property_id, nmos::details::parse_nc_class_id(nmos::fields::nc::class_id(found->data)), get_control_protocol_class_descriptor);
+                if (!property.is_null())
                 {
-                    // this callback should not throw exceptions
-                    const auto method_result = reset_monitor(resources, *found, web::json::value::null(), nmos::fields::nc::is_deprecated(nc_method_descriptor), gate);
-                    const auto status = nmos::fields::nc::status(method_result);
-                    succeed = (nmos::nc_method_status::ok == status || nmos::nc_method_status::property_deprecated == status || nmos::nc_method_status::method_deprecated == status);
+                    try
+                    {
+                        // update property
+                        nc::modify_resource(resources, found->id, [&](nmos::resource& resource)
+                        {
+                            resource.data[nmos::fields::nc::name(property)] = value;
+
+                        }, make_property_changed_event(oid, { { property_id, nc_property_change_type::type::value_changed, value } }));
+
+                        return true;
+                    }
+                    catch (const nmos::control_protocol_exception& e)
+                    {
+                        slog::log<slog::severities::error>(gate, SLOG_FLF) << "Set property: {level=" << property_id.level << ", index=" << property_id.index << "}  error: " << e.what();
+                        return false;
+                    }
                 }
+
+                // unknown property
+                slog::log<slog::severities::error>(gate, SLOG_FLF) << "unknown property: {level=" << property_id.level << ", index=" << property_id.index << "}  to do Set.";
+                return false;
             }
-            if (succeed) slog::log<slog::severities::info>(gate, SLOG_FLF) << "Activating monitor oid: " << oid;
-            else slog::log<slog::severities::error>(gate, SLOG_FLF) << "Fail to activating monitor oid: " << oid;
 
-            return succeed;
+            // unknown resource
+            slog::log<slog::severities::error>(gate, SLOG_FLF) << "unknown control protocol resource: oid=" << oid;
+            return false;
         }
-        else
+
+        bool set_control_protocol_property(resources& resources, nc_oid oid, const utility::string_t& property_name, const web::json::value& value, slog::base_gate& gate)
         {
-            // should never happen
-            slog::log<slog::severities::fatal>(gate, SLOG_FLF) << "Invalid logic found in activate monitor oid: " << oid;
-        }
-        return false;
-    }
-
-    bool deactivate_monitor(resources& resources, nc_oid oid, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, slog::base_gate& gate)
-    {
-        const auto& found = find_resource(resources, utility::s2us(std::to_string(oid)));
-        if (resources.end() != found && nc::is_nc_status_monitor(details::parse_nc_class_id(nmos::fields::nc::class_id(found->data))))
-        {
-            const auto& class_id = details::parse_nc_class_id(nmos::fields::nc::class_id(found->data));
-
-            auto succeed = set_control_protocol_property(resources, oid, nmos::fields::nc::monitor_activation_time, web::json::value::number(0), gate);
-
-            if (nc::is_nc_sender_monitor(class_id))
+            try
             {
-                if (succeed) succeed = set_sender_monitor_transmission_status(resources, oid, nmos::nc_transmission_status::status::inactive, U("Sender deactivated"), get_control_protocol_class_descriptor, gate);
-                if (succeed) succeed = set_sender_monitor_essence_status(resources, oid, nmos::nc_essence_status::status::inactive, U("Sender deactivated"), get_control_protocol_class_descriptor, gate);
+                nc::modify_resource(resources, utility::s2us(std::to_string(oid)), [&](nmos::resource& resource)
+                {
+                    resource.data[property_name] = value;
+                });
+                return true;
+            }
+            catch (const nmos::control_protocol_exception& e)
+            {
+                slog::log<slog::severities::error>(gate, SLOG_FLF) << "Set property name : " << property_name.c_str() << " error: " << e.what();
+                return false;
+            }
+        }
+
+        web::json::value get_control_protocol_property(const resources& resources, nc_oid oid, const utility::string_t& property_name, slog::base_gate& gate)
+        {
+            // get resource based on the oid
+            const auto& found = find_resource(resources, utility::s2us(std::to_string(oid)));
+            if (resources.end() != found)
+            {
+                // find the relevant nc_property_descriptor
+                return found->data.at(property_name);
+            }
+            // unknown resource
+            slog::log<slog::severities::error>(gate, SLOG_FLF) << "unknown control protocol resource: oid=" << oid;
+            return web::json::value::null();
+        }
+
+        // Set link status and link status message
+        bool set_receiver_monitor_link_status(resources& resources, nc_oid oid, nmos::nc_link_status::status link_status, const utility::string_t& link_status_message, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, slog::base_gate& gate)
+        {
+            return nc::details::set_monitor_status(resources, oid, link_status, link_status_message,
+                nc_receiver_monitor_link_status_property_id,
+                nc_receiver_monitor_link_status_message_property_id,
+                nc_receiver_monitor_link_status_transition_counter_property_id,
+                nmos::fields::nc::link_status_pending_received_time,
+                get_control_protocol_class_descriptor,
+                gate);
+        }
+
+        bool set_receiver_monitor_link_status_with_delay(resources& resources, nc_oid oid, nmos::nc_link_status::status link_status, const utility::string_t& link_status_message, monitor_status_pending_handler monitor_status_pending, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, slog::base_gate& gate)
+        {
+            const auto now_time = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
+
+            return nc::details::set_monitor_status_with_delay(resources, oid, link_status, link_status_message,
+                nc_receiver_monitor_link_status_property_id,
+                nc_receiver_monitor_link_status_message_property_id,
+                nc_receiver_monitor_link_status_transition_counter_property_id,
+                nmos::fields::nc::link_status_pending,
+                nmos::fields::nc::link_status_message_pending,
+                nmos::fields::nc::link_status_pending_received_time,
+                now_time,
+                monitor_status_pending,
+                get_control_protocol_class_descriptor,
+                gate);
+        }
+
+        bool set_receiver_monitor_connection_status(resources& resources, nc_oid oid, nmos::nc_connection_status::status connection_status, const utility::string_t& connection_status_message, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, slog::base_gate& gate)
+        {
+            return nc::details::set_monitor_status(resources, oid, connection_status, connection_status_message,
+                nc_receiver_monitor_connection_status_property_id,
+                nc_receiver_monitor_connection_status_message_property_id,
+                nc_receiver_monitor_connection_status_transition_counter_property_id,
+                nmos::fields::nc::connection_status_pending_received_time,
+                get_control_protocol_class_descriptor,
+                gate);
+        }
+
+        bool set_receiver_monitor_connection_status_with_delay(resources& resources, nc_oid oid, nmos::nc_connection_status::status connection_status, const utility::string_t& connection_status_message, monitor_status_pending_handler monitor_status_pending, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, slog::base_gate& gate)
+        {
+            const auto now_time = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
+
+            return nc::details::set_monitor_status_with_delay(resources, oid, connection_status, connection_status_message,
+                nc_receiver_monitor_connection_status_property_id,
+                nc_receiver_monitor_connection_status_message_property_id,
+                nc_receiver_monitor_connection_status_transition_counter_property_id,
+                nmos::fields::nc::connection_status_pending,
+                nmos::fields::nc::connection_status_message_pending,
+                nmos::fields::nc::connection_status_pending_received_time,
+                now_time,
+                monitor_status_pending,
+                get_control_protocol_class_descriptor,
+                gate);
+        }
+
+        // Set external synchronization status and external synchronization status message
+        bool set_receiver_monitor_external_synchronization_status(resources& resources, nc_oid oid, nmos::nc_synchronization_status::status external_synchronization_status, const utility::string_t& external_synchronization_status_message, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, slog::base_gate& gate)
+        {
+            return nc::details::set_monitor_status(resources, oid, external_synchronization_status, external_synchronization_status_message,
+                nc_receiver_monitor_external_synchronization_status_property_id,
+                nc_receiver_monitor_external_synchronization_status_message_property_id,
+                nc_receiver_monitor_external_synchronization_status_transition_counter_property_id,
+                nmos::fields::nc::external_synchronization_status_pending_received_time,
+                get_control_protocol_class_descriptor,
+                gate);
+        }
+
+        bool set_receiver_monitor_external_synchronization_status_with_delay(resources& resources, nc_oid oid, nmos::nc_synchronization_status::status external_synchronization_status, const utility::string_t& external_synchronization_status_message, monitor_status_pending_handler monitor_status_pending, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, slog::base_gate& gate)
+        {
+            const auto now_time = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
+
+            return nc::details::set_monitor_status_with_delay(resources, oid, external_synchronization_status, external_synchronization_status_message,
+                nc_receiver_monitor_external_synchronization_status_property_id,
+                nc_receiver_monitor_external_synchronization_status_message_property_id,
+                nc_receiver_monitor_external_synchronization_status_transition_counter_property_id,
+                nmos::fields::nc::external_synchronization_status_pending,
+                nmos::fields::nc::external_synchronization_status_message_pending,
+                nmos::fields::nc::external_synchronization_status_pending_received_time,
+                now_time,
+                monitor_status_pending,
+                get_control_protocol_class_descriptor,
+                gate);
+        }
+
+        // Set stream status and stream status message
+        bool set_receiver_monitor_stream_status(resources& resources, nc_oid oid, nmos::nc_stream_status::status stream_status, const utility::string_t& stream_status_message, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, slog::base_gate& gate)
+        {
+            return nc::details::set_monitor_status(resources, oid, stream_status, stream_status_message,
+                nc_receiver_monitor_stream_status_property_id,
+                nc_receiver_monitor_stream_status_message_property_id,
+                nc_receiver_monitor_stream_status_transition_counter_property_id,
+                nmos::fields::nc::stream_status_pending_received_time,
+                get_control_protocol_class_descriptor,
+                gate);
+        }
+
+        bool set_receiver_monitor_stream_status_with_delay(resources& resources, nc_oid oid, nmos::nc_stream_status::status stream_status, const utility::string_t& stream_status_message, monitor_status_pending_handler monitor_status_pending, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, slog::base_gate& gate)
+        {
+            const auto now_time = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
+
+            return nc::details::set_monitor_status_with_delay(resources, oid, stream_status, stream_status_message,
+                nc_receiver_monitor_stream_status_property_id,
+                nc_receiver_monitor_stream_status_message_property_id,
+                nc_receiver_monitor_stream_status_transition_counter_property_id,
+                nmos::fields::nc::stream_status_pending,
+                nmos::fields::nc::stream_status_message_pending,
+                nmos::fields::nc::stream_status_pending_received_time,
+                now_time,
+                monitor_status_pending,
+                get_control_protocol_class_descriptor,
+                gate);
+        }
+
+        // Set synchronization source id
+        bool set_monitor_synchronization_source_id(resources& resources, nc_oid oid, const bst::optional<utility::string_t>& source_id_, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, slog::base_gate& gate)
+        {
+            web::json::value source_id = source_id_ ? web::json::value::string(*source_id_) : web::json::value{};
+            return set_control_protocol_property_and_notify(resources, oid, nc_receiver_monitor_synchronization_source_id_property_id, source_id, get_control_protocol_class_descriptor, gate);
+        }
+
+        bool activate_monitor(resources& resources, nc_oid oid, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, nmos::get_control_protocol_method_descriptor_handler get_control_protocol_method_descriptor, slog::base_gate& gate)
+        {
+            // A monitor is expected to go through a period of instability upon activation. Therefore, on monitor activation
+            // domain specific statuses offering an Inactive option MUST transition immediately to the Healthy state.
+            // Furthermore, after activation, as long as the monitor isn’t being deactivated, it MUST delay the reporting
+            // of non Healthy states for the duration specified by statusReportingDelay, and then transition to any other appropriate state.
+            const auto& found = find_resource(resources, utility::s2us(std::to_string(oid)));
+            if (resources.end() != found && nc::is_nc_status_monitor(nmos::details::parse_nc_class_id(nmos::fields::nc::class_id(found->data))))
+            {
+                const auto& class_id = nmos::details::parse_nc_class_id(nmos::fields::nc::class_id(found->data));
+
+                auto activation_time = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
+                auto succeed = set_control_protocol_property(resources, oid, nmos::fields::nc::monitor_activation_time, activation_time, gate);
+                // If autoResetCountersAndMessages set to true then reset the transition counters
+                bool auto_reset_monitor{false};
+
+                if (nc::is_nc_sender_monitor(class_id))
+                {
+                    if (succeed) succeed = set_sender_monitor_transmission_status(resources, oid, nmos::nc_transmission_status::status::healthy, U("Sender activated"), get_control_protocol_class_descriptor, gate);
+                    if (succeed) succeed = set_sender_monitor_essence_status(resources, oid, nmos::nc_essence_status::status::healthy, U("Sender activated"), get_control_protocol_class_descriptor, gate);
+                }
+                else
+                {
+                    if (succeed) succeed = set_receiver_monitor_connection_status(resources, oid, nmos::nc_connection_status::status::healthy, U("Receiver activated"), get_control_protocol_class_descriptor, gate);
+                    if (succeed) succeed = set_receiver_monitor_stream_status(resources, oid, nmos::nc_stream_status::status::healthy, U("Receiver activated"), get_control_protocol_class_descriptor, gate);
+                }
+
+                if (succeed)
+                {
+                    auto auto_reset_property_id = nc::is_nc_sender_monitor(class_id) ? nmos::nc_sender_monitor_auto_reset_monitor_property_id : nmos::nc_receiver_monitor_auto_reset_monitor_property_id;
+                    auto auto_reset_monitor_ = get_control_protocol_property(resources, oid, auto_reset_property_id, get_control_protocol_class_descriptor, gate);
+                    if (auto_reset_monitor_.is_null()) succeed = false;
+                    else auto_reset_monitor = auto_reset_monitor_.as_bool();
+                }
+
+                if (succeed && auto_reset_monitor)
+                {
+                    auto reset_monitor_method_id = nc::is_nc_sender_monitor(class_id) ? nmos::nc_sender_monitor_reset_monitor_method_id : nmos::nc_receiver_monitor_reset_monitor_method_id;
+                    // find the method_handler for the reset monitor method
+                    auto method = get_control_protocol_method_descriptor(class_id, reset_monitor_method_id);
+                    auto& nc_method_descriptor = method.first;
+                    auto& reset_monitor = method.second;
+                    if (reset_monitor)
+                    {
+                        // this callback should not throw exceptions
+                        const auto method_result = reset_monitor(resources, *found, web::json::value::null(), nmos::fields::nc::is_deprecated(nc_method_descriptor), gate);
+                        const auto status = nmos::fields::nc::status(method_result);
+                        succeed = (nmos::nc_method_status::ok == status || nmos::nc_method_status::property_deprecated == status || nmos::nc_method_status::method_deprecated == status);
+                    }
+                }
+                if (succeed) slog::log<slog::severities::info>(gate, SLOG_FLF) << "Activating monitor oid: " << oid;
+                else slog::log<slog::severities::error>(gate, SLOG_FLF) << "Fail to activating monitor oid: " << oid;
+
+                return succeed;
             }
             else
             {
-                if (succeed) succeed = set_receiver_monitor_connection_status(resources, oid, nmos::nc_connection_status::status::inactive, U("Receiver deactivated"), get_control_protocol_class_descriptor, gate);
-                if (succeed) succeed = set_receiver_monitor_stream_status(resources, oid, nmos::nc_stream_status::status::inactive, U("Receiver deactivated"), get_control_protocol_class_descriptor, gate);
+                // should never happen
+                slog::log<slog::severities::fatal>(gate, SLOG_FLF) << "Invalid logic found in activate monitor oid: " << oid;
             }
-            return succeed;
+            return false;
         }
-        else
+
+        bool deactivate_monitor(resources& resources, nc_oid oid, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, slog::base_gate& gate)
         {
-            // should never happen
-            slog::log<slog::severities::fatal>(gate, SLOG_FLF) << "Invalid logic found in deactivate monitor oid: " << oid;
+            const auto& found = find_resource(resources, utility::s2us(std::to_string(oid)));
+            if (resources.end() != found && nc::is_nc_status_monitor(nmos::details::parse_nc_class_id(nmos::fields::nc::class_id(found->data))))
+            {
+                const auto& class_id = nmos::details::parse_nc_class_id(nmos::fields::nc::class_id(found->data));
+
+                auto succeed = set_control_protocol_property(resources, oid, nmos::fields::nc::monitor_activation_time, web::json::value::number(0), gate);
+
+                if (nc::is_nc_sender_monitor(class_id))
+                {
+                    if (succeed) succeed = set_sender_monitor_transmission_status(resources, oid, nmos::nc_transmission_status::status::inactive, U("Sender deactivated"), get_control_protocol_class_descriptor, gate);
+                    if (succeed) succeed = set_sender_monitor_essence_status(resources, oid, nmos::nc_essence_status::status::inactive, U("Sender deactivated"), get_control_protocol_class_descriptor, gate);
+                }
+                else
+                {
+                    if (succeed) succeed = set_receiver_monitor_connection_status(resources, oid, nmos::nc_connection_status::status::inactive, U("Receiver deactivated"), get_control_protocol_class_descriptor, gate);
+                    if (succeed) succeed = set_receiver_monitor_stream_status(resources, oid, nmos::nc_stream_status::status::inactive, U("Receiver deactivated"), get_control_protocol_class_descriptor, gate);
+                }
+                return succeed;
+            }
+            else
+            {
+                // should never happen
+                slog::log<slog::severities::fatal>(gate, SLOG_FLF) << "Invalid logic found in deactivate monitor oid: " << oid;
+            }
+            return false;
         }
-        return false;
+
+        // Set link status and link status message
+        bool set_sender_monitor_link_status(resources& resources, nc_oid oid, nmos::nc_link_status::status link_status, const utility::string_t& link_status_message, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, slog::base_gate& gate)
+        {
+            return nc::details::set_monitor_status(resources, oid, link_status, link_status_message,
+                nc_sender_monitor_link_status_property_id,
+                nc_sender_monitor_link_status_message_property_id,
+                nc_sender_monitor_link_status_transition_counter_property_id,
+                nmos::fields::nc::link_status_pending_received_time,
+                get_control_protocol_class_descriptor,
+                gate);
+        }
+        // Set link status and status message and apply status reporting delay
+        bool set_sender_monitor_link_status_with_delay(resources& resources, nc_oid oid, nmos::nc_link_status::status link_status, const utility::string_t& link_status_message, monitor_status_pending_handler monitor_status_pending, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, slog::base_gate& gate)
+        {
+            const auto now_time = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
+
+            return nc::details::set_monitor_status_with_delay(resources, oid, link_status, link_status_message,
+                nc_sender_monitor_link_status_property_id,
+                nc_sender_monitor_link_status_message_property_id,
+                nc_sender_monitor_link_status_transition_counter_property_id,
+                nmos::fields::nc::link_status_pending,
+                nmos::fields::nc::link_status_message_pending,
+                nmos::fields::nc::link_status_pending_received_time,
+                now_time,
+                monitor_status_pending,
+                get_control_protocol_class_descriptor,
+                gate);
+        }
+
+        // Set transmission status and transmission status message
+        bool set_sender_monitor_transmission_status(resources& resources, nc_oid oid, nmos::nc_transmission_status::status transmission_status, const utility::string_t& transmission_status_message, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, slog::base_gate& gate)
+        {
+             return nc::details::set_monitor_status(resources, oid, transmission_status, transmission_status_message,
+                nc_sender_monitor_transmission_status_property_id,
+                nc_sender_monitor_transmission_status_message_property_id,
+                nc_sender_monitor_transmission_status_transition_counter_property_id,
+                nmos::fields::nc::connection_status_pending_received_time,
+                get_control_protocol_class_descriptor,
+                gate);
+        }
+        // Set transmission status and status message and apply status reporting delay
+        bool set_sender_monitor_transmission_status_with_delay(resources& resources, nc_oid oid, nmos::nc_transmission_status::status transmission_status, const utility::string_t& transmission_status_message, monitor_status_pending_handler monitor_status_pending, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, slog::base_gate& gate)
+        {
+            const auto now_time = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
+
+            return nc::details::set_monitor_status_with_delay(resources, oid, transmission_status, transmission_status_message,
+                nc_sender_monitor_transmission_status_property_id,
+                nc_sender_monitor_transmission_status_message_property_id,
+                nc_sender_monitor_transmission_status_transition_counter_property_id,
+                nmos::fields::nc::transmission_status_pending,
+                nmos::fields::nc::transmission_status_message_pending,
+                nmos::fields::nc::transmission_status_pending_received_time,
+                now_time,
+                monitor_status_pending,
+                get_control_protocol_class_descriptor,
+                gate);
+        }
+
+        // Set external synchronization status and external synchronization status message
+        bool set_sender_monitor_external_synchronization_status(resources& resources, nc_oid oid, nmos::nc_synchronization_status::status external_synchronization_status, const utility::string_t& external_synchronization_status_message, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, slog::base_gate& gate)
+        {
+            return nc::details::set_monitor_status(resources, oid, external_synchronization_status, external_synchronization_status_message,
+                nc_sender_monitor_external_synchronization_status_property_id,
+                nc_sender_monitor_external_synchronization_status_message_property_id,
+                nc_sender_monitor_external_synchronization_status_transition_counter_property_id,
+                nmos::fields::nc::external_synchronization_status_pending_received_time,
+                get_control_protocol_class_descriptor,
+                gate);
+        }
+        // Set external synchronization status and status message and apply status reporting delay
+        bool set_sender_monitor_external_synchronization_status_with_delay(resources& resources, nc_oid oid, nmos::nc_synchronization_status::status external_synchronization_status, const utility::string_t& external_synchronization_status_message, monitor_status_pending_handler monitor_status_pending, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, slog::base_gate& gate)
+        {
+            const auto now_time = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
+
+            return nc::details::set_monitor_status_with_delay(resources, oid, external_synchronization_status, external_synchronization_status_message,
+                nc_sender_monitor_external_synchronization_status_property_id,
+                nc_sender_monitor_external_synchronization_status_message_property_id,
+                nc_sender_monitor_external_synchronization_status_transition_counter_property_id,
+                nmos::fields::nc::external_synchronization_status_pending,
+                nmos::fields::nc::external_synchronization_status_message_pending,
+                nmos::fields::nc::external_synchronization_status_pending_received_time,
+                now_time,
+                monitor_status_pending,
+                get_control_protocol_class_descriptor,
+                gate);
+        }
+
+        // Set essence status and stream status message
+        bool set_sender_monitor_essence_status(resources& resources, nc_oid oid, nmos::nc_essence_status::status essence_status, const utility::string_t& essence_status_message, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, slog::base_gate& gate)
+        {
+            return nc::details::set_monitor_status(resources, oid, essence_status, essence_status_message,
+                nc_sender_monitor_essence_status_property_id,
+                nc_sender_monitor_essence_status_message_property_id,
+                nc_sender_monitor_essence_status_transition_counter_property_id,
+                nmos::fields::nc::stream_status_pending_received_time,
+                get_control_protocol_class_descriptor,
+                gate);
+        }
+        // Set essence status and status message and apply status reporting delay
+        bool set_sender_monitor_essence_status_with_delay(resources& resources, nc_oid oid, nmos::nc_essence_status::status essence_status, const utility::string_t& essence_status_message, monitor_status_pending_handler monitor_status_pending, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, slog::base_gate& gate)
+        {
+            const auto now_time = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
+
+            return nc::details::set_monitor_status_with_delay(resources, oid, essence_status, essence_status_message,
+                nc_sender_monitor_essence_status_property_id,
+                nc_sender_monitor_essence_status_message_property_id,
+                nc_sender_monitor_essence_status_transition_counter_property_id,
+                nmos::fields::nc::essence_status_pending,
+                nmos::fields::nc::essence_status_message_pending,
+                nmos::fields::nc::essence_status_pending_received_time,
+                now_time,
+                monitor_status_pending,
+                get_control_protocol_class_descriptor,
+                gate);
+        }
     }
 
-    // Set link status and link status message
-    bool set_sender_monitor_link_status(resources& resources, nc_oid oid, nmos::nc_link_status::status link_status, const utility::string_t& link_status_message, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, slog::base_gate& gate)
-    {
-        return nc::details::set_monitor_status(resources, oid, link_status, link_status_message,
-            nc_sender_monitor_link_status_property_id,
-            nc_sender_monitor_link_status_message_property_id,
-            nc_sender_monitor_link_status_transition_counter_property_id,
-            nmos::fields::nc::link_status_pending_received_time,
-            get_control_protocol_class_descriptor,
-            gate);
-    }
-    // Set link status and status message and apply status reporting delay
-    bool set_sender_monitor_link_status_with_delay(resources& resources, nc_oid oid, nmos::nc_link_status::status link_status, const utility::string_t& link_status_message, monitor_status_pending_handler monitor_status_pending, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, slog::base_gate& gate)
-    {
-        const auto now_time = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
-
-        return nc::details::set_monitor_status_with_delay(resources, oid, link_status, link_status_message,
-            nc_sender_monitor_link_status_property_id,
-            nc_sender_monitor_link_status_message_property_id,
-            nc_sender_monitor_link_status_transition_counter_property_id,
-            nmos::fields::nc::link_status_pending,
-            nmos::fields::nc::link_status_message_pending,
-            nmos::fields::nc::link_status_pending_received_time,
-            now_time,
-            monitor_status_pending,
-            get_control_protocol_class_descriptor,
-            gate);
-    }
-
-    // Set transmission status and transmission status message
-    bool set_sender_monitor_transmission_status(resources& resources, nc_oid oid, nmos::nc_transmission_status::status transmission_status, const utility::string_t& transmission_status_message, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, slog::base_gate& gate)
-    {
-         return nc::details::set_monitor_status(resources, oid, transmission_status, transmission_status_message,
-            nc_sender_monitor_transmission_status_property_id,
-            nc_sender_monitor_transmission_status_message_property_id,
-            nc_sender_monitor_transmission_status_transition_counter_property_id,
-            nmos::fields::nc::connection_status_pending_received_time,
-            get_control_protocol_class_descriptor,
-            gate);
-    }
-    // Set transmission status and status message and apply status reporting delay
-    bool set_sender_monitor_transmission_status_with_delay(resources& resources, nc_oid oid, nmos::nc_transmission_status::status transmission_status, const utility::string_t& transmission_status_message, monitor_status_pending_handler monitor_status_pending, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, slog::base_gate& gate)
-    {
-        const auto now_time = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
-
-        return nc::details::set_monitor_status_with_delay(resources, oid, transmission_status, transmission_status_message,
-            nc_sender_monitor_transmission_status_property_id,
-            nc_sender_monitor_transmission_status_message_property_id,
-            nc_sender_monitor_transmission_status_transition_counter_property_id,
-            nmos::fields::nc::transmission_status_pending,
-            nmos::fields::nc::transmission_status_message_pending,
-            nmos::fields::nc::transmission_status_pending_received_time,
-            now_time,
-            monitor_status_pending,
-            get_control_protocol_class_descriptor,
-            gate);
-    }
-
-    // Set external synchronization status and external synchronization status message
-    bool set_sender_monitor_external_synchronization_status(resources& resources, nc_oid oid, nmos::nc_synchronization_status::status external_synchronization_status, const utility::string_t& external_synchronization_status_message, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, slog::base_gate& gate)
-    {
-        return nc::details::set_monitor_status(resources, oid, external_synchronization_status, external_synchronization_status_message,
-            nc_sender_monitor_external_synchronization_status_property_id,
-            nc_sender_monitor_external_synchronization_status_message_property_id,
-            nc_sender_monitor_external_synchronization_status_transition_counter_property_id,
-            nmos::fields::nc::external_synchronization_status_pending_received_time,
-            get_control_protocol_class_descriptor,
-            gate);
-    }
-    // Set external synchronization status and status message and apply status reporting delay
-    bool set_sender_monitor_external_synchronization_status_with_delay(resources& resources, nc_oid oid, nmos::nc_synchronization_status::status external_synchronization_status, const utility::string_t& external_synchronization_status_message, monitor_status_pending_handler monitor_status_pending, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, slog::base_gate& gate)
-    {
-        const auto now_time = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
-
-        return nc::details::set_monitor_status_with_delay(resources, oid, external_synchronization_status, external_synchronization_status_message,
-            nc_sender_monitor_external_synchronization_status_property_id,
-            nc_sender_monitor_external_synchronization_status_message_property_id,
-            nc_sender_monitor_external_synchronization_status_transition_counter_property_id,
-            nmos::fields::nc::external_synchronization_status_pending,
-            nmos::fields::nc::external_synchronization_status_message_pending,
-            nmos::fields::nc::external_synchronization_status_pending_received_time,
-            now_time,
-            monitor_status_pending,
-            get_control_protocol_class_descriptor,
-            gate);
-    }
-
-    // Set essence status and stream status message
-    bool set_sender_monitor_essence_status(resources& resources, nc_oid oid, nmos::nc_essence_status::status essence_status, const utility::string_t& essence_status_message, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, slog::base_gate& gate)
-    {
-        return nc::details::set_monitor_status(resources, oid, essence_status, essence_status_message,
-            nc_sender_monitor_essence_status_property_id,
-            nc_sender_monitor_essence_status_message_property_id,
-            nc_sender_monitor_essence_status_transition_counter_property_id,
-            nmos::fields::nc::stream_status_pending_received_time,
-            get_control_protocol_class_descriptor,
-            gate);
-    }
-    // Set essence status and status message and apply status reporting delay
-    bool set_sender_monitor_essence_status_with_delay(resources& resources, nc_oid oid, nmos::nc_essence_status::status essence_status, const utility::string_t& essence_status_message, monitor_status_pending_handler monitor_status_pending, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, slog::base_gate& gate)
-    {
-        const auto now_time = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
-
-        return nc::details::set_monitor_status_with_delay(resources, oid, essence_status, essence_status_message,
-            nc_sender_monitor_essence_status_property_id,
-            nc_sender_monitor_essence_status_message_property_id,
-            nc_sender_monitor_essence_status_transition_counter_property_id,
-            nmos::fields::nc::essence_status_pending,
-            nmos::fields::nc::essence_status_message_pending,
-            nmos::fields::nc::essence_status_pending_received_time,
-            now_time,
-            monitor_status_pending,
-            get_control_protocol_class_descriptor,
-            gate);
-    }
 }
