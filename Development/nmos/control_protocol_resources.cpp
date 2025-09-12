@@ -13,7 +13,7 @@ namespace nmos
         {
             using web::json::value;
 
-            auto data = nc::details::make_nc_block(nc_block_class_id, oid, true, owner, role, value::string(user_label), description, touchpoints, runtime_property_constraints, true, members);
+            auto data = nc::details::make_block(nc_block_class_id, oid, true, owner, role, value::string(user_label), description, touchpoints, runtime_property_constraints, true, members);
 
             return{ is12_versions::v1_0, types::nc_block, std::move(data), true };
         }
@@ -44,7 +44,7 @@ namespace nmos
 
         for(const auto& class_id: allowed_member_classes)
         {
-            web::json::push_back(allowed_member_classes_array, nc::details::make_nc_class_id(class_id));
+            web::json::push_back(allowed_member_classes_array, nc::details::make_class_id(class_id));
         }
 
         control_protocol_resource.data[nmos::fields::nc::allowed_members_classes] = allowed_member_classes_array;
@@ -83,14 +83,14 @@ namespace nmos
     {
         using web::json::value;
 
-        const auto& manufacturer = nc::details::make_nc_manufacturer(nmos::experimental::fields::manufacturer_name(settings));
-        const auto& product = nc::details::make_nc_product(nmos::experimental::fields::product_name(settings), nmos::experimental::fields::product_key(settings), nmos::experimental::fields::product_key(settings));
+        const auto& manufacturer = nc::details::make_manufacturer(nmos::experimental::fields::manufacturer_name(settings));
+        const auto& product = nc::details::make_product(nmos::experimental::fields::product_name(settings), nmos::experimental::fields::product_key(settings), nmos::experimental::fields::product_key(settings));
         const auto& serial_number = nmos::experimental::fields::serial_number(settings);
         const auto device_name = value::null();
         const auto device_role = value::null();
-        const auto& operational_state = nc::details::make_nc_device_operational_state(nc_device_generic_state::normal_operation, value::null());
+        const auto& operational_state = nc::details::make_device_operational_state(nc_device_generic_state::normal_operation, value::null());
 
-        auto data = nc::details::make_nc_device_manager(oid, root_block_oid, value::string(U("Device manager")), U("The device manager offers information about the product this device is representing"), value::null(), value::null(),
+        auto data = nc::details::make_device_manager(oid, root_block_oid, value::string(U("Device manager")), U("The device manager offers information about the product this device is representing"), value::null(), value::null(),
             manufacturer, product, serial_number, value::null(), device_name, device_role, operational_state, nc_reset_cause::unknown);
 
         return{ is12_versions::v1_0, types::nc_device_manager, std::move(data), true };
@@ -101,7 +101,7 @@ namespace nmos
     {
         using web::json::value;
 
-        auto data = nc::details::make_nc_class_manager(oid, root_block_oid, value::string(U("Class manager")), U("The class manager offers access to control class and data type descriptors"), value::null(), value::null(), control_protocol_state);
+        auto data = nc::details::make_class_manager(oid, root_block_oid, value::string(U("Class manager")), U("The class manager offers access to control class and data type descriptors"), value::null(), value::null(), control_protocol_state);
 
         return{ is12_versions::v1_0, types::nc_class_manager, std::move(data), true };
     }
@@ -134,7 +134,7 @@ namespace nmos
     {
         using web::json::value;
 
-        auto data = nc::details::make_nc_worker(nc_ident_beacon_class_id, oid, constant_oid, owner, role, value::string(user_label), description, touchpoints, runtime_property_constraints, enabled);
+        auto data = nc::details::make_worker(nc_ident_beacon_class_id, oid, constant_oid, owner, role, value::string(user_label), description, touchpoints, runtime_property_constraints, enabled);
         data[nmos::fields::nc::active] = value::boolean(active);
 
         return{ is12_versions::v1_0, types::nc_ident_beacon, std::move(data), true };
@@ -147,7 +147,7 @@ namespace nmos
     {
         using web::json::value;
 
-        auto data = nc::details::make_nc_bulk_properties_manager(oid, root_block_oid, value::string(U("Bulk properties manager")), U("The bulk properties manager offers a central model for getting and setting properties of multiple role paths"), value::null(), value::null());
+        auto data = nc::details::make_bulk_properties_manager(oid, root_block_oid, value::string(U("Bulk properties manager")), U("The bulk properties manager offers a central model for getting and setting properties of multiple role paths"), value::null(), value::null());
 
         return{ is12_versions::v1_0, types::nc_bulk_properties_manager, std::move(data), true };
     }

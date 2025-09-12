@@ -23,17 +23,17 @@ namespace nmos
             slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Get property: " << property_id.serialize();
 
             // find the relevant nc_property_descriptor
-            const auto& property = nc::find_property_descriptor(details::parse_nc_property_id(property_id), details::parse_nc_class_id(nmos::fields::nc::class_id(resource.data)), get_control_protocol_class_descriptor);
+            const auto& property = nc::find_property_descriptor(details::parse_property_id(property_id), details::parse_class_id(nmos::fields::nc::class_id(resource.data)), get_control_protocol_class_descriptor);
             if (!property.is_null())
             {
-                return details::make_nc_method_result({is_deprecated ? nmos::nc_method_status::method_deprecated : nmos::fields::nc::is_deprecated(property) ? nc_method_status::property_deprecated : nc_method_status::ok}, resource.data.at(nmos::fields::nc::name(property)));
+                return details::make_method_result({is_deprecated ? nmos::nc_method_status::method_deprecated : nmos::fields::nc::is_deprecated(property) ? nc_method_status::property_deprecated : nc_method_status::ok}, resource.data.at(nmos::fields::nc::name(property)));
             }
 
             // unknown property
             utility::ostringstream_t ss;
             ss << U("unknown property: ") << property_id.serialize() << U(" to do Get");
             slog::log<slog::severities::error>(gate, SLOG_FLF) << ss.str();
-            return details::make_nc_method_result_error({nc_method_status::property_not_implemented}, ss.str());
+            return details::make_method_result_error({nc_method_status::property_not_implemented}, ss.str());
         }
 
         // Set property value
@@ -47,8 +47,8 @@ namespace nmos
             slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Set property: " << property_id.serialize() << " value: " << val.serialize();
 
             // find the relevant nc_property_descriptor
-            const auto property_id_ = details::parse_nc_property_id(property_id);
-            const auto& property = nc::find_property_descriptor(property_id_, details::parse_nc_class_id(nmos::fields::nc::class_id(resource.data)), get_control_protocol_class_descriptor);
+            const auto property_id_ = details::parse_property_id(property_id);
+            const auto& property = nc::find_property_descriptor(property_id_, details::parse_class_id(nmos::fields::nc::class_id(resource.data)), get_control_protocol_class_descriptor);
             if (!property.is_null())
             {
                 if (nmos::fields::nc::is_read_only(property))
@@ -56,7 +56,7 @@ namespace nmos
                     utility::ostringstream_t ss;
                     ss << U("can not set read only property: ") << property_id.serialize();
                     slog::log<slog::severities::error>(gate, SLOG_FLF) << ss.str();
-                    return details::make_nc_method_result_error({nc_method_status::read_only}, ss.str());
+                    return details::make_method_result_error({nc_method_status::read_only}, ss.str());
                 }
 
                 if ((val.is_null() && !nmos::fields::nc::is_nullable(property))
@@ -66,18 +66,18 @@ namespace nmos
                     utility::ostringstream_t ss;
                     ss << U("parameter error: cannot set value: ") << val.serialize() << U(" on property: ") << property_id.serialize();
                     slog::log<slog::severities::error>(gate, SLOG_FLF) << ss.str();
-                    return details::make_nc_method_result_error({nc_method_status::parameter_error}, ss.str());
+                    return details::make_method_result_error({nc_method_status::parameter_error}, ss.str());
                 }
 
                 // Special case for BCP-008-01/02 where it specifies that status monitors cannot be disabled
                 if (nmos::fields::nc::name(property).c_str() == nmos::fields::nc::enabled.key
-                    && nc::is_status_monitor(details::parse_nc_class_id(nmos::fields::nc::class_id(resource.data)))
+                    && nc::is_status_monitor(details::parse_class_id(nmos::fields::nc::class_id(resource.data)))
                     && !val.as_bool())
                 {
                     utility::ostringstream_t ss;
                     ss << U("invalid request: cannot disable NcStatusMonitors");
                     slog::log<slog::severities::error>(gate, SLOG_FLF) << ss.str();
-                    return details::make_nc_method_result_error({nc_method_status::invalid_request}, ss.str());
+                    return details::make_method_result_error({nc_method_status::invalid_request}, ss.str());
                 }
 
                 try
@@ -98,14 +98,14 @@ namespace nmos
 
                     }, make_property_changed_event(nmos::fields::nc::oid(resource.data), {{property_id_, nc_property_change_type::type::value_changed, val}}));
 
-                    return details::make_nc_method_result({is_deprecated ? nmos::nc_method_status::method_deprecated : nmos::fields::nc::is_deprecated(property) ? nc_method_status::property_deprecated : nc_method_status::ok});
+                    return details::make_method_result({is_deprecated ? nmos::nc_method_status::method_deprecated : nmos::fields::nc::is_deprecated(property) ? nc_method_status::property_deprecated : nc_method_status::ok});
                 }
                 catch (const nmos::control_protocol_exception& e)
                 {
                     utility::ostringstream_t ss;
                     ss << "Set property: " << property_id.serialize() << " value: " << val.serialize() << " error: " << e.what();
                     slog::log<slog::severities::error>(gate, SLOG_FLF) << ss.str();
-                    return details::make_nc_method_result_error({nc_method_status::parameter_error}, ss.str());
+                    return details::make_method_result_error({nc_method_status::parameter_error}, ss.str());
                 }
             }
 
@@ -113,7 +113,7 @@ namespace nmos
             utility::ostringstream_t ss;
             ss << U("unknown property: ") << property_id.serialize() << " to do Set";
             slog::log<slog::severities::error>(gate, SLOG_FLF) << ss.str();
-            return details::make_nc_method_result_error({nc_method_status::property_not_implemented}, ss.str());
+            return details::make_method_result_error({nc_method_status::property_not_implemented}, ss.str());
         }
 
         // Get sequence item
@@ -127,7 +127,7 @@ namespace nmos
             slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Get sequence item: " << property_id.serialize() << " index: " << index;
 
             // find the relevant nc_property_descriptor
-            const auto& property = nc::find_property_descriptor(details::parse_nc_property_id(property_id), details::parse_nc_class_id(nmos::fields::nc::class_id(resource.data)), get_control_protocol_class_descriptor);
+            const auto& property = nc::find_property_descriptor(details::parse_property_id(property_id), details::parse_class_id(nmos::fields::nc::class_id(resource.data)), get_control_protocol_class_descriptor);
             if (!property.is_null())
             {
                 const auto& data = resource.data.at(nmos::fields::nc::name(property));
@@ -137,26 +137,26 @@ namespace nmos
                     // property is not a sequence
                     utility::ostringstream_t ss;
                     ss << U("property: ") << property_id.serialize() << U(" is not a sequence to do GetSequenceItem");
-                    return details::make_nc_method_result_error({nc_method_status::invalid_request}, ss.str());
+                    return details::make_method_result_error({nc_method_status::invalid_request}, ss.str());
                 }
 
                 if (data.as_array().size() > (size_t)index)
                 {
-                    return details::make_nc_method_result({is_deprecated ? nmos::nc_method_status::method_deprecated : nmos::fields::nc::is_deprecated(property) ? nc_method_status::property_deprecated : nc_method_status::ok}, data.at(index));
+                    return details::make_method_result({is_deprecated ? nmos::nc_method_status::method_deprecated : nmos::fields::nc::is_deprecated(property) ? nc_method_status::property_deprecated : nc_method_status::ok}, data.at(index));
                 }
 
                 // out of bound
                 utility::ostringstream_t ss;
                 ss << U("property: ") << property_id.serialize() << U(" is outside the available range to do GetSequenceItem");
                 slog::log<slog::severities::error>(gate, SLOG_FLF) << ss.str();
-                return details::make_nc_method_result_error({nc_method_status::index_out_of_bounds}, ss.str());
+                return details::make_method_result_error({nc_method_status::index_out_of_bounds}, ss.str());
             }
 
             // unknown property
             utility::ostringstream_t ss;
             ss << U("unknown property: ") << property_id.serialize() << U(" to do GetSequenceItem");
             slog::log<slog::severities::error>(gate, SLOG_FLF) << ss.str();
-            return details::make_nc_method_result_error({nc_method_status::property_not_implemented}, ss.str());
+            return details::make_method_result_error({nc_method_status::property_not_implemented}, ss.str());
         }
 
         // Set sequence item
@@ -171,13 +171,13 @@ namespace nmos
             slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Set sequence item: " << property_id.serialize() << " index: " << index << " value: " << val.serialize();
 
             // find the relevant nc_property_descriptor
-            const auto property_id_ = details::parse_nc_property_id(property_id);
-            const auto& property = nc::find_property_descriptor(property_id_, details::parse_nc_class_id(nmos::fields::nc::class_id(resource.data)), get_control_protocol_class_descriptor);
+            const auto property_id_ = details::parse_property_id(property_id);
+            const auto& property = nc::find_property_descriptor(property_id_, details::parse_class_id(nmos::fields::nc::class_id(resource.data)), get_control_protocol_class_descriptor);
             if (!property.is_null())
             {
                 if (nmos::fields::nc::is_read_only(property))
                 {
-                    return details::make_nc_method_result({nc_method_status::read_only});
+                    return details::make_method_result({nc_method_status::read_only});
                 }
 
                 auto& data = resource.data.at(nmos::fields::nc::name(property));
@@ -188,7 +188,7 @@ namespace nmos
                     utility::ostringstream_t ss;
                     ss << U("property: ") << property_id.serialize() << U(" is not a sequence to do SetSequenceItem");
                     slog::log<slog::severities::error>(gate, SLOG_FLF) << ss.str();
-                    return details::make_nc_method_result_error({nc_method_status::invalid_request}, ss.str());
+                    return details::make_method_result_error({nc_method_status::invalid_request}, ss.str());
                 }
 
                 if (data.as_array().size() > (size_t)index)
@@ -211,14 +211,14 @@ namespace nmos
 
                         }, make_property_changed_event(nmos::fields::nc::oid(resource.data), {{property_id_, nc_property_change_type::type::sequence_item_changed, val, nc_id(index)}}));
 
-                        return details::make_nc_method_result({is_deprecated ? nmos::nc_method_status::method_deprecated : nmos::fields::nc::is_deprecated(property) ? nc_method_status::property_deprecated : nc_method_status::ok});
+                        return details::make_method_result({is_deprecated ? nmos::nc_method_status::method_deprecated : nmos::fields::nc::is_deprecated(property) ? nc_method_status::property_deprecated : nc_method_status::ok});
                     }
                     catch (const nmos::control_protocol_exception& e)
                     {
                         utility::ostringstream_t ss;
                         ss << "Set sequence item: " << property_id.serialize() << " index: " << index << " value: " << val.serialize() << " error: " << e.what();
                         slog::log<slog::severities::error>(gate, SLOG_FLF) << ss.str();
-                        return details::make_nc_method_result_error({nc_method_status::parameter_error}, ss.str());
+                        return details::make_method_result_error({nc_method_status::parameter_error}, ss.str());
                     }
                 }
 
@@ -226,14 +226,14 @@ namespace nmos
                 utility::ostringstream_t ss;
                 ss << U("property: ") << property_id.serialize() << U(" is outside the available range to do SetSequenceItem");
                 slog::log<slog::severities::error>(gate, SLOG_FLF) << ss.str();
-                return details::make_nc_method_result_error({nc_method_status::index_out_of_bounds}, ss.str());
+                return details::make_method_result_error({nc_method_status::index_out_of_bounds}, ss.str());
             }
 
             // unknown property
             utility::ostringstream_t ss;
             ss << U("unknown property: ") << property_id.serialize() << U(" to do SetSequenceItem");
             slog::log<slog::severities::error>(gate, SLOG_FLF) << ss.str();
-            return details::make_nc_method_result_error({nc_method_status::property_not_implemented}, ss.str());
+            return details::make_method_result_error({nc_method_status::property_not_implemented}, ss.str());
         }
 
         // Add item to sequence
@@ -249,13 +249,13 @@ namespace nmos
             slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Add sequence item: " << property_id.serialize() << " value: " << val.serialize();
 
             // find the relevant nc_property_descriptor
-            const auto property_id_ = details::parse_nc_property_id(property_id);
-            const auto& property = nc::find_property_descriptor(property_id_, details::parse_nc_class_id(nmos::fields::nc::class_id(resource.data)), get_control_protocol_class_descriptor);
+            const auto property_id_ = details::parse_property_id(property_id);
+            const auto& property = nc::find_property_descriptor(property_id_, details::parse_class_id(nmos::fields::nc::class_id(resource.data)), get_control_protocol_class_descriptor);
             if (!property.is_null())
             {
                 if (nmos::fields::nc::is_read_only(property))
                 {
-                    return details::make_nc_method_result({nc_method_status::read_only});
+                    return details::make_method_result({nc_method_status::read_only});
                 }
 
                 if (!nmos::fields::nc::is_sequence(property))
@@ -263,7 +263,7 @@ namespace nmos
                     // property is not a sequence
                     utility::ostringstream_t ss;
                     ss << U("property: ") << property_id.serialize() << U(" is not a sequence to do AddSequenceItem");
-                    return details::make_nc_method_result_error({nc_method_status::invalid_request}, ss.str());
+                    return details::make_method_result_error({nc_method_status::invalid_request}, ss.str());
                 }
 
                 auto& data = resource.data.at(nmos::fields::nc::name(property));
@@ -290,14 +290,14 @@ namespace nmos
 
                     }, make_property_changed_event(nmos::fields::nc::oid(resource.data), {{property_id_, nc_property_change_type::type::sequence_item_added, val, sequence_item_index}}));
 
-                    return details::make_nc_method_result({is_deprecated ? nmos::nc_method_status::method_deprecated : nmos::fields::nc::is_deprecated(property) ? nc_method_status::property_deprecated : nc_method_status::ok}, sequence_item_index);
+                    return details::make_method_result({is_deprecated ? nmos::nc_method_status::method_deprecated : nmos::fields::nc::is_deprecated(property) ? nc_method_status::property_deprecated : nc_method_status::ok}, sequence_item_index);
                 }
                 catch (const nmos::control_protocol_exception& e)
                 {
                     utility::ostringstream_t ss;
                     ss << "Add sequence item: " << property_id.serialize() << " value: " << val.serialize() << " error: " << e.what();
                     slog::log<slog::severities::error>(gate, SLOG_FLF) << ss.str();
-                    return details::make_nc_method_result_error({nc_method_status::parameter_error}, ss.str());
+                    return details::make_method_result_error({nc_method_status::parameter_error}, ss.str());
                 }
             }
 
@@ -305,7 +305,7 @@ namespace nmos
             utility::ostringstream_t ss;
             ss << U("unknown property: ") << property_id.serialize() << U(" to do AddSequenceItem");
             slog::log<slog::severities::error>(gate, SLOG_FLF) << ss.str();
-            return details::make_nc_method_result_error({nc_method_status::property_not_implemented}, ss.str());
+            return details::make_method_result_error({nc_method_status::property_not_implemented}, ss.str());
         }
 
         // Delete sequence item
@@ -319,12 +319,12 @@ namespace nmos
             slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Remove sequence item: " << property_id.serialize() << " index: " << index;
 
             // find the relevant nc_property_descriptor
-            const auto& property = nc::find_property_descriptor(details::parse_nc_property_id(property_id), details::parse_nc_class_id(nmos::fields::nc::class_id(resource.data)), get_control_protocol_class_descriptor);
+            const auto& property = nc::find_property_descriptor(details::parse_property_id(property_id), details::parse_class_id(nmos::fields::nc::class_id(resource.data)), get_control_protocol_class_descriptor);
             if (!property.is_null())
             {
                 if (nmos::fields::nc::is_read_only(property))
                 {
-                    return details::make_nc_method_result({nc_method_status::read_only});
+                    return details::make_method_result({nc_method_status::read_only});
                 }
 
                 const auto& data = resource.data.at(nmos::fields::nc::name(property));
@@ -335,7 +335,7 @@ namespace nmos
                     utility::ostringstream_t ss;
                     ss << U("property: ") << property_id.serialize() << U(" is not a sequence to do RemoveSequenceItem");
                     slog::log<slog::severities::error>(gate, SLOG_FLF) << ss.str();
-                    return details::make_nc_method_result_error({nc_method_status::invalid_request}, ss.str());
+                    return details::make_method_result_error({nc_method_status::invalid_request}, ss.str());
                 }
 
                 if (data.as_array().size() > (size_t)index)
@@ -351,23 +351,23 @@ namespace nmos
                             property_changed(resource, nmos::fields::nc::name(property), -2);
                         }
 
-                    }, make_property_changed_event(nmos::fields::nc::oid(resource.data), {{details::parse_nc_property_id(property_id), nc_property_change_type::type::sequence_item_removed, nc_id(index)}}));
+                    }, make_property_changed_event(nmos::fields::nc::oid(resource.data), {{details::parse_property_id(property_id), nc_property_change_type::type::sequence_item_removed, nc_id(index)}}));
 
-                    return details::make_nc_method_result({is_deprecated ? nmos::nc_method_status::method_deprecated : nmos::fields::nc::is_deprecated(property) ? nc_method_status::property_deprecated : nc_method_status::ok});
+                    return details::make_method_result({is_deprecated ? nmos::nc_method_status::method_deprecated : nmos::fields::nc::is_deprecated(property) ? nc_method_status::property_deprecated : nc_method_status::ok});
                 }
 
                 // out of bound
                 utility::ostringstream_t ss;
                 ss << U("property: ") << property_id.serialize() << U(" is outside the available range to do RemoveSequenceItem");
                 slog::log<slog::severities::error>(gate, SLOG_FLF) << ss.str();
-                return details::make_nc_method_result_error({nc_method_status::index_out_of_bounds}, ss.str());
+                return details::make_method_result_error({nc_method_status::index_out_of_bounds}, ss.str());
             }
 
             // unknown property
             utility::ostringstream_t ss;
             ss << U("unknown property: ") << property_id.serialize() << U(" to do RemoveSequenceItem");
             slog::log<slog::severities::error>(gate, SLOG_FLF) << ss.str();
-            return details::make_nc_method_result_error({nc_method_status::property_not_implemented}, ss.str());
+            return details::make_method_result_error({nc_method_status::property_not_implemented}, ss.str());
         }
 
         // Get sequence length
@@ -382,7 +382,7 @@ namespace nmos
             slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Get sequence length: " << property_id.serialize();
 
             // find the relevant nc_property_descriptor
-            const auto& property = nc::find_property_descriptor(details::parse_nc_property_id(property_id), details::parse_nc_class_id(nmos::fields::nc::class_id(resource.data)), get_control_protocol_class_descriptor);
+            const auto& property = nc::find_property_descriptor(details::parse_property_id(property_id), details::parse_class_id(nmos::fields::nc::class_id(resource.data)), get_control_protocol_class_descriptor);
             if (!property.is_null())
             {
                 if (!nmos::fields::nc::is_sequence(property))
@@ -391,7 +391,7 @@ namespace nmos
                     utility::ostringstream_t ss;
                     ss << U("property: ") << property_id.serialize() << U(" is not a sequence to do GetSequenceLength");
                     slog::log<slog::severities::error>(gate, SLOG_FLF) << ss.str();
-                    return details::make_nc_method_result_error({nc_method_status::invalid_request}, ss.str());
+                    return details::make_method_result_error({nc_method_status::invalid_request}, ss.str());
                 }
 
                 const auto& data = resource.data.at(nmos::fields::nc::name(property));
@@ -402,7 +402,7 @@ namespace nmos
                     if (data.is_null())
                     {
                         // null
-                        return details::make_nc_method_result({is_deprecated ? nmos::nc_method_status::method_deprecated : nmos::fields::nc::is_deprecated(property) ? nc_method_status::property_deprecated : nc_method_status::ok}, value::null());
+                        return details::make_method_result({is_deprecated ? nmos::nc_method_status::method_deprecated : nmos::fields::nc::is_deprecated(property) ? nc_method_status::property_deprecated : nc_method_status::ok}, value::null());
                     }
                 }
                 else
@@ -414,17 +414,17 @@ namespace nmos
                         utility::ostringstream_t ss;
                         ss << U("property: ") << property_id.serialize() << " is a null sequence to do GetSequenceLength";
                         slog::log<slog::severities::error>(gate, SLOG_FLF) << ss.str();
-                        return details::make_nc_method_result_error({nc_method_status::invalid_request}, ss.str());
+                        return details::make_method_result_error({nc_method_status::invalid_request}, ss.str());
                     }
                 }
-                return details::make_nc_method_result({is_deprecated ? nmos::nc_method_status::method_deprecated : nmos::fields::nc::is_deprecated(property) ? nc_method_status::property_deprecated : nc_method_status::ok}, value(uint32_t(data.as_array().size())));
+                return details::make_method_result({is_deprecated ? nmos::nc_method_status::method_deprecated : nmos::fields::nc::is_deprecated(property) ? nc_method_status::property_deprecated : nc_method_status::ok}, value(uint32_t(data.as_array().size())));
             }
 
             // unknown property
             utility::ostringstream_t ss;
             ss << U("unknown property: ") << property_id.serialize() << " to do GetSequenceLength";
             slog::log<slog::severities::error>(gate, SLOG_FLF) << ss.str();
-            return details::make_nc_method_result_error({nc_method_status::property_not_implemented}, ss.str());
+            return details::make_method_result_error({nc_method_status::property_not_implemented}, ss.str());
         }
 
         // NcBlock methods implementation
@@ -442,7 +442,7 @@ namespace nmos
             auto descriptors = value::array();
             nmos::nc::get_member_descriptors(resources, resource, recurse, descriptors.as_array());
 
-            return details::make_nc_method_result({is_deprecated ? nmos::nc_method_status::method_deprecated : nc_method_status::ok}, descriptors);
+            return details::make_method_result({is_deprecated ? nmos::nc_method_status::method_deprecated : nc_method_status::ok}, descriptors);
         }
 
         // Finds member(s) by path
@@ -460,7 +460,7 @@ namespace nmos
             if (0 == path.size())
             {
                 // empty path
-                return details::make_nc_method_result_error({nc_method_status::parameter_error}, U("empty path to do FindMembersByPath"));
+                return details::make_method_result_error({nc_method_status::parameter_error}, U("empty path to do FindMembersByPath"));
             }
 
             auto descriptors = value::array();
@@ -492,7 +492,7 @@ namespace nmos
                         utility::ostringstream_t ss;
                         ss << U("role: ") << role.as_string() << U(" not found to do FindMembersByPath");
                         slog::log<slog::severities::error>(gate, SLOG_FLF) << ss.str();
-                        return details::make_nc_method_result_error({nc_method_status::parameter_error}, ss.str());
+                        return details::make_method_result_error({nc_method_status::parameter_error}, ss.str());
                     }
                 }
                 else
@@ -501,12 +501,12 @@ namespace nmos
                     utility::ostringstream_t ss;
                     ss << U("role: ") << role.as_string() << U(" has no members to do FindMembersByPath");
                     slog::log<slog::severities::error>(gate, SLOG_FLF) << ss.str();
-                    return details::make_nc_method_result_error({nc_method_status::parameter_error}, ss.str());
+                    return details::make_method_result_error({nc_method_status::parameter_error}, ss.str());
                 }
             }
 
             web::json::push_back(descriptors, descriptor);
-            return details::make_nc_method_result({is_deprecated ? nmos::nc_method_status::method_deprecated : nc_method_status::ok}, descriptors);
+            return details::make_method_result({is_deprecated ? nmos::nc_method_status::method_deprecated : nc_method_status::ok}, descriptors);
         }
 
         // Finds members with given role name or fragment
@@ -526,13 +526,13 @@ namespace nmos
             if (role.empty())
             {
                 // empty role
-                return details::make_nc_method_result_error({nc_method_status::parameter_error}, U("empty role to do FindMembersByRole"));
+                return details::make_method_result_error({nc_method_status::parameter_error}, U("empty role to do FindMembersByRole"));
             }
 
             auto descriptors = value::array();
             nmos::nc::find_members_by_role(resources, resource, role, match_whole_string, case_sensitive, recurse, descriptors.as_array());
 
-            return details::make_nc_method_result({is_deprecated ? nmos::nc_method_status::method_deprecated : nc_method_status::ok}, descriptors);
+            return details::make_method_result({is_deprecated ? nmos::nc_method_status::method_deprecated : nc_method_status::ok}, descriptors);
         }
 
         // Finds members with given class id
@@ -542,16 +542,16 @@ namespace nmos
 
             using web::json::value;
 
-            const auto class_id = details::parse_nc_class_id(nmos::fields::nc::class_id(arguments)); // Class id to search for
+            const auto class_id = details::parse_class_id(nmos::fields::nc::class_id(arguments)); // Class id to search for
             const auto& include_derived = nmos::fields::nc::include_derived(arguments); // If TRUE it will also include derived class descriptors
             const auto& recurse = nmos::fields::nc::recurse(arguments); // TRUE to search nested blocks
 
-            slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Find members with given class id: " << "class_id: " << details::make_nc_class_id(class_id).serialize();
+            slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Find members with given class id: " << "class_id: " << details::make_class_id(class_id).serialize();
 
             if (class_id.empty())
             {
                 // empty class_id
-                return details::make_nc_method_result_error({nc_method_status::parameter_error}, U("empty classId to do FindMembersByClassId"));
+                return details::make_method_result_error({nc_method_status::parameter_error}, U("empty classId to do FindMembersByClassId"));
             }
 
             // note, model mutex is already locked by the outer function, so access to control_protocol_resources is OK...
@@ -559,7 +559,7 @@ namespace nmos
             auto descriptors = value::array();
             nmos::nc::find_members_by_class_id(resources, resource, class_id, include_derived, recurse, descriptors.as_array());
 
-            return details::make_nc_method_result({is_deprecated ? nmos::nc_method_status::method_deprecated : nc_method_status::ok}, descriptors);
+            return details::make_method_result({is_deprecated ? nmos::nc_method_status::method_deprecated : nc_method_status::ok}, descriptors);
         }
 
         // NcClassManager methods implementation
@@ -568,15 +568,15 @@ namespace nmos
         {
             using web::json::value;
 
-            const auto class_id = details::parse_nc_class_id(nmos::fields::nc::class_id(arguments)); // Class id to search for
+            const auto class_id = details::parse_class_id(nmos::fields::nc::class_id(arguments)); // Class id to search for
             const auto& include_inherited = nmos::fields::nc::include_inherited(arguments); // If set the descriptor would contain all inherited elements
 
-            slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Get a single class descriptor: " << "class_id: " << details::make_nc_class_id(class_id).serialize();
+            slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Get a single class descriptor: " << "class_id: " << details::make_class_id(class_id).serialize();
 
             if (class_id.empty())
             {
                 // empty class_id
-                return details::make_nc_method_result_error({nc_method_status::parameter_error}, U("empty classId to do GetControlClass"));
+                return details::make_method_result_error({nc_method_status::parameter_error}, U("empty classId to do GetControlClass"));
             }
 
             // note, model mutex is already locked by the outer function, so access to control_protocol_resources is OK...
@@ -609,13 +609,13 @@ namespace nmos
                     }
                 }
                 const auto descriptor = fixed_role.is_null()
-                    ? details::make_nc_class_descriptor(description, class_id, name, property_descriptors, method_descriptors, event_descriptors)
-                    : details::make_nc_class_descriptor(description, class_id, name, fixed_role.as_string(), property_descriptors, method_descriptors, event_descriptors);
+                    ? details::make_class_descriptor(description, class_id, name, property_descriptors, method_descriptors, event_descriptors)
+                    : details::make_class_descriptor(description, class_id, name, fixed_role.as_string(), property_descriptors, method_descriptors, event_descriptors);
 
-                return details::make_nc_method_result({is_deprecated ? nmos::nc_method_status::method_deprecated : nc_method_status::ok}, descriptor);
+                return details::make_method_result({is_deprecated ? nmos::nc_method_status::method_deprecated : nc_method_status::ok}, descriptor);
             }
 
-            return details::make_nc_method_result_error({nc_method_status::parameter_error}, U("classId not found"));
+            return details::make_method_result_error({nc_method_status::parameter_error}, U("classId not found"));
         }
 
         // Get a single datatype descriptor
@@ -631,7 +631,7 @@ namespace nmos
             if (name.empty())
             {
                 // empty name
-                return details::make_nc_method_result_error({nc_method_status::parameter_error}, U("empty name to do GetDatatype"));
+                return details::make_method_result_error({nc_method_status::parameter_error}, U("empty name to do GetDatatype"));
             }
 
             const auto& datatype = get_control_protocol_datatype_descriptor(name);
@@ -671,10 +671,10 @@ namespace nmos
                     }
                 }
 
-                return details::make_nc_method_result({is_deprecated ? nmos::nc_method_status::method_deprecated : nc_method_status::ok}, descriptor);
+                return details::make_method_result({is_deprecated ? nmos::nc_method_status::method_deprecated : nc_method_status::ok}, descriptor);
             }
 
-            return details::make_nc_method_result_error({nc_method_status::parameter_error}, U("name not found"));
+            return details::make_method_result_error({nc_method_status::parameter_error}, U("name not found"));
         }
 
         // NcReceiverMonitor methods implementation
@@ -697,10 +697,10 @@ namespace nmos
                         });
                     }));
 
-                    return details::make_nc_method_result({is_deprecated ? nmos::nc_method_status::method_deprecated : nc_method_status::ok}, nc_counter_sequence);
+                    return details::make_method_result({is_deprecated ? nmos::nc_method_status::method_deprecated : nc_method_status::ok}, nc_counter_sequence);
                 }
 
-                return details::make_nc_method_result_error({nmos::nc_method_status::method_not_implemented}, U("not implemented"));
+                return details::make_method_result_error({nmos::nc_method_status::method_not_implemented}, U("not implemented"));
             }
         }
 
@@ -749,14 +749,14 @@ namespace nmos
                 std::pair<nc_property_id, web::json::value>(nc_status_monitor_overall_status_message_property_id, web::json::value::null()),
             };
 
-            const auto& class_id = details::parse_nc_class_id(nmos::fields::nc::class_id(resource.data));
+            const auto& class_id = details::parse_class_id(nmos::fields::nc::class_id(resource.data));
 
             // reset all counters
             const std::vector<std::pair<nc_property_id, web::json::value>> property_values = nmos::nc::is_sender_monitor(class_id) ? sender_property_values : receiver_property_values;
 
             for (const auto& property_value : property_values)
             {
-                const auto& property = nc::find_property_descriptor(property_value.first, details::parse_nc_class_id(nmos::fields::nc::class_id(resource.data)), get_control_protocol_class_descriptor);
+                const auto& property = nc::find_property_descriptor(property_value.first, details::parse_class_id(nmos::fields::nc::class_id(resource.data)), get_control_protocol_class_descriptor);
                 if (!property.is_null())
                 {
                     try
@@ -777,9 +777,9 @@ namespace nmos
                     catch (const nmos::control_protocol_exception& e)
                     {
                         utility::ostringstream_t ss;
-                        ss << "Reset counters: " << details::make_nc_property_id(property_value.first).serialize() << " error: " << e.what();
+                        ss << "Reset counters: " << details::make_property_id(property_value.first).serialize() << " error: " << e.what();
                         slog::log<slog::severities::error>(gate, SLOG_FLF) << ss.str();
-                        return details::make_nc_method_result_error({nc_method_status::parameter_error}, ss.str());
+                        return details::make_method_result_error({nc_method_status::parameter_error}, ss.str());
                     }
                 }
             }
@@ -789,7 +789,7 @@ namespace nmos
                 reset_monitor();
             }
 
-            return details::make_nc_method_result({is_deprecated ? nmos::nc_method_status::method_deprecated : nc_method_status::ok});
+            return details::make_method_result({is_deprecated ? nmos::nc_method_status::method_deprecated : nc_method_status::ok});
         }
     }
 }

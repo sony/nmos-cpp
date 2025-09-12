@@ -29,7 +29,7 @@ BST_TEST_CASE(testNcClassDescriptor)
         { U("isDeprecated"), false },
         { U("constraints"), value::null() }
     });
-    const auto property_class_id_ = nmos::nc::details::make_nc_property_descriptor(U("Static value. All instances of the same class will have the same identity value"), nmos::nc_object_class_id_property_id, nmos::fields::nc::class_id, U("NcClassId"), true, false, false, false, value::null());
+    const auto property_class_id_ = nmos::nc::details::make_property_descriptor(U("Static value. All instances of the same class will have the same identity value"), nmos::nc_object_class_id_property_id, nmos::fields::nc::class_id, U("NcClassId"), true, false, false, false, value::null());
     BST_REQUIRE_EQUAL(property_class_id, property_class_id_);
 
     const auto property_oid = value_of({
@@ -46,7 +46,7 @@ BST_TEST_CASE(testNcClassDescriptor)
         { U("isDeprecated"), false },
         { U("constraints"), value::null() }
     });
-    const auto property_oid_ = nmos::nc::details::make_nc_property_descriptor(U("Object identifier"), nmos::nc_object_oid_property_id, nmos::fields::nc::oid, U("NcOid"), true, false, false, false, value::null());
+    const auto property_oid_ = nmos::nc::details::make_property_descriptor(U("Object identifier"), nmos::nc_object_oid_property_id, nmos::fields::nc::oid, U("NcOid"), true, false, false, false, value::null());
     BST_REQUIRE_EQUAL(property_oid, property_oid_);
 
     const auto property_constant_oid = value_of({
@@ -63,7 +63,7 @@ BST_TEST_CASE(testNcClassDescriptor)
         { U("isDeprecated"), false },
         { U("constraints"), value::null() }
     });
-    const auto property_constant_oid_ = nmos::nc::details::make_nc_property_descriptor(U("TRUE iff OID is hardwired into device"), nmos::nc_object_constant_oid_property_id, nmos::fields::nc::constant_oid, U("NcBoolean"), true, false, false, false, value::null());
+    const auto property_constant_oid_ = nmos::nc::details::make_property_descriptor(U("TRUE iff OID is hardwired into device"), nmos::nc_object_constant_oid_property_id, nmos::fields::nc::constant_oid, U("NcBoolean"), true, false, false, false, value::null());
     BST_REQUIRE_EQUAL(property_constant_oid, property_constant_oid_);
 
     const auto property_owner = value_of({
@@ -80,7 +80,7 @@ BST_TEST_CASE(testNcClassDescriptor)
         { U("isDeprecated"), false },
         { U("constraints"), value::null() }
     });
-    const auto property_owner_ = nmos::nc::details::make_nc_property_descriptor(U("OID of containing block. Can only ever be null for the root block"), nmos::nc_object_owner_property_id, nmos::fields::nc::owner, U("NcOid"), true, true, false, false, value::null());
+    const auto property_owner_ = nmos::nc::details::make_property_descriptor(U("OID of containing block. Can only ever be null for the root block"), nmos::nc_object_owner_property_id, nmos::fields::nc::owner, U("NcOid"), true, true, false, false, value::null());
     BST_REQUIRE_EQUAL(property_owner, property_owner_);
 
     const auto property_role = value_of({
@@ -97,7 +97,7 @@ BST_TEST_CASE(testNcClassDescriptor)
         { U("isDeprecated"), false },
         { U("constraints"), value::null() }
     });
-    const auto property_role_ = nmos::nc::details::make_nc_property_descriptor(U("Role of object in the containing block"), nmos::nc_object_role_property_id, nmos::fields::nc::role, U("NcString"), true, false, false, false, value::null());
+    const auto property_role_ = nmos::nc::details::make_property_descriptor(U("Role of object in the containing block"), nmos::nc_object_role_property_id, nmos::fields::nc::role, U("NcString"), true, false, false, false, value::null());
     BST_REQUIRE_EQUAL(property_role, property_role_);
 
     const auto property_user_label = value_of({
@@ -114,7 +114,7 @@ BST_TEST_CASE(testNcClassDescriptor)
         { U("isDeprecated"), false },
         { U("constraints"), value::null() }
     });
-    const auto property_user_label_ = nmos::nc::details::make_nc_property_descriptor(U("Scribble strip"), nmos::nc_object_user_label_property_id, nmos::fields::nc::user_label, U("NcString"), false, true, false, false, value::null());
+    const auto property_user_label_ = nmos::nc::details::make_property_descriptor(U("Scribble strip"), nmos::nc_object_user_label_property_id, nmos::fields::nc::user_label, U("NcString"), false, true, false, false, value::null());
     BST_REQUIRE_EQUAL(property_user_label, property_user_label_);
 
     const auto property_touchpoints = value_of({
@@ -131,7 +131,7 @@ BST_TEST_CASE(testNcClassDescriptor)
         { U("isDeprecated"), false },
         { U("constraints"), value::null() }
     });
-    const auto property_touchpoints_ = nmos::nc::details::make_nc_property_descriptor(U("Touchpoints to other contexts"), nmos::nc_object_touchpoints_property_id, nmos::fields::nc::touchpoints, U("NcTouchpoint"), true, true, true, false, value::null());
+    const auto property_touchpoints_ = nmos::nc::details::make_property_descriptor(U("Touchpoints to other contexts"), nmos::nc_object_touchpoints_property_id, nmos::fields::nc::touchpoints, U("NcTouchpoint"), true, true, true, false, value::null());
     BST_REQUIRE_EQUAL(property_touchpoints, property_touchpoints_);
 
     const auto property_runtime_property_constraints = value_of({
@@ -148,7 +148,7 @@ BST_TEST_CASE(testNcClassDescriptor)
         { U("isDeprecated"), false },
         { U("constraints"), value::null() }
     });
-    const auto property_runtime_property_constraints_ = nmos::nc::details::make_nc_property_descriptor(U("Runtime property constraints"), nmos::nc_object_runtime_property_constraints_property_id, nmos::fields::nc::runtime_property_constraints, U("NcPropertyConstraints"), true, true, true, false, value::null());
+    const auto property_runtime_property_constraints_ = nmos::nc::details::make_property_descriptor(U("Runtime property constraints"), nmos::nc_object_runtime_property_constraints_property_id, nmos::fields::nc::runtime_property_constraints, U("NcPropertyConstraints"), true, true, true, false, value::null());
     BST_REQUIRE_EQUAL(property_runtime_property_constraints, property_runtime_property_constraints_);
 
     const auto method_get = value_of({
@@ -174,8 +174,8 @@ BST_TEST_CASE(testNcClassDescriptor)
 
     {
         auto parameters = value::array();
-        web::json::push_back(parameters, nmos::nc::details::make_nc_parameter_descriptor(U("Property id"), nmos::fields::nc::id, U("NcPropertyId"), false, false, value::null()));
-        const auto method_get_ = nmos::nc::details::make_nc_method_descriptor(U("Get property value"), nmos::nc_object_get_method_id, U("Get"), U("NcMethodResultPropertyValue"), parameters, false);
+        web::json::push_back(parameters, nmos::nc::details::make_parameter_descriptor(U("Property id"), nmos::fields::nc::id, U("NcPropertyId"), false, false, value::null()));
+        const auto method_get_ = nmos::nc::details::make_method_descriptor(U("Get property value"), nmos::nc_object_get_method_id, U("Get"), U("NcMethodResultPropertyValue"), parameters, false);
 
         BST_REQUIRE_EQUAL(method_get, method_get_);
     }
@@ -211,9 +211,9 @@ BST_TEST_CASE(testNcClassDescriptor)
 
     {
         auto parameters = value::array();
-        web::json::push_back(parameters, nmos::nc::details::make_nc_parameter_descriptor(U("Property id"), nmos::fields::nc::id, U("NcPropertyId"), false, false, value::null()));
-        web::json::push_back(parameters, nmos::nc::details::make_nc_parameter_descriptor(U("Property value"), nmos::fields::nc::value, true, false, value::null()));
-        const auto method_set_ = nmos::nc::details::make_nc_method_descriptor(U("Set property value"), nmos::nc_object_set_method_id, U("Set"), U("NcMethodResult"), parameters, false);
+        web::json::push_back(parameters, nmos::nc::details::make_parameter_descriptor(U("Property id"), nmos::fields::nc::id, U("NcPropertyId"), false, false, value::null()));
+        web::json::push_back(parameters, nmos::nc::details::make_parameter_descriptor(U("Property value"), nmos::fields::nc::value, true, false, value::null()));
+        const auto method_set_ = nmos::nc::details::make_method_descriptor(U("Set property value"), nmos::nc_object_set_method_id, U("Set"), U("NcMethodResult"), parameters, false);
 
         BST_REQUIRE_EQUAL(method_set, method_set_);
     }
@@ -249,9 +249,9 @@ BST_TEST_CASE(testNcClassDescriptor)
 
     {
         auto parameters = value::array();
-        web::json::push_back(parameters, nmos::nc::details::make_nc_parameter_descriptor(U("Property id"), nmos::fields::nc::id, U("NcPropertyId"), false, false, value::null()));
-        web::json::push_back(parameters, nmos::nc::details::make_nc_parameter_descriptor(U("Index of item in the sequence"), nmos::fields::nc::index, U("NcId"), false, false, value::null()));
-        const auto method_get_sequence_item_ = nmos::nc::details::make_nc_method_descriptor(U("Get sequence item"), nmos::nc_object_get_sequence_item_method_id, U("GetSequenceItem"), U("NcMethodResultPropertyValue"), parameters, false);
+        web::json::push_back(parameters, nmos::nc::details::make_parameter_descriptor(U("Property id"), nmos::fields::nc::id, U("NcPropertyId"), false, false, value::null()));
+        web::json::push_back(parameters, nmos::nc::details::make_parameter_descriptor(U("Index of item in the sequence"), nmos::fields::nc::index, U("NcId"), false, false, value::null()));
+        const auto method_get_sequence_item_ = nmos::nc::details::make_method_descriptor(U("Get sequence item"), nmos::nc_object_get_sequence_item_method_id, U("GetSequenceItem"), U("NcMethodResultPropertyValue"), parameters, false);
 
         BST_REQUIRE_EQUAL(method_get_sequence_item, method_get_sequence_item_);
     }
@@ -295,10 +295,10 @@ BST_TEST_CASE(testNcClassDescriptor)
 
     {
         auto parameters = value::array();
-        web::json::push_back(parameters, nmos::nc::details::make_nc_parameter_descriptor(U("Property id"), nmos::fields::nc::id, U("NcPropertyId"), false, false, value::null()));
-        web::json::push_back(parameters, nmos::nc::details::make_nc_parameter_descriptor(U("Index of item in the sequence"), nmos::fields::nc::index, U("NcId"), false, false, value::null()));
-        web::json::push_back(parameters, nmos::nc::details::make_nc_parameter_descriptor(U("Value"), nmos::fields::nc::value, true, false, value::null()));
-        const auto method_set_sequence_item_ = nmos::nc::details::make_nc_method_descriptor(U("Set sequence item value"), nmos::nc_object_set_sequence_item_method_id, U("SetSequenceItem"), U("NcMethodResult"), parameters, false);
+        web::json::push_back(parameters, nmos::nc::details::make_parameter_descriptor(U("Property id"), nmos::fields::nc::id, U("NcPropertyId"), false, false, value::null()));
+        web::json::push_back(parameters, nmos::nc::details::make_parameter_descriptor(U("Index of item in the sequence"), nmos::fields::nc::index, U("NcId"), false, false, value::null()));
+        web::json::push_back(parameters, nmos::nc::details::make_parameter_descriptor(U("Value"), nmos::fields::nc::value, true, false, value::null()));
+        const auto method_set_sequence_item_ = nmos::nc::details::make_method_descriptor(U("Set sequence item value"), nmos::nc_object_set_sequence_item_method_id, U("SetSequenceItem"), U("NcMethodResult"), parameters, false);
 
         BST_REQUIRE_EQUAL(method_set_sequence_item, method_set_sequence_item_);
     }
@@ -334,9 +334,9 @@ BST_TEST_CASE(testNcClassDescriptor)
 
     {
         auto parameters = value::array();
-        web::json::push_back(parameters, nmos::nc::details::make_nc_parameter_descriptor(U("Property id"), nmos::fields::nc::id, U("NcPropertyId"), false, false, value::null()));
-        web::json::push_back(parameters, nmos::nc::details::make_nc_parameter_descriptor(U("Value"), nmos::fields::nc::value, true, false, value::null()));
-        const auto method_add_sequence_item_ = nmos::nc::details::make_nc_method_descriptor(U("Add item to sequence"), nmos::nc_object_add_sequence_item_method_id, U("AddSequenceItem"), U("NcMethodResultId"), parameters, false);
+        web::json::push_back(parameters, nmos::nc::details::make_parameter_descriptor(U("Property id"), nmos::fields::nc::id, U("NcPropertyId"), false, false, value::null()));
+        web::json::push_back(parameters, nmos::nc::details::make_parameter_descriptor(U("Value"), nmos::fields::nc::value, true, false, value::null()));
+        const auto method_add_sequence_item_ = nmos::nc::details::make_method_descriptor(U("Add item to sequence"), nmos::nc_object_add_sequence_item_method_id, U("AddSequenceItem"), U("NcMethodResultId"), parameters, false);
 
         BST_REQUIRE_EQUAL(method_add_sequence_item, method_add_sequence_item_);
     }
@@ -372,9 +372,9 @@ BST_TEST_CASE(testNcClassDescriptor)
 
     {
         auto parameters = value::array();
-        web::json::push_back(parameters, nmos::nc::details::make_nc_parameter_descriptor(U("Property id"), nmos::fields::nc::id, U("NcPropertyId"), false, false, value::null()));
-        web::json::push_back(parameters, nmos::nc::details::make_nc_parameter_descriptor(U("Index of item in the sequence"), nmos::fields::nc::index, U("NcId"), false, false, value::null()));
-        const auto method_remove_sequence_item_ = nmos::nc::details::make_nc_method_descriptor(U("Delete sequence item"), nmos::nc_object_remove_sequence_item_method_id, U("RemoveSequenceItem"), U("NcMethodResult"), parameters, false);
+        web::json::push_back(parameters, nmos::nc::details::make_parameter_descriptor(U("Property id"), nmos::fields::nc::id, U("NcPropertyId"), false, false, value::null()));
+        web::json::push_back(parameters, nmos::nc::details::make_parameter_descriptor(U("Index of item in the sequence"), nmos::fields::nc::index, U("NcId"), false, false, value::null()));
+        const auto method_remove_sequence_item_ = nmos::nc::details::make_method_descriptor(U("Delete sequence item"), nmos::nc_object_remove_sequence_item_method_id, U("RemoveSequenceItem"), U("NcMethodResult"), parameters, false);
 
         BST_REQUIRE_EQUAL(method_remove_sequence_item, method_remove_sequence_item_);
     }
@@ -402,8 +402,8 @@ BST_TEST_CASE(testNcClassDescriptor)
 
     {
         auto parameters = value::array();
-        web::json::push_back(parameters, nmos::nc::details::make_nc_parameter_descriptor(U("Property id"), nmos::fields::nc::id, U("NcPropertyId"), false, false, value::null()));
-        const auto method_get_sequence_length_ = nmos::nc::details::make_nc_method_descriptor(U("Get sequence length"), nmos::nc_object_get_sequence_length_method_id, U("GetSequenceLength"), U("NcMethodResultLength"), parameters, false);
+        web::json::push_back(parameters, nmos::nc::details::make_parameter_descriptor(U("Property id"), nmos::fields::nc::id, U("NcPropertyId"), false, false, value::null()));
+        const auto method_get_sequence_length_ = nmos::nc::details::make_method_descriptor(U("Get sequence length"), nmos::nc_object_get_sequence_length_method_id, U("GetSequenceLength"), U("NcMethodResultLength"), parameters, false);
 
         BST_REQUIRE_EQUAL(method_get_sequence_length, method_get_sequence_length_);
     }
@@ -419,7 +419,7 @@ BST_TEST_CASE(testNcClassDescriptor)
         { U("isDeprecated"), false }
     });
 
-    const auto event_property_changed_ = nmos::nc::details::make_nc_event_descriptor(U("Property changed event"), nmos::nc_object_property_changed_event_id, U("PropertyChanged"), U("NcPropertyChangedEventData"), false);
+    const auto event_property_changed_ = nmos::nc::details::make_event_descriptor(U("Property changed event"), nmos::nc_object_property_changed_event_id, U("PropertyChanged"), U("NcPropertyChangedEventData"), false);
     BST_REQUIRE_EQUAL(event_property_changed, event_property_changed_);
 
     const auto nc_object_class = value_of({
@@ -452,7 +452,7 @@ BST_TEST_CASE(testNcClassDescriptor)
             event_property_changed
         }) }
     });
-    const auto nc_object_class_ = nmos::nc::details::make_nc_class_descriptor(U("NcObject class descriptor"), nmos::nc_object_class_id, U("NcObject"), nmos::nc::make_nc_object_properties(), nmos::nc::make_nc_object_methods(), nmos::nc::make_nc_object_events());
+    const auto nc_object_class_ = nmos::nc::details::make_class_descriptor(U("NcObject class descriptor"), nmos::nc_object_class_id, U("NcObject"), nmos::nc::make_object_properties(), nmos::nc::make_object_methods(), nmos::nc::make_object_events());
     BST_REQUIRE_EQUAL(nc_object_class, nc_object_class_);
 }
 
@@ -522,13 +522,13 @@ BST_TEST_CASE(testNcDatatypeDescriptorStruct)
     });
 
     auto fields = value::array();
-    web::json::push_back(fields, nmos::nc::details::make_nc_field_descriptor(U("Role of member in its containing block"), nmos::fields::nc::role, U("NcString"), false, false, value::null()));
-    web::json::push_back(fields, nmos::nc::details::make_nc_field_descriptor(U("OID of member"), nmos::fields::nc::oid, U("NcOid"), false, false, value::null()));
-    web::json::push_back(fields, nmos::nc::details::make_nc_field_descriptor(U("TRUE iff member's OID is hardwired into device"), nmos::fields::nc::constant_oid, U("NcBoolean"), false, false, value::null()));
-    web::json::push_back(fields, nmos::nc::details::make_nc_field_descriptor(U("Class ID"), nmos::fields::nc::class_id, U("NcClassId"), false, false, value::null()));
-    web::json::push_back(fields, nmos::nc::details::make_nc_field_descriptor(U("User label"), nmos::fields::nc::user_label, U("NcString"), true, false, value::null()));
-    web::json::push_back(fields, nmos::nc::details::make_nc_field_descriptor(U("Containing block's OID"), nmos::fields::nc::owner, U("NcOid"), false, false, value::null()));
-    const auto nc_datatype_descriptor_ = nmos::nc::details::make_nc_datatype_descriptor_struct(U("Descriptor which is specific to a block member"), U("NcBlockMemberDescriptor"), fields, U("NcDescriptor"), value::null());
+    web::json::push_back(fields, nmos::nc::details::make_field_descriptor(U("Role of member in its containing block"), nmos::fields::nc::role, U("NcString"), false, false, value::null()));
+    web::json::push_back(fields, nmos::nc::details::make_field_descriptor(U("OID of member"), nmos::fields::nc::oid, U("NcOid"), false, false, value::null()));
+    web::json::push_back(fields, nmos::nc::details::make_field_descriptor(U("TRUE iff member's OID is hardwired into device"), nmos::fields::nc::constant_oid, U("NcBoolean"), false, false, value::null()));
+    web::json::push_back(fields, nmos::nc::details::make_field_descriptor(U("Class ID"), nmos::fields::nc::class_id, U("NcClassId"), false, false, value::null()));
+    web::json::push_back(fields, nmos::nc::details::make_field_descriptor(U("User label"), nmos::fields::nc::user_label, U("NcString"), true, false, value::null()));
+    web::json::push_back(fields, nmos::nc::details::make_field_descriptor(U("Containing block's OID"), nmos::fields::nc::owner, U("NcOid"), false, false, value::null()));
+    const auto nc_datatype_descriptor_ = nmos::nc::details::make_datatype_descriptor_struct(U("Descriptor which is specific to a block member"), U("NcBlockMemberDescriptor"), fields, U("NcDescriptor"), value::null());
 
     BST_REQUIRE_EQUAL(nc_datatype_descriptor, nc_datatype_descriptor_);
 }
@@ -548,7 +548,7 @@ BST_TEST_CASE(testNcDatatypeTypedef)
         { U("isSequence"), true },
         { U("constraints"), value::null() }
     });
-    const auto nc_class_id_ = nmos::nc::details::make_nc_datatype_typedef(U("Sequence of class ID fields"), U("NcClassId"), true, U("NcInt32"), value::null());
+    const auto nc_class_id_ = nmos::nc::details::make_datatype_typedef(U("Sequence of class ID fields"), U("NcClassId"), true, U("NcInt32"), value::null());
 
     BST_REQUIRE_EQUAL(nc_class_id, nc_class_id_);
 }
@@ -600,13 +600,13 @@ BST_TEST_CASE(testNcDatatypeDescriptorEnum)
     });
 
     auto items = value::array();
-    web::json::push_back(items, nmos::nc::details::make_nc_enum_item_descriptor(U("Unknown"), U("Unknown"), 0));
-    web::json::push_back(items, nmos::nc::details::make_nc_enum_item_descriptor(U("Normal operation"), U("NormalOperation"), 1));
-    web::json::push_back(items, nmos::nc::details::make_nc_enum_item_descriptor(U("Device is initializing"), U("Initializing"), 2));
-    web::json::push_back(items, nmos::nc::details::make_nc_enum_item_descriptor(U("Device is performing a software or firmware update"), U("Updating"), 3));
-    web::json::push_back(items, nmos::nc::details::make_nc_enum_item_descriptor(U("Device is experiencing a licensing error"), U("LicensingError"), 4));
-    web::json::push_back(items, nmos::nc::details::make_nc_enum_item_descriptor(U("Device is experiencing an internal error"), U("InternalError"), 5));
-    const auto nc_device_generic_state_ = nmos::nc::details::make_nc_datatype_descriptor_enum(U("Device generic operational state"), U("NcDeviceGenericState"), items, value::null());
+    web::json::push_back(items, nmos::nc::details::make_enum_item_descriptor(U("Unknown"), U("Unknown"), 0));
+    web::json::push_back(items, nmos::nc::details::make_enum_item_descriptor(U("Normal operation"), U("NormalOperation"), 1));
+    web::json::push_back(items, nmos::nc::details::make_enum_item_descriptor(U("Device is initializing"), U("Initializing"), 2));
+    web::json::push_back(items, nmos::nc::details::make_enum_item_descriptor(U("Device is performing a software or firmware update"), U("Updating"), 3));
+    web::json::push_back(items, nmos::nc::details::make_enum_item_descriptor(U("Device is experiencing a licensing error"), U("LicensingError"), 4));
+    web::json::push_back(items, nmos::nc::details::make_enum_item_descriptor(U("Device is experiencing an internal error"), U("InternalError"), 5));
+    const auto nc_device_generic_state_ = nmos::nc::details::make_datatype_descriptor_enum(U("Device generic operational state"), U("NcDeviceGenericState"), items, value::null());
 
     BST_REQUIRE_EQUAL(nc_device_generic_state, nc_device_generic_state_);
 }
@@ -623,7 +623,7 @@ BST_TEST_CASE(testNcDatatypeDescriptorPrimitive)
         { U("constraints"), value::null() }
     });
 
-    const auto test_primitive_ = nmos::nc::details::make_nc_datatype_descriptor_primitive(U("Primitive datatype descriptor"), U("test_primitive"), value::null());
+    const auto test_primitive_ = nmos::nc::details::make_datatype_descriptor_primitive(U("Primitive datatype descriptor"), U("test_primitive"), value::null());
 
     BST_REQUIRE_EQUAL(test_primitive, test_primitive_);
 }
@@ -713,8 +713,8 @@ BST_TEST_CASE(testConstraints)
     // constraints
 
     // runtime constraints
-    const auto runtime_property_string_constraints = nmos::nc::details::make_nc_property_constraints_string(property_string_id, 10, U("^[0-9]+$"));
-    const auto runtime_property_int32_constraints = nmos::nc::details::make_nc_property_constraints_number(property_int32_id, 10, 1000, 1);
+    const auto runtime_property_string_constraints = nmos::nc::details::make_property_constraints_string(property_string_id, 10, U("^[0-9]+$"));
+    const auto runtime_property_int32_constraints = nmos::nc::details::make_property_constraints_number(property_int32_id, 10, 1000, 1);
 
     const auto runtime_property_constraints = value_of({
         { runtime_property_string_constraints },
@@ -722,65 +722,65 @@ BST_TEST_CASE(testConstraints)
     });
 
     // property constraints
-    const auto property_string_constraints = nmos::nc::details::make_nc_parameter_constraints_string(5, U("^[a-z]+$"));
-    const auto property_int32_constraints = nmos::nc::details::make_nc_parameter_constraints_number(50, 500, 5);
+    const auto property_string_constraints = nmos::nc::details::make_parameter_constraints_string(5, U("^[a-z]+$"));
+    const auto property_int32_constraints = nmos::nc::details::make_parameter_constraints_number(50, 500, 5);
 
     // datatype constraints
-    const auto datatype_string_constraints = nmos::nc::details::make_nc_parameter_constraints_string(2, U("^[0-9a-z]+$"));
-    const auto datatype_int32_constraints = nmos::nc::details::make_nc_parameter_constraints_number(100, 250, 10);
+    const auto datatype_string_constraints = nmos::nc::details::make_parameter_constraints_string(2, U("^[0-9a-z]+$"));
+    const auto datatype_int32_constraints = nmos::nc::details::make_parameter_constraints_number(100, 250, 10);
 
     // datatypes
-    const auto no_constraints_bool_datatype = nmos::nc::details::make_nc_datatype_typedef(U("No constraints boolean datatype"), U("NoConstraintsBoolean"), false, U("NcBoolean"), value::null());
-    const auto no_constraints_int16_datatype = nmos::nc::details::make_nc_datatype_typedef(U("No constraints int16 datatype"), U("NoConstraintsInt16"), false, U("NcInt16"), value::null());
-    const auto no_constraints_int32_datatype = nmos::nc::details::make_nc_datatype_typedef(U("No constraints int32 datatype"), U("NoConstraintsInt32"), false, U("NcInt32"), value::null());
-    const auto no_constraints_int64_datatype = nmos::nc::details::make_nc_datatype_typedef(U("No constraints int64 datatype"), U("NoConstraintsInt64"), false, U("NcInt64"), value::null());
-    const auto no_constraints_uint16_datatype = nmos::nc::details::make_nc_datatype_typedef(U("No constraints uint16 datatype"), U("NoConstraintsUint16"), false, U("NcUint16"), value::null());
-    const auto no_constraints_uint32_datatype = nmos::nc::details::make_nc_datatype_typedef(U("No constraints uint32 datatype"), U("NoConstraintsUint32"), false, U("NcUint32"), value::null());
-    const auto no_constraints_uint64_datatype = nmos::nc::details::make_nc_datatype_typedef(U("No constraints uint64 datatype"), U("NoConstraintsUint64"), false, U("NcUint64"), value::null());
-    const auto no_constraints_float32_datatype = nmos::nc::details::make_nc_datatype_typedef(U("No constraints float32 datatype"), U("NoConstraintsFloat32"), false, U("NcFloat32"), value::null());
-    const auto no_constraints_float64_datatype = nmos::nc::details::make_nc_datatype_typedef(U("No constraints float64 datatype"), U("NoConstraintsFloat64"), false, U("NcFloat64"), value::null());
-    const auto no_constraints_string_datatype = nmos::nc::details::make_nc_datatype_typedef(U("No constraints string datatype"), U("NoConstraintsString"), false, U("NcString"), value::null());
-    const auto with_constraints_string_datatype = nmos::nc::details::make_nc_datatype_typedef(U("With constraints string datatype"), U("WithConstraintsString"), false, U("NcString"), datatype_string_constraints);
-    const auto with_constraints_int32_datatype = nmos::nc::details::make_nc_datatype_typedef(U("With constraints int32 datatype"), U("WithConstraintsInt32"), false, U("NcInt32"), datatype_int32_constraints);
-    const auto no_constraints_int32_seq_datatype = nmos::nc::details::make_nc_datatype_typedef(U("No constraints int64 datatype"), U("NoConstraintsInt64"), true, U("NcInt32"), value::null());
-    const auto no_constraints_string_seq_datatype = nmos::nc::details::make_nc_datatype_typedef(U("No constraints string datatype"), U("NoConstraintsString"), true, U("NcString"), value::null());
+    const auto no_constraints_bool_datatype = nmos::nc::details::make_datatype_typedef(U("No constraints boolean datatype"), U("NoConstraintsBoolean"), false, U("NcBoolean"), value::null());
+    const auto no_constraints_int16_datatype = nmos::nc::details::make_datatype_typedef(U("No constraints int16 datatype"), U("NoConstraintsInt16"), false, U("NcInt16"), value::null());
+    const auto no_constraints_int32_datatype = nmos::nc::details::make_datatype_typedef(U("No constraints int32 datatype"), U("NoConstraintsInt32"), false, U("NcInt32"), value::null());
+    const auto no_constraints_int64_datatype = nmos::nc::details::make_datatype_typedef(U("No constraints int64 datatype"), U("NoConstraintsInt64"), false, U("NcInt64"), value::null());
+    const auto no_constraints_uint16_datatype = nmos::nc::details::make_datatype_typedef(U("No constraints uint16 datatype"), U("NoConstraintsUint16"), false, U("NcUint16"), value::null());
+    const auto no_constraints_uint32_datatype = nmos::nc::details::make_datatype_typedef(U("No constraints uint32 datatype"), U("NoConstraintsUint32"), false, U("NcUint32"), value::null());
+    const auto no_constraints_uint64_datatype = nmos::nc::details::make_datatype_typedef(U("No constraints uint64 datatype"), U("NoConstraintsUint64"), false, U("NcUint64"), value::null());
+    const auto no_constraints_float32_datatype = nmos::nc::details::make_datatype_typedef(U("No constraints float32 datatype"), U("NoConstraintsFloat32"), false, U("NcFloat32"), value::null());
+    const auto no_constraints_float64_datatype = nmos::nc::details::make_datatype_typedef(U("No constraints float64 datatype"), U("NoConstraintsFloat64"), false, U("NcFloat64"), value::null());
+    const auto no_constraints_string_datatype = nmos::nc::details::make_datatype_typedef(U("No constraints string datatype"), U("NoConstraintsString"), false, U("NcString"), value::null());
+    const auto with_constraints_string_datatype = nmos::nc::details::make_datatype_typedef(U("With constraints string datatype"), U("WithConstraintsString"), false, U("NcString"), datatype_string_constraints);
+    const auto with_constraints_int32_datatype = nmos::nc::details::make_datatype_typedef(U("With constraints int32 datatype"), U("WithConstraintsInt32"), false, U("NcInt32"), datatype_int32_constraints);
+    const auto no_constraints_int32_seq_datatype = nmos::nc::details::make_datatype_typedef(U("No constraints int64 datatype"), U("NoConstraintsInt64"), true, U("NcInt32"), value::null());
+    const auto no_constraints_string_seq_datatype = nmos::nc::details::make_datatype_typedef(U("No constraints string datatype"), U("NoConstraintsString"), true, U("NcString"), value::null());
 
     enum enum_value { foo, bar, baz };
     auto items = value::array();
-    web::json::push_back(items, nmos::nc::details::make_nc_enum_item_descriptor(U("foo"), U("foo"), enum_value::foo));
-    web::json::push_back(items, nmos::nc::details::make_nc_enum_item_descriptor(U("bar"), U("bar"), enum_value::bar));
-    web::json::push_back(items, nmos::nc::details::make_nc_enum_item_descriptor(U("baz"), U("baz"), enum_value::baz));
-    const auto enum_datatype = nmos::nc::details::make_nc_datatype_descriptor_enum(U("enum datatype"), U("enumDatatype"), items, value::null()); // no datatype constraints for enum datatype
+    web::json::push_back(items, nmos::nc::details::make_enum_item_descriptor(U("foo"), U("foo"), enum_value::foo));
+    web::json::push_back(items, nmos::nc::details::make_enum_item_descriptor(U("bar"), U("bar"), enum_value::bar));
+    web::json::push_back(items, nmos::nc::details::make_enum_item_descriptor(U("baz"), U("baz"), enum_value::baz));
+    const auto enum_datatype = nmos::nc::details::make_datatype_descriptor_enum(U("enum datatype"), U("enumDatatype"), items, value::null()); // no datatype constraints for enum datatype
 
     auto simple_struct_fields = value::array();
-    web::json::push_back(simple_struct_fields, nmos::nc::details::make_nc_field_descriptor(U("simple enum property example"), U("simpleEnumProperty"), U("enumDatatype"), false, false, value::null())); // no field constraints for enum field, as it is already described by its type
-    web::json::push_back(simple_struct_fields, nmos::nc::details::make_nc_field_descriptor(U("simple string property example"), U("simpleStringProperty"), U("NcString"), false, false, datatype_string_constraints));
-    web::json::push_back(simple_struct_fields, nmos::nc::details::make_nc_field_descriptor(U("simple number property example"), U("simpleNumberProperty"), U("NcInt32"), false, false, datatype_int32_constraints));
-    web::json::push_back(simple_struct_fields, nmos::nc::details::make_nc_field_descriptor(U("simle boolean property example"), U("simpleBooleanProperty"), U("NcBoolean"), false, false, value::null())); // no field constraints for boolean field, as it is already described by its type
-    const auto simple_struct_datatype = nmos::nc::details::make_nc_datatype_descriptor_struct(U("simple struct datatype"), U("simpleStructDatatype"), simple_struct_fields, value::null()); // no datatype constraints for struct datatype
+    web::json::push_back(simple_struct_fields, nmos::nc::details::make_field_descriptor(U("simple enum property example"), U("simpleEnumProperty"), U("enumDatatype"), false, false, value::null())); // no field constraints for enum field, as it is already described by its type
+    web::json::push_back(simple_struct_fields, nmos::nc::details::make_field_descriptor(U("simple string property example"), U("simpleStringProperty"), U("NcString"), false, false, datatype_string_constraints));
+    web::json::push_back(simple_struct_fields, nmos::nc::details::make_field_descriptor(U("simple number property example"), U("simpleNumberProperty"), U("NcInt32"), false, false, datatype_int32_constraints));
+    web::json::push_back(simple_struct_fields, nmos::nc::details::make_field_descriptor(U("simle boolean property example"), U("simpleBooleanProperty"), U("NcBoolean"), false, false, value::null())); // no field constraints for boolean field, as it is already described by its type
+    const auto simple_struct_datatype = nmos::nc::details::make_datatype_descriptor_struct(U("simple struct datatype"), U("simpleStructDatatype"), simple_struct_fields, value::null()); // no datatype constraints for struct datatype
 
     auto fields = value::array();
-    web::json::push_back(fields, nmos::nc::details::make_nc_field_descriptor(U("Enum property example"), U("enumProperty"), U("enumDatatype"), false, false, value::null())); // no field constraints for enum field, as it is already described by its type
-    web::json::push_back(fields, nmos::nc::details::make_nc_field_descriptor(U("String property example"), U("stringProperty"), U("NcString"), false, false, datatype_string_constraints));
-    web::json::push_back(fields, nmos::nc::details::make_nc_field_descriptor(U("Number property example"), U("numberProperty"), U("NcInt32"), false, false, datatype_int32_constraints));
-    web::json::push_back(fields, nmos::nc::details::make_nc_field_descriptor(U("Boolean property example"), U("booleanProperty"), U("NcBoolean"), false, false, value::null())); // no field constraints for boolean field, as it is already described by its type
-    web::json::push_back(fields, nmos::nc::details::make_nc_field_descriptor(U("Struct property example"), U("structProperty"), U("simpleStructDatatype"), false, false, value::null())); // no datatype constraints for struct datatype
-    web::json::push_back(fields, nmos::nc::details::make_nc_field_descriptor(U("Sequence enum property example"), U("sequenceEnumProperty"), U("enumDatatype"), false, true, value::null())); // no field constraints for enum field, as it is already described by its type
-    web::json::push_back(fields, nmos::nc::details::make_nc_field_descriptor(U("Sequence string property example"), U("sequenceStringProperty"), U("NcString"), false, true, datatype_string_constraints));
-    web::json::push_back(fields, nmos::nc::details::make_nc_field_descriptor(U("Sequence number property example"), U("sequenceNumberProperty"), U("NcInt32"), false, true, datatype_int32_constraints));
-    web::json::push_back(fields, nmos::nc::details::make_nc_field_descriptor(U("Sequence boolean property example"), U("sequenceBooleanProperty"), U("NcBoolean"), false, true, value::null())); // no field constraints for boolean field, as it is already described by its type
-    web::json::push_back(fields, nmos::nc::details::make_nc_field_descriptor(U("Sequence struct property example"), U("sequenceStructProperty"), U("simpleStructDatatype"), false, true, value::null())); // no field constraints for struct field
-    web::json::push_back(fields, nmos::nc::details::make_nc_field_descriptor(U("Nullable Enum property example"), U("enumPropertyNullable"), U("enumDatatype"), true, false, value::null())); // no field constraints for enum field, as it is already described by its type
-    web::json::push_back(fields, nmos::nc::details::make_nc_field_descriptor(U("Nullable String property example"), U("stringPropertyNullable"), U("NcString"), true, false, datatype_string_constraints));
-    web::json::push_back(fields, nmos::nc::details::make_nc_field_descriptor(U("Nullable Number property example"), U("numberPropertyNullable"), U("NcInt32"), true, false, datatype_int32_constraints));
-    web::json::push_back(fields, nmos::nc::details::make_nc_field_descriptor(U("Nullable Boolean property example"), U("booleanPropertyNullable"), U("NcBoolean"), true, false, value::null())); // no field constraints for boolean field, as it is already described by its type
-    web::json::push_back(fields, nmos::nc::details::make_nc_field_descriptor(U("Nullable Struct property example"), U("structPropertyNullable"), U("simpleStructDatatype"), true, false, value::null())); // no datatype constraints for struct datatype
-    web::json::push_back(fields, nmos::nc::details::make_nc_field_descriptor(U("Nullable Sequence enum property example"), U("sequenceEnumPropertyNullable"), U("enumDatatype"), true, true, value::null())); // no field constraints for enum field, as it is already described by its type
-    web::json::push_back(fields, nmos::nc::details::make_nc_field_descriptor(U("Nullable Sequence string property example"), U("sequenceStringPropertyNullable"), U("NcString"), true, true, datatype_string_constraints));
-    web::json::push_back(fields, nmos::nc::details::make_nc_field_descriptor(U("Nullable Sequence number property example"), U("sequenceNumberPropertyNullable"), U("NcInt32"), true, true, datatype_int32_constraints));
-    web::json::push_back(fields, nmos::nc::details::make_nc_field_descriptor(U("Nullable Sequence boolean property example"), U("sequenceBooleanPropertyNullable"), U("NcBoolean"), true, true, value::null())); // no field constraints for boolean field, as it is already described by its type
-    web::json::push_back(fields, nmos::nc::details::make_nc_field_descriptor(U("Nullable Sequence struct property example"), U("sequenceStructPropertyNullable"), U("simpleStructDatatype"), true, true, value::null())); // no field constraints for struct field
-    const auto struct_datatype = nmos::nc::details::make_nc_datatype_descriptor_struct(U("struct datatype"), U("structDatatype"), fields, value::null()); // no datatype constraints for struct datatype
+    web::json::push_back(fields, nmos::nc::details::make_field_descriptor(U("Enum property example"), U("enumProperty"), U("enumDatatype"), false, false, value::null())); // no field constraints for enum field, as it is already described by its type
+    web::json::push_back(fields, nmos::nc::details::make_field_descriptor(U("String property example"), U("stringProperty"), U("NcString"), false, false, datatype_string_constraints));
+    web::json::push_back(fields, nmos::nc::details::make_field_descriptor(U("Number property example"), U("numberProperty"), U("NcInt32"), false, false, datatype_int32_constraints));
+    web::json::push_back(fields, nmos::nc::details::make_field_descriptor(U("Boolean property example"), U("booleanProperty"), U("NcBoolean"), false, false, value::null())); // no field constraints for boolean field, as it is already described by its type
+    web::json::push_back(fields, nmos::nc::details::make_field_descriptor(U("Struct property example"), U("structProperty"), U("simpleStructDatatype"), false, false, value::null())); // no datatype constraints for struct datatype
+    web::json::push_back(fields, nmos::nc::details::make_field_descriptor(U("Sequence enum property example"), U("sequenceEnumProperty"), U("enumDatatype"), false, true, value::null())); // no field constraints for enum field, as it is already described by its type
+    web::json::push_back(fields, nmos::nc::details::make_field_descriptor(U("Sequence string property example"), U("sequenceStringProperty"), U("NcString"), false, true, datatype_string_constraints));
+    web::json::push_back(fields, nmos::nc::details::make_field_descriptor(U("Sequence number property example"), U("sequenceNumberProperty"), U("NcInt32"), false, true, datatype_int32_constraints));
+    web::json::push_back(fields, nmos::nc::details::make_field_descriptor(U("Sequence boolean property example"), U("sequenceBooleanProperty"), U("NcBoolean"), false, true, value::null())); // no field constraints for boolean field, as it is already described by its type
+    web::json::push_back(fields, nmos::nc::details::make_field_descriptor(U("Sequence struct property example"), U("sequenceStructProperty"), U("simpleStructDatatype"), false, true, value::null())); // no field constraints for struct field
+    web::json::push_back(fields, nmos::nc::details::make_field_descriptor(U("Nullable Enum property example"), U("enumPropertyNullable"), U("enumDatatype"), true, false, value::null())); // no field constraints for enum field, as it is already described by its type
+    web::json::push_back(fields, nmos::nc::details::make_field_descriptor(U("Nullable String property example"), U("stringPropertyNullable"), U("NcString"), true, false, datatype_string_constraints));
+    web::json::push_back(fields, nmos::nc::details::make_field_descriptor(U("Nullable Number property example"), U("numberPropertyNullable"), U("NcInt32"), true, false, datatype_int32_constraints));
+    web::json::push_back(fields, nmos::nc::details::make_field_descriptor(U("Nullable Boolean property example"), U("booleanPropertyNullable"), U("NcBoolean"), true, false, value::null())); // no field constraints for boolean field, as it is already described by its type
+    web::json::push_back(fields, nmos::nc::details::make_field_descriptor(U("Nullable Struct property example"), U("structPropertyNullable"), U("simpleStructDatatype"), true, false, value::null())); // no datatype constraints for struct datatype
+    web::json::push_back(fields, nmos::nc::details::make_field_descriptor(U("Nullable Sequence enum property example"), U("sequenceEnumPropertyNullable"), U("enumDatatype"), true, true, value::null())); // no field constraints for enum field, as it is already described by its type
+    web::json::push_back(fields, nmos::nc::details::make_field_descriptor(U("Nullable Sequence string property example"), U("sequenceStringPropertyNullable"), U("NcString"), true, true, datatype_string_constraints));
+    web::json::push_back(fields, nmos::nc::details::make_field_descriptor(U("Nullable Sequence number property example"), U("sequenceNumberPropertyNullable"), U("NcInt32"), true, true, datatype_int32_constraints));
+    web::json::push_back(fields, nmos::nc::details::make_field_descriptor(U("Nullable Sequence boolean property example"), U("sequenceBooleanPropertyNullable"), U("NcBoolean"), true, true, value::null())); // no field constraints for boolean field, as it is already described by its type
+    web::json::push_back(fields, nmos::nc::details::make_field_descriptor(U("Nullable Sequence struct property example"), U("sequenceStructPropertyNullable"), U("simpleStructDatatype"), true, true, value::null())); // no field constraints for struct field
+    const auto struct_datatype = nmos::nc::details::make_datatype_descriptor_struct(U("struct datatype"), U("structDatatype"), fields, value::null()); // no datatype constraints for struct datatype
 
     // setup datatypes in control_protocol_state
     nmos::experimental::control_protocol_state control_protocol_state;

@@ -53,7 +53,7 @@ BST_TEST_CASE(testRemoveSequenceItem)
     // helper function to create writable_sequence object
     auto make_writable_sequence = [&writable_value, &writable_sequence_class_id](nmos::nc_oid oid, nmos::nc_oid owner, const utility::string_t& role, const utility::string_t& user_label, const utility::string_t& description)
     {
-        auto data = nmos::nc::details::make_nc_worker(writable_sequence_class_id, oid, true, owner, role, value::string(user_label), description, web::json::value::null(), web::json::value::null(), true);
+        auto data = nmos::nc::details::make_worker(writable_sequence_class_id, oid, true, owner, role, value::string(user_label), description, web::json::value::null(), web::json::value::null(), true);
         auto values = value::array();
         web::json::push_back(values, value::number(10));
         web::json::push_back(values, value::number(9));

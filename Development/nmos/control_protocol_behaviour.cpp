@@ -87,7 +87,7 @@ namespace nmos
                         for (const auto& descriptor : descriptors.as_array())
                         {
                             auto oid = nmos::fields::nc::oid(descriptor);
-                            const auto& class_id = nc::details::parse_nc_class_id(nmos::fields::nc::class_id(descriptor));
+                            const auto& class_id = nc::details::parse_class_id(nmos::fields::nc::class_id(descriptor));
 
                             auto status_reporting_delay = nc::get_property(control_protocol_resources, oid, nc_status_monitor_status_reporting_delay, get_control_protocol_class_descriptor, gate);
 
@@ -124,7 +124,7 @@ namespace nmos
                         for (const auto& descriptor : descriptors.as_array())
                         {
                             const auto& oid = nmos::fields::nc::oid(descriptor);
-                            const auto& class_id = nc::details::parse_nc_class_id(nmos::fields::nc::class_id(descriptor));
+                            const auto& class_id = nc::details::parse_class_id(nmos::fields::nc::class_id(descriptor));
 
                             const auto status_reporting_delay = nc::get_property(control_protocol_resources, oid, nc_status_monitor_status_reporting_delay, get_control_protocol_class_descriptor, gate);
 

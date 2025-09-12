@@ -40,7 +40,7 @@ namespace nmos
                     auto& runtime_prop_constraints = runtime_property_constraints.as_array();
                     auto found_constraints = std::find_if(runtime_prop_constraints.begin(), runtime_prop_constraints.end(), [&property_id](const web::json::value& constraints)
                     {
-                        return property_id == parse_nc_property_id(nmos::fields::nc::property_id(constraints));
+                        return property_id == parse_property_id(nmos::fields::nc::property_id(constraints));
                     });
 
                     if (runtime_prop_constraints.end() != found_constraints)
@@ -362,7 +362,7 @@ namespace nmos
                         }
 
                         // get the role_path_segement member resource
-                        if (is_block(parse_nc_class_id(nmos::fields::nc::class_id(*member_found))))
+                        if (is_block(parse_class_id(nmos::fields::nc::class_id(*member_found))))
                         {
                             // get resource based on the oid
                             const auto& oid = nmos::fields::nc::oid(*member_found);
@@ -414,7 +414,7 @@ namespace nmos
                 const auto& found = find_resource(resources, utility::s2us(std::to_string(oid)));
                 if (resources.end() != found)
                 {
-                    if (nmos::nc::is_sender_monitor(parse_nc_class_id(nmos::fields::nc::class_id(found->data))))
+                    if (nmos::nc::is_sender_monitor(parse_class_id(nmos::fields::nc::class_id(found->data))))
                     {
                         return details::update_sender_monitor_overall_status(resources, oid, get_control_protocol_class_descriptor, gate);
                     }
@@ -690,7 +690,7 @@ namespace nmos
                 const auto& property_descriptors = control_class.property_descriptors.as_array();
                 auto found = std::find_if(property_descriptors.begin(), property_descriptors.end(), [&property_id](const web::json::value& property_descriptor)
                     {
-                        return (property_id == nc::details::parse_nc_property_id(nmos::fields::nc::id(property_descriptor)));
+                        return (property_id == nc::details::parse_property_id(nmos::fields::nc::id(property_descriptor)));
                     });
                 if (property_descriptors.end() != found) { return *found; }
 
@@ -717,7 +717,7 @@ namespace nmos
                     // get members on all NcBlock(s)
                     for (const auto& member : members)
                     {
-                        if (is_block(nc::details::parse_nc_class_id(nmos::fields::nc::class_id(member))))
+                        if (is_block(nc::details::parse_class_id(nmos::fields::nc::class_id(member))))
                         {
                             // get resource based on the oid
                             const auto& oid = nmos::fields::nc::oid(member);
@@ -771,7 +771,7 @@ namespace nmos
                     // do role match on all NcBlock(s)
                     for (const auto& member : members)
                     {
-                        if (is_block(nc::details::parse_nc_class_id(nmos::fields::nc::class_id(member))))
+                        if (is_block(nc::details::parse_class_id(nmos::fields::nc::class_id(member))))
                         {
                             // get resource based on the oid
                             const auto& oid = nmos::fields::nc::oid(member);
@@ -795,7 +795,7 @@ namespace nmos
 
                     auto match = [&](const web::json::value& descriptor)
                         {
-                            const auto& class_id = nc::details::parse_nc_class_id(nmos::fields::nc::class_id(descriptor));
+                            const auto& class_id = nc::details::parse_class_id(nmos::fields::nc::class_id(descriptor));
 
                             if (include_derived) { return !boost::find_first(class_id, class_id_).empty(); }
                             else { return class_id == class_id_; }
@@ -819,7 +819,7 @@ namespace nmos
                     // do class_id match on all NcBlock(s)
                     for (const auto& member : members)
                     {
-                        if (is_block(nc::details::parse_nc_class_id(nmos::fields::nc::class_id(member))))
+                        if (is_block(nc::details::parse_class_id(nmos::fields::nc::class_id(member))))
                         {
                             // get resource based on the oid
                             const auto& oid = nmos::fields::nc::oid(member);
@@ -842,10 +842,10 @@ namespace nmos
             auto& parent = nc_block_resource.data;
             const auto& child = resource.data;
 
-            if (!is_block(details::parse_nc_class_id(nmos::fields::nc::class_id(parent)))) throw std::logic_error("non-NcBlock cannot be nested");
+            if (!is_block(details::parse_class_id(nmos::fields::nc::class_id(parent)))) throw std::logic_error("non-NcBlock cannot be nested");
 
             web::json::push_back(parent[nmos::fields::nc::members],
-                details::make_nc_block_member_descriptor(nmos::fields::description(child), nmos::fields::nc::role(child), nmos::fields::nc::oid(child), nmos::fields::nc::constant_oid(child), nc::details::parse_nc_class_id(nmos::fields::nc::class_id(child)), nmos::fields::nc::user_label(child), nmos::fields::nc::oid(parent)));
+                details::make_block_member_descriptor(nmos::fields::description(child), nmos::fields::nc::role(child), nmos::fields::nc::oid(child), nmos::fields::nc::constant_oid(child), nc::details::parse_class_id(nmos::fields::nc::class_id(child)), nmos::fields::nc::user_label(child), nmos::fields::nc::oid(parent)));
 
             nc_block_resource.resources.push_back(resource);
         }
@@ -1095,7 +1095,7 @@ namespace nmos
             if (resources.end() != found)
             {
                 // find the relevant nc_property_descriptor
-                const auto& property = nc::find_property_descriptor(property_id, nc::details::parse_nc_class_id(nmos::fields::nc::class_id(found->data)), get_control_protocol_class_descriptor);
+                const auto& property = nc::find_property_descriptor(property_id, nc::details::parse_class_id(nmos::fields::nc::class_id(found->data)), get_control_protocol_class_descriptor);
                 if (!property.is_null() && found->has_data() && found->data.has_field(nmos::fields::nc::name(property)))
                 {
                     return found->data.at(nmos::fields::nc::name(property));
@@ -1111,7 +1111,7 @@ namespace nmos
             const auto& found = find_resource(resources, utility::s2us(std::to_string(oid)));
             if (resources.end() != found)
             {
-                const auto& property = nc::find_property_descriptor(property_id, nc::details::parse_nc_class_id(nmos::fields::nc::class_id(found->data)), get_control_protocol_class_descriptor);
+                const auto& property = nc::find_property_descriptor(property_id, nc::details::parse_class_id(nmos::fields::nc::class_id(found->data)), get_control_protocol_class_descriptor);
                 if (!property.is_null())
                 {
                     try
@@ -1302,9 +1302,9 @@ namespace nmos
             // Furthermore, after activation, as long as the monitor isn’t being deactivated, it MUST delay the reporting
             // of non Healthy states for the duration specified by statusReportingDelay, and then transition to any other appropriate state.
             const auto& found = find_resource(resources, utility::s2us(std::to_string(oid)));
-            if (resources.end() != found && nc::is_status_monitor(nc::details::parse_nc_class_id(nmos::fields::nc::class_id(found->data))))
+            if (resources.end() != found && nc::is_status_monitor(nc::details::parse_class_id(nmos::fields::nc::class_id(found->data))))
             {
-                const auto& class_id = nc::details::parse_nc_class_id(nmos::fields::nc::class_id(found->data));
+                const auto& class_id = nc::details::parse_class_id(nmos::fields::nc::class_id(found->data));
 
                 auto activation_time = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
                 auto succeed = set_property(resources, oid, nmos::fields::nc::monitor_activation_time, activation_time, gate);
@@ -1361,9 +1361,9 @@ namespace nmos
         bool deactivate_monitor(resources& resources, nc_oid oid, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, slog::base_gate& gate)
         {
             const auto& found = find_resource(resources, utility::s2us(std::to_string(oid)));
-            if (resources.end() != found && nc::is_status_monitor(nc::details::parse_nc_class_id(nmos::fields::nc::class_id(found->data))))
+            if (resources.end() != found && nc::is_status_monitor(nc::details::parse_class_id(nmos::fields::nc::class_id(found->data))))
             {
-                const auto& class_id = nc::details::parse_nc_class_id(nmos::fields::nc::class_id(found->data));
+                const auto& class_id = nc::details::parse_class_id(nmos::fields::nc::class_id(found->data));
 
                 auto succeed = set_property(resources, oid, nmos::fields::nc::monitor_activation_time, web::json::value::number(0), gate);
 

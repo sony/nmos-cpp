@@ -246,7 +246,7 @@ namespace nmos
                                     const auto oid = nmos::fields::nc::oid(cmd);
 
                                     // get methodId
-                                    const auto& method_id = nc::details::parse_nc_method_id(nmos::fields::nc::method_id(cmd));
+                                    const auto& method_id = nc::details::parse_method_id(nmos::fields::nc::method_id(cmd));
 
                                     // get arguments
                                     const auto& arguments = nmos::fields::nc::arguments(cmd);
@@ -256,7 +256,7 @@ namespace nmos
                                     auto resource = nmos::find_resource(resources, utility::s2us(std::to_string(oid)));
                                     if (resources.end() != resource)
                                     {
-                                        const auto class_id = nc::details::parse_nc_class_id(nmos::fields::nc::class_id(resource->data));
+                                        const auto class_id = nc::details::parse_class_id(nmos::fields::nc::class_id(resource->data));
 
                                         // find the relevant method handler to execute
                                         // method tuple definition described in control_protocol_handlers.h
@@ -280,7 +280,7 @@ namespace nmos
                                                 utility::ostringstream_t ss;
                                                 ss << "invalid argument: " << arguments.serialize() << " error: " << e.what();
                                                 slog::log<slog::severities::error>(gate, SLOG_FLF) << ss.str();
-                                                nc_method_result = nc::details::make_nc_method_result_error({ nmos::nc_method_status::parameter_error }, ss.str());
+                                                nc_method_result = nc::details::make_method_result_error({ nmos::nc_method_status::parameter_error }, ss.str());
                                             }
                                         }
                                         else
@@ -290,7 +290,7 @@ namespace nmos
                                             ss << U("unsupported method_id: ") << nmos::fields::nc::method_id(cmd).serialize()
                                                 << U(" for control class class_id: ") << resource->data.at(nmos::fields::nc::class_id).serialize();
                                             slog::log<slog::severities::error>(gate, SLOG_FLF) << ss.str();
-                                            nc_method_result = nc::details::make_nc_method_result_error({ nc_method_status::method_not_implemented }, ss.str());
+                                            nc_method_result = nc::details::make_method_result_error({ nc_method_status::method_not_implemented }, ss.str());
                                         }
                                     }
                                     else
@@ -299,7 +299,7 @@ namespace nmos
                                         utility::ostringstream_t ss;
                                         ss << U("unknown oid: ") << oid;
                                         slog::log<slog::severities::error>(gate, SLOG_FLF) << ss.str();
-                                        nc_method_result = nc::details::make_nc_method_result_error({ nc_method_status::bad_oid }, ss.str());
+                                        nc_method_result = nc::details::make_method_result_error({ nc_method_status::bad_oid }, ss.str());
                                     }
                                     // accumulating up response
                                     auto response = nc::make_control_protocol_response(handle, nc_method_result);
