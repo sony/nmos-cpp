@@ -1370,6 +1370,8 @@ void node_implementation_run(nmos::node_model& model, nmos::experimental::contro
     auto& control_protocol_resources = model.control_protocol_resources;
 
     auto get_control_protocol_property = nmos::make_get_control_protocol_property_handler(control_protocol_resources, control_protocol_state, gate);
+    auto set_control_protocol_property = nmos::make_set_control_protocol_property_handler(control_protocol_resources, control_protocol_state, gate);
+
     auto set_receiver_monitor_link_status = nmos::make_set_receiver_monitor_link_status_handler(control_protocol_resources, control_protocol_state, gate);
     auto set_receiver_monitor_connection_status = nmos::make_set_receiver_monitor_connection_status_handler(control_protocol_resources, control_protocol_state, gate);
     auto set_receiver_monitor_external_synchronization_status = nmos::make_set_receiver_monitor_external_synchronization_status_handler(control_protocol_resources, control_protocol_state, gate);
@@ -1390,10 +1392,10 @@ void node_implementation_run(nmos::node_model& model, nmos::experimental::contro
     auto cancellation_source = pplx::cancellation_token_source();
 
     auto token = cancellation_source.get_token();
-    auto events = pplx::do_while([&model, seed_id, how_many, simulate_status_monitor_activity, ws_sender_ports, rtp_receiver_ports, rtp_sender_ports, get_control_protocol_property, set_receiver_monitor_link_status, set_receiver_monitor_connection_status, set_receiver_monitor_external_synchronization_status, set_receiver_monitor_stream_status, set_receiver_monitor_synchronization_source_id, set_sender_monitor_link_status, set_sender_monitor_transmission_status, set_sender_monitor_external_synchronization_status, set_sender_monitor_essence_status, set_sender_monitor_synchronization_source_id, events_engine, &gate, token]
+    auto events = pplx::do_while([&model, seed_id, how_many, simulate_status_monitor_activity, ws_sender_ports, rtp_receiver_ports, rtp_sender_ports, get_control_protocol_property, set_receiver_monitor_link_status, set_receiver_monitor_connection_status, set_receiver_monitor_external_synchronization_status, set_receiver_monitor_stream_status, set_receiver_monitor_synchronization_source_id, set_sender_monitor_link_status, set_sender_monitor_transmission_status, set_sender_monitor_external_synchronization_status, set_sender_monitor_essence_status, set_sender_monitor_synchronization_source_id, set_control_protocol_property, events_engine, &gate, token]
     {
         const auto event_interval = std::uniform_real_distribution<>(0.5, 5.0)(*events_engine);
-        return pplx::complete_after(std::chrono::milliseconds(std::chrono::milliseconds::rep(1000 * event_interval)), token).then([&model, seed_id, how_many, simulate_status_monitor_activity, ws_sender_ports, rtp_receiver_ports, rtp_sender_ports, get_control_protocol_property, set_receiver_monitor_link_status, set_receiver_monitor_connection_status, set_receiver_monitor_external_synchronization_status, set_receiver_monitor_stream_status, set_receiver_monitor_synchronization_source_id, set_sender_monitor_link_status, set_sender_monitor_transmission_status, set_sender_monitor_external_synchronization_status, set_sender_monitor_essence_status, set_sender_monitor_synchronization_source_id, events_engine, &gate]
+        return pplx::complete_after(std::chrono::milliseconds(std::chrono::milliseconds::rep(1000 * event_interval)), token).then([&model, seed_id, how_many, simulate_status_monitor_activity, ws_sender_ports, rtp_receiver_ports, rtp_sender_ports, get_control_protocol_property, set_receiver_monitor_link_status, set_receiver_monitor_connection_status, set_receiver_monitor_external_synchronization_status, set_receiver_monitor_stream_status, set_receiver_monitor_synchronization_source_id, set_sender_monitor_link_status, set_sender_monitor_transmission_status, set_sender_monitor_external_synchronization_status, set_sender_monitor_essence_status, set_sender_monitor_synchronization_source_id, set_control_protocol_property, events_engine, &gate]
         {
             auto lock = model.write_lock();
 
@@ -1437,7 +1439,7 @@ void node_implementation_run(nmos::node_model& model, nmos::experimental::contro
             // update temperature sensor
             {
                 const auto temperature_sensor_control_class_id = nmos::nc::make_class_id(nmos::nc_worker_class_id, 0, { 3 }); // hmm, maybe pull out temperature_sensor_control_class_id to impl namespace
-                const web::json::field_as_number temperature{ U("temperature") }; // hmm, maybe pull out temperature field to impl namespace
+                const auto temperature_value_property_id = nmos::nc_property_id({3, 1});
 
                 auto& resources = model.control_protocol_resources;
 
@@ -1448,16 +1450,7 @@ void node_implementation_run(nmos::node_model& model, nmos::experimental::contro
 
                 if (resources.end() != found)
                 {
-                    const auto property_changed_event = nmos::nc::make_property_changed_event(nmos::fields::nc::oid(found->data),
-                    {
-                        { {3, 1}, nmos::nc_property_change_type::type::value_changed, web::json::value(temp.scaled_value()) } // hmm, maybe pull out {3, 1} temperature property id to impl namespace
-                    });
-
-                    nmos::nc::modify_resource(model.control_protocol_resources, found->id, [&](nmos::resource& resource)
-                    {
-                        resource.data[temperature] = temp.scaled_value();
-
-                    }, property_changed_event);
+                    set_control_protocol_property(nmos::fields::nc::oid(found->data), temperature_value_property_id, web::json::value(temp.scaled_value()));
                 }
             }
 
