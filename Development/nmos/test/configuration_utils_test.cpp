@@ -60,10 +60,10 @@ BST_TEST_CASE(testIsBlockModified)
     auto receivers = nmos::make_block(++oid, nmos::root_block_oid, U("receivers"), U("Receivers"), U("Receivers block"));
     auto receiver_block_oid = oid;
     // root, receivers, mon1
-    auto monitor1 = nmos::make_receiver_monitor(++oid, true, receiver_block_oid, U("mon1"), U("monitor 1"), U("monitor 1"), value_of({ {nmos::details::make_nc_touchpoint_nmos({nmos::ncp_touchpoint_resource_types::receiver, U("id_1")})} }));
+    auto monitor1 = nmos::make_receiver_monitor(++oid, true, receiver_block_oid, U("mon1"), U("monitor 1"), U("monitor 1"), value_of({ {nmos::nc::details::make_nc_touchpoint_nmos({nmos::ncp_touchpoint_resource_types::receiver, U("id_1")})} }));
     auto monitor_1_oid = oid;
     // root, receivers, mon2
-    auto monitor2 = nmos::make_receiver_monitor(++oid, true, receiver_block_oid, U("mon2"), U("monitor 2"), U("monitor 2"), value_of({ {nmos::details::make_nc_touchpoint_nmos({nmos::ncp_touchpoint_resource_types::receiver, U("id_2")})} }));
+    auto monitor2 = nmos::make_receiver_monitor(++oid, true, receiver_block_oid, U("mon2"), U("monitor 2"), U("monitor 2"), value_of({ {nmos::nc::details::make_nc_touchpoint_nmos({nmos::ncp_touchpoint_resource_types::receiver, U("id_2")})} }));
     auto monitor_2_oid = oid;
     nmos::nc::push_back(receivers, monitor1);
     // add example-control to root-block
@@ -76,25 +76,25 @@ BST_TEST_CASE(testIsBlockModified)
     push_back(role_path, U("root"));
     push_back(role_path, U("receivers"));
 
-    const auto block_members_property_descriptor = nmos::details::make_nc_property_descriptor(U("members"), nmos::nc_block_members_property_id, nmos::fields::nc::members, U("NcBlockMemberDescriptor"), true, false, true, false, web::json::value::null());
+    const auto block_members_property_descriptor = nmos::nc::details::make_nc_property_descriptor(U("members"), nmos::nc_block_members_property_id, nmos::fields::nc::members, U("NcBlockMemberDescriptor"), true, false, true, false, web::json::value::null());
 
     // Members unchanged
     {
         auto property_holders = value::array();
 
         auto members = value::array();
-        const auto class_id = nmos::details::parse_nc_class_id(nmos::fields::nc::class_id(monitor1.data));
+        const auto class_id = nmos::nc::details::parse_nc_class_id(nmos::fields::nc::class_id(monitor1.data));
         {
-            const auto block_member_descriptor = nmos::details::make_nc_block_member_descriptor(U("monitor 1"), U("mon1"), monitor_1_oid, true, class_id, U("monitor 1"), receiver_block_oid);
+            const auto block_member_descriptor = nmos::nc::details::make_nc_block_member_descriptor(U("monitor 1"), U("mon1"), monitor_1_oid, true, class_id, U("monitor 1"), receiver_block_oid);
             push_back(members, block_member_descriptor);
         }
         {
-            const auto block_member_descriptor = nmos::details::make_nc_block_member_descriptor(U("monitor 2"), U("mon2"), monitor_2_oid, true, class_id, U("monitor 2"), receiver_block_oid);
+            const auto block_member_descriptor = nmos::nc::details::make_nc_block_member_descriptor(U("monitor 2"), U("mon2"), monitor_2_oid, true, class_id, U("monitor 2"), receiver_block_oid);
             push_back(members, block_member_descriptor);
         }
-        const auto property_holder = nmos::details::make_nc_property_holder(nmos::nc_block_members_property_id, block_members_property_descriptor, members);
+        const auto property_holder = nmos::nc::details::make_nc_property_holder(nmos::nc_block_members_property_id, block_members_property_descriptor, members);
         web::json::push_back(property_holders, property_holder);
-        const auto object_properties_holder = nmos::details::make_nc_object_properties_holder(role_path.as_array(), property_holders.as_array(), value::array().as_array(), value::array().as_array(), false);
+        const auto object_properties_holder = nmos::nc::details::make_nc_object_properties_holder(role_path.as_array(), property_holders.as_array(), value::array().as_array(), value::array().as_array(), false);
 
         BST_CHECK(!nmos::is_block_modified(receivers, object_properties_holder));
     }
@@ -104,12 +104,12 @@ BST_TEST_CASE(testIsBlockModified)
         auto property_holders = value::array();
 
         auto members = value::array();
-        const auto class_id = nmos::details::parse_nc_class_id(nmos::fields::nc::class_id(monitor1.data));
-        const auto block_descriptor = nmos::details::make_nc_block_member_descriptor(U("monitor 1"), U("monitor 1"), monitor_1_oid, true, class_id, U("label"), receiver_block_oid);
+        const auto class_id = nmos::nc::details::parse_nc_class_id(nmos::fields::nc::class_id(monitor1.data));
+        const auto block_descriptor = nmos::nc::details::make_nc_block_member_descriptor(U("monitor 1"), U("monitor 1"), monitor_1_oid, true, class_id, U("label"), receiver_block_oid);
         push_back(members, block_descriptor);
-        const auto property_holder = nmos::details::make_nc_property_holder(nmos::nc_block_members_property_id, block_members_property_descriptor, members);
+        const auto property_holder = nmos::nc::details::make_nc_property_holder(nmos::nc_block_members_property_id, block_members_property_descriptor, members);
         web::json::push_back(property_holders, property_holder);
-        const auto object_properties_holder = nmos::details::make_nc_object_properties_holder(role_path.as_array(), property_holders.as_array(), value::array().as_array(), value::array().as_array(), false);
+        const auto object_properties_holder = nmos::nc::details::make_nc_object_properties_holder(role_path.as_array(), property_holders.as_array(), value::array().as_array(), value::array().as_array(), false);
 
         BST_CHECK(nmos::is_block_modified(receivers, object_properties_holder));
     }
@@ -119,18 +119,18 @@ BST_TEST_CASE(testIsBlockModified)
         auto property_holders = value::array();
 
         auto members = value::array();
-        const auto class_id = nmos::details::parse_nc_class_id(nmos::fields::nc::class_id(monitor1.data));
+        const auto class_id = nmos::nc::details::parse_nc_class_id(nmos::fields::nc::class_id(monitor1.data));
         {
-            const auto block_member_descriptor = nmos::details::make_nc_block_member_descriptor(U("monitor 1"), U("mon1"), 10, true, class_id, U("monitor 1"), receiver_block_oid);
+            const auto block_member_descriptor = nmos::nc::details::make_nc_block_member_descriptor(U("monitor 1"), U("mon1"), 10, true, class_id, U("monitor 1"), receiver_block_oid);
             push_back(members, block_member_descriptor);
         }
         {
-            const auto block_member_descriptor = nmos::details::make_nc_block_member_descriptor(U("monitor 2"), U("mon2"), 20, true, class_id, U("monitor 2"), receiver_block_oid);
+            const auto block_member_descriptor = nmos::nc::details::make_nc_block_member_descriptor(U("monitor 2"), U("mon2"), 20, true, class_id, U("monitor 2"), receiver_block_oid);
             push_back(members, block_member_descriptor);
         }
-        const auto property_holder = nmos::details::make_nc_property_holder(nmos::nc_block_members_property_id, block_members_property_descriptor, members);
+        const auto property_holder = nmos::nc::details::make_nc_property_holder(nmos::nc_block_members_property_id, block_members_property_descriptor, members);
         web::json::push_back(property_holders, property_holder);
-        const auto object_properties_holder = nmos::details::make_nc_object_properties_holder(role_path.as_array(), property_holders.as_array(), value::array().as_array(), value::array().as_array(), false);
+        const auto object_properties_holder = nmos::nc::details::make_nc_object_properties_holder(role_path.as_array(), property_holders.as_array(), value::array().as_array(), value::array().as_array(), false);
 
         BST_CHECK(nmos::is_block_modified(receivers, object_properties_holder));
     }
@@ -140,18 +140,18 @@ BST_TEST_CASE(testIsBlockModified)
         auto property_holders = value::array();
 
         auto members = value::array();
-        const auto class_id = nmos::details::parse_nc_class_id(nmos::fields::nc::class_id(monitor1.data));
+        const auto class_id = nmos::nc::details::parse_nc_class_id(nmos::fields::nc::class_id(monitor1.data));
         {
-            const auto block_member_descriptor = nmos::details::make_nc_block_member_descriptor(U("monitor 1"), U("mon3"), monitor_1_oid, true, class_id, U("monitor 1"), receiver_block_oid);
+            const auto block_member_descriptor = nmos::nc::details::make_nc_block_member_descriptor(U("monitor 1"), U("mon3"), monitor_1_oid, true, class_id, U("monitor 1"), receiver_block_oid);
             push_back(members, block_member_descriptor);
         }
         {
-            const auto block_member_descriptor = nmos::details::make_nc_block_member_descriptor(U("monitor 2"), U("mon4"), monitor_2_oid, true, class_id, U("monitor 2"), receiver_block_oid);
+            const auto block_member_descriptor = nmos::nc::details::make_nc_block_member_descriptor(U("monitor 2"), U("mon4"), monitor_2_oid, true, class_id, U("monitor 2"), receiver_block_oid);
             push_back(members, block_member_descriptor);
         }
-        const auto property_holder = nmos::details::make_nc_property_holder(nmos::nc_block_members_property_id, block_members_property_descriptor, members);
+        const auto property_holder = nmos::nc::details::make_nc_property_holder(nmos::nc_block_members_property_id, block_members_property_descriptor, members);
         web::json::push_back(property_holders, property_holder);
-        const auto object_properties_holder = nmos::details::make_nc_object_properties_holder(role_path.as_array(), property_holders.as_array(), value::array().as_array(), value::array().as_array(), false);
+        const auto object_properties_holder = nmos::nc::details::make_nc_object_properties_holder(role_path.as_array(), property_holders.as_array(), value::array().as_array(), value::array().as_array(), false);
 
         BST_CHECK(nmos::is_block_modified(receivers, object_properties_holder));
     }
@@ -163,16 +163,16 @@ BST_TEST_CASE(testIsBlockModified)
         auto members = value::array();
         const auto class_id = nmos::nc::make_class_id(nmos::nc_worker_class_id, 0, { 1 });
         {
-            const auto block_member_descriptor = nmos::details::make_nc_block_member_descriptor(U("monitor 1"), U("mon1"), monitor_1_oid, true, class_id, U("monitor 1"), receiver_block_oid);
+            const auto block_member_descriptor = nmos::nc::details::make_nc_block_member_descriptor(U("monitor 1"), U("mon1"), monitor_1_oid, true, class_id, U("monitor 1"), receiver_block_oid);
             push_back(members, block_member_descriptor);
         }
         {
-            const auto block_member_descriptor = nmos::details::make_nc_block_member_descriptor(U("monitor 2"), U("mon2"), monitor_2_oid, true, class_id, U("monitor 2"), receiver_block_oid);
+            const auto block_member_descriptor = nmos::nc::details::make_nc_block_member_descriptor(U("monitor 2"), U("mon2"), monitor_2_oid, true, class_id, U("monitor 2"), receiver_block_oid);
             push_back(members, block_member_descriptor);
         }
-        const auto property_holder = nmos::details::make_nc_property_holder(nmos::nc_block_members_property_id, block_members_property_descriptor, members);
+        const auto property_holder = nmos::nc::details::make_nc_property_holder(nmos::nc_block_members_property_id, block_members_property_descriptor, members);
         web::json::push_back(property_holders, property_holder);
-        const auto object_properties_holder = nmos::details::make_nc_object_properties_holder(role_path.as_array(), property_holders.as_array(), value::array().as_array(), value::array().as_array(), false);
+        const auto object_properties_holder = nmos::nc::details::make_nc_object_properties_holder(role_path.as_array(), property_holders.as_array(), value::array().as_array(), value::array().as_array(), false);
 
         BST_CHECK(nmos::is_block_modified(receivers, object_properties_holder));
     }
@@ -184,16 +184,16 @@ BST_TEST_CASE(testIsBlockModified)
         auto members = value::array();
         const auto class_id = nmos::nc::make_class_id(nmos::nc_worker_class_id, 0, { 1 });
         {
-            const auto block_member_descriptor = nmos::details::make_nc_block_member_descriptor(U("monitor 1"), U("mon1"), monitor_1_oid, true, class_id, U("monitor 1"), 20);
+            const auto block_member_descriptor = nmos::nc::details::make_nc_block_member_descriptor(U("monitor 1"), U("mon1"), monitor_1_oid, true, class_id, U("monitor 1"), 20);
             push_back(members, block_member_descriptor);
         }
         {
-            const auto block_member_descriptor = nmos::details::make_nc_block_member_descriptor(U("monitor 2"), U("mon2"), monitor_2_oid, true, class_id, U("monitor 2"), 20);
+            const auto block_member_descriptor = nmos::nc::details::make_nc_block_member_descriptor(U("monitor 2"), U("mon2"), monitor_2_oid, true, class_id, U("monitor 2"), 20);
             push_back(members, block_member_descriptor);
         }
-        const auto property_holder = nmos::details::make_nc_property_holder(nmos::nc_block_members_property_id, block_members_property_descriptor, members);
+        const auto property_holder = nmos::nc::details::make_nc_property_holder(nmos::nc_block_members_property_id, block_members_property_descriptor, members);
         web::json::push_back(property_holders, property_holder);
-        const auto object_properties_holder = nmos::details::make_nc_object_properties_holder(role_path.as_array(), property_holders.as_array(), value::array().as_array(), value::array().as_array(), false);
+        const auto object_properties_holder = nmos::nc::details::make_nc_object_properties_holder(role_path.as_array(), property_holders.as_array(), value::array().as_array(), value::array().as_array(), false);
 
         BST_CHECK(nmos::is_block_modified(receivers, object_properties_holder));
     }
@@ -205,16 +205,16 @@ BST_TEST_CASE(testIsBlockModified)
         auto members = value::array();
         const auto class_id = nmos::nc::make_class_id(nmos::nc_worker_class_id, 0, { 1 });
         {
-            const auto block_member_descriptor = nmos::details::make_nc_block_member_descriptor(U("monitor 1"), U("mon1"), monitor_1_oid, false, class_id, U("monitor 1"), receiver_block_oid);
+            const auto block_member_descriptor = nmos::nc::details::make_nc_block_member_descriptor(U("monitor 1"), U("mon1"), monitor_1_oid, false, class_id, U("monitor 1"), receiver_block_oid);
             push_back(members, block_member_descriptor);
         }
         {
-            const auto block_member_descriptor = nmos::details::make_nc_block_member_descriptor(U("monitor 2"), U("mon2"), monitor_2_oid, false, class_id, U("monitor 2"), receiver_block_oid);
+            const auto block_member_descriptor = nmos::nc::details::make_nc_block_member_descriptor(U("monitor 2"), U("mon2"), monitor_2_oid, false, class_id, U("monitor 2"), receiver_block_oid);
             push_back(members, block_member_descriptor);
         }
-        const auto property_holder = nmos::details::make_nc_property_holder(nmos::nc_block_members_property_id, block_members_property_descriptor, members);
+        const auto property_holder = nmos::nc::details::make_nc_property_holder(nmos::nc_block_members_property_id, block_members_property_descriptor, members);
         web::json::push_back(property_holders, property_holder);
-        const auto object_properties_holder = nmos::details::make_nc_object_properties_holder(role_path.as_array(), property_holders.as_array(), value::array().as_array(), value::array().as_array(), false);
+        const auto object_properties_holder = nmos::nc::details::make_nc_object_properties_holder(role_path.as_array(), property_holders.as_array(), value::array().as_array(), value::array().as_array(), false);
 
         BST_CHECK(nmos::is_block_modified(receivers, object_properties_holder));
     }
@@ -226,7 +226,7 @@ BST_TEST_CASE(testGetObjectPropertiesHolder)
     using web::json::value_of;
     using web::json::value;
 
-    const auto enabled_property_descriptor = nmos::details::make_nc_property_descriptor(U("enabled"), nmos::nc_worker_enabled_property_id, nmos::fields::nc::enabled, U("NcBoolean"), false, false, false, false, web::json::value::null());
+    const auto enabled_property_descriptor = nmos::nc::details::make_nc_property_descriptor(U("enabled"), nmos::nc_worker_enabled_property_id, nmos::fields::nc::enabled, U("NcBoolean"), false, false, false, false, web::json::value::null());
 
     // Create Object Properties Holder
     auto object_properties_holders = value::array();
@@ -234,25 +234,25 @@ BST_TEST_CASE(testGetObjectPropertiesHolder)
     {
         const auto role_path = value_of({ U("root"), U("receivers"), U("mon1") });
         auto property_holders = value::array();
-        const auto property_holder = nmos::details::make_nc_property_holder(nmos::nc_worker_enabled_property_id, enabled_property_descriptor, value::boolean(false));
+        const auto property_holder = nmos::nc::details::make_nc_property_holder(nmos::nc_worker_enabled_property_id, enabled_property_descriptor, value::boolean(false));
         push_back(property_holders, property_holder);
-        const auto object_properties_holder = nmos::details::make_nc_object_properties_holder(role_path.as_array(), property_holders.as_array(), value::array().as_array(), value::array().as_array(), false);
+        const auto object_properties_holder = nmos::nc::details::make_nc_object_properties_holder(role_path.as_array(), property_holders.as_array(), value::array().as_array(), value::array().as_array(), false);
         push_back(object_properties_holders, object_properties_holder);
     }
     {
         const auto role_path = value_of({ U("root"), U("receivers"), U("mon2") });
         auto property_holders = value::array();
-        const auto property_holder = nmos::details::make_nc_property_holder(nmos::nc_worker_enabled_property_id, enabled_property_descriptor, value::boolean(false));
+        const auto property_holder = nmos::nc::details::make_nc_property_holder(nmos::nc_worker_enabled_property_id, enabled_property_descriptor, value::boolean(false));
         push_back(property_holders, property_holder);
-        const auto object_properties_holder = nmos::details::make_nc_object_properties_holder(role_path.as_array(), property_holders.as_array(), value::array().as_array(), value::array().as_array(), false);
+        const auto object_properties_holder = nmos::nc::details::make_nc_object_properties_holder(role_path.as_array(), property_holders.as_array(), value::array().as_array(), value::array().as_array(), false);
         push_back(object_properties_holders, object_properties_holder);
     }
     {
         const auto role_path = value_of({ U("root"), U("senders"), U("mon1") });
         auto property_holders = value::array();
-        const auto property_holder = nmos::details::make_nc_property_holder(nmos::nc_worker_enabled_property_id, enabled_property_descriptor, value::boolean(false));
+        const auto property_holder = nmos::nc::details::make_nc_property_holder(nmos::nc_worker_enabled_property_id, enabled_property_descriptor, value::boolean(false));
         push_back(property_holders, property_holder);
-        const auto object_properties_holder = nmos::details::make_nc_object_properties_holder(role_path.as_array(), property_holders.as_array(), value::array().as_array(), value::array().as_array(), false);
+        const auto object_properties_holder = nmos::nc::details::make_nc_object_properties_holder(role_path.as_array(), property_holders.as_array(), value::array().as_array(), value::array().as_array(), false);
         push_back(object_properties_holders, object_properties_holder);
     }
 
@@ -300,10 +300,10 @@ BST_TEST_CASE(testGetRolePath)
     auto receivers = nmos::make_block(receiver_block_oid, nmos::root_block_oid, U("receivers"), U("Receivers"), U("Receivers block"));
     nmos::make_rebuildable(receivers);
     // root, receivers, mon1
-    auto monitor1 = nmos::make_receiver_monitor(++oid, true, receiver_block_oid, U("mon1"), U("monitor 1"), U("monitor 1"), value_of({ {nmos::details::make_nc_touchpoint_nmos({nmos::ncp_touchpoint_resource_types::receiver, U("id_1")})} }));
-    nmos::nc_class_id monitor_class_id = nmos::details::parse_nc_class_id(nmos::fields::nc::class_id(monitor1.data));
+    auto monitor1 = nmos::make_receiver_monitor(++oid, true, receiver_block_oid, U("mon1"), U("monitor 1"), U("monitor 1"), value_of({ {nmos::nc::details::make_nc_touchpoint_nmos({nmos::ncp_touchpoint_resource_types::receiver, U("id_1")})} }));
+    nmos::nc_class_id monitor_class_id = nmos::nc::details::parse_nc_class_id(nmos::fields::nc::class_id(monitor1.data));
     // root, receivers, mon2
-    auto monitor2 = nmos::make_receiver_monitor(++oid, true, receiver_block_oid, U("mon2"), U("monitor 2"), U("monitor 2"), value_of({ {nmos::details::make_nc_touchpoint_nmos({nmos::ncp_touchpoint_resource_types::receiver, U("id_2")})} }));
+    auto monitor2 = nmos::make_receiver_monitor(++oid, true, receiver_block_oid, U("mon2"), U("monitor 2"), U("monitor 2"), value_of({ {nmos::nc::details::make_nc_touchpoint_nmos({nmos::ncp_touchpoint_resource_types::receiver, U("id_2")})} }));
     nmos::nc::push_back(receivers, monitor1);
     // add example-control to root-block
     nmos::nc::push_back(receivers, monitor2);
@@ -352,14 +352,14 @@ BST_TEST_CASE(testApplyBackupDataSet)
     auto receivers = nmos::make_block(receiver_block_oid, nmos::root_block_oid, U("receivers"), U("Receivers"), U("Receivers block"));
     nmos::make_rebuildable(receivers);
     // root, receivers, mon1
-    auto monitor1 = nmos::make_receiver_monitor(++oid, true, receiver_block_oid, U("mon1"), U("monitor 1"), U("monitor 1"), value_of({{nmos::details::make_nc_touchpoint_nmos({nmos::ncp_touchpoint_resource_types::receiver, U("id_1")})}}));
+    auto monitor1 = nmos::make_receiver_monitor(++oid, true, receiver_block_oid, U("mon1"), U("monitor 1"), U("monitor 1"), value_of({{nmos::nc::details::make_nc_touchpoint_nmos({nmos::ncp_touchpoint_resource_types::receiver, U("id_1")})}}));
     // make monitor1 rebuildable
     nmos::make_rebuildable(monitor1);
 
     auto monitor_1_oid = oid;
-    auto monitor_class_id = nmos::details::parse_nc_class_id(nmos::fields::nc::class_id(monitor1.data));
+    auto monitor_class_id = nmos::nc::details::parse_nc_class_id(nmos::fields::nc::class_id(monitor1.data));
     // root, receivers, mon2
-    auto monitor2 = nmos::make_receiver_monitor(++oid, true, receiver_block_oid, U("mon2"), U("monitor 2"), U("monitor 2"), value_of({ {nmos::details::make_nc_touchpoint_nmos({nmos::ncp_touchpoint_resource_types::receiver, U("id_2")})} }));
+    auto monitor2 = nmos::make_receiver_monitor(++oid, true, receiver_block_oid, U("mon2"), U("monitor 2"), U("monitor 2"), value_of({ {nmos::nc::details::make_nc_touchpoint_nmos({nmos::ncp_touchpoint_resource_types::receiver, U("id_2")})} }));
     auto monitor_2_oid = oid;
     nmos::nc::push_back(receivers, monitor1);
     // add example-control to root-block
@@ -396,13 +396,13 @@ BST_TEST_CASE(testApplyBackupDataSet)
 
         create_device_model_object_called = true;
 
-        auto data = nmos::details::make_nc_object(nmos::nc_receiver_monitor_class_id, oid, true, owner, role, web::json::value::string(user_label), U(""), web::json::value::null(), web::json::value::null());
+        auto data = nmos::nc::details::make_nc_object(nmos::nc_receiver_monitor_class_id, oid, true, owner, role, web::json::value::string(user_label), U(""), web::json::value::null(), web::json::value::null());
 
         return nmos::control_protocol_resource({ nmos::is12_versions::v1_0, nmos::types::nc_block, std::move(data), true });
     };
 
-    const auto enabled_property_descriptor = nmos::details::make_nc_property_descriptor(U("enabled"), nmos::nc_worker_enabled_property_id, nmos::fields::nc::enabled, U("NcBoolean"), false, false, false, false, web::json::value::null());
-    const auto class_id_property_descriptor = nmos::details::make_nc_property_descriptor(U("classId"), nmos::nc_object_class_id_property_id, nmos::fields::nc::class_id, U("NcClassId"), true, false, false, false, web::json::value::null());
+    const auto enabled_property_descriptor = nmos::nc::details::make_nc_property_descriptor(U("enabled"), nmos::nc_worker_enabled_property_id, nmos::fields::nc::enabled, U("NcBoolean"), false, false, false, false, web::json::value::null());
+    const auto class_id_property_descriptor = nmos::nc::details::make_nc_property_descriptor(U("classId"), nmos::nc_object_class_id_property_id, nmos::fields::nc::class_id, U("NcClassId"), true, false, false, false, web::json::value::null());
     {
         // Check the successful modification of the "enabled" flag of mon1's worker base class in Modify mode
         //
@@ -410,9 +410,9 @@ BST_TEST_CASE(testApplyBackupDataSet)
         auto object_properties_holders = value::array();
         const auto role_path = value_of({ U("root"), U("receivers"), U("mon1") });
         auto property_holders = value::array();
-        const auto property_holder = nmos::details::make_nc_property_holder(nmos::nc_worker_enabled_property_id, enabled_property_descriptor, value::boolean(false));
+        const auto property_holder = nmos::nc::details::make_nc_property_holder(nmos::nc_worker_enabled_property_id, enabled_property_descriptor, value::boolean(false));
         push_back(property_holders, property_holder);
-        const auto object_properties_holder = nmos::details::make_nc_object_properties_holder(role_path.as_array(), property_holders.as_array(), value::array().as_array(), value::array().as_array(), false);
+        const auto object_properties_holder = nmos::nc::details::make_nc_object_properties_holder(role_path.as_array(), property_holders.as_array(), value::array().as_array(), value::array().as_array(), false);
         push_back(object_properties_holders, object_properties_holder);
         const auto target_role_path = value_of({ U("root"), U("receivers")});
         bool recurse = true;
@@ -435,7 +435,7 @@ BST_TEST_CASE(testApplyBackupDataSet)
         BST_CHECK(!remove_device_model_object_called);
         BST_CHECK(!create_device_model_object_called);
     }
-    const auto connection_status_property_descriptor = nmos::details::make_nc_property_descriptor(U("connectionStatusMessage"), nmos::nc_receiver_monitor_connection_status_message_property_id, nmos::fields::nc::connection_status_message, U("NcString"), true, false, false, false, web::json::value::null());
+    const auto connection_status_property_descriptor = nmos::nc::details::make_nc_property_descriptor(U("connectionStatusMessage"), nmos::nc_receiver_monitor_connection_status_message_property_id, nmos::fields::nc::connection_status_message, U("NcString"), true, false, false, false, web::json::value::null());
     {
         // Check get_read_only_modification_allow_list_handler is called when changing a read only property of rebuildable object in Rebuild mode
         //
@@ -448,9 +448,9 @@ BST_TEST_CASE(testApplyBackupDataSet)
         const auto role_path = value_of({ U("root"), U("receivers"), U("mon1") });
         auto property_holders = value::array();
         // This is a read only property
-        const auto property_holder = nmos::details::make_nc_property_holder(nmos::nc_receiver_monitor_connection_status_message_property_id, connection_status_property_descriptor, value(U("change this value")));
+        const auto property_holder = nmos::nc::details::make_nc_property_holder(nmos::nc_receiver_monitor_connection_status_message_property_id, connection_status_property_descriptor, value(U("change this value")));
         push_back(property_holders, property_holder);
-        const auto object_properties_holder = nmos::details::make_nc_object_properties_holder(role_path.as_array(), property_holders.as_array(), value::array().as_array(), value::array().as_array(), false);
+        const auto object_properties_holder = nmos::nc::details::make_nc_object_properties_holder(role_path.as_array(), property_holders.as_array(), value::array().as_array(), value::array().as_array(), false);
         push_back(object_properties_holders, object_properties_holder);
         // must be a more efficient way of initializing these role paths
         const auto target_role_path = value_of({ U("root"), U("receivers") });
@@ -487,9 +487,9 @@ BST_TEST_CASE(testApplyBackupDataSet)
         const auto role_path = value_of({ U("root"), U("receivers"), U("mon2") });
         auto property_holders = value::array();
         // This is a read only property
-        const auto property_holder = nmos::details::make_nc_property_holder(nmos::nc_receiver_monitor_connection_status_message_property_id, connection_status_property_descriptor, value(U("change this value")));
+        const auto property_holder = nmos::nc::details::make_nc_property_holder(nmos::nc_receiver_monitor_connection_status_message_property_id, connection_status_property_descriptor, value(U("change this value")));
         push_back(property_holders, property_holder);
-        const auto object_properties_holder = nmos::details::make_nc_object_properties_holder(role_path.as_array(), property_holders.as_array(), value::array().as_array(), value::array().as_array(), false);
+        const auto object_properties_holder = nmos::nc::details::make_nc_object_properties_holder(role_path.as_array(), property_holders.as_array(), value::array().as_array(), value::array().as_array(), false);
         push_back(object_properties_holders, object_properties_holder);
         // must be a more efficient way of initializing these role paths
         const auto target_role_path = value_of({ U("root"), U("receivers") });
@@ -513,7 +513,7 @@ BST_TEST_CASE(testApplyBackupDataSet)
         BST_REQUIRE_EQUAL(1, property_restore_notices.size());
 
         const auto& notice = *property_restore_notices.begin();
-        BST_CHECK_EQUAL(nmos::nc_receiver_monitor_connection_status_message_property_id, nmos::details::parse_nc_property_id(nmos::fields::nc::id(notice)));
+        BST_CHECK_EQUAL(nmos::nc_receiver_monitor_connection_status_message_property_id, nmos::nc::details::parse_nc_property_id(nmos::fields::nc::id(notice)));
         BST_CHECK_EQUAL(nmos::fields::nc::connection_status_message.key, nmos::fields::nc::name(notice));
         BST_CHECK_EQUAL(nmos::nc_property_restore_notice_type::error, nmos::fields::nc::notice_type(notice));
         BST_CHECK_NE(U(""), nmos::fields::nc::notice_message(notice));
@@ -537,10 +537,10 @@ BST_TEST_CASE(testApplyBackupDataSet)
         const auto role_path = value_of({ U("root"), U("receivers"), U("mon1") });
         auto property_holders = value::array();
         // This is a read only property
-        push_back(property_holders, nmos::details::make_nc_property_holder(nmos::nc_receiver_monitor_connection_status_message_property_id, connection_status_property_descriptor, value(U("change this value"))));
+        push_back(property_holders, nmos::nc::details::make_nc_property_holder(nmos::nc_receiver_monitor_connection_status_message_property_id, connection_status_property_descriptor, value(U("change this value"))));
         // This is a writable property
-        push_back(property_holders, nmos::details::make_nc_property_holder(nmos::nc_worker_enabled_property_id, enabled_property_descriptor, value::boolean(false)));
-        const auto object_properties_holder = nmos::details::make_nc_object_properties_holder(role_path.as_array(), property_holders.as_array(), value::array().as_array(), value::array().as_array(), false);
+        push_back(property_holders, nmos::nc::details::make_nc_property_holder(nmos::nc_worker_enabled_property_id, enabled_property_descriptor, value::boolean(false)));
+        const auto object_properties_holder = nmos::nc::details::make_nc_object_properties_holder(role_path.as_array(), property_holders.as_array(), value::array().as_array(), value::array().as_array(), false);
         push_back(object_properties_holders, object_properties_holder);
         // must be a more efficient way of initializing these role paths
         const auto target_role_path = value_of({ U("root"), U("receivers") });
@@ -565,7 +565,7 @@ BST_TEST_CASE(testApplyBackupDataSet)
         BST_REQUIRE_EQUAL(1, property_restore_notices.size());
 
         const auto& notice = *property_restore_notices.begin();
-        BST_CHECK_EQUAL(nmos::nc_receiver_monitor_connection_status_message_property_id, nmos::details::parse_nc_property_id(nmos::fields::nc::id(notice)));
+        BST_CHECK_EQUAL(nmos::nc_receiver_monitor_connection_status_message_property_id, nmos::nc::details::parse_nc_property_id(nmos::fields::nc::id(notice)));
         BST_CHECK_EQUAL(nmos::fields::nc::connection_status_message.key, nmos::fields::nc::name(notice));
         BST_CHECK_EQUAL(nmos::nc_property_restore_notice_type::error, nmos::fields::nc::notice_type(notice));
         BST_CHECK_NE(U(""), nmos::fields::nc::notice_message(notice));
@@ -574,7 +574,7 @@ BST_TEST_CASE(testApplyBackupDataSet)
         BST_CHECK(!remove_device_model_object_called);
         BST_CHECK(!create_device_model_object_called);
     }
-    const auto block_members_property_descriptor = nmos::details::make_nc_property_descriptor(U("members"), nmos::nc_block_members_property_id, nmos::fields::nc::members, U("NcBlockMemberDescriptor"), true, false, true, false, web::json::value::null());
+    const auto block_members_property_descriptor = nmos::nc::details::make_nc_property_descriptor(U("members"), nmos::nc_block_members_property_id, nmos::fields::nc::members, U("NcBlockMemberDescriptor"), true, false, true, false, web::json::value::null());
     {
         // Check remove_device_model_object_called is called when trying to modify a rebuildable block
         //
@@ -588,9 +588,9 @@ BST_TEST_CASE(testApplyBackupDataSet)
         auto property_holders = value::array();
         auto members = value::array();
 
-        push_back(members, nmos::details::make_nc_block_member_descriptor(U("monitor 1"), U("mon1"), monitor_1_oid, true, monitor_class_id, U("label"), receiver_block_oid));
-        push_back(property_holders, nmos::details::make_nc_property_holder(nmos::nc_block_members_property_id, block_members_property_descriptor, members));
-        push_back(object_properties_holders, nmos::details::make_nc_object_properties_holder(role_path.as_array(), property_holders.as_array(), value::array().as_array(), value::array().as_array(), false));
+        push_back(members, nmos::nc::details::make_nc_block_member_descriptor(U("monitor 1"), U("mon1"), monitor_1_oid, true, monitor_class_id, U("label"), receiver_block_oid));
+        push_back(property_holders, nmos::nc::details::make_nc_property_holder(nmos::nc_block_members_property_id, block_members_property_descriptor, members));
+        push_back(object_properties_holders, nmos::nc::details::make_nc_object_properties_holder(role_path.as_array(), property_holders.as_array(), value::array().as_array(), value::array().as_array(), false));
         const auto target_role_path = value_of({ U("root"), U("receivers") });
         bool recurse = true;
         bool validate = true;
@@ -611,7 +611,7 @@ BST_TEST_CASE(testApplyBackupDataSet)
         BST_CHECK(remove_device_model_object_called);
         BST_CHECK(!create_device_model_object_called);
     }
-    const auto oid_property_descriptor = nmos::details::make_nc_property_descriptor(U("oid"), nmos::nc_object_oid_property_id, nmos::fields::nc::oid, U("NcOid"), true, false, false, false, web::json::value::null());
+    const auto oid_property_descriptor = nmos::nc::details::make_nc_property_descriptor(U("oid"), nmos::nc_object_oid_property_id, nmos::fields::nc::oid, U("NcOid"), true, false, false, false, web::json::value::null());
     {
         // Check create_device_model_object_called is called when trying to modify a rebuildable block
         //
@@ -626,25 +626,25 @@ BST_TEST_CASE(testApplyBackupDataSet)
         {
             auto property_holders = value::array();
             auto members = value::array();
-            push_back(members, nmos::details::make_nc_block_member_descriptor(U("monitor 1"), U("mon1"), monitor_1_oid, true, monitor_class_id, U("label"), receiver_block_oid));
-            push_back(members, nmos::details::make_nc_block_member_descriptor(U("monitor 2"), U("mon2"), monitor_2_oid, true, monitor_class_id, U("label"), receiver_block_oid));
-            push_back(members, nmos::details::make_nc_block_member_descriptor(U("monitor 3"), U("mon3"), monitor_3_oid, true, monitor_class_id, U("label"), receiver_block_oid));
-            push_back(property_holders, nmos::details::make_nc_property_holder(nmos::nc_block_members_property_id, block_members_property_descriptor, members));
-            push_back(object_properties_holders, nmos::details::make_nc_object_properties_holder(role_path.as_array(), property_holders.as_array(), value::array().as_array(), value::array().as_array(), false));
+            push_back(members, nmos::nc::details::make_nc_block_member_descriptor(U("monitor 1"), U("mon1"), monitor_1_oid, true, monitor_class_id, U("label"), receiver_block_oid));
+            push_back(members, nmos::nc::details::make_nc_block_member_descriptor(U("monitor 2"), U("mon2"), monitor_2_oid, true, monitor_class_id, U("label"), receiver_block_oid));
+            push_back(members, nmos::nc::details::make_nc_block_member_descriptor(U("monitor 3"), U("mon3"), monitor_3_oid, true, monitor_class_id, U("label"), receiver_block_oid));
+            push_back(property_holders, nmos::nc::details::make_nc_property_holder(nmos::nc_block_members_property_id, block_members_property_descriptor, members));
+            push_back(object_properties_holders, nmos::nc::details::make_nc_object_properties_holder(role_path.as_array(), property_holders.as_array(), value::array().as_array(), value::array().as_array(), false));
         }
         // Create Object Properties Holder for new monitor
         const auto monitor_2_role_path = value_of({ U("root"), U("receivers"), U("mon2") });
         {
             auto property_holders = value::array();
-            push_back(property_holders, nmos::details::make_nc_property_holder(nmos::nc_object_oid_property_id, oid_property_descriptor, monitor_2_oid));
-            push_back(object_properties_holders, nmos::details::make_nc_object_properties_holder(monitor_2_role_path.as_array(), property_holders.as_array(), value::array().as_array(), value::array().as_array(), false));
+            push_back(property_holders, nmos::nc::details::make_nc_property_holder(nmos::nc_object_oid_property_id, oid_property_descriptor, monitor_2_oid));
+            push_back(object_properties_holders, nmos::nc::details::make_nc_object_properties_holder(monitor_2_role_path.as_array(), property_holders.as_array(), value::array().as_array(), value::array().as_array(), false));
         }
         const auto monitor_3_role_path = value_of({ U("root"), U("receivers"), U("mon3") });
         {
             auto property_holders = value::array();
-            push_back(property_holders, nmos::details::make_nc_property_holder(nmos::nc_object_oid_property_id, oid_property_descriptor, monitor_3_oid));
-            push_back(property_holders, nmos::details::make_nc_property_holder(nmos::nc_object_class_id_property_id, class_id_property_descriptor, nmos::details::make_nc_class_id(nmos::nc_receiver_monitor_class_id)));
-            push_back(object_properties_holders, nmos::details::make_nc_object_properties_holder(monitor_3_role_path.as_array(), property_holders.as_array(), value::array().as_array(), value::array().as_array(), false));
+            push_back(property_holders, nmos::nc::details::make_nc_property_holder(nmos::nc_object_oid_property_id, oid_property_descriptor, monitor_3_oid));
+            push_back(property_holders, nmos::nc::details::make_nc_property_holder(nmos::nc_object_class_id_property_id, class_id_property_descriptor, nmos::nc::details::make_nc_class_id(nmos::nc_receiver_monitor_class_id)));
+            push_back(object_properties_holders, nmos::nc::details::make_nc_object_properties_holder(monitor_3_role_path.as_array(), property_holders.as_array(), value::array().as_array(), value::array().as_array(), false));
         }
         const auto target_role_path = value_of({ U("root"), U("receivers") });
         bool recurse = true;
@@ -697,9 +697,9 @@ BST_TEST_CASE(testApplyBackupDataSet)
         auto property_holders = value::array();
         auto members = value::array();
 
-        push_back(members, nmos::details::make_nc_block_member_descriptor(U("monitor 1"), U("mon1"), monitor_1_oid, true, monitor_class_id, U("label"), receiver_block_oid));
-        push_back(property_holders, nmos::details::make_nc_property_holder(nmos::nc_block_members_property_id, block_members_property_descriptor, members));
-        push_back(object_properties_holders, nmos::details::make_nc_object_properties_holder(role_path.as_array(), property_holders.as_array(), value::array().as_array(), value::array().as_array(), false));
+        push_back(members, nmos::nc::details::make_nc_block_member_descriptor(U("monitor 1"), U("mon1"), monitor_1_oid, true, monitor_class_id, U("label"), receiver_block_oid));
+        push_back(property_holders, nmos::nc::details::make_nc_property_holder(nmos::nc_block_members_property_id, block_members_property_descriptor, members));
+        push_back(object_properties_holders, nmos::nc::details::make_nc_object_properties_holder(role_path.as_array(), property_holders.as_array(), value::array().as_array(), value::array().as_array(), false));
         const auto target_role_path = value_of({ U("root"), U("receivers") });
         bool recurse = true;
         bool validate = true;
@@ -739,12 +739,12 @@ BST_TEST_CASE(testApplyBackupDataSet_WithoutCallbacks)
     auto receivers = nmos::make_block(receiver_block_oid, nmos::root_block_oid, U("receivers"), U("Receivers"), U("Receivers block"));
     nmos::make_rebuildable(receivers);
     // root, receivers, mon1
-    auto monitor1 = nmos::make_receiver_monitor(++oid, true, receiver_block_oid, U("mon1"), U("monitor 1"), U("monitor 1"), value_of({ {nmos::details::make_nc_touchpoint_nmos({nmos::ncp_touchpoint_resource_types::receiver, U("id_1")})} }));
+    auto monitor1 = nmos::make_receiver_monitor(++oid, true, receiver_block_oid, U("mon1"), U("monitor 1"), U("monitor 1"), value_of({ {nmos::nc::details::make_nc_touchpoint_nmos({nmos::ncp_touchpoint_resource_types::receiver, U("id_1")})} }));
     nmos::make_rebuildable(monitor1);
     auto monitor_1_oid = oid;
-    const auto monitor_class_id = nmos::details::parse_nc_class_id(nmos::fields::nc::class_id(monitor1.data));
+    const auto monitor_class_id = nmos::nc::details::parse_nc_class_id(nmos::fields::nc::class_id(monitor1.data));
     // root, receivers, mon2
-    auto monitor2 = nmos::make_receiver_monitor(++oid, true, receiver_block_oid, U("mon2"), U("monitor 2"), U("monitor 2"), value_of({ {nmos::details::make_nc_touchpoint_nmos({nmos::ncp_touchpoint_resource_types::receiver, U("id_2")})} }));
+    auto monitor2 = nmos::make_receiver_monitor(++oid, true, receiver_block_oid, U("mon2"), U("monitor 2"), U("monitor 2"), value_of({ {nmos::nc::details::make_nc_touchpoint_nmos({nmos::ncp_touchpoint_resource_types::receiver, U("id_2")})} }));
     nmos::nc::push_back(receivers, monitor1);
     // add example-control to root-block
     nmos::nc::push_back(receivers, monitor2);
@@ -761,7 +761,7 @@ BST_TEST_CASE(testApplyBackupDataSet_WithoutCallbacks)
     nmos::remove_device_model_object_handler remove_device_model_object;
     nmos::create_device_model_object_handler create_device_model_object;
 
-    const auto enabled_property_descriptor = nmos::details::make_nc_property_descriptor(U("enabled"), nmos::nc_worker_enabled_property_id, nmos::fields::nc::enabled, U("NcBoolean"), false, false, false, false, web::json::value::null());
+    const auto enabled_property_descriptor = nmos::nc::details::make_nc_property_descriptor(U("enabled"), nmos::nc_worker_enabled_property_id, nmos::fields::nc::enabled, U("NcBoolean"), false, false, false, false, web::json::value::null());
     {
         // Check that Modify mode is unaffected by undefined Rebuild mode callbacks
         //
@@ -769,9 +769,9 @@ BST_TEST_CASE(testApplyBackupDataSet_WithoutCallbacks)
         auto object_properties_holders = value::array();
         const auto role_path = value_of({ U("root"), U("receivers"), U("mon1") });
         auto property_holders = value::array();
-        const auto property_holder = nmos::details::make_nc_property_holder(nmos::nc_worker_enabled_property_id, enabled_property_descriptor, value::boolean(false));
+        const auto property_holder = nmos::nc::details::make_nc_property_holder(nmos::nc_worker_enabled_property_id, enabled_property_descriptor, value::boolean(false));
         push_back(property_holders, property_holder);
-        const auto object_properties_holder = nmos::details::make_nc_object_properties_holder(role_path.as_array(), property_holders.as_array(), value::array().as_array(), value::array().as_array(), false);
+        const auto object_properties_holder = nmos::nc::details::make_nc_object_properties_holder(role_path.as_array(), property_holders.as_array(), value::array().as_array(), value::array().as_array(), false);
         push_back(object_properties_holders, object_properties_holder);
         const auto target_role_path = value_of({ U("root"), U("receivers") });
         bool recurse = true;
@@ -796,9 +796,9 @@ BST_TEST_CASE(testApplyBackupDataSet_WithoutCallbacks)
         auto object_properties_holders = value::array();
         const auto role_path = value_of({ U("root"), U("receivers"), U("mon1") });
         auto property_holders = value::array();
-        const auto property_holder = nmos::details::make_nc_property_holder(nmos::nc_worker_enabled_property_id, enabled_property_descriptor, value::boolean(false));
+        const auto property_holder = nmos::nc::details::make_nc_property_holder(nmos::nc_worker_enabled_property_id, enabled_property_descriptor, value::boolean(false));
         push_back(property_holders, property_holder);
-        const auto object_properties_holder = nmos::details::make_nc_object_properties_holder(role_path.as_array(), property_holders.as_array(), value::array().as_array(), value::array().as_array(), false);
+        const auto object_properties_holder = nmos::nc::details::make_nc_object_properties_holder(role_path.as_array(), property_holders.as_array(), value::array().as_array(), value::array().as_array(), false);
         push_back(object_properties_holders, object_properties_holder);
         const auto target_role_path = value_of({ U("root"), U("receivers") });
         bool recurse = true;
@@ -824,10 +824,10 @@ BST_TEST_CASE(testApplyBackupDataSet_WithoutCallbacks)
         const auto role_path = value_of({ U("root"), U("receivers"), U("mon1") });
         auto property_holders = value::array();
         // This is a read only property
-        const auto property_descriptor = nmos::details::make_nc_property_descriptor(U("connectionStatusMessage"), nmos::nc_receiver_monitor_connection_status_message_property_id, nmos::fields::nc::connection_status_message, U("NcString"), true, false, false, false, web::json::value::null());
-        const auto property_holder = nmos::details::make_nc_property_holder(nmos::nc_receiver_monitor_connection_status_message_property_id, property_descriptor, value(U("change this value")));
+        const auto property_descriptor = nmos::nc::details::make_nc_property_descriptor(U("connectionStatusMessage"), nmos::nc_receiver_monitor_connection_status_message_property_id, nmos::fields::nc::connection_status_message, U("NcString"), true, false, false, false, web::json::value::null());
+        const auto property_holder = nmos::nc::details::make_nc_property_holder(nmos::nc_receiver_monitor_connection_status_message_property_id, property_descriptor, value(U("change this value")));
         push_back(property_holders, property_holder);
-        const auto object_properties_holder = nmos::details::make_nc_object_properties_holder(role_path.as_array(), property_holders.as_array(), value::array().as_array(), value::array().as_array(), false);
+        const auto object_properties_holder = nmos::nc::details::make_nc_object_properties_holder(role_path.as_array(), property_holders.as_array(), value::array().as_array(), value::array().as_array(), false);
         push_back(object_properties_holders, object_properties_holder);
         // must be a more efficient way of initializing these role paths
         const auto target_role_path = value_of({ U("root"), U("receivers") });
@@ -847,8 +847,8 @@ BST_TEST_CASE(testApplyBackupDataSet_WithoutCallbacks)
         BST_CHECK_EQUAL(nmos::nc_restore_validation_status::failed, nmos::fields::nc::status(object_properties_set_validation));
     }
     {
-        const auto block_members_property_descriptor = nmos::details::make_nc_property_descriptor(U("members"), nmos::nc_block_members_property_id, nmos::fields::nc::members, U("NcBlockMemberDescriptor"), true, false, true, false, web::json::value::null());
-        const auto oid_property_descriptor = nmos::details::make_nc_property_descriptor(U("oid"), nmos::nc_object_oid_property_id, nmos::fields::nc::oid, U("NcOid"), true, false, false, false, web::json::value::null());
+        const auto block_members_property_descriptor = nmos::nc::details::make_nc_property_descriptor(U("members"), nmos::nc_block_members_property_id, nmos::fields::nc::members, U("NcBlockMemberDescriptor"), true, false, true, false, web::json::value::null());
+        const auto oid_property_descriptor = nmos::nc::details::make_nc_property_descriptor(U("oid"), nmos::nc_object_oid_property_id, nmos::fields::nc::oid, U("NcOid"), true, false, false, false, web::json::value::null());
         // Check undefined create_device_model_object and remove_device_model_object causes an unsupported error when attempting to modify a rebuildable block
         //
         // Create Object Properties Holder
@@ -857,14 +857,14 @@ BST_TEST_CASE(testApplyBackupDataSet_WithoutCallbacks)
         auto property_holders = value::array();
         auto members = value::array();
 
-        push_back(members, nmos::details::make_nc_block_member_descriptor(U("monitor 1"), U("mon1"), monitor_1_oid, true, monitor_class_id, U("label"), receiver_block_oid));
-        push_back(property_holders, nmos::details::make_nc_property_holder(nmos::nc_block_members_property_id, block_members_property_descriptor, members));
-        push_back(object_properties_holders, nmos::details::make_nc_object_properties_holder(role_path.as_array(), property_holders.as_array(), value::array().as_array(), value::array().as_array(), false));
+        push_back(members, nmos::nc::details::make_nc_block_member_descriptor(U("monitor 1"), U("mon1"), monitor_1_oid, true, monitor_class_id, U("label"), receiver_block_oid));
+        push_back(property_holders, nmos::nc::details::make_nc_property_holder(nmos::nc_block_members_property_id, block_members_property_descriptor, members));
+        push_back(object_properties_holders, nmos::nc::details::make_nc_object_properties_holder(role_path.as_array(), property_holders.as_array(), value::array().as_array(), value::array().as_array(), false));
         const auto monitor_1_role_path = value_of({ U("root"), U("receivers"), U("mon1") });
         {
             auto property_holders = value::array();
-            push_back(property_holders, nmos::details::make_nc_property_holder(nmos::nc_object_oid_property_id, oid_property_descriptor, monitor_1_oid));
-            push_back(object_properties_holders, nmos::details::make_nc_object_properties_holder(monitor_1_role_path.as_array(), property_holders.as_array(), value::array().as_array(), value::array().as_array(), false));
+            push_back(property_holders, nmos::nc::details::make_nc_property_holder(nmos::nc_object_oid_property_id, oid_property_descriptor, monitor_1_oid));
+            push_back(object_properties_holders, nmos::nc::details::make_nc_object_properties_holder(monitor_1_role_path.as_array(), property_holders.as_array(), value::array().as_array(), value::array().as_array(), false));
         }
         const auto target_role_path = value_of({ U("root"), U("receivers") });
         bool recurse = true;
@@ -915,14 +915,14 @@ BST_TEST_CASE(testApplyBackupDataSet_AddDeviceModelObject)
     auto receivers = nmos::make_block(receiver_block_oid, nmos::root_block_oid, U("receivers"), U("Receivers"), U("Receivers block"));
     nmos::make_rebuildable(receivers);
     // root, receivers, mon1
-    auto monitor1 = nmos::make_receiver_monitor(++oid, true, receiver_block_oid, U("mon1"), U("monitor 1"), U("monitor 1"), value_of({{nmos::details::make_nc_touchpoint_nmos({nmos::ncp_touchpoint_resource_types::receiver, U("id_1")})}}));
+    auto monitor1 = nmos::make_receiver_monitor(++oid, true, receiver_block_oid, U("mon1"), U("monitor 1"), U("monitor 1"), value_of({{nmos::nc::details::make_nc_touchpoint_nmos({nmos::ncp_touchpoint_resource_types::receiver, U("id_1")})}}));
     // make monitor1 rebuildable
     nmos::make_rebuildable(monitor1);
 
     auto monitor_1_oid = oid;
-    auto monitor_class_id = nmos::details::parse_nc_class_id(nmos::fields::nc::class_id(monitor1.data));
+    auto monitor_class_id = nmos::nc::details::parse_nc_class_id(nmos::fields::nc::class_id(monitor1.data));
     // root, receivers, mon2
-    auto monitor2 = nmos::make_receiver_monitor(++oid, true, receiver_block_oid, U("mon2"), U("monitor 2"), U("monitor 2"), value_of({ {nmos::details::make_nc_touchpoint_nmos({nmos::ncp_touchpoint_resource_types::receiver, U("id_2")})} }));
+    auto monitor2 = nmos::make_receiver_monitor(++oid, true, receiver_block_oid, U("mon2"), U("monitor 2"), U("monitor 2"), value_of({ {nmos::nc::details::make_nc_touchpoint_nmos({nmos::ncp_touchpoint_resource_types::receiver, U("id_2")})} }));
     auto monitor_2_oid = oid;
     nmos::nc::push_back(receivers, monitor1);
     // add example-control to root-block
@@ -959,14 +959,14 @@ BST_TEST_CASE(testApplyBackupDataSet_AddDeviceModelObject)
 
         create_device_model_object_called = true;
 
-        auto data = nmos::details::make_nc_object(nmos::nc_receiver_monitor_class_id, oid, true, owner, role, web::json::value::string(user_label), U(""), web::json::value::null(), web::json::value::null());
+        auto data = nmos::nc::details::make_nc_object(nmos::nc_receiver_monitor_class_id, oid, true, owner, role, web::json::value::string(user_label), U(""), web::json::value::null(), web::json::value::null());
 
         return nmos::control_protocol_resource({ nmos::is12_versions::v1_0, nmos::types::nc_block, std::move(data), true });
     };
 
-    const auto block_members_property_descriptor = nmos::details::make_nc_property_descriptor(U("members"), nmos::nc_block_members_property_id, nmos::fields::nc::members, U("NcBlockMemberDescriptor"), true, false, true, false, web::json::value::null());
-    const auto oid_property_descriptor = nmos::details::make_nc_property_descriptor(U("oid"), nmos::nc_object_oid_property_id, nmos::fields::nc::oid, U("NcOid"), true, false, false, false, web::json::value::null());
-    const auto class_id_property_descriptor = nmos::details::make_nc_property_descriptor(U("classId"), nmos::nc_object_class_id_property_id, nmos::fields::nc::class_id, U("NcClassId"), true, false, false, false, web::json::value::null());
+    const auto block_members_property_descriptor = nmos::nc::details::make_nc_property_descriptor(U("members"), nmos::nc_block_members_property_id, nmos::fields::nc::members, U("NcBlockMemberDescriptor"), true, false, true, false, web::json::value::null());
+    const auto oid_property_descriptor = nmos::nc::details::make_nc_property_descriptor(U("oid"), nmos::nc_object_oid_property_id, nmos::fields::nc::oid, U("NcOid"), true, false, false, false, web::json::value::null());
+    const auto class_id_property_descriptor = nmos::nc::details::make_nc_property_descriptor(U("classId"), nmos::nc_object_class_id_property_id, nmos::fields::nc::class_id, U("NcClassId"), true, false, false, false, web::json::value::null());
     {
         // Handle constant oid clash
         //
@@ -980,25 +980,25 @@ BST_TEST_CASE(testApplyBackupDataSet_AddDeviceModelObject)
         {
             auto property_holders = value::array();
             auto members = value::array();
-            push_back(members, nmos::details::make_nc_block_member_descriptor(U("monitor 1"), U("mon1"), monitor_1_oid, true, monitor_class_id, U("label"), receiver_block_oid));
-            push_back(members, nmos::details::make_nc_block_member_descriptor(U("monitor 2"), U("mon2"), monitor_2_oid, true, monitor_class_id, U("label"), receiver_block_oid));
-            push_back(members, nmos::details::make_nc_block_member_descriptor(U("monitor 3"), U("mon3"), monitor_2_oid, true, monitor_class_id, U("label"), receiver_block_oid));
-            push_back(property_holders, nmos::details::make_nc_property_holder(nmos::nc_block_members_property_id, block_members_property_descriptor, members));
-            push_back(object_properties_holders, nmos::details::make_nc_object_properties_holder(role_path.as_array(), property_holders.as_array(), value::array().as_array(), value::array().as_array(), false));
+            push_back(members, nmos::nc::details::make_nc_block_member_descriptor(U("monitor 1"), U("mon1"), monitor_1_oid, true, monitor_class_id, U("label"), receiver_block_oid));
+            push_back(members, nmos::nc::details::make_nc_block_member_descriptor(U("monitor 2"), U("mon2"), monitor_2_oid, true, monitor_class_id, U("label"), receiver_block_oid));
+            push_back(members, nmos::nc::details::make_nc_block_member_descriptor(U("monitor 3"), U("mon3"), monitor_2_oid, true, monitor_class_id, U("label"), receiver_block_oid));
+            push_back(property_holders, nmos::nc::details::make_nc_property_holder(nmos::nc_block_members_property_id, block_members_property_descriptor, members));
+            push_back(object_properties_holders, nmos::nc::details::make_nc_object_properties_holder(role_path.as_array(), property_holders.as_array(), value::array().as_array(), value::array().as_array(), false));
         }
         const auto monitor_2_role_path = value_of({ U("root"), U("receivers"), U("mon2") });
         {
             auto property_holders = value::array();
-            push_back(property_holders, nmos::details::make_nc_property_holder(nmos::nc_object_oid_property_id, oid_property_descriptor, monitor_2_oid));
-            push_back(object_properties_holders, nmos::details::make_nc_object_properties_holder(monitor_2_role_path.as_array(), property_holders.as_array(), value::array().as_array(), value::array().as_array(), false));
+            push_back(property_holders, nmos::nc::details::make_nc_property_holder(nmos::nc_object_oid_property_id, oid_property_descriptor, monitor_2_oid));
+            push_back(object_properties_holders, nmos::nc::details::make_nc_object_properties_holder(monitor_2_role_path.as_array(), property_holders.as_array(), value::array().as_array(), value::array().as_array(), false));
         }
         // Create Object Properties Holder for new monitor
         const auto monitor_3_role_path = value_of({ U("root"), U("receivers"), U("mon3") });
         {
             auto property_holders = value::array();
-            push_back(property_holders, nmos::details::make_nc_property_holder(nmos::nc_object_oid_property_id, oid_property_descriptor, monitor_2_oid));
-            push_back(property_holders, nmos::details::make_nc_property_holder(nmos::nc_object_class_id_property_id, class_id_property_descriptor, nmos::details::make_nc_class_id(nmos::nc_receiver_monitor_class_id)));
-            push_back(object_properties_holders, nmos::details::make_nc_object_properties_holder(monitor_3_role_path.as_array(), property_holders.as_array(), value::array().as_array(), value::array().as_array(), false));
+            push_back(property_holders, nmos::nc::details::make_nc_property_holder(nmos::nc_object_oid_property_id, oid_property_descriptor, monitor_2_oid));
+            push_back(property_holders, nmos::nc::details::make_nc_property_holder(nmos::nc_object_class_id_property_id, class_id_property_descriptor, nmos::nc::details::make_nc_class_id(nmos::nc_receiver_monitor_class_id)));
+            push_back(object_properties_holders, nmos::nc::details::make_nc_object_properties_holder(monitor_3_role_path.as_array(), property_holders.as_array(), value::array().as_array(), value::array().as_array(), false));
         }
         const auto target_role_path = value_of({ U("root"), U("receivers") });
         bool recurse = true;
@@ -1049,25 +1049,25 @@ BST_TEST_CASE(testApplyBackupDataSet_AddDeviceModelObject)
         {
             auto property_holders = value::array();
             auto members = value::array();
-            push_back(members, nmos::details::make_nc_block_member_descriptor(U("monitor 1"), U("mon1"), monitor_1_oid, true, monitor_class_id, U("label"), receiver_block_oid));
-            push_back(members, nmos::details::make_nc_block_member_descriptor(U("monitor 2"), U("mon2"), monitor_2_oid, true, monitor_class_id, U("label"), receiver_block_oid));
-            push_back(members, nmos::details::make_nc_block_member_descriptor(U("monitor 3"), U("mon3"), monitor_3_oid, false, monitor_class_id, U("label"), receiver_block_oid));
-            push_back(property_holders, nmos::details::make_nc_property_holder(nmos::nc_block_members_property_id, block_members_property_descriptor, members));
-            push_back(object_properties_holders, nmos::details::make_nc_object_properties_holder(role_path.as_array(), property_holders.as_array(), value::array().as_array(), value::array().as_array(), false));
+            push_back(members, nmos::nc::details::make_nc_block_member_descriptor(U("monitor 1"), U("mon1"), monitor_1_oid, true, monitor_class_id, U("label"), receiver_block_oid));
+            push_back(members, nmos::nc::details::make_nc_block_member_descriptor(U("monitor 2"), U("mon2"), monitor_2_oid, true, monitor_class_id, U("label"), receiver_block_oid));
+            push_back(members, nmos::nc::details::make_nc_block_member_descriptor(U("monitor 3"), U("mon3"), monitor_3_oid, false, monitor_class_id, U("label"), receiver_block_oid));
+            push_back(property_holders, nmos::nc::details::make_nc_property_holder(nmos::nc_block_members_property_id, block_members_property_descriptor, members));
+            push_back(object_properties_holders, nmos::nc::details::make_nc_object_properties_holder(role_path.as_array(), property_holders.as_array(), value::array().as_array(), value::array().as_array(), false));
         }
         // Create Object Properties Holder for new monitor
         const auto monitor_2_role_path = value_of({ U("root"), U("receivers"), U("mon2") });
         {
             auto property_holders = value::array();
-            push_back(property_holders, nmos::details::make_nc_property_holder(nmos::nc_object_oid_property_id, oid_property_descriptor, monitor_2_oid));
-            push_back(object_properties_holders, nmos::details::make_nc_object_properties_holder(monitor_2_role_path.as_array(), property_holders.as_array(), value::array().as_array(), value::array().as_array(), false));
+            push_back(property_holders, nmos::nc::details::make_nc_property_holder(nmos::nc_object_oid_property_id, oid_property_descriptor, monitor_2_oid));
+            push_back(object_properties_holders, nmos::nc::details::make_nc_object_properties_holder(monitor_2_role_path.as_array(), property_holders.as_array(), value::array().as_array(), value::array().as_array(), false));
         }
         const auto monitor_3_role_path = value_of({ U("root"), U("receivers"), U("mon3") });
         {
             auto property_holders = value::array();
-            push_back(property_holders, nmos::details::make_nc_property_holder(nmos::nc_object_oid_property_id, oid_property_descriptor, monitor_3_oid));
-            push_back(property_holders, nmos::details::make_nc_property_holder(nmos::nc_object_class_id_property_id, class_id_property_descriptor, nmos::details::make_nc_class_id(nmos::nc_receiver_monitor_class_id)));
-            push_back(object_properties_holders, nmos::details::make_nc_object_properties_holder(monitor_3_role_path.as_array(), property_holders.as_array(), value::array().as_array(), value::array().as_array(), false));
+            push_back(property_holders, nmos::nc::details::make_nc_property_holder(nmos::nc_object_oid_property_id, oid_property_descriptor, monitor_3_oid));
+            push_back(property_holders, nmos::nc::details::make_nc_property_holder(nmos::nc_object_class_id_property_id, class_id_property_descriptor, nmos::nc::details::make_nc_class_id(nmos::nc_receiver_monitor_class_id)));
+            push_back(object_properties_holders, nmos::nc::details::make_nc_object_properties_holder(monitor_3_role_path.as_array(), property_holders.as_array(), value::array().as_array(), value::array().as_array(), false));
         }
         const auto target_role_path = value_of({ U("root"), U("receivers") });
         bool recurse = true;
@@ -1142,14 +1142,14 @@ BST_TEST_CASE(testApplyBackupDataSet_NegativeTests)
     auto receivers = nmos::make_block(receiver_block_oid, nmos::root_block_oid, U("receivers"), U("Receivers"), U("Receivers block"));
     nmos::make_rebuildable(receivers);
     // root, receivers, mon1
-    auto monitor1 = nmos::make_receiver_monitor(++oid, true, receiver_block_oid, U("mon1"), U("monitor 1"), U("monitor 1"), value_of({ {nmos::details::make_nc_touchpoint_nmos({nmos::ncp_touchpoint_resource_types::receiver, U("id_1")})} }));
+    auto monitor1 = nmos::make_receiver_monitor(++oid, true, receiver_block_oid, U("mon1"), U("monitor 1"), U("monitor 1"), value_of({ {nmos::nc::details::make_nc_touchpoint_nmos({nmos::ncp_touchpoint_resource_types::receiver, U("id_1")})} }));
     // make monitor1 rebuildable
     nmos::make_rebuildable(monitor1);
 
     auto monitor_1_oid = oid;
-    auto monitor_class_id = nmos::details::parse_nc_class_id(nmos::fields::nc::class_id(monitor1.data));
+    auto monitor_class_id = nmos::nc::details::parse_nc_class_id(nmos::fields::nc::class_id(monitor1.data));
     // root, receivers, mon2
-    auto monitor2 = nmos::make_receiver_monitor(++oid, true, receiver_block_oid, U("mon2"), U("monitor 2"), U("monitor 2"), value_of({ {nmos::details::make_nc_touchpoint_nmos({nmos::ncp_touchpoint_resource_types::receiver, U("id_2")})} }));
+    auto monitor2 = nmos::make_receiver_monitor(++oid, true, receiver_block_oid, U("mon2"), U("monitor 2"), U("monitor 2"), value_of({ {nmos::nc::details::make_nc_touchpoint_nmos({nmos::ncp_touchpoint_resource_types::receiver, U("id_2")})} }));
     auto monitor_2_oid = oid;
     nmos::nc::push_back(receivers, monitor1);
     // add example-control to root-block
@@ -1187,8 +1187,8 @@ BST_TEST_CASE(testApplyBackupDataSet_NegativeTests)
         // Simulate error on adding object to device model
         return nmos::control_protocol_resource();
     };
-    const auto block_members_property_descriptor = nmos::details::make_nc_property_descriptor(U("members"), nmos::nc_block_members_property_id, nmos::fields::nc::members, U("NcBlockMemberDescriptor"), true, false, true, false, web::json::value::null());
-    const auto oid_property_descriptor = nmos::details::make_nc_property_descriptor(U("oid"), nmos::nc_object_oid_property_id, nmos::fields::nc::oid, U("NcOid"), true, false, false, false, web::json::value::null());
+    const auto block_members_property_descriptor = nmos::nc::details::make_nc_property_descriptor(U("members"), nmos::nc_block_members_property_id, nmos::fields::nc::members, U("NcBlockMemberDescriptor"), true, false, true, false, web::json::value::null());
+    const auto oid_property_descriptor = nmos::nc::details::make_nc_property_descriptor(U("oid"), nmos::nc_object_oid_property_id, nmos::fields::nc::oid, U("NcOid"), true, false, false, false, web::json::value::null());
     {
         // Check remove_device_model_object_called error is handled when attempting to modify a rebuildable block
         //
@@ -1202,9 +1202,9 @@ BST_TEST_CASE(testApplyBackupDataSet_NegativeTests)
         auto property_holders = value::array();
         auto members = value::array();
 
-        push_back(members, nmos::details::make_nc_block_member_descriptor(U("monitor 1"), U("mon1"), monitor_1_oid, true, monitor_class_id, U("label"), receiver_block_oid));
-        push_back(property_holders, nmos::details::make_nc_property_holder(nmos::nc_block_members_property_id, block_members_property_descriptor, members));
-        push_back(object_properties_holders, nmos::details::make_nc_object_properties_holder(role_path.as_array(), property_holders.as_array(), value::array().as_array(), value::array().as_array(), false));
+        push_back(members, nmos::nc::details::make_nc_block_member_descriptor(U("monitor 1"), U("mon1"), monitor_1_oid, true, monitor_class_id, U("label"), receiver_block_oid));
+        push_back(property_holders, nmos::nc::details::make_nc_property_holder(nmos::nc_block_members_property_id, block_members_property_descriptor, members));
+        push_back(object_properties_holders, nmos::nc::details::make_nc_object_properties_holder(role_path.as_array(), property_holders.as_array(), value::array().as_array(), value::array().as_array(), false));
         const auto target_role_path = value_of({ U("root"), U("receivers") });
         bool recurse = true;
         bool validate = true;
@@ -1243,14 +1243,14 @@ BST_TEST_CASE(testApplyBackupDataSet_NegativeTests)
         auto property_holders = value::array();
         auto members = value::array();
 
-        push_back(members, nmos::details::make_nc_block_member_descriptor(U("monitor 1"), U("mon1"), monitor_1_oid, true, monitor_class_id, U("label"), receiver_block_oid));
-        push_back(property_holders, nmos::details::make_nc_property_holder(nmos::nc_block_members_property_id, block_members_property_descriptor, members));
-        push_back(object_properties_holders, nmos::details::make_nc_object_properties_holder(role_path.as_array(), property_holders.as_array(), value::array().as_array(), value::array().as_array(), false));
+        push_back(members, nmos::nc::details::make_nc_block_member_descriptor(U("monitor 1"), U("mon1"), monitor_1_oid, true, monitor_class_id, U("label"), receiver_block_oid));
+        push_back(property_holders, nmos::nc::details::make_nc_property_holder(nmos::nc_block_members_property_id, block_members_property_descriptor, members));
+        push_back(object_properties_holders, nmos::nc::details::make_nc_object_properties_holder(role_path.as_array(), property_holders.as_array(), value::array().as_array(), value::array().as_array(), false));
         const auto monitor_1_role_path = value_of({ U("root"), U("receivers"), U("mon1") });
         {
             auto property_holders = value::array();
-            push_back(property_holders, nmos::details::make_nc_property_holder(nmos::nc_object_oid_property_id, oid_property_descriptor, monitor_1_oid));
-            push_back(object_properties_holders, nmos::details::make_nc_object_properties_holder(monitor_1_role_path.as_array(), property_holders.as_array(), value::array().as_array(), value::array().as_array(), false));
+            push_back(property_holders, nmos::nc::details::make_nc_property_holder(nmos::nc_object_oid_property_id, oid_property_descriptor, monitor_1_oid));
+            push_back(object_properties_holders, nmos::nc::details::make_nc_object_properties_holder(monitor_1_role_path.as_array(), property_holders.as_array(), value::array().as_array(), value::array().as_array(), false));
         }
 
         const auto target_role_path = value_of({ U("root"), U("receivers") });
@@ -1285,7 +1285,7 @@ BST_TEST_CASE(testApplyBackupDataSet_NegativeTests)
             BST_CHECK_EQUAL(0, nmos::fields::nc::notices(object_properties_set_validation).size());
         }
     }
-    const auto class_id_property_descriptor = nmos::details::make_nc_property_descriptor(U("classId"), nmos::nc_object_class_id_property_id, U("classId"), U("NcClassId"), true, false, false, false, web::json::value::null());
+    const auto class_id_property_descriptor = nmos::nc::details::make_nc_property_descriptor(U("classId"), nmos::nc_object_class_id_property_id, U("classId"), U("NcClassId"), true, false, false, false, web::json::value::null());
     {
         // Check create_device_model_object_called error is handled when trying to modify a rebuildable block
         //
@@ -1300,31 +1300,31 @@ BST_TEST_CASE(testApplyBackupDataSet_NegativeTests)
         {
             auto property_holders = value::array();
             auto members = value::array();
-            push_back(members, nmos::details::make_nc_block_member_descriptor(U("monitor 1"), U("mon1"), monitor_1_oid, true, monitor_class_id, U("label"), receiver_block_oid));
-            push_back(members, nmos::details::make_nc_block_member_descriptor(U("monitor 2"), U("mon2"), monitor_2_oid, true, monitor_class_id, U("label"), receiver_block_oid));
-            push_back(members, nmos::details::make_nc_block_member_descriptor(U("monitor 3"), U("mon3"), monitor_3_oid, true, monitor_class_id, U("label"), receiver_block_oid));
-            push_back(property_holders, nmos::details::make_nc_property_holder(nmos::nc_block_members_property_id, block_members_property_descriptor, members));
-            push_back(object_properties_holders, nmos::details::make_nc_object_properties_holder(role_path.as_array(), property_holders.as_array(), value::array().as_array(), value::array().as_array(), false));
+            push_back(members, nmos::nc::details::make_nc_block_member_descriptor(U("monitor 1"), U("mon1"), monitor_1_oid, true, monitor_class_id, U("label"), receiver_block_oid));
+            push_back(members, nmos::nc::details::make_nc_block_member_descriptor(U("monitor 2"), U("mon2"), monitor_2_oid, true, monitor_class_id, U("label"), receiver_block_oid));
+            push_back(members, nmos::nc::details::make_nc_block_member_descriptor(U("monitor 3"), U("mon3"), monitor_3_oid, true, monitor_class_id, U("label"), receiver_block_oid));
+            push_back(property_holders, nmos::nc::details::make_nc_property_holder(nmos::nc_block_members_property_id, block_members_property_descriptor, members));
+            push_back(object_properties_holders, nmos::nc::details::make_nc_object_properties_holder(role_path.as_array(), property_holders.as_array(), value::array().as_array(), value::array().as_array(), false));
         }
         // Create Object Properties Holder for new monitor
         const auto monitor_1_role_path = value_of({ U("root"), U("receivers"), U("mon1") });
         {
             auto property_holders = value::array();
-            push_back(property_holders, nmos::details::make_nc_property_holder(nmos::nc_object_oid_property_id, oid_property_descriptor, monitor_1_oid));
-            push_back(object_properties_holders, nmos::details::make_nc_object_properties_holder(monitor_1_role_path.as_array(), property_holders.as_array(), value::array().as_array(), value::array().as_array(), false));
+            push_back(property_holders, nmos::nc::details::make_nc_property_holder(nmos::nc_object_oid_property_id, oid_property_descriptor, monitor_1_oid));
+            push_back(object_properties_holders, nmos::nc::details::make_nc_object_properties_holder(monitor_1_role_path.as_array(), property_holders.as_array(), value::array().as_array(), value::array().as_array(), false));
         }
         const auto monitor_2_role_path = value_of({ U("root"), U("receivers"), U("mon2") });
         {
             auto property_holders = value::array();
-            push_back(property_holders, nmos::details::make_nc_property_holder(nmos::nc_object_oid_property_id, oid_property_descriptor, monitor_2_oid));
-            push_back(object_properties_holders, nmos::details::make_nc_object_properties_holder(monitor_2_role_path.as_array(), property_holders.as_array(), value::array().as_array(), value::array().as_array(), false));
+            push_back(property_holders, nmos::nc::details::make_nc_property_holder(nmos::nc_object_oid_property_id, oid_property_descriptor, monitor_2_oid));
+            push_back(object_properties_holders, nmos::nc::details::make_nc_object_properties_holder(monitor_2_role_path.as_array(), property_holders.as_array(), value::array().as_array(), value::array().as_array(), false));
         }
         const auto monitor_3_role_path = value_of({ U("root"), U("receivers"), U("mon3") });
         {
             auto property_holders = value::array();
-            push_back(property_holders, nmos::details::make_nc_property_holder(nmos::nc_object_oid_property_id, oid_property_descriptor, monitor_3_oid));
-            push_back(property_holders, nmos::details::make_nc_property_holder(nmos::nc_object_class_id_property_id, class_id_property_descriptor, nmos::details::make_nc_class_id(nmos::nc_receiver_monitor_class_id)));
-            push_back(object_properties_holders, nmos::details::make_nc_object_properties_holder(monitor_3_role_path.as_array(), property_holders.as_array(), value::array().as_array(), value::array().as_array(), false));
+            push_back(property_holders, nmos::nc::details::make_nc_property_holder(nmos::nc_object_oid_property_id, oid_property_descriptor, monitor_3_oid));
+            push_back(property_holders, nmos::nc::details::make_nc_property_holder(nmos::nc_object_class_id_property_id, class_id_property_descriptor, nmos::nc::details::make_nc_class_id(nmos::nc_receiver_monitor_class_id)));
+            push_back(object_properties_holders, nmos::nc::details::make_nc_object_properties_holder(monitor_3_role_path.as_array(), property_holders.as_array(), value::array().as_array(), value::array().as_array(), false));
         }
         const auto target_role_path = value_of({ U("root"), U("receivers") });
         bool recurse = true;
@@ -1386,18 +1386,18 @@ BST_TEST_CASE(testApplyBackupDataSet_NegativeTests)
         auto property_holders2 = value::array();
         auto members2 = value::array();
 
-        push_back(members1, nmos::details::make_nc_block_member_descriptor(U("monitor 1"), U("mon1"), monitor_1_oid, true, monitor_class_id, U("label"), receiver_block_oid));
-        push_back(property_holders1, nmos::details::make_nc_property_holder(nmos::nc_block_members_property_id, block_members_property_descriptor, members1));
-        push_back(object_properties_holders, nmos::details::make_nc_object_properties_holder(role_path.as_array(), property_holders1.as_array(), value::array().as_array(), value::array().as_array(), false));
+        push_back(members1, nmos::nc::details::make_nc_block_member_descriptor(U("monitor 1"), U("mon1"), monitor_1_oid, true, monitor_class_id, U("label"), receiver_block_oid));
+        push_back(property_holders1, nmos::nc::details::make_nc_property_holder(nmos::nc_block_members_property_id, block_members_property_descriptor, members1));
+        push_back(object_properties_holders, nmos::nc::details::make_nc_object_properties_holder(role_path.as_array(), property_holders1.as_array(), value::array().as_array(), value::array().as_array(), false));
         // duplicate
-        push_back(members2, nmos::details::make_nc_block_member_descriptor(U("monitor 2"), U("mon2"), monitor_1_oid, true, monitor_class_id, U("label"), receiver_block_oid));
-        push_back(property_holders2, nmos::details::make_nc_property_holder(nmos::nc_block_members_property_id, block_members_property_descriptor, members2));
-        push_back(object_properties_holders, nmos::details::make_nc_object_properties_holder(role_path.as_array(), property_holders2.as_array(), value::array().as_array(), value::array().as_array(), false));
+        push_back(members2, nmos::nc::details::make_nc_block_member_descriptor(U("monitor 2"), U("mon2"), monitor_1_oid, true, monitor_class_id, U("label"), receiver_block_oid));
+        push_back(property_holders2, nmos::nc::details::make_nc_property_holder(nmos::nc_block_members_property_id, block_members_property_descriptor, members2));
+        push_back(object_properties_holders, nmos::nc::details::make_nc_object_properties_holder(role_path.as_array(), property_holders2.as_array(), value::array().as_array(), value::array().as_array(), false));
         const auto monitor_1_role_path = value_of({ U("root"), U("receivers"), U("mon1") });
         {
             auto property_holders = value::array();
-            push_back(property_holders, nmos::details::make_nc_property_holder(nmos::nc_object_oid_property_id, oid_property_descriptor, monitor_1_oid));
-            push_back(object_properties_holders, nmos::details::make_nc_object_properties_holder(monitor_1_role_path.as_array(), property_holders.as_array(), value::array().as_array(), value::array().as_array(), false));
+            push_back(property_holders, nmos::nc::details::make_nc_property_holder(nmos::nc_object_oid_property_id, oid_property_descriptor, monitor_1_oid));
+            push_back(object_properties_holders, nmos::nc::details::make_nc_object_properties_holder(monitor_1_role_path.as_array(), property_holders.as_array(), value::array().as_array(), value::array().as_array(), false));
         }
 
         const auto target_role_path = value_of({ U("root"), U("receivers") });
@@ -1451,14 +1451,14 @@ BST_TEST_CASE(testModifyRebuildableBlock)
     nmos::make_rebuildable(receivers);
     nmos::set_block_allowed_member_classes(receivers, {nmos::nc_receiver_monitor_class_id});
     // root, receivers, mon1
-    auto monitor1 = nmos::make_receiver_monitor(++oid, true, receiver_block_oid, U("mon1"), U("monitor 1"), U("monitor 1"), value_of({ {nmos::details::make_nc_touchpoint_nmos({nmos::ncp_touchpoint_resource_types::receiver, U("id_1")})} }));
+    auto monitor1 = nmos::make_receiver_monitor(++oid, true, receiver_block_oid, U("mon1"), U("monitor 1"), U("monitor 1"), value_of({ {nmos::nc::details::make_nc_touchpoint_nmos({nmos::ncp_touchpoint_resource_types::receiver, U("id_1")})} }));
     // make monitor1 rebuildable
     nmos::make_rebuildable(monitor1);
 
     auto monitor_1_oid = oid;
-    auto monitor_class_id = nmos::details::parse_nc_class_id(nmos::fields::nc::class_id(monitor1.data));
+    auto monitor_class_id = nmos::nc::details::parse_nc_class_id(nmos::fields::nc::class_id(monitor1.data));
     // root, receivers, mon2
-    auto monitor2 = nmos::make_receiver_monitor(++oid, true, receiver_block_oid, U("mon2"), U("monitor 2"), U("monitor 2"), value_of({ {nmos::details::make_nc_touchpoint_nmos({nmos::ncp_touchpoint_resource_types::receiver, U("id_2")})} }));
+    auto monitor2 = nmos::make_receiver_monitor(++oid, true, receiver_block_oid, U("mon2"), U("monitor 2"), U("monitor 2"), value_of({ {nmos::nc::details::make_nc_touchpoint_nmos({nmos::ncp_touchpoint_resource_types::receiver, U("id_2")})} }));
     auto monitor_2_oid = oid;
     nmos::nc::push_back(receivers, monitor1);
     // add example-control to root-block
@@ -1495,13 +1495,13 @@ BST_TEST_CASE(testModifyRebuildableBlock)
 
         create_device_model_object_called = true;
 
-        auto data = nmos::details::make_nc_object(nmos::nc_receiver_monitor_class_id, oid, true, owner, role, web::json::value::string(user_label), U(""), web::json::value::null(), web::json::value::null());
+        auto data = nmos::nc::details::make_nc_object(nmos::nc_receiver_monitor_class_id, oid, true, owner, role, web::json::value::string(user_label), U(""), web::json::value::null(), web::json::value::null());
 
         return nmos::control_protocol_resource({ nmos::is12_versions::v1_0, nmos::types::nc_block, std::move(data), true });
     };
-    const auto block_members_property_descriptor = nmos::details::make_nc_property_descriptor(U("members"), nmos::nc_block_members_property_id, nmos::fields::nc::members, U("NcBlockMemberDescriptor"), true, false, true, false, web::json::value::null());
-    const auto oid_property_descriptor = nmos::details::make_nc_property_descriptor(U("oid"), nmos::nc_object_oid_property_id, nmos::fields::nc::oid, U("NcOid"), true, false, false, false, web::json::value::null());
-    const auto class_id_property_descriptor = nmos::details::make_nc_property_descriptor(U("classId"), nmos::nc_object_class_id_property_id, nmos::fields::nc::class_id, U("NcClassId"), true, false, false, false, web::json::value::null());
+    const auto block_members_property_descriptor = nmos::nc::details::make_nc_property_descriptor(U("members"), nmos::nc_block_members_property_id, nmos::fields::nc::members, U("NcBlockMemberDescriptor"), true, false, true, false, web::json::value::null());
+    const auto oid_property_descriptor = nmos::nc::details::make_nc_property_descriptor(U("oid"), nmos::nc_object_oid_property_id, nmos::fields::nc::oid, U("NcOid"), true, false, false, false, web::json::value::null());
+    const auto class_id_property_descriptor = nmos::nc::details::make_nc_property_descriptor(U("classId"), nmos::nc_object_class_id_property_id, nmos::fields::nc::class_id, U("NcClassId"), true, false, false, false, web::json::value::null());
 
     // No class id specified in the objet properties holder for new monitor causes an error
     {
@@ -1512,26 +1512,26 @@ BST_TEST_CASE(testModifyRebuildableBlock)
         const auto role_path = value_of({ U("root"), U("receivers") });
         {
             auto members = value::array();
-            push_back(members, nmos::details::make_nc_block_member_descriptor(U("monitor 1"), U("mon1"), monitor_1_oid, true, monitor_class_id, U("label"), receiver_block_oid));
-            push_back(members, nmos::details::make_nc_block_member_descriptor(U("monitor 2"), U("mon2"), monitor_2_oid, true, monitor_class_id, U("label"), receiver_block_oid));
-            push_back(members, nmos::details::make_nc_block_member_descriptor(U("monitor 3"), U("mon3"), monitor_3_oid, true, monitor_class_id, U("label"), receiver_block_oid));
-            push_back(block_property_holders, nmos::details::make_nc_property_holder(nmos::nc_block_members_property_id, block_members_property_descriptor, members));
+            push_back(members, nmos::nc::details::make_nc_block_member_descriptor(U("monitor 1"), U("mon1"), monitor_1_oid, true, monitor_class_id, U("label"), receiver_block_oid));
+            push_back(members, nmos::nc::details::make_nc_block_member_descriptor(U("monitor 2"), U("mon2"), monitor_2_oid, true, monitor_class_id, U("label"), receiver_block_oid));
+            push_back(members, nmos::nc::details::make_nc_block_member_descriptor(U("monitor 3"), U("mon3"), monitor_3_oid, true, monitor_class_id, U("label"), receiver_block_oid));
+            push_back(block_property_holders, nmos::nc::details::make_nc_property_holder(nmos::nc_block_members_property_id, block_members_property_descriptor, members));
         }
-        const auto block_object_properties_holder = nmos::details::make_nc_object_properties_holder(role_path.as_array(), block_property_holders.as_array(), value::array().as_array(), value::array().as_array(), false);
+        const auto block_object_properties_holder = nmos::nc::details::make_nc_object_properties_holder(role_path.as_array(), block_property_holders.as_array(), value::array().as_array(), value::array().as_array(), false);
         push_back(object_properties_holders, block_object_properties_holder);
         const auto monitor_2_role_path = value_of({ U("root"), U("receivers"), U("mon2") });
         {
             auto property_holders = value::array();
-            push_back(property_holders, nmos::details::make_nc_property_holder(nmos::nc_object_oid_property_id, oid_property_descriptor, monitor_2_oid));
-            push_back(object_properties_holders, nmos::details::make_nc_object_properties_holder(monitor_2_role_path.as_array(), property_holders.as_array(), value::array().as_array(), value::array().as_array(), false));
+            push_back(property_holders, nmos::nc::details::make_nc_property_holder(nmos::nc_object_oid_property_id, oid_property_descriptor, monitor_2_oid));
+            push_back(object_properties_holders, nmos::nc::details::make_nc_object_properties_holder(monitor_2_role_path.as_array(), property_holders.as_array(), value::array().as_array(), value::array().as_array(), false));
         }
         // Create Object Properties Holder for new monitor
         auto monitor3_property_holders = value::array();
         const auto monitor_3_role_path = value_of({ U("root"), U("receivers"), U("mon3") });
         {
             // No property holders, including no class id
-            push_back(monitor3_property_holders, nmos::details::make_nc_property_holder(nmos::nc_object_oid_property_id, oid_property_descriptor, monitor_3_oid));
-            push_back(object_properties_holders, nmos::details::make_nc_object_properties_holder(monitor_3_role_path.as_array(), monitor3_property_holders.as_array(), value::array().as_array(), value::array().as_array(), false));
+            push_back(monitor3_property_holders, nmos::nc::details::make_nc_property_holder(nmos::nc_object_oid_property_id, oid_property_descriptor, monitor_3_oid));
+            push_back(object_properties_holders, nmos::nc::details::make_nc_object_properties_holder(monitor_3_role_path.as_array(), monitor3_property_holders.as_array(), value::array().as_array(), value::array().as_array(), false));
         }
         const auto target_role_path = value_of({ U("root"), U("receivers") });
         bool validate = true;
@@ -1571,27 +1571,27 @@ BST_TEST_CASE(testModifyRebuildableBlock)
         const auto role_path = value_of({ U("root"), U("receivers") });
         {
             auto members = value::array();
-            push_back(members, nmos::details::make_nc_block_member_descriptor(U("monitor 1"), U("mon1"), monitor_1_oid, true, monitor_class_id, U("label"), receiver_block_oid));
-            push_back(members, nmos::details::make_nc_block_member_descriptor(U("monitor 2"), U("mon2"), monitor_2_oid, true, monitor_class_id, U("label"), receiver_block_oid));
-            push_back(members, nmos::details::make_nc_block_member_descriptor(U("monitor 3"), U("mon3"), monitor_3_oid, true, monitor_class_id, U("label"), receiver_block_oid));
-            push_back(block_property_holders, nmos::details::make_nc_property_holder(nmos::nc_block_members_property_id, block_members_property_descriptor, members));
+            push_back(members, nmos::nc::details::make_nc_block_member_descriptor(U("monitor 1"), U("mon1"), monitor_1_oid, true, monitor_class_id, U("label"), receiver_block_oid));
+            push_back(members, nmos::nc::details::make_nc_block_member_descriptor(U("monitor 2"), U("mon2"), monitor_2_oid, true, monitor_class_id, U("label"), receiver_block_oid));
+            push_back(members, nmos::nc::details::make_nc_block_member_descriptor(U("monitor 3"), U("mon3"), monitor_3_oid, true, monitor_class_id, U("label"), receiver_block_oid));
+            push_back(block_property_holders, nmos::nc::details::make_nc_property_holder(nmos::nc_block_members_property_id, block_members_property_descriptor, members));
         }
-        const auto block_object_properties_holder = nmos::details::make_nc_object_properties_holder(role_path.as_array(), block_property_holders.as_array(), value::array().as_array(), value::array().as_array(), false);
+        const auto block_object_properties_holder = nmos::nc::details::make_nc_object_properties_holder(role_path.as_array(), block_property_holders.as_array(), value::array().as_array(), value::array().as_array(), false);
         push_back(object_properties_holders, block_object_properties_holder);
         // Create Object Properties Holder for new monitor
         const auto monitor_2_role_path = value_of({ U("root"), U("receivers"), U("mon2") });
         {
             auto property_holders = value::array();
-            push_back(property_holders, nmos::details::make_nc_property_holder(nmos::nc_object_oid_property_id, oid_property_descriptor, monitor_2_oid));
-            push_back(object_properties_holders, nmos::details::make_nc_object_properties_holder(monitor_2_role_path.as_array(), property_holders.as_array(), value::array().as_array(), value::array().as_array(), false));
+            push_back(property_holders, nmos::nc::details::make_nc_property_holder(nmos::nc_object_oid_property_id, oid_property_descriptor, monitor_2_oid));
+            push_back(object_properties_holders, nmos::nc::details::make_nc_object_properties_holder(monitor_2_role_path.as_array(), property_holders.as_array(), value::array().as_array(), value::array().as_array(), false));
         }
         auto monitor3_property_holders = value::array();
         const auto monitor_3_role_path = value_of({ U("root"), U("receivers"), U("mon3") });
         {
             //auto property_holders = value::array();
-            push_back(monitor3_property_holders, nmos::details::make_nc_property_holder(nmos::nc_object_oid_property_id, oid_property_descriptor, monitor_3_oid));
-            push_back(monitor3_property_holders, nmos::details::make_nc_property_holder(nmos::nc_object_class_id_property_id, class_id_property_descriptor, nmos::details::make_nc_class_id(nmos::nc_block_class_id))); // disallowed class id
-            push_back(object_properties_holders, nmos::details::make_nc_object_properties_holder(monitor_3_role_path.as_array(), monitor3_property_holders.as_array(), value::array().as_array(), value::array().as_array(), false));
+            push_back(monitor3_property_holders, nmos::nc::details::make_nc_property_holder(nmos::nc_object_oid_property_id, oid_property_descriptor, monitor_3_oid));
+            push_back(monitor3_property_holders, nmos::nc::details::make_nc_property_holder(nmos::nc_object_class_id_property_id, class_id_property_descriptor, nmos::nc::details::make_nc_class_id(nmos::nc_block_class_id))); // disallowed class id
+            push_back(object_properties_holders, nmos::nc::details::make_nc_object_properties_holder(monitor_3_role_path.as_array(), monitor3_property_holders.as_array(), value::array().as_array(), value::array().as_array(), false));
         }
         const auto target_role_path = value_of({ U("root"), U("receivers") });
         bool validate = true;
@@ -1630,27 +1630,27 @@ BST_TEST_CASE(testModifyRebuildableBlock)
         const auto role_path = value_of({ U("root"), U("receivers") });
         {
             auto members = value::array();
-            push_back(members, nmos::details::make_nc_block_member_descriptor(U("monitor 1"), U("mon1"), monitor_1_oid, true, monitor_class_id, U("label"), receiver_block_oid));
-            push_back(members, nmos::details::make_nc_block_member_descriptor(U("monitor 2"), U("mon2"), monitor_2_oid, true, monitor_class_id, U("label"), receiver_block_oid));
-            push_back(members, nmos::details::make_nc_block_member_descriptor(U("monitor 3"), U("mon3"), monitor_3_oid, true, monitor_class_id, U("label"), receiver_block_oid));
-            push_back(block_property_holders, nmos::details::make_nc_property_holder(nmos::nc_block_members_property_id, block_members_property_descriptor, members));
+            push_back(members, nmos::nc::details::make_nc_block_member_descriptor(U("monitor 1"), U("mon1"), monitor_1_oid, true, monitor_class_id, U("label"), receiver_block_oid));
+            push_back(members, nmos::nc::details::make_nc_block_member_descriptor(U("monitor 2"), U("mon2"), monitor_2_oid, true, monitor_class_id, U("label"), receiver_block_oid));
+            push_back(members, nmos::nc::details::make_nc_block_member_descriptor(U("monitor 3"), U("mon3"), monitor_3_oid, true, monitor_class_id, U("label"), receiver_block_oid));
+            push_back(block_property_holders, nmos::nc::details::make_nc_property_holder(nmos::nc_block_members_property_id, block_members_property_descriptor, members));
         }
-        const auto block_object_properties_holder = nmos::details::make_nc_object_properties_holder(role_path.as_array(), block_property_holders.as_array(), value::array().as_array(), value::array().as_array(), false);
+        const auto block_object_properties_holder = nmos::nc::details::make_nc_object_properties_holder(role_path.as_array(), block_property_holders.as_array(), value::array().as_array(), value::array().as_array(), false);
         push_back(object_properties_holders, block_object_properties_holder);
         // Create Object Properties Holder for new monitor
         const auto monitor_2_role_path = value_of({ U("root"), U("receivers"), U("mon2") });
         {
             auto property_holders = value::array();
-            push_back(property_holders, nmos::details::make_nc_property_holder(nmos::nc_object_oid_property_id, oid_property_descriptor, monitor_2_oid));
-            push_back(object_properties_holders, nmos::details::make_nc_object_properties_holder(monitor_2_role_path.as_array(), property_holders.as_array(), value::array().as_array(), value::array().as_array(), false));
+            push_back(property_holders, nmos::nc::details::make_nc_property_holder(nmos::nc_object_oid_property_id, oid_property_descriptor, monitor_2_oid));
+            push_back(object_properties_holders, nmos::nc::details::make_nc_object_properties_holder(monitor_2_role_path.as_array(), property_holders.as_array(), value::array().as_array(), value::array().as_array(), false));
         }
         auto monitor3_property_holders = value::array();
         const auto monitor_3_role_path = value_of({ U("root"), U("receivers"), U("mon3") });
         {
             //auto property_holders = value::array();
-            push_back(monitor3_property_holders, nmos::details::make_nc_property_holder(nmos::nc_object_oid_property_id, oid_property_descriptor, monitor_3_oid));
-            push_back(monitor3_property_holders, nmos::details::make_nc_property_holder(nmos::nc_object_class_id_property_id, class_id_property_descriptor, nmos::details::make_nc_class_id(nmos::nc_receiver_monitor_class_id)));
-            push_back(object_properties_holders, nmos::details::make_nc_object_properties_holder(monitor_3_role_path.as_array(), monitor3_property_holders.as_array(), value::array().as_array(), value::array().as_array(), false));
+            push_back(monitor3_property_holders, nmos::nc::details::make_nc_property_holder(nmos::nc_object_oid_property_id, oid_property_descriptor, monitor_3_oid));
+            push_back(monitor3_property_holders, nmos::nc::details::make_nc_property_holder(nmos::nc_object_class_id_property_id, class_id_property_descriptor, nmos::nc::details::make_nc_class_id(nmos::nc_receiver_monitor_class_id)));
+            push_back(object_properties_holders, nmos::nc::details::make_nc_object_properties_holder(monitor_3_role_path.as_array(), monitor3_property_holders.as_array(), value::array().as_array(), value::array().as_array(), false));
         }
         const auto target_role_path = value_of({ U("root"), U("receivers") });
         bool validate = true;

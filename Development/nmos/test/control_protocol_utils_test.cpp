@@ -328,7 +328,7 @@ BST_TEST_CASE(testActivateDeactivateReceiverMonitor)
         // check that the property changed handler gets called
         reset_monitor_called = true;
 
-        return nmos::details::make_nc_method_result({ nmos::nc_method_status::ok });
+        return nmos::nc::details::make_nc_method_result({ nmos::nc_method_status::ok });
     };
 
     nmos::experimental::control_protocol_state control_protocol_state(nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, reset_monitor);
@@ -690,7 +690,7 @@ BST_TEST_CASE(testActivateDeactivateSenderMonitor)
         // check that the property changed handler gets called
         reset_monitor_called = true;
 
-        return nmos::details::make_nc_method_result({ nmos::nc_method_status::ok });
+        return nmos::nc::details::make_nc_method_result({ nmos::nc_method_status::ok });
     };
 
     nmos::experimental::control_protocol_state control_protocol_state(nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, reset_monitor);
@@ -830,7 +830,7 @@ BST_TEST_CASE(testSetMonitorStatusWithDelay)
         // check that the property changed handler gets called
         reset_monitor_called = true;
 
-        return nmos::details::make_nc_method_result({nmos::nc_method_status::ok});
+        return nmos::nc::details::make_nc_method_result({nmos::nc_method_status::ok});
     };
 
     nmos::monitor_status_pending_handler monitor_status_pending = [&]()
@@ -1148,9 +1148,9 @@ BST_TEST_CASE(testFindTouchpointResources)
 
     // Create Device Model
     auto oid = nmos::root_block_oid;
-    auto monitor1 = nmos::make_receiver_monitor(++oid, true, nmos::root_block_oid, U("mon1"), U("monitor 1"), U("monitor 1"), value_of({ {nmos::details::make_nc_touchpoint_nmos({nmos::ncp_touchpoint_resource_types::receiver, touchpoint1_id})} }));
-    auto monitor2 = nmos::make_receiver_monitor(++oid, true, nmos::root_block_oid, U("mon2"), U("monitor 2"), U("monitor 2"), value_of({ {nmos::details::make_nc_touchpoint_nmos({nmos::ncp_touchpoint_resource_types::receiver, touchpoint2_id})} }));
-    auto monitor3 = nmos::make_receiver_monitor(++oid, true, nmos::root_block_oid, U("mon3"), U("monitor 3"), U("monitor 3"), value_of({ {nmos::details::make_nc_touchpoint_nmos({nmos::ncp_touchpoint_resource_types::receiver, non_existant_id})} }));
+    auto monitor1 = nmos::make_receiver_monitor(++oid, true, nmos::root_block_oid, U("mon1"), U("monitor 1"), U("monitor 1"), value_of({ {nmos::nc::details::make_nc_touchpoint_nmos({nmos::ncp_touchpoint_resource_types::receiver, touchpoint1_id})} }));
+    auto monitor2 = nmos::make_receiver_monitor(++oid, true, nmos::root_block_oid, U("mon2"), U("monitor 2"), U("monitor 2"), value_of({ {nmos::nc::details::make_nc_touchpoint_nmos({nmos::ncp_touchpoint_resource_types::receiver, touchpoint2_id})} }));
+    auto monitor3 = nmos::make_receiver_monitor(++oid, true, nmos::root_block_oid, U("mon3"), U("monitor 3"), U("monitor 3"), value_of({ {nmos::nc::details::make_nc_touchpoint_nmos({nmos::ncp_touchpoint_resource_types::receiver, non_existant_id})} }));
 
     nmos::resources resources;
     // Insert dummy NMOS resources

@@ -55,7 +55,7 @@ namespace nmos
                 auto& method_descriptors = control_class_descriptor.method_descriptors;
                 auto found = std::find_if(method_descriptors.begin(), method_descriptors.end(), [&method_id](const experimental::method& method)
                 {
-                    return method_id == details::parse_nc_method_id(nmos::fields::nc::id(std::get<0>(method)));
+                    return method_id == nc::details::parse_nc_method_id(nmos::fields::nc::id(std::get<0>(method)));
                 });
                 if (method_descriptors.end() != found)
                 {
@@ -92,7 +92,7 @@ namespace nmos
             const bool active = nmos::fields::master_enable(endpoint_active);
 
             auto found = nc::find_resource(resources, nmos::types::nc_status_monitor, connection_resource.id);
-            if (resources.end() != found && nmos::nc::is_status_monitor(details::parse_nc_class_id(nmos::fields::nc::class_id(found->data))))
+            if (resources.end() != found && nmos::nc::is_status_monitor(nc::details::parse_nc_class_id(nmos::fields::nc::class_id(found->data))))
             {
                 const auto& oid = nmos::fields::nc::oid(found->data);
 

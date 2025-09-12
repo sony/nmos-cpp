@@ -17,13 +17,13 @@ namespace nmos
     {
         bool is_property_value_valid(web::json::value& property_restore_notices, const web::json::value& property_value, const web::json::value& property_descriptor, nmos::nc_restore_mode::restore_mode restore_mode, bool is_rebuildable)
         {
-            const nmos::nc_property_id& property_id = nmos::details::parse_nc_property_id(nmos::fields::nc::id(property_descriptor));
+            const nmos::nc_property_id& property_id = nc::details::parse_nc_property_id(nmos::fields::nc::id(property_descriptor));
             bool is_valid = true;
             // Only allow modification of read only properties when in Rebuild mode
             if (bool(nmos::fields::nc::is_read_only(property_descriptor))
                 && restore_mode != nmos::nc_restore_mode::restore_mode::rebuild)
             {
-                const auto& property_restore_notice = nmos::details::make_nc_property_restore_notice(property_id, nmos::fields::nc::name(property_descriptor), nmos::nc_property_restore_notice_type::error, U("read only properties can not be modified in Modify restore mode."));
+                const auto& property_restore_notice = nc::details::make_nc_property_restore_notice(property_id, nmos::fields::nc::name(property_descriptor), nmos::nc_property_restore_notice_type::error, U("read only properties can not be modified in Modify restore mode."));
                 web::json::push_back(property_restore_notices, property_restore_notice);
                 is_valid = false;
             }
@@ -31,7 +31,7 @@ namespace nmos
             if (bool(nmos::fields::nc::is_read_only(property_descriptor))
                 && !is_rebuildable)
             {
-                const auto& property_restore_notice = nmos::details::make_nc_property_restore_notice(property_id, nmos::fields::nc::name(property_descriptor), nmos::nc_property_restore_notice_type::error, U("object must be rebuildable to allow modification of read only properties."));
+                const auto& property_restore_notice = nc::details::make_nc_property_restore_notice(property_id, nmos::fields::nc::name(property_descriptor), nmos::nc_property_restore_notice_type::error, U("object must be rebuildable to allow modification of read only properties."));
                 web::json::push_back(property_restore_notices, property_restore_notice);
                 is_valid = false;
             }
@@ -43,7 +43,7 @@ namespace nmos
         {
             for (const auto& property_value : property_values)
             {
-                const auto& property_id = nmos::details::parse_nc_property_id(nmos::fields::nc::id(property_value));
+                const auto& property_id = nc::details::parse_nc_property_id(nmos::fields::nc::id(property_value));
                 const auto& property_descriptor = nmos::nc::find_property_descriptor(property_id, class_id, get_control_protocol_class_descriptor);
 
                 if (bool(nmos::fields::nc::is_read_only(property_descriptor)))
@@ -56,7 +56,7 @@ namespace nmos
 
         web::json::value modify_device_model_object(nmos::resources& resources, const nmos::resource& resource, const web::json::array& target_role_path, const web::json::value& target_object_properties_holder, nmos::nc_restore_mode::restore_mode restore_mode, bool validate, nmos::get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, nmos::get_control_protocol_datatype_descriptor_handler get_control_protocol_datatype_descriptor, nmos::get_read_only_modification_allow_list_handler get_read_only_modification_allow_list)
         {
-            const auto& class_id = nmos::details::parse_nc_class_id(nmos::fields::nc::class_id(resource.data));
+            const auto& class_id = nc::details::parse_nc_class_id(nmos::fields::nc::class_id(resource.data));
 
             auto object_properties_set_validation_values = web::json::value::array();
 
@@ -67,8 +67,8 @@ namespace nmos
             const auto& filtered_property_values = boost::copy_range<std::set<web::json::value>>(nmos::fields::nc::values(target_object_properties_holder)
                 | boost::adaptors::filtered([&property_restore_notices, &resource, class_id, get_control_protocol_class_descriptor, restore_mode](const web::json::value& property_value)
                     {
-                        const auto& property_id = nmos::details::parse_nc_property_id(nmos::fields::nc::id(property_value));
-                        const auto& property_descriptor = nmos::nc::find_property_descriptor(property_id, class_id, get_control_protocol_class_descriptor);
+                        const auto& property_id = nc::details::parse_nc_property_id(nmos::fields::nc::id(property_value));
+                        const auto& property_descriptor = nc::find_property_descriptor(property_id, class_id, get_control_protocol_class_descriptor);
 
                         return resource.data.at(nmos::fields::nc::name(property_descriptor)) != nmos::fields::nc::value(property_value)
                             && details::is_property_value_valid(property_restore_notices, property_value, property_descriptor, restore_mode, bool(nmos::fields::nc::is_rebuildable(resource.data)));
@@ -82,7 +82,7 @@ namespace nmos
                 const auto& read_only_property_values = boost::copy_range<std::set<web::json::value>>(filtered_property_values
                     | boost::adaptors::filtered([class_id, get_control_protocol_class_descriptor](const web::json::value& property_value)
                         {
-                            const auto& property_id = nmos::details::parse_nc_property_id(nmos::fields::nc::id(property_value));
+                            const auto& property_id = nc::details::parse_nc_property_id(nmos::fields::nc::id(property_value));
                             const auto& property_descriptor = nmos::nc::find_property_descriptor(property_id, class_id, get_control_protocol_class_descriptor);
 
                             return nmos::fields::nc::is_read_only(property_descriptor);
@@ -103,7 +103,7 @@ namespace nmos
                         std::vector<nmos::nc_property_id> read_only_property_ids;
                         for (const auto& property_value: read_only_property_values)
                         {
-                            const auto& property_id = nmos::details::parse_nc_property_id(nmos::fields::nc::id(property_value));
+                            const auto& property_id = nc::details::parse_nc_property_id(nmos::fields::nc::id(property_value));
                             // Don't include structural properties - changing these could break the device model
                             if (property_id != nmos::nc_object_class_id_property_id &&
                                 property_id != nmos::nc_object_oid_property_id &&
@@ -111,7 +111,7 @@ namespace nmos
                                 property_id != nmos::nc_object_owner_property_id &&
                                 property_id != nmos::nc_object_role_property_id)
                             {
-                                read_only_property_ids.push_back(nmos::details::parse_nc_property_id(nmos::fields::nc::id(property_value)));
+                                read_only_property_ids.push_back(nc::details::parse_nc_property_id(nmos::fields::nc::id(property_value)));
                             }
                         }
 
@@ -120,7 +120,7 @@ namespace nmos
                         const auto& allowed_property_values = boost::copy_range<std::set<web::json::value>>(filtered_property_values
                             | boost::adaptors::filtered([&property_restore_notices, get_control_protocol_class_descriptor, class_id, allow_list_read_only_property_ids](const web::json::value& property_value)
                                 {
-                                    const auto& property_id = nmos::details::parse_nc_property_id(nmos::fields::nc::id(property_value));
+                                    const auto& property_id = nc::details::parse_nc_property_id(nmos::fields::nc::id(property_value));
                                     const auto& property_descriptor = nmos::nc::find_property_descriptor(property_id, class_id, get_control_protocol_class_descriptor);
                                     // if it's read only and in the allow list then add it
                                     if (!nmos::fields::nc::is_read_only(property_descriptor))
@@ -130,13 +130,13 @@ namespace nmos
 
                                     for (const auto& allowed_property_id: allow_list_read_only_property_ids)
                                     {
-                                        if (nmos::fields::nc::id(property_value) == nmos::details::make_nc_property_id(allowed_property_id))
+                                        if (nmos::fields::nc::id(property_value) == nc::details::make_nc_property_id(allowed_property_id))
                                         {
                                             return true;
                                         }
                                     }
                                     // Create a warning notice for any read only property not allowed by the allow list
-                                    const auto& property_restore_notice = nmos::details::make_nc_property_restore_notice(property_id, nmos::fields::nc::name(property_descriptor), nmos::nc_property_restore_notice_type::warning, U("This read only property can not be modified."));
+                                    const auto& property_restore_notice = nc::details::make_nc_property_restore_notice(property_id, nmos::fields::nc::name(property_descriptor), nmos::nc_property_restore_notice_type::warning, U("This read only property can not be modified."));
                                     web::json::push_back(property_restore_notices, property_restore_notice);
 
                                     return false;
@@ -154,7 +154,7 @@ namespace nmos
             }
             for (const auto& property_value : property_modify_list)
             {
-                const auto& property_id = nmos::details::parse_nc_property_id(nmos::fields::nc::id(property_value));
+                const auto& property_id = nc::details::parse_nc_property_id(nmos::fields::nc::id(property_value));
                 const auto& property_descriptor = nmos::nc::find_property_descriptor(property_id, class_id, get_control_protocol_class_descriptor);
 
                 // hmmm, ideally we would pass the value into modify_resource with the validate
@@ -171,7 +171,7 @@ namespace nmos
                         {
                             resource_.data[nmos::fields::nc::name(property_descriptor)] = value;
 
-                        }, nmos::make_property_changed_event(nmos::fields::nc::oid(resource.data), {{property_id, nmos::nc_property_change_type::type::value_changed, value}}));
+                        }, nc::make_property_changed_event(nmos::fields::nc::oid(resource.data), {{property_id, nmos::nc_property_change_type::type::value_changed, value}}));
                     }
                 }
                 catch(const nmos::control_protocol_exception& e)
@@ -179,7 +179,7 @@ namespace nmos
                     // Generate notice for this property
                     utility::stringstream_t ss;
                     ss << U("property error: ") << e.what();
-                    const auto& property_restore_notice = nmos::details::make_nc_property_restore_notice(property_id, nmos::fields::nc::name(property_descriptor), nmos::nc_property_restore_notice_type::error, ss.str());
+                    const auto& property_restore_notice = nc::details::make_nc_property_restore_notice(property_id, nmos::fields::nc::name(property_descriptor), nmos::nc_property_restore_notice_type::error, ss.str());
                     web::json::push_back(property_restore_notices, property_restore_notice);
                 }
             }
@@ -244,7 +244,7 @@ namespace nmos
                         if (!remove_device_model_object(*found, child_role_path_array, validate))
                         {
                             // error in user code
-                            web::json::push_back(block_notices, nmos::details::make_nc_property_restore_notice(nmos::nc_block_members_property_id, U("members"), nmos::nc_property_restore_notice_type::error, U("Application error.")));
+                            web::json::push_back(block_notices, nc::details::make_nc_property_restore_notice(nmos::nc_block_members_property_id, U("members"), nmos::nc_property_restore_notice_type::error, U("Application error.")));
                             continue;
                         }
 
@@ -258,14 +258,14 @@ namespace nmos
                             else
                             {
                                 // unable to delete resource so report the error and don't update block
-                                web::json::push_back(block_notices, nmos::details::make_nc_property_restore_notice(nmos::nc_block_members_property_id, U("members"), nmos::nc_property_restore_notice_type::error, U("Unable to delete resource in Device Model.")));
+                                web::json::push_back(block_notices, nc::details::make_nc_property_restore_notice(nmos::nc_block_members_property_id, U("members"), nmos::nc_property_restore_notice_type::error, U("Unable to delete resource in Device Model.")));
                             }
                         }
                     }
                     else
                     {
                         // unable to delete resource so report the error and don't update block
-                        web::json::push_back(block_notices, nmos::details::make_nc_property_restore_notice(nmos::nc_block_members_property_id, U("members"), nmos::nc_property_restore_notice_type::error, U("Unable to find resource in Device Model.")));
+                        web::json::push_back(block_notices, nc::details::make_nc_property_restore_notice(nmos::nc_block_members_property_id, U("members"), nmos::nc_property_restore_notice_type::error, U("Unable to find resource in Device Model.")));
                     }
                 }
             }
@@ -312,7 +312,7 @@ namespace nmos
 
                     if (oid_property_holder != web::json::value::null() && oid != nmos::fields::nc::value(oid_property_holder).as_integer())
                     {
-                        const auto notice = nmos::details::make_nc_property_restore_notice(nmos::nc_block_members_property_id, U("members"), nmos::nc_property_restore_notice_type::warning, U("OID value in block member inconsistent with value in property holder. Property holder value takes precidence."));
+                        const auto notice = nc::details::make_nc_property_restore_notice(nmos::nc_block_members_property_id, U("members"), nmos::nc_property_restore_notice_type::warning, U("OID value in block member inconsistent with value in property holder. Property holder value takes precidence."));
                         web::json::push_back(block_notices, notice);
                     }
 
@@ -330,7 +330,7 @@ namespace nmos
                             auto object_properties_set_validation = nmos::make_object_properties_set_validation(child_role_path, nmos::nc_restore_validation_status::device_error, status_message);
                             web::json::push_back(object_properties_set_validations, object_properties_set_validation);
                             // also create error notice for the block
-                            const auto block_notice = nmos::details::make_nc_property_restore_notice(nmos::nc_block_members_property_id, U("members"), nmos::nc_property_restore_notice_type::error, status_message);
+                            const auto block_notice = nc::details::make_nc_property_restore_notice(nmos::nc_block_members_property_id, U("members"), nmos::nc_property_restore_notice_type::error, status_message);
                             web::json::push_back(block_notices, block_notice);
                             // erase object from object_properties_holder_map so it isn't processed subsequently
                             object_properties_holder_map.erase(child_role_path);
@@ -346,7 +346,7 @@ namespace nmos
                             max_oid = std::max(max_oid, nmos::fields::nc::oid(r.data));
                         }
                         oid = ++max_oid;
-                        const auto block_notice = nmos::details::make_nc_property_restore_notice(nmos::nc_block_members_property_id, U("members"), nmos::nc_property_restore_notice_type::warning, U("Dynamically generating new OID for new block member."));
+                        const auto block_notice = nc::details::make_nc_property_restore_notice(nmos::nc_block_members_property_id, U("members"), nmos::nc_property_restore_notice_type::warning, U("Dynamically generating new OID for new block member."));
                         web::json::push_back(block_notices, block_notice);
                     }
 
@@ -359,14 +359,14 @@ namespace nmos
                     {
                         utility::stringstream_t ss;
                         ss << U("Role value in block member inconsistent with value in property holder. Property holder value takes precidence for role=") << role;
-                        const auto notice = nmos::details::make_nc_property_restore_notice(nmos::nc_block_members_property_id, U("members"), nmos::nc_property_restore_notice_type::warning, ss.str());
+                        const auto notice = nc::details::make_nc_property_restore_notice(nmos::nc_block_members_property_id, U("members"), nmos::nc_property_restore_notice_type::warning, ss.str());
                         web::json::push_back(block_notices, notice);
                     }
                     if (owner != block_oid)
                     {
                         utility::stringstream_t ss;
                         ss << U("Owner value in block member inconsistent with oid of Block. Block oid takes precidence for role=") << role;
-                        const auto notice = nmos::details::make_nc_property_restore_notice(nmos::nc_block_members_property_id, U("members"), nmos::nc_property_restore_notice_type::warning, ss.str());
+                        const auto notice = nc::details::make_nc_property_restore_notice(nmos::nc_block_members_property_id, U("members"), nmos::nc_property_restore_notice_type::warning, ss.str());
                         web::json::push_back(block_notices, notice);
                     }
                     const auto& owner_property_holder = nmos::get_property_holder(child_object_properties_holder->second, nmos::nc_object_owner_property_id);
@@ -374,7 +374,7 @@ namespace nmos
                     {
                         utility::stringstream_t ss;
                         ss << U("Owner value in block property holder inconsistent with oid of Block. Block oid takes precidence for role=") << role;
-                        const auto notice = nmos::details::make_nc_property_restore_notice(nmos::nc_block_members_property_id, U("owner"), nmos::nc_property_restore_notice_type::warning, ss.str());
+                        const auto notice = nc::details::make_nc_property_restore_notice(nmos::nc_block_members_property_id, U("owner"), nmos::nc_property_restore_notice_type::warning, ss.str());
                         web::json::push_back(added_object_notices, notice);
                     }
                     const auto& constant_oid_property_holder = nmos::get_property_holder(child_object_properties_holder->second, nmos::nc_object_constant_oid_property_id);
@@ -384,7 +384,7 @@ namespace nmos
                     {
                         utility::stringstream_t ss;
                         ss << U("Constant OID value in block property holder inconsistent with oid of Block. Block oid takes precidence for role=") << role;
-                        const auto notice = nmos::details::make_nc_property_restore_notice(nmos::nc_block_members_property_id, U("members"), nmos::nc_property_restore_notice_type::warning, ss.str());
+                        const auto notice = nc::details::make_nc_property_restore_notice(nmos::nc_block_members_property_id, U("members"), nmos::nc_property_restore_notice_type::warning, ss.str());
                         web::json::push_back(block_notices, notice);
                     }
 
@@ -394,12 +394,12 @@ namespace nmos
                     {
                         utility::stringstream_t ss;
                         ss << U("Class ID property value holder missing for role=") << role;
-                        const auto notice = nmos::details::make_nc_property_restore_notice(nmos::nc_block_members_property_id, U("class_id"), nmos::nc_property_restore_notice_type::error, ss.str());
+                        const auto notice = nc::details::make_nc_property_restore_notice(nmos::nc_block_members_property_id, U("class_id"), nmos::nc_property_restore_notice_type::error, ss.str());
                         web::json::push_back(added_object_notices, notice);
                         auto object_properties_set_validation = nmos::make_object_properties_set_validation(child_role_path, nmos::nc_restore_validation_status::failed, added_object_notices.as_array(), ss.str());
                         web::json::push_back(object_properties_set_validations, object_properties_set_validation);
                         // also create error notice for the block
-                        const auto block_notice = nmos::details::make_nc_property_restore_notice(nmos::nc_block_members_property_id, U("members"), nmos::nc_property_restore_notice_type::error, ss.str());
+                        const auto block_notice = nc::details::make_nc_property_restore_notice(nmos::nc_block_members_property_id, U("members"), nmos::nc_property_restore_notice_type::error, ss.str());
                         web::json::push_back(block_notices, block_notice);
 
                         // erase object from object_properties_holder_map so it isn't processed subsequently
@@ -425,12 +425,12 @@ namespace nmos
                         {
                             utility::stringstream_t ss;
                             ss << U("Device model error: attempting to add unexpected class for role=") << role;
-                            const auto notice = nmos::details::make_nc_property_restore_notice(nmos::nc_block_members_property_id, U("class_id"), nmos::nc_property_restore_notice_type::error, ss.str());
+                            const auto notice = nc::details::make_nc_property_restore_notice(nmos::nc_block_members_property_id, U("class_id"), nmos::nc_property_restore_notice_type::error, ss.str());
                             web::json::push_back(added_object_notices, notice);
                             auto object_properties_set_validation = nmos::make_object_properties_set_validation(child_role_path, nmos::nc_restore_validation_status::failed, added_object_notices.as_array(), ss.str());
                             web::json::push_back(object_properties_set_validations, object_properties_set_validation);
                             // also create error notice for the block
-                            const auto block_notice = nmos::details::make_nc_property_restore_notice(nmos::nc_block_members_property_id, U("members"), nmos::nc_property_restore_notice_type::error, ss.str());
+                            const auto block_notice = nc::details::make_nc_property_restore_notice(nmos::nc_block_members_property_id, U("members"), nmos::nc_property_restore_notice_type::error, ss.str());
                             web::json::push_back(block_notices, block_notice);
 
                             // erase object from object_properties_holder_map so it isn't processed subsequently
@@ -450,9 +450,9 @@ namespace nmos
 
                     for (const auto& property_holder: nmos::fields::nc::values(child_object_properties_holder->second))
                     {
-                        property_values.insert(std::pair<nmos::nc_property_id, web::json::value>(nmos::details::parse_nc_property_id(nmos::fields::nc::id(property_holder)), nmos::fields::nc::value(property_holder)));
+                        property_values.insert(std::pair<nmos::nc_property_id, web::json::value>(nc::details::parse_nc_property_id(nmos::fields::nc::id(property_holder)), nmos::fields::nc::value(property_holder)));
                     }
-                    auto parsed_class_id = nmos::details::parse_nc_class_id(class_id.as_array());
+                    auto parsed_class_id = nc::details::parse_nc_class_id(class_id.as_array());
 
                     auto device_model_object = create_device_model_object(parsed_class_id, oid, constant_oid, owner, role, user_label, touchpoints, validate, property_values);
 
@@ -460,7 +460,7 @@ namespace nmos
                     {
                         for (const auto& property_holder : nmos::fields::nc::values(child_object_properties_holder->second))
                         {
-                            const auto property_id = nmos::details::parse_nc_property_id(nmos::fields::nc::id(property_holder));
+                            const auto property_id = nc::details::parse_nc_property_id(nmos::fields::nc::id(property_holder));
                             const auto& property_descriptor = nmos::nc::find_property_descriptor(property_id, parsed_class_id, get_control_protocol_class_descriptor);
 
                             if (device_model_object.data.has_field(nmos::fields::nc::name(property_descriptor)))
@@ -471,14 +471,14 @@ namespace nmos
                                 if (object_value != property_holder_value)
                                 {
                                     // warn
-                                    const auto notice = nmos::details::make_nc_property_restore_notice(property_id, nmos::fields::nc::name(property_descriptor), nmos::nc_property_restore_notice_type::warning, U("Property not updated."));
+                                    const auto notice = nc::details::make_nc_property_restore_notice(property_id, nmos::fields::nc::name(property_descriptor), nmos::nc_property_restore_notice_type::warning, U("Property not updated."));
                                     web::json::push_back(added_object_notices, notice);
                                 }
                             }
                             else
                             {
                                 // error doesn't have this property
-                                const auto notice = nmos::details::make_nc_property_restore_notice(property_id, nmos::fields::nc::name(property_descriptor), nmos::nc_property_restore_notice_type::warning, U("Property not member of created object."));
+                                const auto notice = nc::details::make_nc_property_restore_notice(property_id, nmos::fields::nc::name(property_descriptor), nmos::nc_property_restore_notice_type::warning, U("Property not member of created object."));
                                 web::json::push_back(added_object_notices, notice);
                             }
                         }
@@ -488,7 +488,7 @@ namespace nmos
                             // Add object to device model
                             nmos::nc::insert_resource(resources, std::move(device_model_object));
 
-                            auto block_member_descriptor = nmos::details::make_nc_block_member_descriptor(block_member_description, role, oid, constant_oid, nmos::nc_receiver_monitor_class_id, block_member_user_label, owner);
+                            auto block_member_descriptor = nc::details::make_nc_block_member_descriptor(block_member_description, role, oid, constant_oid, nmos::nc_receiver_monitor_class_id, block_member_user_label, owner);
                             members_to_add.push_back(block_member_descriptor);
                         }
                         web::json::push_back(object_properties_set_validations, nmos::make_object_properties_set_validation(child_role_path, nmos::nc_restore_validation_status::ok, added_object_notices.as_array()));
@@ -544,7 +544,7 @@ namespace nmos
                     {
                         resource.data[nmos::fields::nc::members] = modified_members;
 
-                    }, nmos::make_property_changed_event(nmos::fields::nc::oid(resource.data), { { nmos::nc_block_members_property_id, nmos::nc_property_change_type::type::value_changed, modified_members } }));
+                    }, nc::make_property_changed_event(nmos::fields::nc::oid(resource.data), { { nmos::nc_block_members_property_id, nmos::nc_property_change_type::type::value_changed, modified_members } }));
             }
 
             return object_properties_set_validations;
@@ -586,7 +586,7 @@ namespace nmos
         const auto& filtered_property_holders = boost::copy_range<std::set<web::json::value>>(nmos::fields::nc::values(object_properties_holder)
             | boost::adaptors::filtered([&property_id](const web::json::value& property_holder)
                 {
-                    return property_id == nmos::details::parse_nc_property_id(nmos::fields::nc::id(property_holder));
+                    return property_id == nc::details::parse_nc_property_id(nmos::fields::nc::id(property_holder));
                 })
         );
         // There should only be a single property holder for the members
@@ -620,7 +620,7 @@ namespace nmos
     bool is_block_modified(const nmos::resource& resource, const web::json::value& object_properties_holder)
     {
         // Are they blocks?
-        nmos::nc_class_id class_id = nmos::details::parse_nc_class_id(nmos::fields::nc::class_id(resource.data));
+        nmos::nc_class_id class_id = nc::details::parse_nc_class_id(nmos::fields::nc::class_id(resource.data));
         if (!nmos::nc::is_block(class_id))
         {
             return false;
@@ -628,7 +628,7 @@ namespace nmos
         const auto& block_members_properties_holders = boost::copy_range<std::set<web::json::value>>(nmos::fields::nc::values(object_properties_holder)
             | boost::adaptors::filtered([](const web::json::value& property_holder)
                 {
-                    return nmos::nc_block_members_property_id == nmos::details::parse_nc_property_id(nmos::fields::nc::id(property_holder));
+                    return nmos::nc_block_members_property_id == nc::details::parse_nc_property_id(nmos::fields::nc::id(property_holder));
                 })
         );
         // There should only be a single property holder for the members
@@ -744,7 +744,7 @@ namespace nmos
 
             const auto& object_properties_holder = object_properties_holder_map.at(role_path);
 
-            const auto& class_id = nmos::details::parse_nc_class_id(nmos::fields::nc::class_id(r->data));
+            const auto& class_id = nc::details::parse_nc_class_id(nmos::fields::nc::class_id(r->data));
 
             if (nmos::nc::is_block(class_id) && nmos::fields::nc::is_rebuildable(r->data) && restore_mode == nmos::nc_restore_mode::rebuild && is_block_modified(*r, object_properties_holder))
             {
