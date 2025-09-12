@@ -139,8 +139,10 @@ The implementation is designed to be extended. Development is ongoing, following
 
 Recent activity on the project (newest first):
 
-- Added support for the IS-14 NMOS Device Configuration
-- Added support for the IS-12 NMOS Control Protocol
+- Added support for IS-14 NMOS Device Configuration
+- Added support for BCP-008-01 Receiver Status Monitoring
+- Added support for BCP-008-02 Sender Status Monitoring
+- Added support for IS-12 NMOS Control Protocol
 - Update to Conan 2; Conan 1.X is no longer supported
 - Added support for IS-10 Authorization
 - Added support for HSTS and OCSP stapling
