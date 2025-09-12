@@ -114,7 +114,7 @@ BST_TEST_CASE(testRemoveSequenceItem)
 
         auto resource = nmos::find_resource(resources, receivers_id);
         BST_CHECK_NE(resources.end(), resource);
-        auto result = nmos::remove_sequence_item(resources, *resource, arguments, false, get_control_protocol_class_descriptor, property_changed, gate);
+        auto result = nmos::nc::remove_sequence_item(resources, *resource, arguments, false, get_control_protocol_class_descriptor, property_changed, gate);
 
         // Expect read only error, and for property changed not to be called
         BST_CHECK_EQUAL(false, property_changed_called);
@@ -137,7 +137,7 @@ BST_TEST_CASE(testRemoveSequenceItem)
 
         auto resource = nmos::find_resource(resources, writable_sequence_id);
         BST_CHECK_NE(resources.end(), resource);
-        auto result = nmos::remove_sequence_item(resources, *resource, arguments, false, get_control_protocol_class_descriptor, property_changed, gate);
+        auto result = nmos::nc::remove_sequence_item(resources, *resource, arguments, false, get_control_protocol_class_descriptor, property_changed, gate);
 
         // Expect success, and property changed event
         BST_CHECK_EQUAL(true, property_changed_called);

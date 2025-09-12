@@ -477,7 +477,7 @@ namespace nmos
                                 { nmos::fields::nc::id, details::make_nc_property_id(details::parse_formatted_property_id(property_id))},
                         });
 
-                    auto result = get(*resource, arguments, false, get_control_protocol_class_descriptor, gate_);
+                    auto result = nc::get(*resource, arguments, false, get_control_protocol_class_descriptor, gate_);
                     auto status = nmos::fields::nc::status(result);
                     auto code = (nc_method_status::ok == status || nc_method_status::property_deprecated == status) ? status_codes::OK : status_codes::InternalError;
                     set_reply(res, code, result);
@@ -605,7 +605,7 @@ namespace nmos
                                     { nmos::fields::nc::value, nmos::fields::nc::value(body)}
                                     });
 
-                                auto result = set(resources, *resource, arguments, false, get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor, property_changed, gate);
+                                auto result = nc::set(resources, *resource, arguments, false, get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor, property_changed, gate);
 
                                 auto status = nmos::fields::nc::status(result);
                                 auto code = (nc_method_status::ok == status || nc_method_status::property_deprecated == status) ? status_codes::OK : status_codes::InternalError;

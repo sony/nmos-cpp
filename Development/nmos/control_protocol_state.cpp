@@ -93,91 +93,91 @@ namespace nmos
             {
                 return [get_control_protocol_class_descriptor](nmos::resources&, const nmos::resource& resource, const web::json::value& arguments, bool is_deprecated, slog::base_gate& gate)
                 {
-                    return get(resource, arguments, is_deprecated, get_control_protocol_class_descriptor, gate);
+                    return nc::get(resource, arguments, is_deprecated, get_control_protocol_class_descriptor, gate);
                 };
             }
             nmos::experimental::control_protocol_method_handler make_nc_set_handler(get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor_handler get_control_protocol_datatype_descriptor, control_protocol_property_changed_handler property_changed)
             {
                 return [get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor, property_changed](nmos::resources& resources, const nmos::resource& resource, const web::json::value& arguments, bool is_deprecated, slog::base_gate& gate)
                 {
-                    return set(resources, resource, arguments, is_deprecated, get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor, property_changed, gate);
+                    return nc::set(resources, resource, arguments, is_deprecated, get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor, property_changed, gate);
                 };
             }
             nmos::experimental::control_protocol_method_handler make_nc_get_sequence_item_handler(get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor)
             {
                 return [get_control_protocol_class_descriptor](nmos::resources&, const nmos::resource& resource, const web::json::value& arguments, bool is_deprecated, slog::base_gate& gate)
                 {
-                    return get_sequence_item(resource, arguments, is_deprecated, get_control_protocol_class_descriptor, gate);
+                    return nc::get_sequence_item(resource, arguments, is_deprecated, get_control_protocol_class_descriptor, gate);
                 };
             }
             nmos::experimental::control_protocol_method_handler make_nc_set_sequence_item_handler(get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor_handler get_control_protocol_datatype_descriptor, control_protocol_property_changed_handler property_changed)
             {
                 return [get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor, property_changed](nmos::resources& resources, const nmos::resource& resource, const web::json::value& arguments, bool is_deprecated, slog::base_gate& gate)
                 {
-                    return set_sequence_item(resources, resource, arguments, is_deprecated, get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor, property_changed, gate);
+                    return nc::set_sequence_item(resources, resource, arguments, is_deprecated, get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor, property_changed, gate);
                 };
             }
             nmos::experimental::control_protocol_method_handler make_nc_add_sequence_item_handler(get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor_handler get_control_protocol_datatype_descriptor, control_protocol_property_changed_handler property_changed)
             {
                 return [get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor, property_changed](nmos::resources& resources, const nmos::resource& resource, const web::json::value& arguments, bool is_deprecated, slog::base_gate& gate)
                 {
-                    return add_sequence_item(resources, resource, arguments, is_deprecated, get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor, property_changed, gate);
+                    return nc::add_sequence_item(resources, resource, arguments, is_deprecated, get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor, property_changed, gate);
                 };
             }
             nmos::experimental::control_protocol_method_handler make_nc_remove_sequence_item_handler(get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, control_protocol_property_changed_handler property_changed)
             {
                 return [get_control_protocol_class_descriptor, property_changed](nmos::resources& resources, const nmos::resource& resource, const web::json::value& arguments, bool is_deprecated, slog::base_gate& gate)
                 {
-                    return remove_sequence_item(resources, resource, arguments, is_deprecated, get_control_protocol_class_descriptor, property_changed, gate);
+                    return nc::remove_sequence_item(resources, resource, arguments, is_deprecated, get_control_protocol_class_descriptor, property_changed, gate);
                 };
             }
             nmos::experimental::control_protocol_method_handler make_nc_get_sequence_length_handler(get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor)
             {
                 return [get_control_protocol_class_descriptor](nmos::resources&, const nmos::resource& resource, const web::json::value& arguments, bool is_deprecated, slog::base_gate& gate)
                 {
-                    return get_sequence_length(resource, arguments, is_deprecated, get_control_protocol_class_descriptor, gate);
+                    return nc::get_sequence_length(resource, arguments, is_deprecated, get_control_protocol_class_descriptor, gate);
                 };
             }
             nmos::experimental::control_protocol_method_handler make_nc_get_member_descriptors_handler()
             {
                 return [](nmos::resources& resources, const nmos::resource& resource, const web::json::value& arguments, bool is_deprecated, slog::base_gate& gate)
                 {
-                    return get_member_descriptors(resources, resource, arguments, is_deprecated, gate);
+                    return nc::get_member_descriptors(resources, resource, arguments, is_deprecated, gate);
                 };
             }
             nmos::experimental::control_protocol_method_handler make_nc_find_members_by_path_handler()
             {
                 return [](nmos::resources& resources, const nmos::resource& resource, const web::json::value& arguments, bool is_deprecated, slog::base_gate& gate)
                 {
-                    return find_members_by_path(resources, resource, arguments, is_deprecated, gate);
+                    return nc::find_members_by_path(resources, resource, arguments, is_deprecated, gate);
                 };
             }
             nmos::experimental::control_protocol_method_handler make_nc_find_members_by_role_handler()
             {
                 return [](nmos::resources& resources, const nmos::resource& resource, const web::json::value& arguments, bool is_deprecated, slog::base_gate& gate)
                 {
-                    return find_members_by_role(resources, resource, arguments, is_deprecated, gate);
+                    return nc::find_members_by_role(resources, resource, arguments, is_deprecated, gate);
                 };
             }
             nmos::experimental::control_protocol_method_handler make_nc_find_members_by_class_id_handler()
             {
                 return [](nmos::resources& resources, const nmos::resource& resource, const web::json::value& arguments, bool is_deprecated, slog::base_gate& gate)
                 {
-                    return find_members_by_class_id(resources, resource, arguments, is_deprecated, gate);
+                    return nc::find_members_by_class_id(resources, resource, arguments, is_deprecated, gate);
                 };
             }
             nmos::experimental::control_protocol_method_handler make_nc_get_control_class_handler(get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor)
             {
                 return [get_control_protocol_class_descriptor](nmos::resources&, const nmos::resource&, const web::json::value& arguments, bool is_deprecated, slog::base_gate& gate)
                 {
-                    return get_control_class(arguments, is_deprecated, get_control_protocol_class_descriptor, gate);
+                    return nc::get_control_class(arguments, is_deprecated, get_control_protocol_class_descriptor, gate);
                 };
             }
             nmos::experimental::control_protocol_method_handler make_nc_get_datatype_handler(get_control_protocol_datatype_descriptor_handler get_control_protocol_datatype_descriptor)
             {
                 return [get_control_protocol_datatype_descriptor](nmos::resources&, const nmos::resource&, const web::json::value& arguments, bool is_deprecated, slog::base_gate& gate)
                 {
-                    return get_datatype(arguments, is_deprecated, get_control_protocol_datatype_descriptor, gate);
+                    return nc::get_datatype(arguments, is_deprecated, get_control_protocol_datatype_descriptor, gate);
                 };
             }
             nmos::experimental::control_protocol_method_handler make_nc_get_properties_by_path_handler(get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor_handler get_control_protocol_datatype_descriptor, create_validation_fingerprint_handler create_validation_fingerprint)
@@ -248,21 +248,21 @@ namespace nmos
             {
                 return [get_lost_packet_counters](nmos::resources& resources, const nmos::resource& resource, const web::json::value& arguments, bool is_deprecated, slog::base_gate& gate)
                 {
-                    return nmos::get_lost_packet_counters(resources, resource, arguments, is_deprecated, get_lost_packet_counters, gate);
+                    return nc::get_lost_packet_counters(resources, resource, arguments, is_deprecated, get_lost_packet_counters, gate);
                 };
             }
             nmos::experimental::control_protocol_method_handler make_nc_get_late_packet_counters_handler(get_packet_counters_handler get_late_packet_counters)
             {
                 return [get_late_packet_counters](nmos::resources& resources, const nmos::resource& resource, const web::json::value& arguments, bool is_deprecated, slog::base_gate& gate)
                 {
-                    return nmos::get_late_packet_counters(resources, resource, arguments, is_deprecated, get_late_packet_counters, gate);
+                    return nc::get_late_packet_counters(resources, resource, arguments, is_deprecated, get_late_packet_counters, gate);
                 };
             }
             nmos::experimental::control_protocol_method_handler make_nc_reset_monitor_handler(get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, control_protocol_property_changed_handler property_changed, reset_monitor_handler reset_monitor)
             {
                 return [get_control_protocol_class_descriptor, property_changed, reset_monitor](nmos::resources& resources, const nmos::resource& resource, const web::json::value& arguments, bool is_deprecated, slog::base_gate& gate)
                 {
-                    return nmos::reset_monitor(resources, resource, arguments, is_deprecated, get_control_protocol_class_descriptor, property_changed, reset_monitor, gate);
+                    return nc::reset_monitor(resources, resource, arguments, is_deprecated, get_control_protocol_class_descriptor, property_changed, reset_monitor, gate);
                 };
             }
         }
