@@ -302,7 +302,7 @@ namespace nmos
                                         nc_method_result = nc::details::make_method_result_error({ nc_method_status::bad_oid }, ss.str());
                                     }
                                     // accumulating up response
-                                    auto response = nc::make_control_protocol_response(handle, nc_method_result);
+                                    auto response = nc::make_response(handle, nc_method_result);
 
                                     web::json::push_back(responses, response);
                                 }
@@ -310,7 +310,7 @@ namespace nmos
                                 // add command_response to the grain ready to transfer to the client in nmos::send_control_protocol_ws_messages_thread
                                 resources.modify(grain, [&](nmos::resource& grain)
                                 {
-                                    web::json::push_back(nmos::fields::message_grain_data(grain.data), nc::make_control_protocol_command_response(responses));
+                                    web::json::push_back(nmos::fields::message_grain_data(grain.data), nc::make_command_response(responses));
 
                                     grain.updated = strictly_increasing_update(resources);
                                 });
@@ -347,7 +347,7 @@ namespace nmos
                                 // add subscription_response to the grain ready to transfer to the client in nmos::send_control_protocol_ws_messages_thread
                                 resources.modify(grain, [&](nmos::resource& grain)
                                 {
-                                    web::json::push_back(nmos::fields::message_grain_data(grain.data), nc::make_control_protocol_subscription_response(valid_subscriptions));
+                                    web::json::push_back(nmos::fields::message_grain_data(grain.data), nc::make_subscription_response(valid_subscriptions));
 
                                     grain.updated = strictly_increasing_update(resources);
                                 });
@@ -369,7 +369,7 @@ namespace nmos
                             resources.modify(grain, [&](nmos::resource& grain)
                             {
                                 web::json::push_back(nmos::fields::message_grain_data(grain.data),
-                                    nc::make_control_protocol_error_message({ nc_method_status::bad_command_format }, utility::s2us(e.what())));
+                                    nc::make_error_message({ nc_method_status::bad_command_format }, utility::s2us(e.what())));
 
                                 grain.updated = strictly_increasing_update(resources);
                             });
@@ -381,7 +381,7 @@ namespace nmos
                             resources.modify(grain, [&](nmos::resource& grain)
                             {
                                 web::json::push_back(nmos::fields::message_grain_data(grain.data),
-                                    nc::make_control_protocol_error_message({ nc_method_status::bad_command_format }, utility::s2us(std::string("Unexpected exception while handing control protocol command : ") + e.what())));
+                                    nc::make_error_message({ nc_method_status::bad_command_format }, utility::s2us(std::string("Unexpected exception while handing control protocol command : ") + e.what())));
 
                                 grain.updated = strictly_increasing_update(resources);
                             });
@@ -393,7 +393,7 @@ namespace nmos
                             resources.modify(grain, [&](nmos::resource& grain)
                             {
                                 web::json::push_back(nmos::fields::message_grain_data(grain.data),
-                                    nc::make_control_protocol_error_message({ nc_method_status::bad_command_format }, U("Unexpected unknown exception while handing control protocol command")));
+                                    nc::make_error_message({ nc_method_status::bad_command_format }, U("Unexpected unknown exception while handing control protocol command")));
 
                                 grain.updated = strictly_increasing_update(resources);
                             });

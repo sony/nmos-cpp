@@ -724,7 +724,7 @@ namespace nmos
                             const auto& found = find_resource(resources, utility::s2us(std::to_string(oid)));
                             if (resources.end() != found)
                             {
-                                get_member_descriptors(resources, *found, recurse, descriptors);
+                                nc::get_member_descriptors(resources, *found, recurse, descriptors);
                             }
                         }
                     }
@@ -778,7 +778,7 @@ namespace nmos
                             const auto& found = find_resource(resources, utility::s2us(std::to_string(oid)));
                             if (resources.end() != found)
                             {
-                                find_members_by_role(resources, *found, role, match_whole_string, case_sensitive, recurse, descriptors);
+                                nc::find_members_by_role(resources, *found, role, match_whole_string, case_sensitive, recurse, descriptors);
                             }
                         }
                     }
@@ -826,7 +826,7 @@ namespace nmos
                             const auto& found = find_resource(resources, utility::s2us(std::to_string(oid)));
                             if (resources.end() != found)
                             {
-                                find_members_by_class_id(resources, *found, class_id_, include_derived, recurse, descriptors);
+                                nc::find_members_by_class_id(resources, *found, class_id_, include_derived, recurse, descriptors);
                             }
                         }
                     }
@@ -923,7 +923,7 @@ namespace nmos
             if (web::json::value::null() != notification_event && result)
             {
                 auto& modified = *found;
-                insert_notification_events(resources, modified.version, modified.downgrade_version, modified.type, pre, modified.data, notification_event);
+                nc::insert_notification_events(resources, modified.version, modified.downgrade_version, modified.type, pre, modified.data, notification_event);
             }
 
             if (modifier_exception)

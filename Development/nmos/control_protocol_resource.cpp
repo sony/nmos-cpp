@@ -1004,7 +1004,7 @@ namespace nmos
 
         // command message response
         // See https://specs.amwa.tv/is-12/branches/v1.0.x/docs/Protocol_messaging.html#command-response-message-type
-        web::json::value make_control_protocol_response(int32_t handle, const web::json::value& method_result)
+        web::json::value make_response(int32_t handle, const web::json::value& method_result)
         {
             using web::json::value_of;
 
@@ -1013,7 +1013,7 @@ namespace nmos
                 { nmos::fields::nc::result, method_result }
             });
         }
-        web::json::value make_control_protocol_command_response(const web::json::value& responses)
+        web::json::value make_command_response(const web::json::value& responses)
         {
             using web::json::value_of;
 
@@ -1025,7 +1025,7 @@ namespace nmos
 
         // subscription response
         // See https://specs.amwa.tv/is-12/branches/v1.0.x/docs/Protocol_messaging.html#subscription-response-message-type
-        web::json::value make_control_protocol_subscription_response(const web::json::value& subscriptions)
+        web::json::value make_subscription_response(const web::json::value& subscriptions)
         {
             using web::json::value_of;
 
@@ -1038,7 +1038,7 @@ namespace nmos
         // notification
         // See https://specs.amwa.tv/ms-05-01/branches/v1.0.x/docs/Core_Mechanisms.html#notification-messages
         // See https://specs.amwa.tv/is-12/branches/v1.0.x/docs/Protocol_messaging.html#notification-message-type
-        web::json::value make_control_protocol_notification(nc_oid oid, const nc_event_id& event_id, const nc_property_changed_event_data& property_changed_event_data)
+        web::json::value make_notification(nc_oid oid, const nc_event_id& event_id, const nc_property_changed_event_data& property_changed_event_data)
         {
             using web::json::value_of;
 
@@ -1048,7 +1048,7 @@ namespace nmos
                 { nmos::fields::nc::event_data, details::make_property_changed_event_data(property_changed_event_data) }
             });
         }
-        web::json::value make_control_protocol_notification_message(const web::json::value& notifications)
+        web::json::value make_notification_message(const web::json::value& notifications)
         {
             using web::json::value_of;
 
@@ -1068,14 +1068,14 @@ namespace nmos
             auto notifications = value::array();
             for (auto& property_changed_event_data : property_changed_event_data_list)
             {
-                web::json::push_back(notifications, make_control_protocol_notification(oid, nc_object_property_changed_event_id, property_changed_event_data));
+                web::json::push_back(notifications, make_notification(oid, nc_object_property_changed_event_id, property_changed_event_data));
             }
-            return make_control_protocol_notification_message(notifications);
+            return make_notification_message(notifications);
         }
 
         // error message
         // See https://specs.amwa.tv/is-12/branches/v1.0.x/docs/Protocol_messaging.html#error-messages
-        web::json::value make_control_protocol_error_message(const nc_method_result& method_result, const utility::string_t& error_message)
+        web::json::value make_error_message(const nc_method_result& method_result, const utility::string_t& error_message)
         {
             using web::json::value_of;
 

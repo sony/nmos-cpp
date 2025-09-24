@@ -224,18 +224,18 @@ namespace nmos
 
         // command message response
         // See https://specs.amwa.tv/is-12/branches/v1.0.x/docs/Protocol_messaging.html#command-response-message-type
-        web::json::value make_control_protocol_response(int32_t handle, const web::json::value& method_result);
-        web::json::value make_control_protocol_command_response(const web::json::value& responses);
+        web::json::value make_response(int32_t handle, const web::json::value& method_result);
+        web::json::value make_command_response(const web::json::value& responses);
 
         // subscription response
         // See https://specs.amwa.tv/is-12/branches/v1.0.x/docs/Protocol_messaging.html#subscription-response-message-type
-        web::json::value make_control_protocol_subscription_response(const web::json::value& subscriptions);
+        web::json::value make_subscription_response(const web::json::value& subscriptions);
 
         // notification
         // See https://specs.amwa.tv/ms-05-01/branches/v1.0.x/docs/Core_Mechanisms.html#notification-messages
         // See https://specs.amwa.tv/is-12/branches/v1.0.x/docs/Protocol_messaging.html#notification-message-type
-        web::json::value make_control_protocol_notification(nc_oid oid, const nc_event_id& event_id, const nc_property_changed_event_data& property_changed_event_data);
-        web::json::value make_control_protocol_notification_message(const web::json::value& notifications);
+        web::json::value make_notification(nc_oid oid, const nc_event_id& event_id, const nc_property_changed_event_data& property_changed_event_data);
+        web::json::value make_notification_message(const web::json::value& notifications);
 
         // property changed notification event
         // See https://specs.amwa.tv/ms-05-01/branches/v1.0.x/docs/Core_Mechanisms.html#the-propertychanged-event
@@ -244,7 +244,7 @@ namespace nmos
 
         // error message
         // See https://specs.amwa.tv/is-12/branches/v1.0.x/docs/Protocol_messaging.html#error-messages
-        web::json::value make_control_protocol_error_message(const nc_method_result& method_result, const utility::string_t& error_message);
+        web::json::value make_error_message(const nc_method_result& method_result, const utility::string_t& error_message);
 
         // Control class models
         // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/models/classes/#control-class-models-for-branch-v10-dev
@@ -503,5 +503,189 @@ namespace nmos
         // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/device-configuration/#ncmethodresultobjectpropertiessetvalidation
         web::json::value make_method_result_object_properties_set_validation_datatype();
     }
+
+    namespace details
+    {
+        // Deprecated : use nc::details::make_method_result
+        inline web::json::value make_nc_method_result(const nc_method_result& method_result) { return nc::details::make_method_result(method_result); };
+        inline web::json::value make_nc_method_result_error(const nc_method_result& method_result, const utility::string_t& error_message) { return nc::details::make_method_result_error(method_result, error_message); };
+        inline web::json::value make_nc_method_result(const nc_method_result& method_result, const web::json::value& value) { return nc::details::make_method_result(method_result, value); };
+
+        // Deprecated: use nc::details::make use nc::details::make_element_id
+        inline web::json::value make_nc_element_id(const nc_element_id& element_id) { return nc::details::make_element_id(element_id); };
+        // Deprecated: use nc::details::make use nc::details::parse_element_id
+        inline nc_element_id parse_nc_element_id(const web::json::value& element_id) { return nc::details::parse_element_id(element_id); };
+
+        // Deprecated: use nc::details::make use nc::details::make_event_id
+        inline web::json::value make_nc_event_id(const nc_event_id& event_id) { return nc::details::make_event_id(event_id);  };
+        // Deprecated use nc::details::parse_event_id
+        inline nc_event_id parse_nc_event_id(const web::json::value& event_id) { return nc::details::parse_event_id(event_id);  };
+
+        // Deprecated: use nc::details::make use nc::details::make_method_id
+        inline web::json::value make_nc_method_id(const nc_method_id& method_id) { return nc::details::make_method_id(method_id); };
+        // Deprecated: use nc::details::parse_method_id
+        inline nc_method_id parse_nc_method_id(const web::json::value& method_id) { return nc::details::parse_method_id(method_id); };
+
+        // Deprecated: use nc::details::make_property_id
+        inline web::json::value make_nc_property_id(const nc_property_id& property_id) { return nc::details::make_property_id(property_id); };
+        // Deprecated: use nc::details::parse_property_id
+        inline nc_property_id parse_nc_property_id(const web::json::value& property_id) { return nc::details::parse_property_id(property_id); };
+
+        // Deprecated: use nc::details::make_class_id
+        inline web::json::value make_nc_class_id(const nc_class_id& class_id) { return nc::details::make_class_id(class_id);  };
+        // Deprecated: use nc::details::make
+        inline nc_class_id parse_nc_class_id(const web::json::array& class_id) { return nc::details::parse_class_id(class_id); };
+
+        // Deprecated: use nc::details::make_manufacturer
+        inline web::json::value make_nc_manufacturer(const utility::string_t& name, nc_organization_id organization_id, const web::uri& website) { return nc::details::make_manufacturer(name, organization_id, website);  };
+        inline web::json::value make_nc_manufacturer(const utility::string_t& name, nc_organization_id organization_id) { return nc::details::make_manufacturer(name, organization_id);  };
+        inline web::json::value make_nc_manufacturer(const utility::string_t& name) { return nc::details::make_manufacturer(name);  };
+
+        // Deprecated: use nc::details::make_product
+        inline web::json::value make_nc_product(const utility::string_t& name, const utility::string_t& key, const utility::string_t& revision_level,
+            const utility::string_t& brand_name, const nc_uuid& uuid, const utility::string_t& description) { return nc::details::make_product(name, key, revision_level, brand_name, uuid, description); };
+        inline web::json::value make_nc_product(const utility::string_t& name, const utility::string_t& key, const utility::string_t& revision_level,
+            const utility::string_t& brand_name, const nc_uuid& uuid) { return nc::details::make_product(name, key, revision_level, brand_name, uuid); };
+        inline web::json::value make_nc_product(const utility::string_t& name, const utility::string_t& key, const utility::string_t& revision_level,
+            const utility::string_t& brand_name)  { return nc::details::make_product(name, key, revision_level, brand_name); };
+        inline web::json::value make_nc_product(const utility::string_t& name, const utility::string_t& key, const utility::string_t& revision_level) { return nc::details::make_product(name, key, revision_level); };
+
+        // Deprecated: use nc::details::make_device_operational_state
+        inline web::json::value make_nc_device_operational_state(nc_device_generic_state::state generic_state, const web::json::value& device_specific_details) { return nc::details::make_device_operational_state(generic_state, device_specific_details); };
+
+        // Deprecated: use nc::details::make_block_member_descriptor
+        inline web::json::value make_nc_block_member_descriptor(const utility::string_t& description, const utility::string_t& role, nc_oid oid, bool constant_oid, const nc_class_id& class_id, const utility::string_t& user_label, nc_oid owner) { return nc::details::make_block_member_descriptor(description, role, oid, constant_oid, class_id, user_label, owner); };
+
+        // Deprecated: use nc::details::make_class_descriptor
+        inline web::json::value make_nc_class_descriptor(const utility::string_t& description, const nc_class_id& class_id, const nc_name& name, const utility::string_t& fixed_role, const web::json::value& properties, const web::json::value& methods, const web::json::value& events) { return nc::details::make_class_descriptor(description, class_id, name, fixed_role, properties, methods, events); };
+        inline web::json::value make_nc_class_descriptor(const utility::string_t& description, const nc_class_id& class_id, const nc_name& name, const web::json::value& properties, const web::json::value& methods, const web::json::value& events) { return nc::details::make_class_descriptor(description, class_id, name, properties, methods, events); };
+
+        // Deprecated: use nc::details::make_enum_item_descriptor
+        inline web::json::value make_nc_enum_item_descriptor(const utility::string_t& description, const nc_name& name, uint16_t val) { return nc::details::make_enum_item_descriptor(description, name, val); };
+
+        // Deprecated: use nc::details::make_event_descriptor
+        inline web::json::value make_nc_event_descriptor(const utility::string_t& description, const nc_event_id& id, const nc_name& name, const utility::string_t& event_datatype, bool is_deprecated) { return nc::details::make_event_descriptor(description, id, name, event_datatype, is_deprecated); };
+
+        // Deprecated: use nc::details::make_field_descriptor
+        inline web::json::value make_nc_field_descriptor(const utility::string_t& description, const nc_name& name, const utility::string_t& type_name, bool is_nullable, bool is_sequence, const web::json::value& constraints) { return nc::details::make_field_descriptor(description, name, type_name, is_nullable, is_sequence, constraints); };
+        inline web::json::value make_nc_field_descriptor(const utility::string_t& description, const nc_name& name, bool is_nullable, bool is_sequence, const web::json::value& constraints) { return nc::details::make_field_descriptor(description, name, is_nullable, is_sequence, constraints); };
+
+        // Deprecated: use nc::details::make_method_descriptor
+        inline web::json::value make_nc_method_descriptor(const utility::string_t& description, const nc_method_id& id, const nc_name& name, const utility::string_t& result_datatype, const web::json::value& parameters, bool is_deprecated) { return nc::details::make_method_descriptor(description, id, name, result_datatype, parameters, is_deprecated);  };
+
+        // Deprecated: use nc::details::make_parameter_descriptor
+        inline web::json::value make_nc_parameter_descriptor(const utility::string_t& description, const nc_name& name, bool is_nullable, bool is_sequence, const web::json::value& constraints) { return nc::details::make_parameter_descriptor(description, name, is_nullable, is_sequence, constraints); };
+        inline web::json::value make_nc_parameter_descriptor(const utility::string_t& description, const nc_name& name, const utility::string_t& type_name, bool is_nullable, bool is_sequence, const web::json::value& constraints) { return nc::details::make_parameter_descriptor(description, name, type_name, is_nullable, is_sequence, constraints); };
+
+        // Deprecated: use nc::details::make_property_descriptor
+        inline web::json::value make_nc_property_descriptor(const utility::string_t& description, const nc_property_id& id, const nc_name& name, const utility::string_t& type_name,
+            bool is_read_only, bool is_nullable, bool is_sequence, bool is_deprecated, const web::json::value& constraints) { return nc::details::make_property_descriptor(description, id, name, type_name, is_read_only, is_nullable, is_sequence, is_deprecated, constraints); };
+
+        // Deprecated: use nc::details::make_datatype_descriptor_enum
+        inline web::json::value make_nc_datatype_descriptor_enum(const utility::string_t& description, const nc_name& name, const web::json::value& items, const web::json::value& constraints) { return nc::details::make_datatype_descriptor_enum(description, name, items, constraints); };
+
+        // Deprecated: use nc::details::make_datatype_descriptor_primitive
+        inline web::json::value make_nc_datatype_descriptor_primitive(const utility::string_t& description, const nc_name& name, const web::json::value& constraints) { return nc::details::make_datatype_descriptor_primitive(description, name, constraints); };
+
+        // Deprecated: use nc::details::make_datatype_descriptor_struct
+        inline web::json::value make_nc_datatype_descriptor_struct(const utility::string_t& description, const nc_name& name, const web::json::value& fields, const utility::string_t& parent_type, const web::json::value& constraints) { return nc::details::make_datatype_descriptor_struct(description, name, fields, parent_type, constraints); };
+        inline web::json::value make_nc_datatype_descriptor_struct(const utility::string_t& description, const nc_name& name, const web::json::value& fields, const web::json::value& constraints) { return nc::details::make_datatype_descriptor_struct(description, name, fields, constraints); };
+
+        // Deprecated: use nc::details::make_datatype_typedef
+        inline web::json::value make_nc_datatype_typedef(const utility::string_t& description, const nc_name& name, bool is_sequence, const utility::string_t& parent_type, const web::json::value& constraints) { return nc::details::make_datatype_typedef(description, name, is_sequence, parent_type, constraints); };
+
+        // Deprecated: use nc::details::make_property_constraints
+        inline web::json::value make_nc_property_constraints(const nc_property_id& property_id, const web::json::value& default_value) { return nc::details::make_property_constraints(property_id, default_value); };
+
+        // Deprecated: use nc::details::make_property_constraints_number
+        inline web::json::value make_nc_property_constraints_number(const nc_property_id& property_id, uint64_t default_value, uint64_t minimum, uint64_t maximum, uint64_t step) { return nc::details::make_property_constraints_number(property_id, default_value, minimum, maximum, step); };
+        inline web::json::value make_nc_property_constraints_number(const nc_property_id& property_id, uint64_t minimum, uint64_t maximum, uint64_t step) { return nc::details::make_property_constraints_number(property_id, minimum, maximum, step); };
+
+        // Deprecated: use nc::details::make_property_constraints_string
+        inline web::json::value make_nc_property_constraints_string(const nc_property_id& property_id, const utility::string_t& default_value, uint32_t max_characters, const nc_regex& pattern) { return nc::details::make_property_constraints_string(property_id, default_value, max_characters, pattern); };
+        inline web::json::value make_nc_property_constraints_string(const nc_property_id& property_id, uint32_t max_characters, const nc_regex& pattern) { return nc::details::make_property_constraints_string(property_id, max_characters, pattern); };
+        inline web::json::value make_nc_property_constraints_string(const nc_property_id& property_id, uint32_t max_characters) { return nc::details::make_property_constraints_string(property_id, max_characters); };
+        inline web::json::value make_nc_property_constraints_string(const nc_property_id& property_id, const nc_regex& pattern) { return nc::details::make_property_constraints_string(property_id, pattern); };
+
+        // Deprecated: use nc::details::make_parameter_constraints
+        inline web::json::value make_nc_parameter_constraints(const web::json::value& default_value) { return nc::details::make_parameter_constraints(default_value); };
+
+        // Deprecated: use nc::details::make_parameter_constraints_number
+        inline web::json::value make_nc_parameter_constraints_number(uint64_t default_value, uint64_t minimum, uint64_t maximum, uint64_t step) { return nc::details::make_parameter_constraints_number(default_value, minimum, maximum, step); };
+        inline web::json::value make_nc_parameter_constraints_number(uint64_t minimum, uint64_t maximum, uint64_t step) { return nc::details::make_parameter_constraints_number(minimum, maximum, step); };
+
+        // Deprecated: use nc::details::make_parameter_constraints_string
+        inline web::json::value make_nc_parameter_constraints_string(const utility::string_t& default_value, uint32_t max_characters, const nc_regex& pattern) { return nc::details::make_parameter_constraints_string(default_value, max_characters, pattern); };
+        inline web::json::value make_nc_parameter_constraints_string(uint32_t max_characters, const nc_regex& pattern) { return nc::details::make_parameter_constraints_string(max_characters, pattern); };
+        inline web::json::value make_nc_parameter_constraints_string(uint32_t max_characters) { return nc::details::make_parameter_constraints_string(max_characters); };
+        inline web::json::value make_nc_parameter_constraints_string(const nc_regex& pattern) { return nc::details::make_parameter_constraints_string(pattern); };
+
+        // Deprecated: use nc::details::make_touchpoint
+        inline web::json::value make_nc_touchpoint(const utility::string_t& context_namespace) { return nc::details::make_touchpoint(context_namespace); };
+
+        // Deprecated: use nc::details::make_touchpoint_nmos
+        inline web::json::value make_nc_touchpoint_nmos(const nc_touchpoint_resource_nmos& resource) { return nc::details::make_touchpoint_nmos(resource); };
+
+        // Deprecated: use nc::details::make_touchpoint_nmos_channel_mapping
+        inline web::json::value make_nc_touchpoint_nmos_channel_mapping(const nc_touchpoint_resource_nmos_channel_mapping& resource) { return nc::details::make_touchpoint_nmos_channel_mapping(resource); };
+
+        // Deprecated: use nc::details::make_object
+        inline web::json::value make_nc_object(const nc_class_id& class_id, nc_oid oid, bool constant_oid, const web::json::value& owner, const utility::string_t& role, const web::json::value& user_label, const utility::string_t& description, const web::json::value& touchpoints, const web::json::value& runtime_property_constraints) { return nc::details::make_object(class_id, oid, constant_oid, owner, role, user_label, description, touchpoints, runtime_property_constraints); };
+
+        // Deprecated: use nc::details::make_block
+        inline web::json::value make_nc_block(const nc_class_id& class_id, nc_oid oid, bool constant_oid, const web::json::value& owner, const utility::string_t& role, const web::json::value& user_label, const utility::string_t& description, const web::json::value& touchpoints, const web::json::value& runtime_property_constraints, bool enabled, const web::json::value& members) { return nc::details::make_block(class_id, oid, constant_oid, owner, role, user_label, description, touchpoints, runtime_property_constraints, enabled, members); };
+
+        // Deprecated: use nc::details::make_worker
+        inline web::json::value make_nc_worker(const nc_class_id& class_id, nc_oid oid, bool constant_oid, nc_oid owner, const utility::string_t& role, const web::json::value& user_label, const utility::string_t& description, const web::json::value& touchpoints, const web::json::value& runtime_property_constraints, bool enabled) { return nc::details::make_worker(class_id, oid, constant_oid, owner, role, user_label, description, touchpoints, runtime_property_constraints, enabled); };
+
+        // Deprecated: use nc::details::make_manager
+        inline web::json::value make_nc_manager(const nc_class_id& class_id, nc_oid oid, bool constant_oid, const web::json::value& owner, const utility::string_t& role, const web::json::value& user_label, const utility::string_t& description, const web::json::value& touchpoints, const web::json::value& runtime_property_constraints) { return nc::details::make_manager(class_id, oid, constant_oid, owner, role, user_label, description, touchpoints, runtime_property_constraints); };
+
+        // Deprecated: use nc::details::make_device_manager
+        inline web::json::value make_nc_device_manager(nc_oid oid, nc_oid owner, const web::json::value& user_label, const utility::string_t& description, const web::json::value& touchpoints, const web::json::value& runtime_property_constraints,
+            const web::json::value& manufacturer, const web::json::value& product, const utility::string_t& serial_number,
+            const web::json::value& user_inventory_code, const web::json::value& device_name, const web::json::value& device_role, const web::json::value& operational_state, nc_reset_cause::cause reset_cause) { return nc::details::make_device_manager(oid, owner, user_label, description, touchpoints, runtime_property_constraints, manufacturer, product, serial_number, user_inventory_code, device_name, device_role, operational_state, reset_cause); };
+
+        // Deprecated: use nc::details::make_class_manager
+        inline web::json::value make_nc_class_manager(nc_oid oid, nc_oid owner, const web::json::value& user_label, const utility::string_t& description, const web::json::value& touchpoints, const web::json::value& runtime_property_constraints, const nmos::experimental::control_protocol_state& control_protocol_state) { return nc::details::make_class_manager(oid, owner, user_label, description, touchpoints, runtime_property_constraints, control_protocol_state); };
+    }
+
+    // Deprecated: use nc::make_response
+    inline web::json::value make_control_protocol_response(int32_t handle, const web::json::value& method_result) { return nc::make_response(handle, method_result); };
+    // Deprecated: use nc::make_command_response
+    inline web::json::value make_control_protocol_command_response(const web::json::value& responses) { return nc::make_command_response(responses); };
+
+    // Deprecated: use nc::make_subscription_response
+    inline web::json::value make_control_protocol_subscription_response(const web::json::value& subscriptions) { return nc::make_subscription_response(subscriptions); };
+
+    // Deprecated: use nc::make_notification
+    inline web::json::value make_control_protocol_notification(nc_oid oid, const nc_event_id& event_id, const nc_property_changed_event_data& property_changed_event_data) { return nc::make_notification(oid, event_id, property_changed_event_data); };
+    // Deprecated: use nc::make_notification_message
+    inline web::json::value make_control_protocol_notification_message(const web::json::value& notifications) { return nc::make_notification_message(notifications); };
+
+    // Deprecated: use nc::make_property_changed_event
+    inline web::json::value make_property_changed_event(nc_oid oid, const std::vector<nc_property_changed_event_data>& property_changed_event_data_list) { return nc::make_property_changed_event(oid, property_changed_event_data_list); };
+
+    // Deprecated: use nc::make_error_message
+    inline web::json::value make_control_protocol_error_message(const nc_method_result& method_result, const utility::string_t& error_message) { return nc::make_error_message(method_result, error_message); };
+
+    // Deprecated: use nc::make_object_class
+    inline web::json::value make_nc_object_class() { return nc::make_object_class(); };
+    // Deprecated: use nc::make_block_class
+    inline web::json::value make_nc_block_class() { return nc::make_block_class(); };
+    // Deprecated: use nc::make_worker_class
+    inline web::json::value make_nc_worker_class() { return nc::make_worker_class(); };
+    // Deprecated: use nc::make_manager_class
+    inline web::json::value make_nc_manager_class() { return nc::make_manager_class(); };
+    // Deprecated: use nc::make_device_manager_class
+    inline web::json::value make_nc_device_manager_class() { return nc::make_device_manager_class();  };
+    // Deprecated: use nc::make_class_manager_class
+    inline web::json::value make_nc_class_manager_class() { return nc::make_class_manager_class(); };
+    // Deprecated: use nc::make_ident_beacon_class
+    inline web::json::value make_nc_ident_beacon_class() { return nc::make_ident_beacon_class(); };
+    // Deprecated: use nc::make_receiver_monitor_class
+    inline web::json::value make_nc_receiver_monitor_class() { return nc::make_receiver_monitor_class(); };
+    // Deprecated: use nc::make_sender_monitor_class
+    inline web::json::value make_nc_sender_monitor_class() { return nc::make_sender_monitor_class(); };
 }
 #endif
