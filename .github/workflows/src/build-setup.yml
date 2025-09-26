@@ -1,7 +1,7 @@
 - name: install conan
   if: matrix.use_conan == true
   run: |
-    pip install conan~=2.19.1
+    pip install conan~=2.20.1
 
 - name: 'ubuntu-14.04: install cmake'
   if: matrix.os == 'ubuntu-14.04'
