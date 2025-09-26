@@ -120,6 +120,9 @@ namespace impl
 
         // smpte2022_7: controls whether senders and receivers have one leg (false) or two legs (true, default)
         const web::json::field_as_bool_or smpte2022_7{ U("smpte2022_7"), true };
+
+        // simulate_status_monitor_activity: when true status monitor statuses will change randomly after activation
+        const web::json::field_as_bool_or simulate_status_monitor_activity{U("simulate_status_monitor_activity"), true};
     }
 
     nmos::interlace_mode get_interlace_mode(const nmos::settings& settings);
@@ -188,11 +191,19 @@ namespace impl
     const auto temperature_Celsius = nmos::event_types::measurement(U("temperature"), U("C"));
     const auto temperature_wildcard = nmos::event_types::measurement(U("temperature"), nmos::event_types::wildcard);
     const auto catcall = nmos::event_types::named_enum(nmos::event_types::number, U("caterwaul"));
+
+    // packet counters for the network interface controller
+    struct nic_packet_counter
+    {
+        nmos::nc::counter lost_packet_counter;
+        nmos::nc::counter late_packet_counter;
+    };
+    std::vector<nic_packet_counter> nic_packet_counters;
 }
 
 // forward declarations for node_implementation_thread
 void node_implementation_init(nmos::node_model& model, nmos::experimental::control_protocol_state& control_protocol_state, slog::base_gate& gate);
-void node_implementation_run(nmos::node_model& model, slog::base_gate& gate);
+void node_implementation_run(nmos::node_model& model, nmos::experimental::control_protocol_state& control_protocol_state, slog::base_gate& gate);
 nmos::connection_resource_auto_resolver make_node_implementation_auto_resolver(const nmos::settings& settings);
 nmos::connection_sender_transportfile_setter make_node_implementation_transportfile_setter(const nmos::resources& node_resources, const nmos::settings& settings);
 
@@ -208,7 +219,7 @@ void node_implementation_thread(nmos::node_model& model, nmos::experimental::con
     try
     {
         node_implementation_init(model, control_protocol_state, gate);
-        node_implementation_run(model, gate);
+        node_implementation_run(model, control_protocol_state, gate);
     }
     catch (const node_implementation_init_exception&)
     {
@@ -301,7 +312,7 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
     };
 
     // it is important that the model be locked before inserting, updating or deleting a resource
-    // and that the the node behaviour thread be notified after doing so
+    // and that the node behaviour thread be notified after doing so
     const auto insert_root_after = [&model, insert_resource_after](unsigned int milliseconds, nmos::control_protocol_resource& root, slog::base_gate& gate)
     {
         std::function<void(nmos::resources& resources, nmos::control_protocol_resource& resource)> insert_resources;
@@ -338,7 +349,7 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
     }
 
 #ifdef HAVE_LLDP
-    // LLDP manager for advertising server identity, capabilities, and discovering neighbours on a local area network
+    // LLDP manager for advertising server identity, capabilities, and discovering neighbors on a local area network
     slog::log<slog::severities::info>(gate, SLOG_FLF) << "Attempting to configure LLDP";
     auto lldp_manager = nmos::experimental::make_lldp_manager(model, interfaces, true, gate);
     // hm, open may potentially throw?
@@ -1021,7 +1032,7 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
             auto example_method_with_simple_args = [](nmos::resources& resources, const nmos::resource& resource, const web::json::value& arguments, bool is_deprecated, slog::base_gate& gate)
             {
                 // note, model mutex is already locked by the outer function, so access to control_protocol_resources is OK...
-                // and the method parameters constriants has already been validated by the outer function
+                // and the method parameters constraints have already been validated by the outer function
 
                 slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Executing the example method with simple arguments: " << arguments.serialize();
 
@@ -1030,7 +1041,7 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
             auto example_method_with_object_args = [](nmos::resources& resources, const nmos::resource& resource, const web::json::value& arguments, bool is_deprecated, slog::base_gate& gate)
             {
                 // note, model mutex is already locked by the outer function, so access to control_protocol_resources is OK...
-                // and the method parameters constriants has already been validated by the outer function
+                // and the method parameters constraints have already been validated by the outer function
 
                 slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Executing the example method with object argument: " << arguments.serialize();
 
@@ -1171,13 +1182,13 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
         };
 
         // example to create a non-standard Temperature Sensor control class
-        const auto temperature_sensor_control_class_id = nmos::make_nc_class_id(nmos::nc_worker_class_id, 0, { 3 });
-        const web::json::field_as_number temperature{ U("temperature") };
-        const web::json::field_as_string unit{ U("uint") };
+        const auto temperature_sensor_control_class_id = nmos::make_nc_class_id(nmos::nc_worker_class_id, 0, { 3 }); // hmm, maybe pull in out to impl namespace
+        const web::json::field_as_number temperature{ U("temperature") }; // hmm, maybe pull in out to impl namespace
+        const web::json::field_as_string unit{ U("uint") }; // hmm, maybe pull in out to impl namespace
         {
             // Temperature Sensor control class property descriptors
             std::vector<web::json::value> temperature_sensor_property_descriptors = {
-                nmos::experimental::make_control_class_property_descriptor(U("Temperature"), { 3, 1 }, temperature, U("NcFloat32"), true),
+                nmos::experimental::make_control_class_property_descriptor(U("Temperature"), { 3, 1 }, temperature, U("NcFloat32"), true), // hmm, maybe pull in out to impl namespace
                 nmos::experimental::make_control_class_property_descriptor(U("Unit"), { 3, 2 }, unit, U("NcString"), true)
             };
 
@@ -1263,12 +1274,32 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
                     const auto receiver_id = impl::make_id(seed_id, nmos::types::receiver, port, index);
 
                     utility::ostringstream_t role;
-                    role << U("monitor-") << ++count;
+                    role << U("receiver-monitor-") << ++count;
                     const auto& receiver = nmos::find_resource(model.node_resources, receiver_id);
                     const auto receiver_monitor = nmos::make_receiver_monitor(++oid, true, nmos::root_block_oid, role.str(), nmos::fields::label(receiver->data), nmos::fields::description(receiver->data), value_of({ { nmos::details::make_nc_touchpoint_nmos({nmos::ncp_nmos_resource_types::receiver, receiver_id}) } }));
 
                     // add receiver-monitor to root-block
                     nmos::push_back(root_block, receiver_monitor);
+                }
+            }
+        }
+
+        // example sender-monitor(s)
+        {
+            int count = 0;
+            for (int index = 0; index < how_many; ++index)
+            {
+                for (const auto& port : rtp_sender_ports)
+                {
+                    const auto sender_id = impl::make_id(seed_id, nmos::types::sender, port, index);
+
+                    utility::ostringstream_t role;
+                    role << U("sender-monitor-") << ++count;
+                    const auto& sender = nmos::find_resource(model.node_resources, sender_id);
+                    const auto sender_monitor = nmos::make_sender_monitor(++oid, true, nmos::root_block_oid, role.str(), nmos::fields::label(sender->data), nmos::fields::description(sender->data), value_of({ { nmos::details::make_nc_touchpoint_nmos({nmos::ncp_nmos_resource_types::sender, sender_id}) } }));
+
+                    // add sender-monitor to root-block
+                    nmos::push_back(root_block, sender_monitor);
                 }
             }
         }
@@ -1290,16 +1321,43 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
         // insert control protocol resources to model
         insert_root_after(delay_millis, root_block, gate);
     }
+
+    // create the list of network interface controller packet counters
+    impl::nic_packet_counters = boost::copy_range<std::vector<impl::nic_packet_counter>>(host_interfaces | boost::adaptors::transformed([](const web::hosts::experimental::host_interface& interface)
+    {
+        return impl::nic_packet_counter{
+            {interface.name, 0, U("total number of lost pockets")},
+            {interface.name, 0, U("total number of late pockets")}
+        };
+    }));
 }
 
-void node_implementation_run(nmos::node_model& model, slog::base_gate& gate)
+void node_implementation_run(nmos::node_model& model, nmos::experimental::control_protocol_state& control_protocol_state, slog::base_gate& gate)
 {
     auto lock = model.read_lock();
 
     const auto seed_id = nmos::experimental::fields::seed_id(model.settings);
     const auto how_many = impl::fields::how_many(model.settings);
     const auto sender_ports = impl::parse_ports(impl::fields::senders(model.settings));
+    const auto rtp_sender_ports = boost::copy_range<std::vector<impl::port>>(sender_ports | boost::adaptors::filtered(impl::is_rtp_port));
     const auto ws_sender_ports = boost::copy_range<std::vector<impl::port>>(sender_ports | boost::adaptors::filtered(impl::is_ws_port));
+    const auto rtp_receiver_ports = boost::copy_range<std::vector<impl::port>>(impl::parse_ports(impl::fields::receivers(model.settings)) | boost::adaptors::filtered(impl::is_rtp_port));
+    const auto simulate_status_monitor_activity = impl::fields::simulate_status_monitor_activity(model.settings);
+
+    auto& control_protocol_resources = model.control_protocol_resources;
+
+    auto get_control_protocol_property = nmos::make_get_control_protocol_property_handler(control_protocol_resources, control_protocol_state, gate);
+    auto set_receiver_monitor_link_status = nmos::make_set_receiver_monitor_link_status_handler(control_protocol_resources, control_protocol_state, gate);
+    auto set_receiver_monitor_connection_status = nmos::make_set_receiver_monitor_connection_status_handler(control_protocol_resources, control_protocol_state, gate);
+    auto set_receiver_monitor_external_synchronization_status = nmos::make_set_receiver_monitor_external_synchronization_status_handler(control_protocol_resources, control_protocol_state, gate);
+    auto set_receiver_monitor_stream_status = nmos::make_set_receiver_monitor_stream_status_handler(control_protocol_resources, control_protocol_state, gate);
+    auto set_receiver_monitor_synchronization_source_id = nmos::make_set_receiver_monitor_synchronization_source_id_handler(control_protocol_resources, control_protocol_state, gate);
+
+    auto set_sender_monitor_link_status = nmos::make_set_sender_monitor_link_status_handler(control_protocol_resources, control_protocol_state, gate);
+    auto set_sender_monitor_transmission_status = nmos::make_set_sender_monitor_transmission_status_handler(control_protocol_resources, control_protocol_state, gate);
+    auto set_sender_monitor_external_synchronization_status = nmos::make_set_sender_monitor_external_synchronization_status_handler(control_protocol_resources, control_protocol_state, gate);
+    auto set_sender_monitor_essence_status = nmos::make_set_sender_monitor_essence_status_handler(control_protocol_resources, control_protocol_state, gate);
+    auto set_sender_monitor_synchronization_source_id = nmos::make_set_sender_monitor_synchronization_source_id_handler(control_protocol_resources, control_protocol_state, gate);
 
     // start background tasks to intermittently update the state of the event sources, to cause events to be emitted to connected receivers
 
@@ -1309,10 +1367,10 @@ void node_implementation_run(nmos::node_model& model, slog::base_gate& gate)
     auto cancellation_source = pplx::cancellation_token_source();
 
     auto token = cancellation_source.get_token();
-    auto events = pplx::do_while([&model, seed_id, how_many, ws_sender_ports, events_engine, &gate, token]
+    auto events = pplx::do_while([&model, seed_id, how_many, simulate_status_monitor_activity, ws_sender_ports, rtp_receiver_ports, rtp_sender_ports, get_control_protocol_property, set_receiver_monitor_link_status, set_receiver_monitor_connection_status, set_receiver_monitor_external_synchronization_status, set_receiver_monitor_stream_status, set_receiver_monitor_synchronization_source_id, set_sender_monitor_link_status, set_sender_monitor_transmission_status, set_sender_monitor_external_synchronization_status, set_sender_monitor_essence_status, set_sender_monitor_synchronization_source_id, events_engine, &gate, token]
     {
         const auto event_interval = std::uniform_real_distribution<>(0.5, 5.0)(*events_engine);
-        return pplx::complete_after(std::chrono::milliseconds(std::chrono::milliseconds::rep(1000 * event_interval)), token).then([&model, seed_id, how_many, ws_sender_ports, events_engine, &gate]
+        return pplx::complete_after(std::chrono::milliseconds(std::chrono::milliseconds::rep(1000 * event_interval)), token).then([&model, seed_id, how_many, simulate_status_monitor_activity, ws_sender_ports, rtp_receiver_ports, rtp_sender_ports, get_control_protocol_property, set_receiver_monitor_link_status, set_receiver_monitor_connection_status, set_receiver_monitor_external_synchronization_status, set_receiver_monitor_stream_status, set_receiver_monitor_synchronization_source_id, set_sender_monitor_link_status, set_sender_monitor_transmission_status, set_sender_monitor_external_synchronization_status, set_sender_monitor_essence_status, set_sender_monitor_synchronization_source_id, events_engine, &gate]
         {
             auto lock = model.write_lock();
 
@@ -1355,8 +1413,8 @@ void node_implementation_run(nmos::node_model& model, slog::base_gate& gate)
 
             // update temperature sensor
             {
-                const auto temperature_sensor_control_class_id = nmos::make_nc_class_id(nmos::nc_worker_class_id, 0, { 3 });
-                const web::json::field_as_number temperature{ U("temperature") };
+                const auto temperature_sensor_control_class_id = nmos::make_nc_class_id(nmos::nc_worker_class_id, 0, { 3 }); // hmm, maybe pull out temperature_sensor_control_class_id to impl namespace
+                const web::json::field_as_number temperature{ U("temperature") }; // hmm, maybe pull out temperature field to impl namespace
 
                 auto& resources = model.control_protocol_resources;
 
@@ -1369,7 +1427,7 @@ void node_implementation_run(nmos::node_model& model, slog::base_gate& gate)
                 {
                     const auto property_changed_event = nmos::make_property_changed_event(nmos::fields::nc::oid(found->data),
                     {
-                        { {3, 1}, nmos::nc_property_change_type::type::value_changed, web::json::value(temp.scaled_value()) }
+                        { {3, 1}, nmos::nc_property_change_type::type::value_changed, web::json::value(temp.scaled_value()) } // hmm, maybe pull out {3, 1} temperature property id to impl namespace
                     });
 
                     nmos::modify_control_protocol_resource(model.control_protocol_resources, found->id, [&](nmos::resource& resource)
@@ -1382,6 +1440,155 @@ void node_implementation_run(nmos::node_model& model, slog::base_gate& gate)
 
             slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Temperature updated: " << temp.scaled_value() << " (" << impl::temperature_Celsius.name << ")";
 
+            // example to increment nic packet counters
+            for (auto& counter : impl::nic_packet_counters)
+            {
+                if (counter.lost_packet_counter.value < std::numeric_limits<uint64_t>::max()) ++counter.lost_packet_counter.value;
+                if (counter.late_packet_counter.value < std::numeric_limits<uint64_t>::max()) ++counter.late_packet_counter.value;
+            }
+
+            // example setting receiver monitor statuses
+            if (simulate_status_monitor_activity) {
+                auto& resources = model.control_protocol_resources;
+                for (int index = 0; index < how_many; ++index)
+                {
+                    for (const auto& port : rtp_receiver_ports)
+                    {
+                        const auto receiver_id = impl::make_id(seed_id, nmos::types::receiver, port, index);
+
+                        auto receiver_monitor = nmos::find_control_protocol_resource(resources, nmos::types::nc_status_monitor, receiver_id);
+                        if (resources.end() != receiver_monitor)
+                        {
+                            const auto& oid = nmos::fields::nc::oid(receiver_monitor->data);
+
+                            auto overall_status = get_control_protocol_property(oid, nmos::nc_status_monitor_overall_status_property_id);
+
+                            switch (rand() % 3)
+                            {
+                                case 0:
+                                {
+                                    // Change link status
+                                    const auto status = nmos::nc_link_status::status(nmos::nc_link_status::all_up + rand() % 3);
+                                    const auto status_message = status > nmos::nc_link_status::all_up ? U("NIC1, NIC2 are down") : U("");
+                                    set_receiver_monitor_link_status(oid, status, status_message);
+                                    break;
+                                }
+                                case 1:
+                                {
+                                    // Change connection status
+                                    if (overall_status.as_integer() != nmos::nc_overall_status::inactive)
+                                    {
+                                        const auto connection_status = nmos::nc_connection_status::status(nmos::nc_connection_status::healthy + rand() % 3);
+                                        const auto connection_status_message = connection_status > nmos::nc_connection_status::healthy ? U("Packet loss detected") : U("");
+
+                                        set_receiver_monitor_connection_status(oid, connection_status, connection_status_message);
+                                    }
+                                    break;
+                                }
+                                case 2:
+                                {
+                                    // Change synchronization status
+                                    const auto status = nmos::nc_synchronization_status::status(nmos::nc_synchronization_status::not_used + rand() % 4);
+                                    const auto status_message = status > nmos::nc_synchronization_status::healthy ? U("Source change from: 00:0c:ec:ff:fe:0a:2b:a1 on NIC1") : U("");
+                                    set_receiver_monitor_external_synchronization_status(oid, status, status_message);
+                                    // update receiver monitor synchronization source id if in-used
+                                    if (nmos::nc_synchronization_status::not_used != status)
+                                    {
+                                        if (nmos::nc_synchronization_status::healthy == status) set_receiver_monitor_synchronization_source_id(oid, bst::optional<utility::string_t>{ U("internal") });
+                                        else set_receiver_monitor_synchronization_source_id(oid, {});
+                                    }
+                                    break;
+                                }
+                                case 3:
+                                {
+                                    // Change stream status
+                                    if (overall_status.as_integer() != nmos::nc_overall_status::inactive)
+                                    {
+                                        const auto status = nmos::nc_stream_status::status(nmos::nc_stream_status::healthy + rand() % 3);
+                                        const auto status_message = status > nmos::nc_stream_status::status::healthy ? U("Unexpected stream format") : U("");
+
+                                        set_receiver_monitor_stream_status(oid, status, status_message);
+                                    }
+                                    break;
+                                }
+                                default:
+                                    break;
+                            }
+                        }
+                    }
+                }
+            }
+            // example setting sender monitor statuses
+            if (simulate_status_monitor_activity) {
+                auto& resources = model.control_protocol_resources;
+                for (int index = 0; index < how_many; ++index)
+                {
+                    for (const auto& port : rtp_sender_ports)
+                    {
+                        const auto sender_id = impl::make_id(seed_id, nmos::types::sender, port, index);
+
+                        auto sender_monitor = nmos::find_control_protocol_resource(resources, nmos::types::nc_status_monitor, sender_id);
+                        if (resources.end() != sender_monitor)
+                        {
+                            const auto& oid = nmos::fields::nc::oid(sender_monitor->data);
+
+                            auto overall_status = get_control_protocol_property(oid, nmos::nc_status_monitor_overall_status_property_id);
+
+                            switch (rand() % 3)
+                            {
+                                case 0:
+                                {
+                                    // Change link status
+                                    const auto status = nmos::nc_link_status::status(nmos::nc_link_status::all_up + rand() % 3);
+                                    const auto status_message = status > nmos::nc_link_status::all_up ? U("NIC1, NIC2 are down") : U("");
+                                    set_sender_monitor_link_status(oid, status, status_message);
+                                    break;
+                                }
+                                case 1:
+                                {
+                                    // Change transmission status
+                                    if (overall_status.as_integer() != nmos::nc_overall_status::inactive)
+                                    {
+                                        const auto transmission_status = nmos::nc_transmission_status::status(nmos::nc_transmission_status::healthy + rand() % 3);
+                                        const auto transmission_status_message = transmission_status > nmos::nc_transmission_status::healthy ? U("Transmission errors detected") : U("");
+
+                                        set_sender_monitor_transmission_status(oid, transmission_status, transmission_status_message);
+                                    }
+                                    break;
+                                }
+                                case 2:
+                                {
+                                    // Change synchronization status
+                                    const auto status = nmos::nc_synchronization_status::status(nmos::nc_synchronization_status::not_used + rand() % 4);
+                                    const auto status_message = status > nmos::nc_synchronization_status::healthy ? U("Source change from: 00:0c:ec:ff:fe:0a:2b:a1 on NIC1") : U("");
+                                    set_sender_monitor_external_synchronization_status(oid, status, status_message);
+                                    // update sender monitor synchronization source id if in-used
+                                    if (nmos::nc_synchronization_status::not_used != status)
+                                    {
+                                        if (nmos::nc_synchronization_status::healthy == status) set_sender_monitor_synchronization_source_id(oid, bst::optional<utility::string_t>{ U("internal") });
+                                        else set_sender_monitor_synchronization_source_id(oid, {});
+                                    }
+                                    break;
+                                }
+                                case 3:
+                                {
+                                    // Change essence status
+                                    if (overall_status.as_integer() != nmos::nc_overall_status::inactive)
+                                    {
+                                        const auto status = nmos::nc_essence_status::status(nmos::nc_stream_status::healthy + rand() % 3);
+                                        const auto status_message = status > nmos::nc_essence_status::status::healthy ? U("No valid input signal on input SDI1") : U("");
+
+                                        set_sender_monitor_essence_status(oid, status, status_message);
+                                    }
+                                    break;
+                                }
+                                default:
+                                    break;
+                            }
+                        }
+                    }
+                }
+            }
             model.notify();
 
             return true;
@@ -1666,17 +1873,13 @@ nmos::connection_activation_handler make_node_implementation_connection_activati
     auto handle_events_ws_message = make_node_implementation_events_ws_message_handler(model, gate);
     auto handle_close = nmos::experimental::make_events_ws_close_handler(model, gate);
     auto connection_events_activation_handler = nmos::make_connection_events_websocket_activation_handler(handle_load_ca_certificates, handle_events_ws_message, handle_close, model.settings, gate);
-    // this example uses this callback to update IS-12 Receiver-Monitor connection status
-    auto receiver_monitor_connection_activation_handler = nmos::make_receiver_monitor_connection_activation_handler(model.control_protocol_resources);
 
-    return [connection_events_activation_handler, receiver_monitor_connection_activation_handler, &gate](const nmos::resource& resource, const nmos::resource& connection_resource)
+    return [connection_events_activation_handler, &gate](const nmos::resource& resource, const nmos::resource& connection_resource)
     {
         const std::pair<nmos::id, nmos::type> id_type{ resource.id, resource.type };
         slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::stash_category(impl::categories::node_implementation) << "Activating " << id_type;
 
         connection_events_activation_handler(resource, connection_resource);
-
-        receiver_monitor_connection_activation_handler(connection_resource);
     };
 }
 
@@ -1717,6 +1920,43 @@ nmos::control_protocol_property_changed_handler make_node_implementation_control
         {
             // sequence property removed
             slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::stash_category(impl::categories::node_implementation) << "Property: " << property_name << " has sequence item removed. Value changed to " << resource.data.at(property_name).serialize();
+        }
+    };
+}
+
+// Example Control Protocol WebSocket API Receiver Status Monitor callback to get network interface controller lost packet counters
+nmos::get_packet_counters_handler make_node_implementation_get_lost_packet_counters_handler()
+{
+    return [&]()
+    {
+        return boost::copy_range<std::vector<nmos::nc::counter>>(impl::nic_packet_counters | boost::adaptors::transformed([](const impl::nic_packet_counter& counter)
+        {
+            return nmos::nc::counter{ counter.lost_packet_counter.name, counter.lost_packet_counter.value, counter.lost_packet_counter.description };
+        }));
+    };
+}
+
+// Example Control Protocol WebSocket API Receiver Status Monitor callback to get network interface controller late packet counters
+nmos::get_packet_counters_handler make_node_implementation_get_late_packet_counters_handler()
+{
+    return [&]()
+    {
+        return boost::copy_range<std::vector<nmos::nc::counter>>(impl::nic_packet_counters | boost::adaptors::transformed([](const impl::nic_packet_counter& counter)
+        {
+            return nmos::nc::counter{ counter.late_packet_counter.name, counter.late_packet_counter.value, counter.late_packet_counter.description };
+        }));
+    };
+}
+
+// Example Control Protocol WebSocket API Receiver Status Monitor callback to reset network interface controller packet counters
+nmos::reset_monitor_handler make_node_implementation_reset_monitor_handler()
+{
+    return [&]()
+    {
+        for (auto& counter : impl::nic_packet_counters)
+        {
+            counter.lost_packet_counter.value = 0;
+            counter.late_packet_counter.value = 0;
         }
     };
 }
@@ -1875,5 +2115,8 @@ nmos::experimental::node_implementation make_node_implementation(nmos::node_mode
         .on_connection_activated(make_node_implementation_connection_activation_handler(model, gate))
         .on_validate_channelmapping_output_map(make_node_implementation_map_validator()) // may be omitted if not required
         .on_channelmapping_activated(make_node_implementation_channelmapping_activation_handler(gate))
-        .on_control_protocol_property_changed(make_node_implementation_control_protocol_property_changed_handler(gate)); // may be omitted if IS-12 not required
+        .on_control_protocol_property_changed(make_node_implementation_control_protocol_property_changed_handler(gate)) // may be omitted if IS-12 not required
+        .on_get_lost_packet_counters(make_node_implementation_get_lost_packet_counters_handler()) // may be omitted if IS-12/BCP-008-1 not required
+        .on_get_late_packet_counters(make_node_implementation_get_late_packet_counters_handler()) // may be omitted if IS-12/BCP-008-1 not required
+        .on_reset_monitor(make_node_implementation_reset_monitor_handler()); // may be omitted if IS-12/BCP-008-1 not required
 }
