@@ -42,7 +42,7 @@ namespace nmos
     // callback to set monitor pending
     typedef std::function<void(void)> monitor_status_pending_handler;
 
-    // Receiver Monitor status callbacks
+    // Receiver & Sender Monitor status callbacks
     // these callbacks should not throw exceptions
     namespace nc
     {
@@ -117,6 +117,7 @@ namespace nmos
     set_receiver_monitor_synchronization_source_id_handler make_set_receiver_monitor_synchronization_source_id_handler(resources& resources, experimental::control_protocol_state& control_protocol_state, slog::base_gate& gate);
 
     // NcSenderMonitor handlers
+
     // Set sender monitor link status and link status message
     typedef std::function<bool(nc_oid oid, nmos::nc_link_status::status link_status, const utility::string_t& link_status_message)> set_sender_monitor_link_status_handler;
     set_sender_monitor_link_status_handler make_set_sender_monitor_link_status_handler(resources& resources, experimental::control_protocol_state& control_protocol_state, slog::base_gate& gate);

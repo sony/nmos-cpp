@@ -417,7 +417,6 @@ namespace nmos
                     to_methods_vector(nc::make_sender_monitor_methods(),
                     {
                         // link NcSenderMonitor method_ids with method functions
-                        // TODO: implement actual GetTransmissionError and ResetCountersAndMessages function
                         { nc_sender_monitor_get_transmission_error_counters_method_id, details::make_nc_get_lost_packet_counters_handler(get_lost_packet_counters)},
                         { nc_sender_monitor_reset_monitor_method_id, details::make_nc_reset_monitor_handler(get_control_protocol_class_descriptor, property_changed, reset_monitor)}
                     }),
