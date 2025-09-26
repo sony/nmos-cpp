@@ -1275,12 +1275,12 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
         // making an object rebuildable allows read only properties to be modified by the Configuration API in Rebuild mode
         nmos::make_rebuildable(example_control);
 
-        const auto receiver_block_oid = ++oid;
-        auto receiver_block = nmos::make_block(receiver_block_oid, nmos::root_block_oid, U("receivers"), U("Receiver Monitors"), U("Receiver Monitors"));
+        const auto receivers_block_oid = ++oid;
+        auto receivers_block = nmos::make_block(receivers_block_oid, nmos::root_block_oid, U("receivers"), U("Receiver Monitors"), U("Receiver Monitors"));
         // making a block rebuildable allows block members to be added or removed by the Configuration API in Rebuild mode
-        nmos::make_rebuildable(receiver_block);
+        nmos::make_rebuildable(receivers_block);
         // restrict the allowed classes for members of this block
-        nmos::set_block_allowed_member_classes(receiver_block, {nmos::nc_receiver_monitor_class_id});
+        nmos::set_block_allowed_member_classes(receivers_block, {nmos::nc_receiver_monitor_class_id});
 
         // example receiver-monitor(s)
         {
@@ -1294,11 +1294,11 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
                     utility::ostringstream_t role;
                     role << U("receiver-monitor-") << ++count;
                     const auto& receiver = nmos::find_resource(model.node_resources, receiver_id);
-                    auto receiver_monitor = nmos::make_receiver_monitor(++oid, true, receiver_block_oid, role.str(), nmos::fields::label(receiver->data), nmos::fields::description(receiver->data), value_of({ { nmos::nc::details::make_touchpoint_nmos({nmos::ncp_touchpoint_resource_types::receiver, receiver_id}) } }));
+                    auto receiver_monitor = nmos::make_receiver_monitor(++oid, true, receivers_block_oid, role.str(), nmos::fields::label(receiver->data), nmos::fields::description(receiver->data), value_of({ { nmos::nc::details::make_touchpoint_nmos({nmos::ncp_touchpoint_resource_types::receiver, receiver_id}) } }));
                     // optionally indicate dependencies within the device model
                     nmos::set_object_dependency_paths(receiver_monitor, {{U("root"), U("receivers")}});
-                    // add receiver-monitor to root-block
-                    nmos::nc::push_back(receiver_block, receiver_monitor);
+                    // add receiver-monitor to receivers-block
+                    nmos::nc::push_back(receivers_block, receiver_monitor);
                 }
             }
         }
@@ -1326,8 +1326,8 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
         // example temperature-sensor
         const auto temperature_sensor = make_temperature_sensor(++oid, nmos::root_block_oid, U("temperature-sensor"), U("Temperature Sensor"), U("Temperature Sensor block"), value::null(), value::null(), 0.0, U("Celsius"));
 
-        // add receiver monitor block
-        nmos::nc::push_back(root_block, receiver_block);
+        // add receivers-block to root-block
+        nmos::nc::push_back(root_block, receivers_block);
         // add temperature-sensor to root-block
         nmos::nc::push_back(root_block, temperature_sensor);
         // add example-control to root-block
@@ -1943,7 +1943,7 @@ nmos::control_protocol_property_changed_handler make_node_implementation_control
 // Example Control Protocol WebSocket API Receiver Status Monitor callback to get network interface controller lost packet counters
 nmos::get_packet_counters_handler make_node_implementation_get_lost_packet_counters_handler()
 {
-    return [&]()
+    return []()
     {
         return boost::copy_range<std::vector<nmos::nc::counter>>(impl::nic_packet_counters | boost::adaptors::transformed([](const impl::nic_packet_counter& counter)
         {
@@ -1955,7 +1955,7 @@ nmos::get_packet_counters_handler make_node_implementation_get_lost_packet_count
 // Example Control Protocol WebSocket API Receiver Status Monitor callback to get network interface controller late packet counters
 nmos::get_packet_counters_handler make_node_implementation_get_late_packet_counters_handler()
 {
-    return [&]()
+    return []()
     {
         return boost::copy_range<std::vector<nmos::nc::counter>>(impl::nic_packet_counters | boost::adaptors::transformed([](const impl::nic_packet_counter& counter)
         {
@@ -1967,7 +1967,7 @@ nmos::get_packet_counters_handler make_node_implementation_get_late_packet_count
 // Example Control Protocol WebSocket API Receiver Status Monitor callback to reset network interface controller packet counters
 nmos::reset_monitor_handler make_node_implementation_reset_monitor_handler()
 {
-    return [&]()
+    return []()
     {
         for (auto& counter : impl::nic_packet_counters)
         {
@@ -1981,9 +1981,9 @@ nmos::reset_monitor_handler make_node_implementation_reset_monitor_handler()
 
 // IS-14 Device Configuration callback
 // This function should generate a fingerprint that can be used for subsequent validation.
-nmos::create_validation_fingerprint_handler make_create_validation_fingerprint_handler(slog::base_gate& gate)
+nmos::create_validation_fingerprint_handler make_create_validation_fingerprint_handler()
 {
-    return [&gate](const nmos::resources& resources, const nmos::resource& resource)
+    return [](const nmos::resources& resources, const nmos::resource& resource)
     {
         return U("Sony nmos-cpp node");
     };
@@ -1991,9 +1991,9 @@ nmos::create_validation_fingerprint_handler make_create_validation_fingerprint_h
 
 // IS-14 Device Configuration callback
 // This function called by a validate or restore and can be used to validate a validation fingerprint. Returning false will fail the validate or restore operation.
-nmos::validate_validation_fingerprint_handler make_validate_validation_fingerprint_handler(slog::base_gate& gate)
+nmos::validate_validation_fingerprint_handler make_validate_validation_fingerprint_handler()
 {
-    return [&gate](const nmos::resources& resources, const nmos::resource& resource, const utility::string_t& validation_fingerprint)
+    return [](const nmos::resources& resources, const nmos::resource& resource, const utility::string_t& validation_fingerprint)
     {
         return true;
     };
@@ -2020,9 +2020,9 @@ nmos::get_read_only_modification_allow_list_handler make_get_read_only_modificat
 // If this function returns true and validate is false then the object will be deleted.
 // If this function returns true/false or validate is true then the object will not be deleted.
 // If this function returns false an appropriate error will be passed to the calling client.
-nmos::remove_device_model_object_handler make_remove_device_model_object_handler(nmos::node_model& model, slog::base_gate& gate)
+nmos::remove_device_model_object_handler make_remove_device_model_object_handler()
 {
-    return [&model, &gate](const nmos::resource& resource, const std::vector<utility::string_t>& role_path, bool validate)
+    return [](const nmos::resource& resource, const std::vector<utility::string_t>& role_path, bool validate)
     {
         // Perform application code functions here
         // resource - device model object about to be deleted
@@ -2037,9 +2037,9 @@ nmos::remove_device_model_object_handler make_remove_device_model_object_handler
 // The returned object is then added to the Device Model
 // This example shows the creation of a receiver monitor resource
 // In the Device Model the receivers block that contains the monitors must be rebuildable
-nmos::create_device_model_object_handler make_create_device_model_object_handler(nmos::node_model& model, slog::base_gate& gate)
+nmos::create_device_model_object_handler make_create_device_model_object_handler(slog::base_gate& gate)
 {
-    return[&model, &gate](const nmos::nc_class_id& class_id, nmos::nc_oid oid, bool constant_oid, nmos::nc_oid owner, const utility::string_t& role, const utility::string_t& user_label, const web::json::value& touchpoints, bool validate, const std::map<nmos::nc_property_id, web::json::value>& property_values)
+    return[&gate](const nmos::nc_class_id& class_id, nmos::nc_oid oid, bool constant_oid, nmos::nc_oid owner, const utility::string_t& role, const utility::string_t& user_label, const web::json::value& touchpoints, bool validate, const std::map<nmos::nc_property_id, web::json::value>& property_values)
     {
         if (touchpoints.size() != 1)
         {
@@ -2208,11 +2208,11 @@ nmos::experimental::node_implementation make_node_implementation(nmos::node_mode
         .on_validate_channelmapping_output_map(make_node_implementation_map_validator()) // may be omitted if not required
         .on_channelmapping_activated(make_node_implementation_channelmapping_activation_handler(gate))
         .on_control_protocol_property_changed(make_node_implementation_control_protocol_property_changed_handler(gate)) // may be omitted if IS-12 not required
-        .on_create_validation_fingerprint(make_create_validation_fingerprint_handler(gate))
-        .on_validate_validation_fingerprint(make_validate_validation_fingerprint_handler(gate))
+        .on_create_validation_fingerprint(make_create_validation_fingerprint_handler())
+        .on_validate_validation_fingerprint(make_validate_validation_fingerprint_handler())
         .on_get_read_only_modification_allow_list(make_get_read_only_modification_allow_list_handler(gate)) // may be omitted if either IS-14 not required, or IS-14 Rebuild functionality not required
-        .on_remove_device_model_object(make_remove_device_model_object_handler(model, gate)) // may be omitted if either IS-14 not required, or IS-14 Rebuild functionality not required
-        .on_create_device_model_object(make_create_device_model_object_handler(model, gate)) // may be omitted if either IS-14 not required, or IS-14 Rebuild functionality not required
+        .on_remove_device_model_object(make_remove_device_model_object_handler()) // may be omitted if either IS-14 not required, or IS-14 Rebuild functionality not required
+        .on_create_device_model_object(make_create_device_model_object_handler(gate)) // may be omitted if either IS-14 not required, or IS-14 Rebuild functionality not required
         .on_get_lost_packet_counters(make_node_implementation_get_lost_packet_counters_handler()) // may be omitted if IS-12/BCP-008-1 not required
         .on_get_late_packet_counters(make_node_implementation_get_late_packet_counters_handler()) // may be omitted if IS-12/BCP-008-1 not required
         .on_reset_monitor(make_node_implementation_reset_monitor_handler()); // may be omitted if IS-12/BCP-008-1 not required
