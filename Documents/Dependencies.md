@@ -55,9 +55,9 @@ By default nmos-cpp uses [Conan](https://conan.io) to download most of its depen
 
 1. Install Python 3 if necessary
    Note: The Python scripts directory needs to be added to the `PATH`, so the Conan executable can be found
-2. Install or upgrade Conan using `pip install --upgrade conan~=2.20.1`
+2. Install or upgrade Conan using `pip install --upgrade conan~=2.20`
    Notes:
-   - On some platforms with Python 2 and Python 3 both installed this may need to be `pip3 install --upgrade conan~=2.20.1`
+   - On some platforms with Python 2 and Python 3 both installed this may need to be `pip3 install --upgrade conan~=2.20`
    - Conan 2.2 or higher is required; dependencies may require a higher version; version 2.20.1 (latest release at the time) has been tested
    - Conan 1.X is no longer supported
 3. Install a [DNS Service Discovery](#dns-service-discovery) implementation, since this isn't currently handled by Conan
