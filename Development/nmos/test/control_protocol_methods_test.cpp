@@ -34,12 +34,11 @@ BST_TEST_CASE(testRemoveSequenceItem)
         property_changed_called = true;
     };
 
-    nmos::experimental::control_protocol_state control_protocol_state(nullptr, nullptr, nullptr, property_changed);
+    nmos::experimental::control_protocol_state control_protocol_state(property_changed, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr);
     nmos::get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor = nmos::make_get_control_protocol_class_descriptor_handler(control_protocol_state);
 
-
     // Create simple non-standard class with writable sequence property
-    const auto writable_sequence_class_id = nmos::make_nc_class_id(nmos::nc_worker_class_id, -1234, { 1000 });
+    const auto writable_sequence_class_id = nmos::nc::make_class_id(nmos::nc_worker_class_id, -1234, { 1000 });
     const web::json::field_as_array writable_value{ U("writableValue") };
     {
         // Writable sequence_class property descriptors
@@ -54,7 +53,7 @@ BST_TEST_CASE(testRemoveSequenceItem)
     // helper function to create writable_sequence object
     auto make_writable_sequence = [&writable_value, &writable_sequence_class_id](nmos::nc_oid oid, nmos::nc_oid owner, const utility::string_t& role, const utility::string_t& user_label, const utility::string_t& description)
     {
-        auto data = nmos::details::make_nc_worker(writable_sequence_class_id, oid, true, owner, role, value::string(user_label), description, web::json::value::null(), web::json::value::null(), true);
+        auto data = nmos::nc::details::make_worker(writable_sequence_class_id, oid, true, owner, role, value::string(user_label), description, web::json::value::null(), web::json::value::null(), true);
         auto values = value::array();
         web::json::push_back(values, value::number(10));
         web::json::push_back(values, value::number(9));
@@ -83,15 +82,15 @@ BST_TEST_CASE(testRemoveSequenceItem)
     auto writable_sequence = make_writable_sequence(++oid, nmos::root_block_oid, U("writableSequence"), U("writable sequence"), U("writable sequence"));
     auto writable_sequence_id = writable_sequence.id;
 
-    nmos::push_back(receivers, monitor1);
+    nmos::nc::push_back(receivers, monitor1);
     // add example-control to root-block
-    nmos::push_back(receivers, monitor2);
+    nmos::nc::push_back(receivers, monitor2);
     // add stereo-gain to root-block
-    nmos::push_back(root_block, receivers);
+    nmos::nc::push_back(root_block, receivers);
     // add class-manager to root-block
-    nmos::push_back(root_block, class_manager);
+    nmos::nc::push_back(root_block, class_manager);
     // add writable sequence to root block
-    nmos::push_back(root_block, writable_sequence);
+    nmos::nc::push_back(root_block, writable_sequence);
     insert_resource(resources, std::move(root_block));
     insert_resource(resources, std::move(class_manager));
     insert_resource(resources, std::move(receivers));
@@ -115,7 +114,7 @@ BST_TEST_CASE(testRemoveSequenceItem)
 
         auto resource = nmos::find_resource(resources, receivers_id);
         BST_CHECK_NE(resources.end(), resource);
-        auto result = nmos::remove_sequence_item(resources, *resource, arguments, false, get_control_protocol_class_descriptor, property_changed, gate);
+        auto result = nmos::nc::remove_sequence_item(resources, *resource, arguments, false, get_control_protocol_class_descriptor, property_changed, gate);
 
         // Expect read only error, and for property changed not to be called
         BST_CHECK_EQUAL(false, property_changed_called);
@@ -138,7 +137,7 @@ BST_TEST_CASE(testRemoveSequenceItem)
 
         auto resource = nmos::find_resource(resources, writable_sequence_id);
         BST_CHECK_NE(resources.end(), resource);
-        auto result = nmos::remove_sequence_item(resources, *resource, arguments, false, get_control_protocol_class_descriptor, property_changed, gate);
+        auto result = nmos::nc::remove_sequence_item(resources, *resource, arguments, false, get_control_protocol_class_descriptor, property_changed, gate);
 
         // Expect success, and property changed event
         BST_CHECK_EQUAL(true, property_changed_called);

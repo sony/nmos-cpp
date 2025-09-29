@@ -246,7 +246,7 @@ namespace nmos
                                     const auto oid = nmos::fields::nc::oid(cmd);
 
                                     // get methodId
-                                    const auto& method_id = nmos::details::parse_nc_method_id(nmos::fields::nc::method_id(cmd));
+                                    const auto& method_id = nc::details::parse_method_id(nmos::fields::nc::method_id(cmd));
 
                                     // get arguments
                                     const auto& arguments = nmos::fields::nc::arguments(cmd);
@@ -256,7 +256,7 @@ namespace nmos
                                     auto resource = nmos::find_resource(resources, utility::s2us(std::to_string(oid)));
                                     if (resources.end() != resource)
                                     {
-                                        const auto class_id = nmos::details::parse_nc_class_id(nmos::fields::nc::class_id(resource->data));
+                                        const auto class_id = nc::details::parse_class_id(nmos::fields::nc::class_id(resource->data));
 
                                         // find the relevant method handler to execute
                                         // method tuple definition described in control_protocol_handlers.h
@@ -268,7 +268,7 @@ namespace nmos
                                             try
                                             {
                                                 // do method arguments constraints validation
-                                                method_parameters_contraints_validation(arguments, nc_method_descriptor, get_control_protocol_datatype_descriptor);
+                                                nc::method_parameters_contraints_validation(arguments, nc_method_descriptor, get_control_protocol_datatype_descriptor);
 
                                                 // execute the relevant control method handler, then accumulating up their response to responses
                                                 // wrap the NcMethodResuls here
@@ -280,7 +280,7 @@ namespace nmos
                                                 utility::ostringstream_t ss;
                                                 ss << "invalid argument: " << arguments.serialize() << " error: " << e.what();
                                                 slog::log<slog::severities::error>(gate, SLOG_FLF) << ss.str();
-                                                nc_method_result = details::make_nc_method_result_error({ nmos::nc_method_status::parameter_error }, ss.str());
+                                                nc_method_result = nc::details::make_method_result_error({ nmos::nc_method_status::parameter_error }, ss.str());
                                             }
                                         }
                                         else
@@ -290,7 +290,7 @@ namespace nmos
                                             ss << U("unsupported method_id: ") << nmos::fields::nc::method_id(cmd).serialize()
                                                 << U(" for control class class_id: ") << resource->data.at(nmos::fields::nc::class_id).serialize();
                                             slog::log<slog::severities::error>(gate, SLOG_FLF) << ss.str();
-                                            nc_method_result = details::make_nc_method_result_error({ nc_method_status::method_not_implemented }, ss.str());
+                                            nc_method_result = nc::details::make_method_result_error({ nc_method_status::method_not_implemented }, ss.str());
                                         }
                                     }
                                     else
@@ -299,10 +299,10 @@ namespace nmos
                                         utility::ostringstream_t ss;
                                         ss << U("unknown oid: ") << oid;
                                         slog::log<slog::severities::error>(gate, SLOG_FLF) << ss.str();
-                                        nc_method_result = details::make_nc_method_result_error({ nc_method_status::bad_oid }, ss.str());
+                                        nc_method_result = nc::details::make_method_result_error({ nc_method_status::bad_oid }, ss.str());
                                     }
                                     // accumulating up response
-                                    auto response = make_control_protocol_response(handle, nc_method_result);
+                                    auto response = nc::make_response(handle, nc_method_result);
 
                                     web::json::push_back(responses, response);
                                 }
@@ -310,7 +310,7 @@ namespace nmos
                                 // add command_response to the grain ready to transfer to the client in nmos::send_control_protocol_ws_messages_thread
                                 resources.modify(grain, [&](nmos::resource& grain)
                                 {
-                                    web::json::push_back(nmos::fields::message_grain_data(grain.data), make_control_protocol_command_response(responses));
+                                    web::json::push_back(nmos::fields::message_grain_data(grain.data), nc::make_command_response(responses));
 
                                     grain.updated = strictly_increasing_update(resources);
                                 });
@@ -347,7 +347,7 @@ namespace nmos
                                 // add subscription_response to the grain ready to transfer to the client in nmos::send_control_protocol_ws_messages_thread
                                 resources.modify(grain, [&](nmos::resource& grain)
                                 {
-                                    web::json::push_back(nmos::fields::message_grain_data(grain.data), make_control_protocol_subscription_response(valid_subscriptions));
+                                    web::json::push_back(nmos::fields::message_grain_data(grain.data), nc::make_subscription_response(valid_subscriptions));
 
                                     grain.updated = strictly_increasing_update(resources);
                                 });
@@ -369,7 +369,7 @@ namespace nmos
                             resources.modify(grain, [&](nmos::resource& grain)
                             {
                                 web::json::push_back(nmos::fields::message_grain_data(grain.data),
-                                    make_control_protocol_error_message({ nc_method_status::bad_command_format }, utility::s2us(e.what())));
+                                    nc::make_error_message({ nc_method_status::bad_command_format }, utility::s2us(e.what())));
 
                                 grain.updated = strictly_increasing_update(resources);
                             });
@@ -381,7 +381,7 @@ namespace nmos
                             resources.modify(grain, [&](nmos::resource& grain)
                             {
                                 web::json::push_back(nmos::fields::message_grain_data(grain.data),
-                                    make_control_protocol_error_message({ nc_method_status::bad_command_format }, utility::s2us(std::string("Unexpected exception while handing control protocol command : ") + e.what())));
+                                    nc::make_error_message({ nc_method_status::bad_command_format }, utility::s2us(std::string("Unexpected exception while handing control protocol command : ") + e.what())));
 
                                 grain.updated = strictly_increasing_update(resources);
                             });
@@ -393,7 +393,7 @@ namespace nmos
                             resources.modify(grain, [&](nmos::resource& grain)
                             {
                                 web::json::push_back(nmos::fields::message_grain_data(grain.data),
-                                    make_control_protocol_error_message({ nc_method_status::bad_command_format }, U("Unexpected unknown exception while handing control protocol command")));
+                                    nc::make_error_message({ nc_method_status::bad_command_format }, U("Unexpected unknown exception while handing control protocol command")));
 
                                 grain.updated = strictly_increasing_update(resources);
                             });

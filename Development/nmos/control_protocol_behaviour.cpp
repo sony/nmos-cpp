@@ -73,7 +73,7 @@ namespace nmos
                 {
                     // Get all status monitors - including receiver and sender monitors
                     auto descriptors = web::json::value::array();
-                    nmos::find_members_by_class_id(control_protocol_resources, *found, nmos::nc_status_monitor_class_id, true, true, descriptors.as_array());
+                    nmos::nc::find_members_by_class_id(control_protocol_resources, *found, nmos::nc_status_monitor_class_id, true, true, descriptors.as_array());
 
                     bool monitors_updates_pending = false;
 
@@ -87,15 +87,15 @@ namespace nmos
                         for (const auto& descriptor : descriptors.as_array())
                         {
                             auto oid = nmos::fields::nc::oid(descriptor);
-                            const auto& class_id = nmos::details::parse_nc_class_id(nmos::fields::nc::class_id(descriptor));
+                            const auto& class_id = nc::details::parse_class_id(nmos::fields::nc::class_id(descriptor));
 
-                            auto status_reporting_delay = get_control_protocol_property(control_protocol_resources, oid, nc_status_monitor_status_reporting_delay, get_control_protocol_class_descriptor, gate);
+                            auto status_reporting_delay = nc::get_property(control_protocol_resources, oid, nc_status_monitor_status_reporting_delay, get_control_protocol_class_descriptor, gate);
 
-                            const auto& domain_statuses = nmos::is_nc_sender_monitor(class_id) ? sender_monitor_domain_statuses : receiver_monitor_domain_statuses;
+                            const auto& domain_statuses = nmos::nc::is_sender_monitor(class_id) ? sender_monitor_domain_statuses : receiver_monitor_domain_statuses;
 
                             for (const auto& domain_status : domain_statuses)
                             {
-                                auto received_time = get_control_protocol_property(control_protocol_resources, oid, domain_status.status_pending_received_time_field_name, gate);
+                                auto received_time = nc::get_property(control_protocol_resources, oid, domain_status.status_pending_received_time_field_name, gate);
 
                                 if (received_time.as_integer() > 0)
                                 {
@@ -124,15 +124,15 @@ namespace nmos
                         for (const auto& descriptor : descriptors.as_array())
                         {
                             const auto& oid = nmos::fields::nc::oid(descriptor);
-                            const auto& class_id = nmos::details::parse_nc_class_id(nmos::fields::nc::class_id(descriptor));
+                            const auto& class_id = nc::details::parse_class_id(nmos::fields::nc::class_id(descriptor));
 
-                            const auto status_reporting_delay = get_control_protocol_property(control_protocol_resources, oid, nc_status_monitor_status_reporting_delay, get_control_protocol_class_descriptor, gate);
+                            const auto status_reporting_delay = nc::get_property(control_protocol_resources, oid, nc_status_monitor_status_reporting_delay, get_control_protocol_class_descriptor, gate);
 
-                            const auto& domain_statuses = nmos::is_nc_sender_monitor(class_id) ? sender_monitor_domain_statuses : receiver_monitor_domain_statuses;
+                            const auto& domain_statuses = nmos::nc::is_sender_monitor(class_id) ? sender_monitor_domain_statuses : receiver_monitor_domain_statuses;
 
                             for (const auto& domain_status : domain_statuses)
                             {
-                                const auto received_time = get_control_protocol_property(control_protocol_resources, oid, domain_status.status_pending_received_time_field_name, gate);
+                                const auto received_time = nc::get_property(control_protocol_resources, oid, domain_status.status_pending_received_time_field_name, gate);
 
                                 if (received_time.as_integer() > 0)
                                 {
@@ -141,10 +141,10 @@ namespace nmos
                                     if (current_time >= threshold_time)
                                     {
                                         // copy pending status to status property
-                                        const auto& status = get_control_protocol_property(control_protocol_resources, oid, domain_status.status_pending_field_name, gate);
-                                        const auto& status_message = get_control_protocol_property(control_protocol_resources, oid, domain_status.status_message_pending_field_name, gate);
+                                        const auto& status = nc::get_property(control_protocol_resources, oid, domain_status.status_pending_field_name, gate);
+                                        const auto& status_message = nc::get_property(control_protocol_resources, oid, domain_status.status_message_pending_field_name, gate);
                                         const auto& status_message_string = status_message == web::json::value::null() ? U("") : status_message.as_string();
-                                        details::set_monitor_status(control_protocol_resources, oid, status.as_integer(), status_message_string,
+                                        nc::details::set_monitor_status(control_protocol_resources, oid, status.as_integer(), status_message_string,
                                             domain_status.status_property_id,
                                             domain_status.status_message_property_id,
                                             domain_status.status_transition_counter_property_id,

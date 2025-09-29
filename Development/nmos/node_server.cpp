@@ -3,6 +3,7 @@
 #include "cpprest/ws_utils.h"
 #include "nmos/api_utils.h"
 #include "nmos/channelmapping_activation.h"
+#include "nmos/configuration_api.h"
 #include "nmos/control_protocol_ws_api.h"
 #include "nmos/events_api.h"
 #include "nmos/events_ws_api.h"
@@ -22,7 +23,7 @@ namespace nmos
     namespace experimental
     {
         // Construct a server instance for an NMOS Node, implementing the IS-04 Node API, IS-05 Connection API, IS-07 Events API, IS-08 Audio Channel Mapping API, IS-10 Authorization API,
-        // IS-12 Control & Monitoring Protocol Websocket API and the experimental Logging API and Settings API, according to the specified data models and callbacks
+        // IS-12 Control & Monitoring Protocol Websocket API, IS-14 Configuration API and the experimental Logging API and Settings API, according to the specified data models and callbacks
         nmos::server make_node_server(nmos::node_model& node_model, nmos::experimental::node_implementation node_implementation, nmos::experimental::log_model& log_model, slog::base_gate& gate)
         {
             // Log the API addresses we'll be using
@@ -73,6 +74,10 @@ namespace nmos
             // Configure the Channel Mapping API
 
             node_server.api_routers[{ {}, nmos::fields::channelmapping_port(node_model.settings) }].mount({}, nmos::make_channelmapping_api(node_model, node_implementation.validate_map, validate_authorization ? validate_authorization(nmos::experimental::scopes::channelmapping) : nullptr, gate));
+
+            // Configure the Configuration API
+
+            node_server.api_routers[{ {}, nmos::fields::configuration_port(node_model.settings) }].mount({}, nmos::make_configuration_api(node_model, validate_authorization ? validate_authorization(nmos::experimental::scopes::configuration) : nullptr, node_implementation.get_control_protocol_class_descriptor, node_implementation.get_control_protocol_datatype_descriptor, node_implementation.get_control_protocol_method_descriptor, node_implementation.create_validation_fingerprint, node_implementation.validate_validation_fingerprint, node_implementation.get_read_only_modification_allow_list, node_implementation.remove_device_model_object, node_implementation.create_device_model_object, node_implementation.control_protocol_property_changed, gate));
 
             const auto& events_ws_port = nmos::fields::events_ws_port(node_model.settings);
             auto& events_ws_api = node_server.ws_handlers[{ {}, nmos::fields::events_ws_port(node_model.settings) }];

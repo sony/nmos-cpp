@@ -835,6 +835,91 @@ target_include_directories(nmos_is12_schemas PUBLIC
 list(APPEND NMOS_CPP_TARGETS nmos_is12_schemas)
 add_library(nmos-cpp::nmos_is12_schemas ALIAS nmos_is12_schemas)
 
+# nmos_is14_schemas library
+
+set(NMOS_IS14_SCHEMAS_HEADERS
+    nmos/is14_schemas/is14_schemas.h
+    )
+
+set(NMOS_IS14_V1_0_TAG v1.0.x)
+
+set(NMOS_IS14_V1_0_SCHEMAS_JSON
+    third_party/is-14/${NMOS_IS14_V1_0_TAG}/APIs/schemas/base.json
+    third_party/is-14/${NMOS_IS14_V1_0_TAG}/APIs/schemas/bulkProperties-get-response.json
+
+    third_party/is-14/${NMOS_IS14_V1_0_TAG}/APIs/schemas/bulkProperties-patch-request.json
+    third_party/is-14/${NMOS_IS14_V1_0_TAG}/APIs/schemas/bulkProperties-patch-response.json
+    third_party/is-14/${NMOS_IS14_V1_0_TAG}/APIs/schemas/bulkProperties-put-request.json
+    third_party/is-14/${NMOS_IS14_V1_0_TAG}/APIs/schemas/bulkProperties-put-response.json
+    third_party/is-14/${NMOS_IS14_V1_0_TAG}/APIs/schemas/descriptor-get.json
+    third_party/is-14/${NMOS_IS14_V1_0_TAG}/APIs/schemas/method-patch-request.json
+    third_party/is-14/${NMOS_IS14_V1_0_TAG}/APIs/schemas/method-patch-response.json
+    third_party/is-14/${NMOS_IS14_V1_0_TAG}/APIs/schemas/methods-base.json
+    third_party/is-14/${NMOS_IS14_V1_0_TAG}/APIs/schemas/ms05-error.json
+    third_party/is-14/${NMOS_IS14_V1_0_TAG}/APIs/schemas/properties-base.json
+    third_party/is-14/${NMOS_IS14_V1_0_TAG}/APIs/schemas/property.json
+    third_party/is-14/${NMOS_IS14_V1_0_TAG}/APIs/schemas/property-descriptor.json
+    third_party/is-14/${NMOS_IS14_V1_0_TAG}/APIs/schemas/property-value-get.json
+    third_party/is-14/${NMOS_IS14_V1_0_TAG}/APIs/schemas/property-value-put-request.json
+    third_party/is-14/${NMOS_IS14_V1_0_TAG}/APIs/schemas/property-value-put-response.json
+    third_party/is-14/${NMOS_IS14_V1_0_TAG}/APIs/schemas/rolePath.json
+    third_party/is-14/${NMOS_IS14_V1_0_TAG}/APIs/schemas/rolePaths-base.json
+    )
+
+set(NMOS_IS14_SCHEMAS_JSON_MATCH "third_party/is-14/([^/]+)/APIs/schemas/([^;]+)\\.json")
+set(NMOS_IS14_SCHEMAS_SOURCE_REPLACE "${CMAKE_CURRENT_BINARY_DIR_REPLACE}/nmos/is14_schemas/\\1/\\2.cpp")
+string(REGEX REPLACE "${NMOS_IS14_SCHEMAS_JSON_MATCH}(;|$)" "${NMOS_IS14_SCHEMAS_SOURCE_REPLACE}\\3" NMOS_IS14_V1_0_SCHEMAS_SOURCES "${NMOS_IS14_V1_0_SCHEMAS_JSON}")
+
+foreach(JSON ${NMOS_IS14_V1_0_SCHEMAS_JSON})
+    string(REGEX REPLACE "${NMOS_IS14_SCHEMAS_JSON_MATCH}" "${NMOS_IS14_SCHEMAS_SOURCE_REPLACE}" SOURCE "${JSON}")
+    string(REGEX REPLACE "${NMOS_IS14_SCHEMAS_JSON_MATCH}" "\\1" NS "${JSON}")
+    string(REGEX REPLACE "${NMOS_IS14_SCHEMAS_JSON_MATCH}" "\\2" VAR "${JSON}")
+    string(MAKE_C_IDENTIFIER "${NS}" NS)
+    string(MAKE_C_IDENTIFIER "${VAR}" VAR)
+
+    file(WRITE "${SOURCE}.in" "\
+// Auto-generated from: ${JSON}\n\
+\n\
+namespace nmos\n\
+{\n\
+    namespace is14_schemas\n\
+    {\n\
+        namespace ${NS}\n\
+        {\n\
+            const char* ${VAR} = R\"-auto-generated-(")
+
+    file(READ "${JSON}" RAW)
+    file(APPEND "${SOURCE}.in" "${RAW}")
+
+    file(APPEND "${SOURCE}.in" ")-auto-generated-\";\n\
+        }\n\
+    }\n\
+}\n")
+
+    configure_file("${SOURCE}.in" "${SOURCE}" COPYONLY)
+endforeach()
+
+add_library(
+    nmos_is14_schemas STATIC
+    ${NMOS_IS14_SCHEMAS_HEADERS}
+    ${NMOS_IS14_V1_0_SCHEMAS_SOURCES}
+    )
+
+source_group("nmos\\is14_schemas\\Header Files" FILES ${NMOS_IS14_SCHEMAS_HEADERS})
+source_group("nmos\\is14_schemas\\${NMOS_IS14_V1_0_TAG}\\Source Files" FILES ${NMOS_IS14_V1_0_SCHEMAS_SOURCES})
+
+target_link_libraries(
+    nmos_is14_schemas PRIVATE
+    nmos-cpp::compile-settings
+    )
+target_include_directories(nmos_is14_schemas PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+    $<INSTALL_INTERFACE:${NMOS_CPP_INSTALL_INCLUDEDIR}>
+    )
+
+list(APPEND NMOS_CPP_TARGETS nmos_is14_schemas)
+add_library(nmos-cpp::nmos_is14_schemas ALIAS nmos_is14_schemas)
+
 # nmos-cpp library
 
 if(${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
@@ -928,6 +1013,10 @@ set(NMOS_CPP_NMOS_SOURCES
     nmos/channels.cpp
     nmos/client_utils.cpp
     nmos/components.cpp
+    nmos/configuration_api.cpp
+    nmos/configuration_methods.cpp
+    nmos/configuration_resources.cpp
+    nmos/configuration_utils.cpp
     nmos/connection_activation.cpp
     nmos/connection_api.cpp
     nmos/connection_events_activation.cpp
@@ -1022,6 +1111,11 @@ set(NMOS_CPP_NMOS_HEADERS
     nmos/colorspace.h
     nmos/components.h
     nmos/copyable_atomic.h
+    nmos/configuration_api.h
+    nmos/configuration_handlers.h
+    nmos/configuration_methods.h
+    nmos/configuration_resources.h
+    nmos/configuration_utils.h
     nmos/connection_activation.h
     nmos/connection_api.h
     nmos/connection_events_activation.h
@@ -1057,6 +1151,7 @@ set(NMOS_CPP_NMOS_HEADERS
     nmos/is09_versions.h
     nmos/is10_versions.h
     nmos/is12_versions.h
+    nmos/is14_versions.h
     nmos/issuers.h
     nmos/json_fields.h
     nmos/json_schema.h
@@ -1207,6 +1302,7 @@ target_link_libraries(
     nmos-cpp::nmos_is09_schemas
     nmos-cpp::nmos_is10_schemas
     nmos-cpp::nmos_is12_schemas
+    nmos-cpp::nmos_is14_schemas
     nmos-cpp::mdns
     nmos-cpp::slog
     nmos-cpp::OpenSSL
