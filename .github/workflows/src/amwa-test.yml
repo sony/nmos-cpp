@@ -206,3 +206,17 @@
     fi
 
     exit 0
+    
+- name: Stress test RDS
+  shell: bash
+  if: runner.os == 'Windows'
+  timeout-minutes: 5
+  working-directory: ${{ env.RUNNER_WORKSPACE }}
+  run: |
+    set -x
+    root_dir=`pwd`
+    cd nmos-testing
+    ${{ env.GITHUB_WORKSPACE_BASH }}/Sandbox/registry_stress_test/run_registry_stress_test.sh python ${root_dir}/build/nmos-cpp-registry results ${{ env.HOST_IP_ADDRESS }} ${{ env.GITHUB_WORKSPACE_BASH }}/Sandbox/registry_stress_test
+    exit 0
+
+
