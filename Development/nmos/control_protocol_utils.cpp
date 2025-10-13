@@ -797,7 +797,7 @@ namespace nmos
                         {
                             const auto& class_id = nc::details::parse_class_id(nmos::fields::nc::class_id(descriptor));
 
-                            if (include_derived) { return !boost::find_first(class_id, class_id_).empty(); }
+                            if (include_derived) { return class_id_.size() <= class_id.size() && std::equal(class_id_.begin(), class_id_.end(), class_id.begin()); }
                             else { return class_id == class_id_; }
                         };
 
