@@ -49,8 +49,12 @@ namespace nmos
         struct counter
         {
             utility::string_t name;
-            uint64_t value{0};
+            uint64_t value;
             utility::string_t description;
+
+            counter() : name(), value(0), description() {}
+            counter(const utility::string_t& name, uint64_t value, const utility::string_t& description)
+                : name(name), value(value), description(description) {}
         };
     }
     typedef std::function<std::vector<nc::counter>(void)> get_packet_counters_handler;
