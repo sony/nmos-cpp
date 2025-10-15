@@ -8,7 +8,6 @@
 #include "nmos/configuration_resources.h"
 #include "nmos/configuration_utils.h"
 #include "nmos/is12_versions.h"
-#include "nmos/json_fields.h"
 
 #include "bst/test/test.h"
 
