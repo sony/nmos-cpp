@@ -1177,3 +1177,43 @@ BST_TEST_CASE(testFindTouchpointResources)
         BST_CHECK_EQUAL(touchpoint, resources.end());
     }
 }
+
+
+BST_TEST_CASE(testValidateResource)
+{
+    using web::json::value_of;
+    using web::json::value;
+
+    nmos::experimental::control_protocol_state control_protocol_state;
+    auto get_control_protocol_class_descriptor = nmos::make_get_control_protocol_class_descriptor_handler(control_protocol_state);
+
+    auto root_block = nmos::make_root_block();
+    auto oid = nmos::root_block_oid;
+    // root, ClassManager
+    auto class_manager = nmos::make_class_manager(++oid, control_protocol_state);
+    auto receiver_block_oid = ++oid;
+    // root, receivers
+    auto receivers = nmos::make_block(receiver_block_oid, nmos::root_block_oid, U("receivers"), U("Receivers"), U("Receivers block"));
+
+    // root, receivers, mon1
+    auto monitor1 = nmos::make_receiver_monitor(++oid, true, receiver_block_oid, U("mon1"), U("monitor 1"), U("monitor 1"), value_of({ {nmos::nc::details::make_touchpoint_nmos({nmos::ncp_touchpoint_resource_types::receiver, U("id_1")})} }));
+
+    auto block_class_descriptor = get_control_protocol_class_descriptor(nmos::nc_block_class_id);
+
+    BST_CHECK(nmos::nc::validate_resource(root_block, block_class_descriptor));
+    BST_CHECK(nmos::nc::validate_resource(receivers, block_class_descriptor));
+
+    auto class_manager_class_descriptor = get_control_protocol_class_descriptor(nmos::nc_class_manager_class_id);
+
+    BST_CHECK(nmos::nc::validate_resource(class_manager, class_manager_class_descriptor));
+
+    auto receiver_monitor_class_descriptor = get_control_protocol_class_descriptor(nmos::nc_receiver_monitor_class_id);
+
+    BST_CHECK(nmos::nc::validate_resource(monitor1, receiver_monitor_class_descriptor));
+
+    // Negative tests
+    BST_CHECK(!nmos::nc::validate_resource(root_block, receiver_monitor_class_descriptor));
+    BST_CHECK(!nmos::nc::validate_resource(receivers, class_manager_class_descriptor));
+    BST_CHECK(!nmos::nc::validate_resource(class_manager, block_class_descriptor));
+    BST_CHECK(!nmos::nc::validate_resource(monitor1, block_class_descriptor));
+}

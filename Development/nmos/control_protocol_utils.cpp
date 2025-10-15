@@ -985,6 +985,20 @@ namespace nmos
             }
         }
 
+        // Validate that the resource has been correctly constructed according to the class_descriptor
+        bool validate_resource(const control_protocol_resource& resource, const experimental::control_class_descriptor& class_descriptor)
+        {
+            // Validate properties
+            for (const auto& property_descriptor : class_descriptor.property_descriptors.as_array())
+            {
+                if (!resource.data.has_field(nmos::fields::nc::name(property_descriptor)))
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+
         resources::const_iterator find_resource_by_role_path(const resources& resources, const web::json::array& role_path_)
         {
             auto role_path = role_path_;
