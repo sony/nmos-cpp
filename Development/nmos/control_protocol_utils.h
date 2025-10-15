@@ -195,13 +195,13 @@ namespace nmos
     namespace details
     {
         // Deprecated: use nc::details::get_runtime_property_constraints
-        inline web::json::value get_runtime_property_constraints(const nc_property_id& property_id, const web::json::value& runtime_property_constraints_list) { return nc::details::get_runtime_property_constraints(property_id, runtime_property_constraints_list); };
+        inline web::json::value get_runtime_property_constraints(const nc_property_id& property_id, const web::json::value& runtime_property_constraints_list) { return nc::details::get_runtime_property_constraints(property_id, runtime_property_constraints_list); }
 
         // Deprecated: use nc::details::get_datatype_descriptor
-        inline web::json::value get_datatype_descriptor(const web::json::value& type_name, get_control_protocol_datatype_descriptor_handler get_control_protocol_datatype) { return nc::details::get_datatype_descriptor(type_name, get_control_protocol_datatype); };
+        inline web::json::value get_datatype_descriptor(const web::json::value& type_name, get_control_protocol_datatype_descriptor_handler get_control_protocol_datatype) { return nc::details::get_datatype_descriptor(type_name, get_control_protocol_datatype); }
 
         // Deprecated: use nc::details::get_datatype_constraints
-        inline web::json::value get_datatype_constraints(const web::json::value& type_name, get_control_protocol_datatype_descriptor_handler get_control_protocol_datatype) { return nc::details::get_datatype_constraints(type_name, get_control_protocol_datatype); };
+        inline web::json::value get_datatype_constraints(const web::json::value& type_name, get_control_protocol_datatype_descriptor_handler get_control_protocol_datatype) { return nc::details::get_datatype_constraints(type_name, get_control_protocol_datatype); }
 
         struct datatype_constraints_validation_parameters
         {
@@ -209,66 +209,66 @@ namespace nmos
             get_control_protocol_datatype_descriptor_handler get_control_protocol_datatype_descriptor;
         };
         // Deprecated: use nc::details::constraints_validation
-        inline void constraints_validation(const web::json::value& value, const web::json::value& runtime_property_constraints, const web::json::value& property_constraints, const datatype_constraints_validation_parameters& params) { return nc::details::constraints_validation(value, runtime_property_constraints, property_constraints, nc::details::datatype_constraints_validation_parameters{params.datatype_descriptor, params.get_control_protocol_datatype_descriptor}); };
+        inline void constraints_validation(const web::json::value& value, const web::json::value& runtime_property_constraints, const web::json::value& property_constraints, const datatype_constraints_validation_parameters& params) { return nc::details::constraints_validation(value, runtime_property_constraints, property_constraints, nc::details::datatype_constraints_validation_parameters{params.datatype_descriptor, params.get_control_protocol_datatype_descriptor}); }
 
         // Deprecated: use nc::details::method_parameter_constraints_validation
-        inline void method_parameter_constraints_validation(const web::json::value& data, const web::json::value& property_constraints, const datatype_constraints_validation_parameters& params) { return nc::details::method_parameter_constraints_validation(data, property_constraints, nc::details::datatype_constraints_validation_parameters{params.datatype_descriptor, params.get_control_protocol_datatype_descriptor}); };
+        inline void method_parameter_constraints_validation(const web::json::value& data, const web::json::value& property_constraints, const datatype_constraints_validation_parameters& params) { return nc::details::method_parameter_constraints_validation(data, property_constraints, nc::details::datatype_constraints_validation_parameters{params.datatype_descriptor, params.get_control_protocol_datatype_descriptor}); }
     }
 
     // Deprecated: use nc::is_block
-    inline bool is_nc_block(const nc_class_id& class_id) { return nc::is_block(class_id); };
+    inline bool is_nc_block(const nc_class_id& class_id) { return nc::is_block(class_id); }
 
     // Deprecated: use nc::is_worker
-    inline bool is_nc_worker(const nc_class_id& class_id) { return nc::is_worker(class_id); };
+    inline bool is_nc_worker(const nc_class_id& class_id) { return nc::is_worker(class_id); }
 
     // Deprecated: use nc::is_manager
-    inline bool is_nc_manager(const nc_class_id& class_id) { return nc::is_manager(class_id); };
+    inline bool is_nc_manager(const nc_class_id& class_id) { return nc::is_manager(class_id); }
 
     // Deprecated: use nc::is_device_manager
-    inline bool is_nc_device_manager(const nc_class_id& class_id) { return nc::is_device_manager(class_id); };
+    inline bool is_nc_device_manager(const nc_class_id& class_id) { return nc::is_device_manager(class_id); }
 
     // Deprecated: use nc::is_class_manager
-    inline bool is_nc_class_manager(const nc_class_id& class_id) { return nc::is_class_manager(class_id); };
+    inline bool is_nc_class_manager(const nc_class_id& class_id) { return nc::is_class_manager(class_id); }
 
     // Deprecated: use nc::make_class_id
-    inline nc_class_id make_nc_class_id(const nc_class_id& prefix, int32_t authority_key, const std::vector<int32_t>& suffix) { return nc::make_class_id(prefix, authority_key, suffix); };
-    inline nc_class_id make_nc_class_id(const nc_class_id& prefix, const std::vector<int32_t>& suffix) { return nc::make_class_id(prefix, suffix); };
+    inline nc_class_id make_nc_class_id(const nc_class_id& prefix, int32_t authority_key, const std::vector<int32_t>& suffix) { return nc::make_class_id(prefix, authority_key, suffix); }
+    inline nc_class_id make_nc_class_id(const nc_class_id& prefix, const std::vector<int32_t>& suffix) { return nc::make_class_id(prefix, suffix); }
 
     // Deprecated: use nc::find_property_descriptor
-    inline web::json::value find_property_descriptor(const nc_property_id& property_id, const nc_class_id& class_id, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor) { return nc::find_property_descriptor(property_id, class_id, get_control_protocol_class_descriptor); };
+    inline web::json::value find_property_descriptor(const nc_property_id& property_id, const nc_class_id& class_id, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor) { return nc::find_property_descriptor(property_id, class_id, get_control_protocol_class_descriptor); }
 
     // Deprecated: use nc::get_member_descriptors
-    inline void get_member_descriptors(const resources& resources, const resource& resource, bool recurse, web::json::array& descriptors) { return nc::get_member_descriptors(resources, resource, recurse, descriptors); };
+    inline void get_member_descriptors(const resources& resources, const resource& resource, bool recurse, web::json::array& descriptors) { return nc::get_member_descriptors(resources, resource, recurse, descriptors); }
 
     // Deprecated: use nc::find_members_by_role
-    inline void find_members_by_role(const resources& resources, const resource& resource, const utility::string_t& role, bool match_whole_string, bool case_sensitive, bool recurse, web::json::array& nc_block_member_descriptors) { return nc::find_members_by_role(resources, resource, role, match_whole_string, case_sensitive, recurse, nc_block_member_descriptors); };
+    inline void find_members_by_role(const resources& resources, const resource& resource, const utility::string_t& role, bool match_whole_string, bool case_sensitive, bool recurse, web::json::array& nc_block_member_descriptors) { return nc::find_members_by_role(resources, resource, role, match_whole_string, case_sensitive, recurse, nc_block_member_descriptors); }
 
     // Deprecated: use nc::find_members_by_class_id
-    inline void find_members_by_class_id(const resources& resources, const resource& resource, const nc_class_id& class_id, bool include_derived, bool recurse, web::json::array& descriptors) { return nc::find_members_by_class_id(resources, resource, class_id, include_derived, recurse, descriptors); };
+    inline void find_members_by_class_id(const resources& resources, const resource& resource, const nc_class_id& class_id, bool include_derived, bool recurse, web::json::array& descriptors) { return nc::find_members_by_class_id(resources, resource, class_id, include_derived, recurse, descriptors); }
 
     // Deprecated: use nc::push_back
-    inline void push_back(control_protocol_resource& nc_block_resource, const control_protocol_resource& resource) { return nc::push_back(nc_block_resource, resource); };
+    inline void push_back(control_protocol_resource& nc_block_resource, const control_protocol_resource& resource) { return nc::push_back(nc_block_resource, resource); }
 
     // Deprecated: use nc::insert_resource
-    inline std::pair<resources::iterator, bool> insert_control_protocol_resource(resources& resources, resource&& resource) { return nc::insert_resource(resources, std::move(resource)); };
+    inline std::pair<resources::iterator, bool> insert_control_protocol_resource(resources& resources, resource&& resource) { return nc::insert_resource(resources, std::move(resource)); }
 
     // Deprecated: use nc::modify_resource
-    inline bool modify_control_protocol_resource(resources& resources, const id& id, std::function<void(resource&)> modifier, const web::json::value& notification_event = web::json::value::null()) { return nc::modify_resource(resources, id, modifier, notification_event); };
+    inline bool modify_control_protocol_resource(resources& resources, const id& id, std::function<void(resource&)> modifier, const web::json::value& notification_event = web::json::value::null()) { return nc::modify_resource(resources, id, modifier, notification_event); }
 
     // Deprecated: use nc::erase_resource
-    inline resources::size_type erase_control_protocol_resource(resources& resources, const id& id) { return nc::erase_resource(resources, id); };
+    inline resources::size_type erase_control_protocol_resource(resources& resources, const id& id) { return nc::erase_resource(resources, id); }
 
     // Deprecated: use nc::find_resource
-    inline resources::const_iterator find_control_protocol_resource(resources& resources, type type, const id& id) { return nc::find_resource(resources, type, id); };
+    inline resources::const_iterator find_control_protocol_resource(resources& resources, type type, const id& id) { return nc::find_resource(resources, type, id); }
 
     // Deprecated: use nc::method_parameters_contraints_validation
-    inline void method_parameters_contraints_validation(const web::json::value& arguments, const web::json::value& nc_method_descriptor, get_control_protocol_datatype_descriptor_handler get_control_protocol_datatype_descriptor) { return nc::method_parameters_contraints_validation(arguments, nc_method_descriptor, get_control_protocol_datatype_descriptor); };
+    inline void method_parameters_contraints_validation(const web::json::value& arguments, const web::json::value& nc_method_descriptor, get_control_protocol_datatype_descriptor_handler get_control_protocol_datatype_descriptor) { return nc::method_parameters_contraints_validation(arguments, nc_method_descriptor, get_control_protocol_datatype_descriptor); }
 
     // Deprecated: use nc::insert_notification_events
-    inline void insert_notification_events(resources& resources, const api_version& version, const api_version& downgrade_version, const type& type, const web::json::value& pre, const web::json::value& post, const web::json::value& event) { return nc::insert_notification_events(resources, version, downgrade_version, type, pre, post, event); };
+    inline void insert_notification_events(resources& resources, const api_version& version, const api_version& downgrade_version, const type& type, const web::json::value& pre, const web::json::value& post, const web::json::value& event) { return nc::insert_notification_events(resources, version, downgrade_version, type, pre, post, event); }
 
     // Deprecated: use nc::get_property
-    inline web::json::value get_control_protocol_property(const resources& resources, nc_oid oid, const nc_property_id& property_id, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, slog::base_gate& gate) { return nc::get_property(resources, oid, property_id, get_control_protocol_class_descriptor, gate); };
+    inline web::json::value get_control_protocol_property(const resources& resources, nc_oid oid, const nc_property_id& property_id, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, slog::base_gate& gate) { return nc::get_property(resources, oid, property_id, get_control_protocol_class_descriptor, gate); }
 }
 
 #endif

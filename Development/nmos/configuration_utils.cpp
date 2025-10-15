@@ -724,7 +724,7 @@ namespace nmos
         }
 
         // Order role paths by length so we implicitly process blocks before the child objects of that block
-        std::sort(role_paths.begin(), role_paths.end(), [](auto a, auto b) { return a.size() < b.size(); });
+        std::sort(role_paths.begin(), role_paths.end(), [](const web::json::array& a, const web::json::array& b) { return a.size() < b.size(); });
 
         for (const auto& role_path: role_paths)
         {

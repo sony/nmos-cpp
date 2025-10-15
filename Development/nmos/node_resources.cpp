@@ -159,7 +159,7 @@ namespace nmos
             {
                 auto configuration_uri = web::uri_builder()
                     .set_scheme(nmos::http_scheme(settings))
-                    .set_port(nmos::fields::connection_port(settings))
+                    .set_port(nmos::fields::configuration_port(settings))
                     .set_path(U("/x-nmos/configuration/") + make_api_version(version));
                 auto type = U("urn:x-nmos:control:configuration/") + make_api_version(version);
 
