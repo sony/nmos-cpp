@@ -1714,8 +1714,8 @@ BST_TEST_CASE(testFindMembersByClassId)
     auto example_1 = make_example_block_resource(example_class_id_1, ++oid, nmos::root_block_oid, U("example block 1"), U("Example Block 1"), U("Example Block 1"));
     auto example_2 = make_example_worker_resource(example_class_id_2, ++oid, nmos::root_block_oid, U("example block 2"), U("Example Block 2"), U("Example Block 2"));
 
-    nmos::nc::push_back(root_block, exmaple_1);
-    nmos::nc::push_back(root_block, exmaple_2);
+    nmos::nc::push_back(root_block, example_1);
+    nmos::nc::push_back(root_block, example_2);
 
     nmos::resources resources;
 
