@@ -504,27 +504,42 @@ namespace nmos
             // otherwise, there's actually work to do...
 
             details::reverse_lock_guard<nmos::read_lock> unlock(lock);
-            // note, without atomic upgrade, another thread may preempt hence the need to recalculate expire_health/forget_health and least_health
-            auto upgrade = model.write_lock();
-
-            expire_health = health_now() - nmos::fields::events_expiry_interval(model.settings);
-            forget_health = expire_health - nmos::fields::events_expiry_interval(model.settings);
-
-            // forget all resources expired in the previous interval
-            forget_erased_resources(resources, forget_health);
-
-            // expire all connections for which there hasn't been a heartbeat in the last expiry interval
-            const auto expired = erase_expired_resources(resources, expire_health, false, true);
-
-            if (0 != expired)
+            // note 1, without atomic upgrade, another thread may preempt hence the need to recalculate expire_health/forget_health and least_health
+            // note 2, the try-catch block is used here because the Windows version of the `boost::shared_mutex::lock` throws lock exceptions when
+            //         it has reached the maximum number of 128 exclusive_waiting locks. As an alternative we could replace the initial
+            //         model.read_lock() with model.write_lock(). Then, we could remove the reverse_lock_guard for switching from read_lock to write_lock.
+            for (;;)
             {
-                slog::log<slog::severities::info>(gate, SLOG_FLF) << expired << " resources have expired";
+                try
+                {
+                    auto upgrade = model.write_lock();
 
-                slog::log<slog::severities::too_much_info>(gate, SLOG_FLF) << "Notifying events websockets thread"; // and anyone else who cares...
-                model.notify();
+                    expire_health = health_now() - nmos::fields::events_expiry_interval(model.settings);
+                    forget_health = expire_health - nmos::fields::events_expiry_interval(model.settings);
+
+                    // forget all resources expired in the previous interval
+                    forget_erased_resources(resources, forget_health);
+
+                    // expire all connections for which there hasn't been a heartbeat in the last expiry interval
+                    const auto expired = erase_expired_resources(resources, expire_health, false, true);
+
+                    if (0 != expired)
+                    {
+                        slog::log<slog::severities::info>(gate, SLOG_FLF) << expired << " resources have expired";
+
+                        slog::log<slog::severities::too_much_info>(gate, SLOG_FLF) << "Notifying events websockets thread"; // and anyone else who cares...
+                        model.notify();
+                    }
+
+                    least_health = nmos::least_health(resources);
+                    break;
+                }
+                catch (const std::exception& e)
+                {
+                    slog::log<slog::severities::warning>(gate, SLOG_FLF) << "erase_expired_events_resources_thread error: " << e.what();
+                    std::this_thread::yield();
+                }
             }
-
-            least_health = nmos::least_health(resources);
         }
     }
 }

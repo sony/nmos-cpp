@@ -15,7 +15,26 @@ namespace nmos
         public:
             typedef BasicLockable mutex_type;
             explicit reverse_lock_guard(mutex_type& m) : m(m) { m.unlock(); }
-            ~reverse_lock_guard() { m.lock(); }
+            ~reverse_lock_guard()
+            {
+                // note, the try-catch block is used here because the Windows version of the `boost::shared_mutex::lock` throws lock exceptions when
+                // it has reached the maximum number of 128 exclusive_waiting locks.
+
+                // ensure the lock is grabbed before return
+                for (;;)
+                {
+                    try
+                    {
+                        m.lock();
+                        break;
+                    }
+                    catch (...)
+                    {
+                        // ignore exception, and try again
+                        std::this_thread::yield();
+                    }
+                }
+            }
             reverse_lock_guard(const reverse_lock_guard&) = delete;
             reverse_lock_guard& operator=(const reverse_lock_guard&) = delete;
         private:
@@ -29,8 +48,8 @@ namespace nmos
         {
             for (;;)
             {
-                // Note: the try-catch block is here because Windows boost::condition_variable_any::wait can throw
-                // an exception once boost::shared_mutex has reached the maximum number of exclusive_waiting locks
+                // note, the try-catch block is used here because Windows boost::condition_variable_any::wait throws
+                // lock exception when boost::shared_mutex has reached the maximum number of 128 exclusive_waiting locks
                 try
                 {
                     if ((TimePoint::max)() == tp)
@@ -46,6 +65,7 @@ namespace nmos
                 catch (...)
                 {
                     // try the wait again
+                    std::this_thread::yield();
                 }
             }
         }
