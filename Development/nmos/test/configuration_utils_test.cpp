@@ -362,7 +362,6 @@ BST_TEST_CASE(testApplyBackupDataSet)
     // root, receivers, mon2
     auto monitor2 = nmos::make_receiver_monitor(++oid, true, receiver_block_oid, U("mon2"), U("monitor 2"), U("monitor 2"), value_of({ {nmos::nc::details::make_touchpoint_nmos({nmos::ncp_touchpoint_resource_types::receiver, U("id_2")})} }));
     auto monitor_2_oid = oid;
-
     nmos::nc::push_back(receivers, monitor1);
     nmos::nc::push_back(receivers, monitor2);
     nmos::nc::push_back(root_block, receivers);
@@ -415,7 +414,7 @@ BST_TEST_CASE(testApplyBackupDataSet)
     const auto enabled_property_descriptor = nmos::nc::details::make_property_descriptor(U("enabled"), nmos::nc_worker_enabled_property_id, nmos::fields::nc::enabled, U("NcBoolean"), false, false, false, false, web::json::value::null());
     const auto class_id_property_descriptor = nmos::nc::details::make_property_descriptor(U("classId"), nmos::nc_object_class_id_property_id, nmos::fields::nc::class_id, U("NcClassId"), true, false, false, false, web::json::value::null());
     {
-        // Check the successful modification of the "enabled" flag of mon3's worker base class in Modify mode
+        // Check the successful modification of the "enabled" flag of mon1's worker base class in Modify mode
         //
         // Create Object Properties Holder
         auto object_properties_holders = value::array();
@@ -431,7 +430,6 @@ BST_TEST_CASE(testApplyBackupDataSet)
         const auto restore_mode = nmos::nc_restore_mode::restore_mode::modify;
 
         const auto& resource = nmos::nc::find_resource_by_role_path(resources, target_role_path.as_array());
-
         auto output = nmos::apply_backup_data_set(resources, *resource, object_properties_holders.as_array(), recurse, restore_mode, validate, get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor, get_read_only_modification_allow_list, remove_device_model_object, create_device_model_object, property_changed);
 
         // expectation is there will be a result for each of the object_properties_holders i.e. one
@@ -974,7 +972,7 @@ BST_TEST_CASE(testApplyBackupDataSet_AddDeviceModelObject)
     bool get_read_only_modification_allow_list_called = false;
     bool remove_device_model_object_called = false;
     bool create_device_model_object_called = false;
-    bool property_changed_called = true;
+    bool property_changed_called = false;
 
     // callback stubs
     nmos::control_protocol_property_changed_handler property_changed = [&](const nmos::resource& resource, const utility::string_t& property_name, int index)
