@@ -637,7 +637,7 @@ BST_TEST_CASE(testApplyBackupDataSet)
         BST_CHECK(!get_read_only_modification_allow_list_called);
         BST_CHECK(remove_device_model_object_called);
         BST_CHECK(!create_device_model_object_called);
-        BST_CHECK(!property_changed_called);
+        BST_CHECK(property_changed_called);
 
         // reset device model to initial state
         nmos::apply_backup_data_set(resources, *resource, initial_object_properties_holders, recurse, restore_mode, validate, get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor, get_read_only_modification_allow_list, remove_device_model_object, create_device_model_object, property_changed);
@@ -715,7 +715,7 @@ BST_TEST_CASE(testApplyBackupDataSet)
         BST_CHECK(!get_read_only_modification_allow_list_called);
         BST_CHECK(!remove_device_model_object_called);
         BST_CHECK(create_device_model_object_called);
-        BST_CHECK(!property_changed_called);
+        BST_CHECK(property_changed_called);
     }
     {
         // Check that role paths outside of the scope of the target role path are errored
