@@ -3,6 +3,7 @@
 #include "cpprest/ws_utils.h"
 #include "nmos/api_utils.h"
 #include "nmos/channelmapping_activation.h"
+#include "nmos/configuration_api.h"
 #include "nmos/control_protocol_ws_api.h"
 #include "nmos/events_api.h"
 #include "nmos/events_ws_api.h"
@@ -23,8 +24,8 @@ namespace nmos
 {
     namespace experimental
     {
-        // Construct a server instance for an NMOS Node, implementing the IS-04 Node API, IS-05 Connection API, IS-07 Events API, the IS-10 Authorization API
-        // and the experimental Logging API and Settings API, according to the specified data models and callbacks
+        // Construct a server instance for an NMOS Node, implementing the IS-04 Node API, IS-05 Connection API, IS-07 Events API, IS-08 Audio Channel Mapping API, IS-10 Authorization API,
+        // IS-12 Control & Monitoring Protocol Websocket API, IS-14 Configuration API and the experimental Logging API and Settings API, according to the specified data models and callbacks
         nmos::server make_node_server(nmos::node_model& node_model, nmos::experimental::node_implementation node_implementation, nmos::experimental::log_model& log_model, slog::base_gate& gate)
         {
             // Log the API addresses we'll be using
@@ -76,7 +77,12 @@ namespace nmos
 
             node_server.api_routers[{ {}, nmos::fields::channelmapping_port(node_model.settings) }].mount({}, nmos::make_channelmapping_api(node_model, node_implementation.validate_map, validate_authorization ? validate_authorization(nmos::experimental::scopes::channelmapping) : nullptr, gate));
 
+            // Configure the Configuration API
+
+            node_server.api_routers[{ {}, nmos::fields::configuration_port(node_model.settings) }].mount({}, nmos::make_configuration_api(node_model, validate_authorization ? validate_authorization(nmos::experimental::scopes::configuration) : nullptr, node_implementation.get_control_protocol_class_descriptor, node_implementation.get_control_protocol_datatype_descriptor, node_implementation.get_control_protocol_method_descriptor, node_implementation.create_validation_fingerprint, node_implementation.validate_validation_fingerprint, node_implementation.get_read_only_modification_allow_list, node_implementation.remove_device_model_object, node_implementation.create_device_model_object, node_implementation.control_protocol_property_changed, gate));
+
             // Configure the Stream Compatibility API
+
             node_server.api_routers[{ {}, nmos::fields::streamcompatibility_port(node_model.settings) }].mount({}, nmos::experimental::make_streamcompatibility_api(node_model, node_implementation.base_edid_changed, node_implementation.set_effective_edid, node_implementation.active_constraints_changed, validate_authorization ? validate_authorization(nmos::experimental::scopes::streamcompatibility) : nullptr, gate));
 
             const auto& events_ws_port = nmos::fields::events_ws_port(node_model.settings);
@@ -145,6 +151,7 @@ namespace nmos
             auto resolve_auto = node_implementation.resolve_auto;
             auto set_transportfile = node_implementation.set_transportfile;
             auto connection_activated = node_implementation.connection_activated;
+            auto monitor_connection_activated = node_implementation.monitor_connection_activated;
             auto channelmapping_activated = node_implementation.channelmapping_activated;
             auto get_authorization_bearer_token = node_implementation.get_authorization_bearer_token;
             auto validate_sender_resources = node_implementation.validate_sender_resources;
@@ -153,7 +160,7 @@ namespace nmos
                 [&, load_ca_certificates, registration_changed, get_authorization_bearer_token] { nmos::node_behaviour_thread(node_model, load_ca_certificates, registration_changed, get_authorization_bearer_token, gate); },
                 [&] { nmos::send_events_ws_messages_thread(events_ws_listener, node_model, events_ws_api.second, gate); },
                 [&] { nmos::erase_expired_events_resources_thread(node_model, gate); },
-                [&, resolve_auto, set_transportfile, connection_activated] { nmos::connection_activation_thread(node_model, resolve_auto, set_transportfile, connection_activated, gate); },
+                [&, resolve_auto, set_transportfile, connection_activated, monitor_connection_activated] { nmos::connection_activation_thread(node_model, resolve_auto, set_transportfile, connection_activated, monitor_connection_activated, gate); },
                 [&, channelmapping_activated] { nmos::channelmapping_activation_thread(node_model, channelmapping_activated, gate); },
                 [&, validate_sender_resources, validate_receiver] { nmos::experimental::streamcompatibility_behaviour_thread(node_model, validate_sender_resources, validate_receiver, gate); }
             });

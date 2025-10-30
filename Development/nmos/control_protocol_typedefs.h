@@ -91,12 +91,14 @@ namespace nmos
         {
             unknown = 0,            // Unknown
             power_on = 1,           // Power on
-            internal_error = 2,      // Internal error
+            internal_error = 2,     // Internal error
             upgrade = 3,            // Upgrade
             controller_request = 4, // Controller request
-            manual_reset = 5         // Manual request from the front panel
+            manual_reset = 5        // Manual request from the front panel
         };
     }
+
+    // BCP-008-01/02 enum types
 
     // NcConnectionStatus
     // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/monitoring/#ncconnectionstatus
@@ -104,23 +106,122 @@ namespace nmos
     {
         enum status
         {
-            undefined = 0,          // This is the value when there is no receiver
-            connected = 1,          // Connected to a stream
-            disconnected = 2,       // Not connected to a stream
-            connection_error = 3     // A connection error was encountered
+            inactive = 0,           // Inactive
+            healthy = 1,            // Active and healthy
+            partially_healthy = 2,  // Active and partially healthy
+            unhealthy = 3           // Active and unhealthy
         };
     }
 
-    // NcPayloadStatus
-    // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/monitoring/#ncpayloadstatus
-    namespace nc_payload_status
+    // NcEssenceStatus
+    // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/monitoring/#ncessencestatus
+    namespace nc_essence_status
     {
         enum status
         {
-            undefined = 0,                  // This is the value when there's no connection.
-            payload_ok = 1,                  // Payload is being received without errors and is the correct type
-            payload_format_unsupported = 2,   // Payload is being received but is of an unsupported type
-            payloadError = 3                // A payload error was encountered
+            inactive = 0,           // Inactive
+            healthy = 1,            // Active and healthy
+            partially_healthy = 2,  // Active and partially healthy
+            unhealthy = 3           // Active and unhealthy
+        };
+    }
+
+    // NcLinkStatus
+    // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/monitoring/#nclinkstatus
+    namespace nc_link_status
+    {
+        enum status
+        {
+            all_up = 1,    // All the associated network interfaces are up
+            some_down = 2, // Some of the associated network interfaces are down
+            all_down = 3   // All the associated network interfaces are down
+        };
+    }
+
+    // NcOverallStatus
+    // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/monitoring/#ncoverallstatus
+    namespace nc_overall_status
+    {
+        enum status
+        {
+            inactive = 0,           // Inactive
+            healthy = 1,            // The overall status is healthy
+            partially_healthy = 2,  // The overall status is partially healthy
+            unhealthy = 3           // The overall status is unhealthy
+        };
+    }
+
+    // NcSynchronizationStatus
+    // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/monitoring/#ncsynchronizationstatus
+    namespace nc_synchronization_status
+    {
+        enum status
+        {
+            not_used = 0,           // Feature not in use
+            healthy = 1,            // Locked to a synchronization source
+            partially_healthy = 2,  // Partially locked to a synchronization source
+            unhealthy = 3           // Not locked to a synchronization source
+        };
+    }
+
+    // NcStreamStatus
+    // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/monitoring/#ncstreamstatus
+    namespace nc_stream_status
+    {
+        enum status
+        {
+            inactive = 0,           // Inactive
+            healthy = 1,            // Active and healthy
+            partially_healthy = 2,  // Active and partially healthy
+            unhealthy = 3           // Active and unhealthy
+        };
+    }
+
+    // NcTransmissionStatus
+    // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/monitoring/#nctransmissionstatus
+    namespace nc_transmission_status
+    {
+        enum status
+        {
+            inactive = 0,           // Inactive
+            healthy = 1,            // Active and healthy
+            partially_healthy = 2,  // Active and partially healthy
+            unhealthy = 3           // Active and unhealthy
+        };
+    }
+
+    // NcRestoreMode
+    // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/device-configuration/#ncrestoremode
+    namespace nc_restore_mode
+    {
+        enum restore_mode
+        {
+            modify = 0, // Restore mode is Modify
+            rebuild = 1 // Restore mode is Rebuild
+        };
+    }
+
+    // NcRestoreValidationStatus
+    // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/device-configuration/#ncrestorevalidationstatus
+    namespace nc_restore_validation_status
+    {
+        enum status
+        {
+            ok = 200,                 // Restore was successful
+            failed = 400,             // Restore failed because relevant backup data set provided is invalid
+            not_found = 404,          // Restore failed because the role path is not found in the device model or the device cannot create the role path from the data set
+            device_error = 500        // Restore failed due to an internal device error preventing the restore from happening
+        };
+    }
+
+    // NcPropertyRestoreNoticeType
+    // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/device-configuration/#ncpropertyrestorenoticetype
+    namespace nc_property_restore_notice_type
+    {
+        enum type
+        {
+            warning = 300,  // Warning property restore notice
+            error = 400     // Error property restore notice
         };
     }
 
@@ -171,6 +272,20 @@ namespace nmos
     // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncclassmanager
     const nc_method_id nc_class_manager_get_control_class_method_id(3, 1);
     const nc_method_id nc_class_manager_get_datatype_method_id(3, 2);
+    // NcMethodIds for NcReceiverMonitor
+    // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/monitoring/#ncreceivermonitor
+    const nc_method_id nc_receiver_monitor_get_lost_packet_counters_method_id(4, 1);
+    const nc_method_id nc_receiver_monitor_get_late_packet_counters_method_id(4, 2);
+    const nc_method_id nc_receiver_monitor_reset_monitor_method_id(4, 3);
+    // NcMethodIds for NcSenderMonitor
+    // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/monitoring/#ncsendermonitor
+    const nc_method_id nc_sender_monitor_get_transmission_error_counters_method_id(4, 1);
+    const nc_method_id nc_sender_monitor_reset_monitor_method_id(4, 2);
+    // NcMethodsIds for NcBulkPropertiesManager
+    // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/device-configuration/#ncbulkpropertiesholder
+    const nc_method_id nc_bulk_properties_manager_get_properties_by_path_method_id(3, 1);
+    const nc_method_id nc_bulk_properties_manager_validate_set_properties_by_path_method_id(3, 2);
+    const nc_method_id nc_bulk_properties_manager_set_properties_by_path_method_id(3, 3);
 
     // NcPropertyId
     // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncpropertyid
@@ -208,15 +323,42 @@ namespace nmos
     // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncclassmanager
     const nc_property_id nc_class_manager_control_classes_property_id(3, 1);
     const nc_property_id nc_class_manager_datatypes_property_id(3, 2);
+    // NcPropertyIds for NcStatusMonitor
+    const nc_property_id nc_status_monitor_overall_status_property_id(3, 1);
+    const nc_property_id nc_status_monitor_overall_status_message_property_id(3, 2);
+    const nc_property_id nc_status_monitor_status_reporting_delay(3, 3);
     // NcPropertyids for NcReceiverMonitor
     // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/monitoring/#ncreceivermonitor
-    const nc_property_id nc_receiver_monitor_connection_status_property_id(3, 1);
-    const nc_property_id nc_receiver_monitor_connection_status_message_property_id(3, 2);
-    const nc_property_id nc_receiver_monitor_payload_status_property_id(3, 3);
-    const nc_property_id nc_receiver_monitor_payload_status_message_property_id(3, 4);
-    // NcPropertyids for NcReceiverMonitorProtected
-    // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/monitoring/#ncreceivermonitorprotected
-    const nc_property_id nc_receiver_monitor_protected_signal_protection_status_property_id(4, 1);
+    const nc_property_id nc_receiver_monitor_link_status_property_id(4, 1);
+    const nc_property_id nc_receiver_monitor_link_status_message_property_id(4, 2);
+    const nc_property_id nc_receiver_monitor_link_status_transition_counter_property_id(4, 3);
+    const nc_property_id nc_receiver_monitor_connection_status_property_id(4, 4);
+    const nc_property_id nc_receiver_monitor_connection_status_message_property_id(4, 5);
+    const nc_property_id nc_receiver_monitor_connection_status_transition_counter_property_id(4, 6);
+    const nc_property_id nc_receiver_monitor_external_synchronization_status_property_id(4, 7);
+    const nc_property_id nc_receiver_monitor_external_synchronization_status_message_property_id(4, 8);
+    const nc_property_id nc_receiver_monitor_external_synchronization_status_transition_counter_property_id(4, 9);
+    const nc_property_id nc_receiver_monitor_synchronization_source_id_property_id(4, 10);
+    const nc_property_id nc_receiver_monitor_stream_status_property_id(4, 11);
+    const nc_property_id nc_receiver_monitor_stream_status_message_property_id(4, 12);
+    const nc_property_id nc_receiver_monitor_stream_status_transition_counter_property_id(4, 13);
+    const nc_property_id nc_receiver_monitor_auto_reset_monitor_property_id(4, 14);
+    // NcPropertyIds for NcSenderMonitor
+    // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/monitoring/#ncsendermonitor
+    const nc_property_id nc_sender_monitor_link_status_property_id(4, 1);
+    const nc_property_id nc_sender_monitor_link_status_message_property_id(4, 2);
+    const nc_property_id nc_sender_monitor_link_status_transition_counter_property_id(4, 3);
+    const nc_property_id nc_sender_monitor_transmission_status_property_id(4, 4);
+    const nc_property_id nc_sender_monitor_transmission_status_message_property_id(4, 5);
+    const nc_property_id nc_sender_monitor_transmission_status_transition_counter_property_id(4, 6);
+    const nc_property_id nc_sender_monitor_external_synchronization_status_property_id(4, 7);
+    const nc_property_id nc_sender_monitor_external_synchronization_status_message_property_id(4, 8);
+    const nc_property_id nc_sender_monitor_external_synchronization_status_transition_counter_property_id(4, 9);
+    const nc_property_id nc_sender_monitor_synchronization_source_id_property_id(4, 10);
+    const nc_property_id nc_sender_monitor_essence_status_property_id(4, 11);
+    const nc_property_id nc_sender_monitor_essence_status_message_property_id(4, 12);
+    const nc_property_id nc_sender_monitor_essence_status_transition_counter_property_id(4, 13);
+    const nc_property_id nc_sender_monitor_auto_reset_monitor_property_id(4, 14);
     // NcPropertyids for NcIdentBeacon
     // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/identification/#ncidentbeacon
     const nc_property_id nc_ident_beacon_active_property_id(3, 1);
@@ -232,8 +374,6 @@ namespace nmos
     // NcOid
     // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncoid
     typedef uint32_t nc_oid;
-    // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Blocks.html
-    const nc_oid root_block_oid{ 1 };
 
     // NcUri
     // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncuri
@@ -254,6 +394,11 @@ namespace nmos
     // NcClassId
     // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncclassid
     typedef std::vector<int32_t> nc_class_id;
+
+    // NcRolePath
+    // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncrolepath
+    typedef std::vector<utility::string_t> nc_role_path;
+
     // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncobject
     const nc_class_id nc_object_class_id({ 1 });
     // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncblock
@@ -267,11 +412,15 @@ namespace nmos
     // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncclassmanager
     const nc_class_id nc_class_manager_class_id({ 1, 3, 2 });
     // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/identification/#ncidentbeacon
-    const nc_class_id nc_ident_beacon_class_id({ 1, 2, 2 });
+    const nc_class_id nc_ident_beacon_class_id({ 1, 2, 1 });
+    // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/monitoring/#ncstatusmonitor
+    const nc_class_id nc_status_monitor_class_id({ 1, 2, 2 });
     // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/monitoring/#ncreceivermonitor
-    const nc_class_id nc_receiver_monitor_class_id({ 1, 2, 3 });
-    // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/monitoring/#ncreceivermonitorprotected
-    const nc_class_id nc_receiver_monitor_protected_class_id({ 1, 2, 3, 1 });
+    const nc_class_id nc_receiver_monitor_class_id({ 1, 2, 2, 1 });
+    // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/monitoring/#ncsendermonitor
+    const nc_class_id nc_sender_monitor_class_id({ 1, 2, 2, 2 });
+    // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/device-configuration/#ncbulkpropertiesmanager
+    const nc_class_id nc_bulk_properties_manager_class_id({ 1, 3, 3 });
 
     // NcTouchpoint
     // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#nctouchpoint
@@ -353,7 +502,7 @@ namespace nmos
             , id(id)
         {}
 
-        nc_touchpoint_resource_nmos(const ncp_nmos_resource_type& resource_type, nc_uuid id)
+        nc_touchpoint_resource_nmos(const ncp_touchpoint_resource_type& resource_type, nc_uuid id)
             : nc_touchpoint_resource(resource_type.name)
             , id(id)
         {}
@@ -381,6 +530,14 @@ namespace nmos
         friend bool operator!=(const nc_touchpoint_resource_nmos_channel_mapping& lhs, const nc_touchpoint_resource_nmos_channel_mapping& rhs) { return !(lhs == rhs); }
         friend bool operator<(const nc_touchpoint_resource_nmos_channel_mapping& lhs, const nc_touchpoint_resource_nmos_channel_mapping& rhs) { return lhs.tied() < rhs.tied(); }
     };
+
+    // Root block specification
+    // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Blocks.html
+    const nc_oid root_block_oid{ 1 };
+    const utility::string_t root_block_role{ U("root") };
+
+    // Device Configuration
+    const utility::string_t bulk_properties_manager_role{ root_block_role + U(".BulkPropertiesManager") };
 }
 
 #endif

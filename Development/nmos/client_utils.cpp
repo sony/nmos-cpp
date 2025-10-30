@@ -296,10 +296,10 @@ namespace nmos
     {
         slog::log<slog::severities::too_much_info>(gate, SLOG_FLF) << "Sending request";
         // see https://developer.mozilla.org/en-US/docs/Web/API/Resource_Timing_API#Resource_loading_timestamps
-        const auto start_time = std::chrono::system_clock::now();
+        const auto start_time = std::chrono::steady_clock::now();
         return client.request(request, token).then([start_time, &gate](web::http::http_response res)
         {
-            const auto response_start = std::chrono::system_clock::now();
+            const auto response_start = std::chrono::steady_clock::now();
             const auto request_dur = std::chrono::duration_cast<std::chrono::microseconds>(response_start - start_time).count() / 1000.0;
 
             // see https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Server-Timing

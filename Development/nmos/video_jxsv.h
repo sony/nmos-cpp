@@ -355,6 +355,7 @@ namespace nmos
     sdp_parameters make_video_jxsv_sdp_parameters(const utility::string_t& session_name, const video_jxsv_parameters& params, uint64_t payload_type, const std::vector<utility::string_t>& media_stream_ids = {}, const std::vector<sdp_parameters::ts_refclk_t>& ts_refclk = {});
     // Get additional "video/jxsv" parameters from the SDP parameters
     video_jxsv_parameters get_video_jxsv_parameters(const sdp_parameters& sdp_params);
+    video_jxsv_parameters get_video_jxsv_parameters_or_defaults(const sdp_parameters& sdp_params);
 
     // Construct SDP parameters for "video/jxsv"
     inline sdp_parameters make_sdp_parameters(const utility::string_t& session_name, const video_jxsv_parameters& params, uint64_t payload_type, const std::vector<utility::string_t>& media_stream_ids = {}, const std::vector<sdp_parameters::ts_refclk_t>& ts_refclk = {})

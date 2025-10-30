@@ -2,7 +2,7 @@
 
 The following instructions describe how to set up and build this software.
 
-The test platforms include Windows with Visual Studio 2017 and 2019, and Linux with GCC 4.8 and GCC 7.5.
+The test platforms include Windows with Visual Studio 2017, 2019 and 2022, and Linux with GCC 4.8, GCC 7.5, GCC 11.2.0 and GCC 13.2.0.
 Specific instructions for [cross-compiling for Raspberry Pi](Raspberry-Pi.md) are also provided.
 
 Notes:
@@ -11,7 +11,7 @@ Notes:
 
 ## Preparation
 
-0. This software utilizes a number of great open-source projects  
+0. This software utilizes a number of great open-source projects
    Set up these [external dependencies](Dependencies.md#preparation) before proceeding
 1. If using Visual Studio 2017 or later and Conan, you can simply use the "Open Folder" option with the [Development](../Development) directory and skip the rest of this section.
 2. Use CMake to configure for your platform
@@ -43,7 +43,7 @@ Notes:
        - Set ``NMOS_CPP_USE_SUPPLIED_JWT_CPP`` (BOOL) to ``1`` (true)
 
      </details>
-3. Use CMake to generate build/project files, and then build  
+3. Use CMake to generate build/project files, and then build
    "Visual Studio 14 2015 Win64" and more recent Visual Studio generators have been tested
 
 **CMake configuration options**
@@ -58,13 +58,13 @@ Cache Variable | Default | Description
 
 **Windows**
 
-For example, using the Visual Studio 2019 Developer Command Prompt:
+For example, using the Visual Studio 2022 Developer Command Prompt:
 ```sh
 cd <home-dir>\nmos-cpp\Development
 mkdir build
 cd build
 cmake .. ^
-  -G "Visual Studio 16 2019" ^
+  -G "Visual Studio 17 2022" ^
   -DCMAKE_CONFIGURATION_TYPES:STRING="Debug;Release" ^
   -DCMAKE_PROJECT_TOP_LEVEL_INCLUDES:STRING="third_party/cmake/conan_provider.cmake"
 ```
@@ -77,7 +77,7 @@ cd <home-dir>\nmos-cpp\Development
 mkdir build
 cd build
 cmake .. ^
-  -G "Visual Studio 16 2019" ^
+  -G "Visual Studio 17 2022" ^
   -DCMAKE_CONFIGURATION_TYPES:STRING="Debug;Release" ^
   -DBoost_USE_STATIC_LIBS:BOOL="1" ^
   -DBOOST_INCLUDEDIR:PATH="<home-dir>/boost_1_83_0" ^

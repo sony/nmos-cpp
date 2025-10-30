@@ -167,12 +167,12 @@ namespace nmos
         // or for the timeout to expire
         bool wait_immediate_activation_not_pending(nmos::node_model& model, nmos::read_lock& lock, const std::pair<nmos::id, nmos::type>& id_type)
         {
-            return model.wait_for(lock, std::chrono::seconds(nmos::fields::immediate_activation_max(model.settings)), immediate_activation_not_pending{ model, id_type });
+            return model.wait_for(lock, bst::chrono::seconds(nmos::fields::immediate_activation_max(model.settings)), immediate_activation_not_pending{ model, id_type });
         }
 
         bool wait_immediate_activation_not_pending(nmos::node_model& model, nmos::write_lock& lock, const std::pair<nmos::id, nmos::type>& id_type)
         {
-            return model.wait_for(lock, std::chrono::seconds(nmos::fields::immediate_activation_max(model.settings)), immediate_activation_not_pending{ model, id_type });
+            return model.wait_for(lock, bst::chrono::seconds(nmos::fields::immediate_activation_max(model.settings)), immediate_activation_not_pending{ model, id_type });
         }
 
         // wait for the staged activation of the specified resource to have changed
@@ -181,7 +181,7 @@ namespace nmos
         // or for the timeout to expire
         bool wait_activation_modified(nmos::node_model& model, nmos::write_lock& lock, std::pair<nmos::id, nmos::type> id_type, web::json::value initial_activation)
         {
-            return model.wait_for(lock, std::chrono::seconds(nmos::fields::immediate_activation_max(model.settings)), [&]
+            return model.wait_for(lock, bst::chrono::seconds(nmos::fields::immediate_activation_max(model.settings)), [&]
             {
                 if (model.shutdown) return true;
 

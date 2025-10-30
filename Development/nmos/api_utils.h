@@ -59,6 +59,8 @@ namespace nmos
         const route_pattern system_api = make_route_pattern(U("api"), U("system"));
         // IS-11 Stream Compatibility Management API
         const route_pattern streamcompatibility_api = make_route_pattern(U("api"), U("streamcompatibility"));
+        // IS-14 Configuration API
+        const route_pattern configuration_api = make_route_pattern(U("api"), U("configuration"));
 
         // API version pattern
         const route_pattern version = make_route_pattern(U("version"), U("v[0-9]+\\.[0-9]+"));
@@ -88,6 +90,11 @@ namespace nmos
         const route_pattern inputSubroute = make_route_pattern(U("inputSubroute"), U("properties|parent|channels|caps"));
         const route_pattern outputSubroute = make_route_pattern(U("outputSubroute"), U("properties|sourceid|channels|caps"));
         const route_pattern activationId = make_route_pattern(U("activationId"), U("[a-zA-Z0-9\\-_]+"));
+
+        // Configuration API
+        const route_pattern rolePath = make_route_pattern(U("rolePath"), U("root|root\\.[a-zA-Z0-9\\-_\\.]+"));
+        const route_pattern propertyId = make_route_pattern(U("propertyId"), U("[0-9]+p[0-9]+"));
+        const route_pattern methodId = make_route_pattern(U("methodId"), U("[0-9]+m[0-9]+"));
 
         // Stream Compatibility Management API
         const route_pattern streamCompatibilityResourceType = make_route_pattern(U("resourceType"), U("senders|receivers|inputs|outputs"));

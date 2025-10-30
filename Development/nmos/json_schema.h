@@ -42,6 +42,11 @@ namespace nmos
         web::uri make_controlprotocolapi_command_message_schema_uri(const nmos::api_version& version);
         web::uri make_controlprotocolapi_subscription_message_schema_uri(const nmos::api_version& version);
 
+        web::uri make_configurationapi_bulkProperties_put_request_schema_uri(const nmos::api_version& version);
+        web::uri make_configurationapi_bulkProperties_patch_request_schema_uri(const nmos::api_version& version);
+        web::uri make_configurationapi_method_patch_request_schema_uri(const nmos::api_version& version);
+        web::uri make_configurationapi_property_value_put_request_schema_uri(const nmos::api_version& version);
+
         // load the json schema for the specified base URI
         web::json::value load_json_schema(const web::uri& id);
     }

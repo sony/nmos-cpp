@@ -168,7 +168,7 @@ namespace nmos
         {
             // wait for the thread to be interrupted either because there are resource changes, or because the server is being shut down
             // or because message sending was throttled earlier
-            details::wait_until(condition, lock, earliest_necessary_update, [&]{ return shutdown || most_recent_message < most_recent_update(resources); });
+            details::wait_until(condition, lock, earliest_necessary_update, [&] { return shutdown || most_recent_message < most_recent_update(resources); });
             if (shutdown) break;
             most_recent_message = most_recent_update(resources);
 
@@ -215,7 +215,7 @@ namespace nmos
 
                 // throttle messages according to the subscription's max_update_rate_ms
                 // see discussion about creation_timestamp below...
-                const auto max_update_rate = std::chrono::milliseconds(nmos::fields::max_update_rate_ms(subscription->data));
+                const auto max_update_rate = bst::chrono::milliseconds(nmos::fields::max_update_rate_ms(subscription->data));
                 const auto earliest_allowed_update = time_point_from_tai(nmos::fields::creation_timestamp(nmos::fields::message(grain->data))) + max_update_rate;
                 if (earliest_allowed_update > now)
                 {

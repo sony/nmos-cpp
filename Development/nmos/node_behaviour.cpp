@@ -152,7 +152,7 @@ namespace nmos
                     auto lock = model.read_lock();
                     const auto random_backoff = std::uniform_real_distribution<>(0, discovery_backoff)(discovery_backoff_engine);
                     slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Waiting to retry Registration API discovery for about " << std::fixed << std::setprecision(3) << random_backoff << " seconds (current backoff limit: " << discovery_backoff << " seconds)";
-                    model.wait_for(lock, std::chrono::milliseconds(std::chrono::milliseconds::rep(1000 * random_backoff)), [&] { return model.shutdown; });
+                    model.wait_for(lock, bst::chrono::milliseconds(bst::chrono::milliseconds::rep(1000 * random_backoff)), [&] { return model.shutdown; });
                     if (model.shutdown) break;
                 }
 
@@ -1192,7 +1192,7 @@ namespace nmos
                 // see https://tools.ietf.org/html/rfc6762#section-6
                 // (unfortunately mDNSResponder may still report "excessive update rate"
                 // because it implements a target interval of 6 seconds...)
-                const auto max_update_rate = std::chrono::seconds(1);
+                const auto max_update_rate = bst::chrono::seconds(1);
                 const auto now = tai_clock::now();
                 if (earliest_allowed_update > now)
                 {

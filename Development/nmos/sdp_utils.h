@@ -7,6 +7,7 @@
 #include <stdexcept>
 #include "bst/any.h"
 #include "bst/optional.h"
+#include "cpprest/basic_utils.h"
 #include "sdp/json.h"
 #include "sdp/ntp.h"
 #include "nmos/did_sdid.h"
@@ -66,6 +67,11 @@ namespace nmos
     // for "video/raw", "audio/L", "video/smpte291" or "video/SMPTE2022-6"
     bool match_sdp_parameters_constraint_sets(const web::json::array& constraint_sets, const sdp_parameters& sdp_params);
 
+    // sdp_parameters helper functions
+
+    // Validate the numeric string
+    const utility::string_t& valid_numeric_string(const utility::string_t& s);
+
     // Format-specific types
 
     struct video_raw_parameters;
@@ -85,19 +91,22 @@ namespace nmos
         struct origin_t
         {
             utility::string_t user_name;
-            uint64_t session_id;
-            uint64_t session_version;
+            utility::string_t session_id;
+            utility::string_t session_version;
 
-            origin_t() : session_id(), session_version() {}
+            origin_t() {}
             origin_t(const utility::string_t& user_name, uint64_t session_id, uint64_t session_version)
                 : user_name(user_name)
-                , session_id(session_id)
-                , session_version(session_version)
+                , session_id(utility::conversions::details::to_string_t(session_id))
+                , session_version(utility::conversions::details::to_string_t(session_version))
+            {}
+            origin_t(const utility::string_t& user_name, const utility::string_t& session_id, const utility::string_t& session_version)
+                : user_name(user_name)
+                , session_id(valid_numeric_string(session_id))
+                , session_version(valid_numeric_string(session_version))
             {}
             origin_t(const utility::string_t& user_name, uint64_t session_id_version)
-                : user_name(user_name)
-                , session_id(session_id_version)
-                , session_version(session_id_version)
+                : origin_t{ user_name, session_id_version, session_id_version }
             {}
         } origin;
 
@@ -510,6 +519,7 @@ namespace nmos
     sdp_parameters make_video_raw_sdp_parameters(const utility::string_t& session_name, const video_raw_parameters& params, uint64_t payload_type, const std::vector<utility::string_t>& media_stream_ids = {}, const std::vector<sdp_parameters::ts_refclk_t>& ts_refclk = {});
     // Get additional "video/raw" parameters from the SDP parameters
     video_raw_parameters get_video_raw_parameters(const sdp_parameters& sdp_params);
+    video_raw_parameters get_video_raw_parameters_or_defaults(const sdp_parameters& sdp_params);
 
     // Construct additional "audio/L" parameters from the IS-04 resources, using default values for unspecified items
     audio_L_parameters make_audio_L_parameters(const web::json::value& node, const web::json::value& source, const web::json::value& flow, const web::json::value& sender, bst::optional<double> packet_time);
@@ -585,6 +595,14 @@ namespace nmos
         {
             return std::runtime_error{ "sdp processing error - " + message };
         }
+
+        struct throw_missing_fmtp
+        {
+            void operator()(const utility::string_t& name) const
+            {
+                throw details::sdp_processing_error("missing format parameter: " + utility::us2s(name));
+            }
+        };
 
         inline sdp_parameters::fmtp_t::const_iterator find_fmtp(const sdp_parameters::fmtp_t& fmtp, const utility::string_t& name)
         {

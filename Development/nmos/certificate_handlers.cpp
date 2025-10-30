@@ -22,7 +22,7 @@ namespace nmos
             else
             {
                 utility::ifstream_t ca_file(ca_certificate_file);
-                utility::stringstream_t cacerts;
+                utility::ostringstream_t cacerts;
                 cacerts << ca_file.rdbuf();
                 return cacerts.str();
             }
@@ -70,7 +70,7 @@ namespace nmos
                 const auto private_key_file = nmos::experimental::fields::private_key_file(server_certificate);
                 const auto certificate_chain_file = nmos::experimental::fields::certificate_chain_file(server_certificate);
 
-                utility::stringstream_t pkey;
+                utility::ostringstream_t pkey;
                 if (private_key_file.empty())
                 {
                     slog::log<slog::severities::warning>(gate, SLOG_FLF) << "Missing server private key file";
@@ -81,7 +81,7 @@ namespace nmos
                     pkey << pkey_file.rdbuf();
                 }
 
-                utility::stringstream_t cert_chain;
+                utility::ostringstream_t cert_chain;
                 if (certificate_chain_file.empty())
                 {
                     slog::log<slog::severities::warning>(gate, SLOG_FLF) << "Missing server certificate chain file";
@@ -114,7 +114,7 @@ namespace nmos
             else
             {
                 utility::ifstream_t dh_file(dh_param_file);
-                utility::stringstream_t dh_param;
+                utility::ostringstream_t dh_param;
                 dh_param << dh_file.rdbuf();
                 return dh_param.str();
             }
@@ -160,7 +160,7 @@ namespace nmos
                 const auto key_algorithm = nmos::experimental::fields::key_algorithm(server_certificate);
                 const auto private_key_file = nmos::experimental::fields::private_key_file(server_certificate);
 
-                utility::stringstream_t pkey;
+                utility::ostringstream_t pkey;
                 if (private_key_file.empty())
                 {
                     slog::log<slog::severities::warning>(gate, SLOG_FLF) << "Missing private key file";

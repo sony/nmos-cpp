@@ -479,34 +479,11 @@ if(NOT NMOS_CPP_USE_SUPPLIED_JWT_CPP)
     target_link_libraries(jwt-cpp INTERFACE jwt-cpp::jwt-cpp)
 else()
     message(STATUS "Using sources at third_party/jwt-cpp instead of external \"jwt-cpp\" package.")
-
-    set(JWT_SOURCES
-        )
-
-    set(JWT_HEADERS
-        third_party/jwt-cpp/base.h
-        third_party/jwt-cpp/jwt.h
-        third_party/jwt-cpp/traits/nlohmann-json/defaults.h
-        third_party/jwt-cpp/traits/nlohmann-json/traits.h
-        )
-
-    # hm, header-only so should be INTERFACE library?
-    add_library(
-        jwt-cpp STATIC
-        ${JWT_SOURCES}
-        ${JWT_HEADERS}
-        )
-
-    source_group("Source Files" FILES ${JWT_SOURCES})
-    source_group("Header Files" FILES ${JWT_HEADERS})
-
-    target_link_libraries(
-        jwt-cpp PRIVATE
-        nmos-cpp::compile-settings
-        )
-    target_include_directories(jwt-cpp PUBLIC
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-        $<INSTALL_INTERFACE:${NMOS_CPP_INSTALL_INCLUDEDIR}>
+    
+    add_library(jwt-cpp INTERFACE)
+	target_include_directories(jwt-cpp INTERFACE
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/third_party>
+        $<INSTALL_INTERFACE:${NMOS_CPP_INSTALL_INCLUDEDIR}/third_party>
         )
 endif()
 
