@@ -29,7 +29,7 @@ BST_TEST_CASE(testNcClassDescriptor)
         { U("isDeprecated"), false },
         { U("constraints"), value::null() }
     });
-    const auto property_class_id_ = nmos::details::make_nc_property_descriptor(U("Static value. All instances of the same class will have the same identity value"), nmos::nc_object_class_id_property_id, nmos::fields::nc::class_id, U("NcClassId"), true, false, false, false, value::null());
+    const auto property_class_id_ = nmos::nc::details::make_property_descriptor(U("Static value. All instances of the same class will have the same identity value"), nmos::nc_object_class_id_property_id, nmos::fields::nc::class_id, U("NcClassId"), true, false, false, false, value::null());
     BST_REQUIRE_EQUAL(property_class_id, property_class_id_);
 
     const auto property_oid = value_of({
@@ -46,7 +46,7 @@ BST_TEST_CASE(testNcClassDescriptor)
         { U("isDeprecated"), false },
         { U("constraints"), value::null() }
     });
-    const auto property_oid_ = nmos::details::make_nc_property_descriptor(U("Object identifier"), nmos::nc_object_oid_property_id, nmos::fields::nc::oid, U("NcOid"), true, false, false, false, value::null());
+    const auto property_oid_ = nmos::nc::details::make_property_descriptor(U("Object identifier"), nmos::nc_object_oid_property_id, nmos::fields::nc::oid, U("NcOid"), true, false, false, false, value::null());
     BST_REQUIRE_EQUAL(property_oid, property_oid_);
 
     const auto property_constant_oid = value_of({
@@ -63,7 +63,7 @@ BST_TEST_CASE(testNcClassDescriptor)
         { U("isDeprecated"), false },
         { U("constraints"), value::null() }
     });
-    const auto property_constant_oid_ = nmos::details::make_nc_property_descriptor(U("TRUE iff OID is hardwired into device"), nmos::nc_object_constant_oid_property_id, nmos::fields::nc::constant_oid, U("NcBoolean"), true, false, false, false, value::null());
+    const auto property_constant_oid_ = nmos::nc::details::make_property_descriptor(U("TRUE iff OID is hardwired into device"), nmos::nc_object_constant_oid_property_id, nmos::fields::nc::constant_oid, U("NcBoolean"), true, false, false, false, value::null());
     BST_REQUIRE_EQUAL(property_constant_oid, property_constant_oid_);
 
     const auto property_owner = value_of({
@@ -80,7 +80,7 @@ BST_TEST_CASE(testNcClassDescriptor)
         { U("isDeprecated"), false },
         { U("constraints"), value::null() }
     });
-    const auto property_owner_ = nmos::details::make_nc_property_descriptor(U("OID of containing block. Can only ever be null for the root block"), nmos::nc_object_owner_property_id, nmos::fields::nc::owner, U("NcOid"), true, true, false, false, value::null());
+    const auto property_owner_ = nmos::nc::details::make_property_descriptor(U("OID of containing block. Can only ever be null for the root block"), nmos::nc_object_owner_property_id, nmos::fields::nc::owner, U("NcOid"), true, true, false, false, value::null());
     BST_REQUIRE_EQUAL(property_owner, property_owner_);
 
     const auto property_role = value_of({
@@ -97,7 +97,7 @@ BST_TEST_CASE(testNcClassDescriptor)
         { U("isDeprecated"), false },
         { U("constraints"), value::null() }
     });
-    const auto property_role_ = nmos::details::make_nc_property_descriptor(U("Role of object in the containing block"), nmos::nc_object_role_property_id, nmos::fields::nc::role, U("NcString"), true, false, false, false, value::null());
+    const auto property_role_ = nmos::nc::details::make_property_descriptor(U("Role of object in the containing block"), nmos::nc_object_role_property_id, nmos::fields::nc::role, U("NcString"), true, false, false, false, value::null());
     BST_REQUIRE_EQUAL(property_role, property_role_);
 
     const auto property_user_label = value_of({
@@ -114,7 +114,7 @@ BST_TEST_CASE(testNcClassDescriptor)
         { U("isDeprecated"), false },
         { U("constraints"), value::null() }
     });
-    const auto property_user_label_ = nmos::details::make_nc_property_descriptor(U("Scribble strip"), nmos::nc_object_user_label_property_id, nmos::fields::nc::user_label, U("NcString"), false, true, false, false, value::null());
+    const auto property_user_label_ = nmos::nc::details::make_property_descriptor(U("Scribble strip"), nmos::nc_object_user_label_property_id, nmos::fields::nc::user_label, U("NcString"), false, true, false, false, value::null());
     BST_REQUIRE_EQUAL(property_user_label, property_user_label_);
 
     const auto property_touchpoints = value_of({
@@ -131,7 +131,7 @@ BST_TEST_CASE(testNcClassDescriptor)
         { U("isDeprecated"), false },
         { U("constraints"), value::null() }
     });
-    const auto property_touchpoints_ = nmos::details::make_nc_property_descriptor(U("Touchpoints to other contexts"), nmos::nc_object_touchpoints_property_id, nmos::fields::nc::touchpoints, U("NcTouchpoint"), true, true, true, false, value::null());
+    const auto property_touchpoints_ = nmos::nc::details::make_property_descriptor(U("Touchpoints to other contexts"), nmos::nc_object_touchpoints_property_id, nmos::fields::nc::touchpoints, U("NcTouchpoint"), true, true, true, false, value::null());
     BST_REQUIRE_EQUAL(property_touchpoints, property_touchpoints_);
 
     const auto property_runtime_property_constraints = value_of({
@@ -148,7 +148,7 @@ BST_TEST_CASE(testNcClassDescriptor)
         { U("isDeprecated"), false },
         { U("constraints"), value::null() }
     });
-    const auto property_runtime_property_constraints_ = nmos::details::make_nc_property_descriptor(U("Runtime property constraints"), nmos::nc_object_runtime_property_constraints_property_id, nmos::fields::nc::runtime_property_constraints, U("NcPropertyConstraints"), true, true, true, false, value::null());
+    const auto property_runtime_property_constraints_ = nmos::nc::details::make_property_descriptor(U("Runtime property constraints"), nmos::nc_object_runtime_property_constraints_property_id, nmos::fields::nc::runtime_property_constraints, U("NcPropertyConstraints"), true, true, true, false, value::null());
     BST_REQUIRE_EQUAL(property_runtime_property_constraints, property_runtime_property_constraints_);
 
     const auto method_get = value_of({
@@ -174,8 +174,8 @@ BST_TEST_CASE(testNcClassDescriptor)
 
     {
         auto parameters = value::array();
-        web::json::push_back(parameters, nmos::details::make_nc_parameter_descriptor(U("Property id"), nmos::fields::nc::id, U("NcPropertyId"), false, false, value::null()));
-        const auto method_get_ = nmos::details::make_nc_method_descriptor(U("Get property value"), nmos::nc_object_get_method_id, U("Get"), U("NcMethodResultPropertyValue"), parameters, false);
+        web::json::push_back(parameters, nmos::nc::details::make_parameter_descriptor(U("Property id"), nmos::fields::nc::id, U("NcPropertyId"), false, false, value::null()));
+        const auto method_get_ = nmos::nc::details::make_method_descriptor(U("Get property value"), nmos::nc_object_get_method_id, U("Get"), U("NcMethodResultPropertyValue"), parameters, false);
 
         BST_REQUIRE_EQUAL(method_get, method_get_);
     }
@@ -211,9 +211,9 @@ BST_TEST_CASE(testNcClassDescriptor)
 
     {
         auto parameters = value::array();
-        web::json::push_back(parameters, nmos::details::make_nc_parameter_descriptor(U("Property id"), nmos::fields::nc::id, U("NcPropertyId"), false, false, value::null()));
-        web::json::push_back(parameters, nmos::details::make_nc_parameter_descriptor(U("Property value"), nmos::fields::nc::value, true, false, value::null()));
-        const auto method_set_ = nmos::details::make_nc_method_descriptor(U("Set property value"), nmos::nc_object_set_method_id, U("Set"), U("NcMethodResult"), parameters, false);
+        web::json::push_back(parameters, nmos::nc::details::make_parameter_descriptor(U("Property id"), nmos::fields::nc::id, U("NcPropertyId"), false, false, value::null()));
+        web::json::push_back(parameters, nmos::nc::details::make_parameter_descriptor(U("Property value"), nmos::fields::nc::value, true, false, value::null()));
+        const auto method_set_ = nmos::nc::details::make_method_descriptor(U("Set property value"), nmos::nc_object_set_method_id, U("Set"), U("NcMethodResult"), parameters, false);
 
         BST_REQUIRE_EQUAL(method_set, method_set_);
     }
@@ -249,9 +249,9 @@ BST_TEST_CASE(testNcClassDescriptor)
 
     {
         auto parameters = value::array();
-        web::json::push_back(parameters, nmos::details::make_nc_parameter_descriptor(U("Property id"), nmos::fields::nc::id, U("NcPropertyId"), false, false, value::null()));
-        web::json::push_back(parameters, nmos::details::make_nc_parameter_descriptor(U("Index of item in the sequence"), nmos::fields::nc::index, U("NcId"), false, false, value::null()));
-        const auto method_get_sequence_item_ = nmos::details::make_nc_method_descriptor(U("Get sequence item"), nmos::nc_object_get_sequence_item_method_id, U("GetSequenceItem"), U("NcMethodResultPropertyValue"), parameters, false);
+        web::json::push_back(parameters, nmos::nc::details::make_parameter_descriptor(U("Property id"), nmos::fields::nc::id, U("NcPropertyId"), false, false, value::null()));
+        web::json::push_back(parameters, nmos::nc::details::make_parameter_descriptor(U("Index of item in the sequence"), nmos::fields::nc::index, U("NcId"), false, false, value::null()));
+        const auto method_get_sequence_item_ = nmos::nc::details::make_method_descriptor(U("Get sequence item"), nmos::nc_object_get_sequence_item_method_id, U("GetSequenceItem"), U("NcMethodResultPropertyValue"), parameters, false);
 
         BST_REQUIRE_EQUAL(method_get_sequence_item, method_get_sequence_item_);
     }
@@ -295,10 +295,10 @@ BST_TEST_CASE(testNcClassDescriptor)
 
     {
         auto parameters = value::array();
-        web::json::push_back(parameters, nmos::details::make_nc_parameter_descriptor(U("Property id"), nmos::fields::nc::id, U("NcPropertyId"), false, false, value::null()));
-        web::json::push_back(parameters, nmos::details::make_nc_parameter_descriptor(U("Index of item in the sequence"), nmos::fields::nc::index, U("NcId"), false, false, value::null()));
-        web::json::push_back(parameters, nmos::details::make_nc_parameter_descriptor(U("Value"), nmos::fields::nc::value, true, false, value::null()));
-        const auto method_set_sequence_item_ = nmos::details::make_nc_method_descriptor(U("Set sequence item value"), nmos::nc_object_set_sequence_item_method_id, U("SetSequenceItem"), U("NcMethodResult"), parameters, false);
+        web::json::push_back(parameters, nmos::nc::details::make_parameter_descriptor(U("Property id"), nmos::fields::nc::id, U("NcPropertyId"), false, false, value::null()));
+        web::json::push_back(parameters, nmos::nc::details::make_parameter_descriptor(U("Index of item in the sequence"), nmos::fields::nc::index, U("NcId"), false, false, value::null()));
+        web::json::push_back(parameters, nmos::nc::details::make_parameter_descriptor(U("Value"), nmos::fields::nc::value, true, false, value::null()));
+        const auto method_set_sequence_item_ = nmos::nc::details::make_method_descriptor(U("Set sequence item value"), nmos::nc_object_set_sequence_item_method_id, U("SetSequenceItem"), U("NcMethodResult"), parameters, false);
 
         BST_REQUIRE_EQUAL(method_set_sequence_item, method_set_sequence_item_);
     }
@@ -334,9 +334,9 @@ BST_TEST_CASE(testNcClassDescriptor)
 
     {
         auto parameters = value::array();
-        web::json::push_back(parameters, nmos::details::make_nc_parameter_descriptor(U("Property id"), nmos::fields::nc::id, U("NcPropertyId"), false, false, value::null()));
-        web::json::push_back(parameters, nmos::details::make_nc_parameter_descriptor(U("Value"), nmos::fields::nc::value, true, false, value::null()));
-        const auto method_add_sequence_item_ = nmos::details::make_nc_method_descriptor(U("Add item to sequence"), nmos::nc_object_add_sequence_item_method_id, U("AddSequenceItem"), U("NcMethodResultId"), parameters, false);
+        web::json::push_back(parameters, nmos::nc::details::make_parameter_descriptor(U("Property id"), nmos::fields::nc::id, U("NcPropertyId"), false, false, value::null()));
+        web::json::push_back(parameters, nmos::nc::details::make_parameter_descriptor(U("Value"), nmos::fields::nc::value, true, false, value::null()));
+        const auto method_add_sequence_item_ = nmos::nc::details::make_method_descriptor(U("Add item to sequence"), nmos::nc_object_add_sequence_item_method_id, U("AddSequenceItem"), U("NcMethodResultId"), parameters, false);
 
         BST_REQUIRE_EQUAL(method_add_sequence_item, method_add_sequence_item_);
     }
@@ -372,9 +372,9 @@ BST_TEST_CASE(testNcClassDescriptor)
 
     {
         auto parameters = value::array();
-        web::json::push_back(parameters, nmos::details::make_nc_parameter_descriptor(U("Property id"), nmos::fields::nc::id, U("NcPropertyId"), false, false, value::null()));
-        web::json::push_back(parameters, nmos::details::make_nc_parameter_descriptor(U("Index of item in the sequence"), nmos::fields::nc::index, U("NcId"), false, false, value::null()));
-        const auto method_remove_sequence_item_ = nmos::details::make_nc_method_descriptor(U("Delete sequence item"), nmos::nc_object_remove_sequence_item_method_id, U("RemoveSequenceItem"), U("NcMethodResult"), parameters, false);
+        web::json::push_back(parameters, nmos::nc::details::make_parameter_descriptor(U("Property id"), nmos::fields::nc::id, U("NcPropertyId"), false, false, value::null()));
+        web::json::push_back(parameters, nmos::nc::details::make_parameter_descriptor(U("Index of item in the sequence"), nmos::fields::nc::index, U("NcId"), false, false, value::null()));
+        const auto method_remove_sequence_item_ = nmos::nc::details::make_method_descriptor(U("Delete sequence item"), nmos::nc_object_remove_sequence_item_method_id, U("RemoveSequenceItem"), U("NcMethodResult"), parameters, false);
 
         BST_REQUIRE_EQUAL(method_remove_sequence_item, method_remove_sequence_item_);
     }
@@ -402,8 +402,8 @@ BST_TEST_CASE(testNcClassDescriptor)
 
     {
         auto parameters = value::array();
-        web::json::push_back(parameters, nmos::details::make_nc_parameter_descriptor(U("Property id"), nmos::fields::nc::id, U("NcPropertyId"), false, false, value::null()));
-        const auto method_get_sequence_length_ = nmos::details::make_nc_method_descriptor(U("Get sequence length"), nmos::nc_object_get_sequence_length_method_id, U("GetSequenceLength"), U("NcMethodResultLength"), parameters, false);
+        web::json::push_back(parameters, nmos::nc::details::make_parameter_descriptor(U("Property id"), nmos::fields::nc::id, U("NcPropertyId"), false, false, value::null()));
+        const auto method_get_sequence_length_ = nmos::nc::details::make_method_descriptor(U("Get sequence length"), nmos::nc_object_get_sequence_length_method_id, U("GetSequenceLength"), U("NcMethodResultLength"), parameters, false);
 
         BST_REQUIRE_EQUAL(method_get_sequence_length, method_get_sequence_length_);
     }
@@ -419,7 +419,7 @@ BST_TEST_CASE(testNcClassDescriptor)
         { U("isDeprecated"), false }
     });
 
-    const auto event_property_changed_ = nmos::details::make_nc_event_descriptor(U("Property changed event"), nmos::nc_object_property_changed_event_id, U("PropertyChanged"), U("NcPropertyChangedEventData"), false);
+    const auto event_property_changed_ = nmos::nc::details::make_event_descriptor(U("Property changed event"), nmos::nc_object_property_changed_event_id, U("PropertyChanged"), U("NcPropertyChangedEventData"), false);
     BST_REQUIRE_EQUAL(event_property_changed, event_property_changed_);
 
     const auto nc_object_class = value_of({
@@ -452,7 +452,7 @@ BST_TEST_CASE(testNcClassDescriptor)
             event_property_changed
         }) }
     });
-    const auto nc_object_class_ = nmos::details::make_nc_class_descriptor(U("NcObject class descriptor"), nmos::nc_object_class_id, U("NcObject"), nmos::make_nc_object_properties(), nmos::make_nc_object_methods(), nmos::make_nc_object_events());
+    const auto nc_object_class_ = nmos::nc::details::make_class_descriptor(U("NcObject class descriptor"), nmos::nc_object_class_id, U("NcObject"), nmos::nc::make_object_properties(), nmos::nc::make_object_methods(), nmos::nc::make_object_events());
     BST_REQUIRE_EQUAL(nc_object_class, nc_object_class_);
 }
 
@@ -522,13 +522,13 @@ BST_TEST_CASE(testNcDatatypeDescriptorStruct)
     });
 
     auto fields = value::array();
-    web::json::push_back(fields, nmos::details::make_nc_field_descriptor(U("Role of member in its containing block"), nmos::fields::nc::role, U("NcString"), false, false, value::null()));
-    web::json::push_back(fields, nmos::details::make_nc_field_descriptor(U("OID of member"), nmos::fields::nc::oid, U("NcOid"), false, false, value::null()));
-    web::json::push_back(fields, nmos::details::make_nc_field_descriptor(U("TRUE iff member's OID is hardwired into device"), nmos::fields::nc::constant_oid, U("NcBoolean"), false, false, value::null()));
-    web::json::push_back(fields, nmos::details::make_nc_field_descriptor(U("Class ID"), nmos::fields::nc::class_id, U("NcClassId"), false, false, value::null()));
-    web::json::push_back(fields, nmos::details::make_nc_field_descriptor(U("User label"), nmos::fields::nc::user_label, U("NcString"), true, false, value::null()));
-    web::json::push_back(fields, nmos::details::make_nc_field_descriptor(U("Containing block's OID"), nmos::fields::nc::owner, U("NcOid"), false, false, value::null()));
-    const auto nc_datatype_descriptor_ = nmos::details::make_nc_datatype_descriptor_struct(U("Descriptor which is specific to a block member"), U("NcBlockMemberDescriptor"), fields, U("NcDescriptor"), value::null());
+    web::json::push_back(fields, nmos::nc::details::make_field_descriptor(U("Role of member in its containing block"), nmos::fields::nc::role, U("NcString"), false, false, value::null()));
+    web::json::push_back(fields, nmos::nc::details::make_field_descriptor(U("OID of member"), nmos::fields::nc::oid, U("NcOid"), false, false, value::null()));
+    web::json::push_back(fields, nmos::nc::details::make_field_descriptor(U("TRUE iff member's OID is hardwired into device"), nmos::fields::nc::constant_oid, U("NcBoolean"), false, false, value::null()));
+    web::json::push_back(fields, nmos::nc::details::make_field_descriptor(U("Class ID"), nmos::fields::nc::class_id, U("NcClassId"), false, false, value::null()));
+    web::json::push_back(fields, nmos::nc::details::make_field_descriptor(U("User label"), nmos::fields::nc::user_label, U("NcString"), true, false, value::null()));
+    web::json::push_back(fields, nmos::nc::details::make_field_descriptor(U("Containing block's OID"), nmos::fields::nc::owner, U("NcOid"), false, false, value::null()));
+    const auto nc_datatype_descriptor_ = nmos::nc::details::make_datatype_descriptor_struct(U("Descriptor which is specific to a block member"), U("NcBlockMemberDescriptor"), fields, U("NcDescriptor"), value::null());
 
     BST_REQUIRE_EQUAL(nc_datatype_descriptor, nc_datatype_descriptor_);
 }
@@ -548,7 +548,7 @@ BST_TEST_CASE(testNcDatatypeTypedef)
         { U("isSequence"), true },
         { U("constraints"), value::null() }
     });
-    const auto nc_class_id_ = nmos::details::make_nc_datatype_typedef(U("Sequence of class ID fields"), U("NcClassId"), true, U("NcInt32"), value::null());
+    const auto nc_class_id_ = nmos::nc::details::make_datatype_typedef(U("Sequence of class ID fields"), U("NcClassId"), true, U("NcInt32"), value::null());
 
     BST_REQUIRE_EQUAL(nc_class_id, nc_class_id_);
 }
@@ -600,13 +600,13 @@ BST_TEST_CASE(testNcDatatypeDescriptorEnum)
     });
 
     auto items = value::array();
-    web::json::push_back(items, nmos::details::make_nc_enum_item_descriptor(U("Unknown"), U("Unknown"), 0));
-    web::json::push_back(items, nmos::details::make_nc_enum_item_descriptor(U("Normal operation"), U("NormalOperation"), 1));
-    web::json::push_back(items, nmos::details::make_nc_enum_item_descriptor(U("Device is initializing"), U("Initializing"), 2));
-    web::json::push_back(items, nmos::details::make_nc_enum_item_descriptor(U("Device is performing a software or firmware update"), U("Updating"), 3));
-    web::json::push_back(items, nmos::details::make_nc_enum_item_descriptor(U("Device is experiencing a licensing error"), U("LicensingError"), 4));
-    web::json::push_back(items, nmos::details::make_nc_enum_item_descriptor(U("Device is experiencing an internal error"), U("InternalError"), 5));
-    const auto nc_device_generic_state_ = nmos::details::make_nc_datatype_descriptor_enum(U("Device generic operational state"), U("NcDeviceGenericState"), items, value::null());
+    web::json::push_back(items, nmos::nc::details::make_enum_item_descriptor(U("Unknown"), U("Unknown"), 0));
+    web::json::push_back(items, nmos::nc::details::make_enum_item_descriptor(U("Normal operation"), U("NormalOperation"), 1));
+    web::json::push_back(items, nmos::nc::details::make_enum_item_descriptor(U("Device is initializing"), U("Initializing"), 2));
+    web::json::push_back(items, nmos::nc::details::make_enum_item_descriptor(U("Device is performing a software or firmware update"), U("Updating"), 3));
+    web::json::push_back(items, nmos::nc::details::make_enum_item_descriptor(U("Device is experiencing a licensing error"), U("LicensingError"), 4));
+    web::json::push_back(items, nmos::nc::details::make_enum_item_descriptor(U("Device is experiencing an internal error"), U("InternalError"), 5));
+    const auto nc_device_generic_state_ = nmos::nc::details::make_datatype_descriptor_enum(U("Device generic operational state"), U("NcDeviceGenericState"), items, value::null());
 
     BST_REQUIRE_EQUAL(nc_device_generic_state, nc_device_generic_state_);
 }
@@ -623,49 +623,49 @@ BST_TEST_CASE(testNcDatatypeDescriptorPrimitive)
         { U("constraints"), value::null() }
     });
 
-    const auto test_primitive_ = nmos::details::make_nc_datatype_descriptor_primitive(U("Primitive datatype descriptor"), U("test_primitive"), value::null());
+    const auto test_primitive_ = nmos::nc::details::make_datatype_descriptor_primitive(U("Primitive datatype descriptor"), U("test_primitive"), value::null());
 
     BST_REQUIRE_EQUAL(test_primitive, test_primitive_);
 }
 
 BST_TEST_CASE(testNcClassId)
 {
-    BST_REQUIRE_EQUAL(false, nmos::is_nc_block({ }));
-    BST_REQUIRE_EQUAL(false, nmos::is_nc_block({ 1 }));
-    BST_REQUIRE_EQUAL(false, nmos::is_nc_block({ 1, 2 }));
-    BST_REQUIRE_EQUAL(false, nmos::is_nc_block({ 1, 2, 0 }));
-    BST_REQUIRE(nmos::is_nc_block(nmos::nc_block_class_id));
-    BST_REQUIRE(nmos::is_nc_block(nmos::make_nc_class_id(nmos::nc_block_class_id, { 1 })));
+    BST_REQUIRE_EQUAL(false, nmos::nc::is_block({ }));
+    BST_REQUIRE_EQUAL(false, nmos::nc::is_block({ 1 }));
+    BST_REQUIRE_EQUAL(false, nmos::nc::is_block({ 1, 2 }));
+    BST_REQUIRE_EQUAL(false, nmos::nc::is_block({ 1, 2, 0 }));
+    BST_REQUIRE(nmos::nc::is_block(nmos::nc_block_class_id));
+    BST_REQUIRE(nmos::nc::is_block(nmos::nc::make_class_id(nmos::nc_block_class_id, { 1 })));
 
-    BST_REQUIRE_EQUAL(false, nmos::is_nc_worker({ }));
-    BST_REQUIRE_EQUAL(false, nmos::is_nc_worker({ 1 }));
-    BST_REQUIRE_EQUAL(false, nmos::is_nc_worker({ 1, 1 }));
-    BST_REQUIRE_EQUAL(false, nmos::is_nc_worker({ 1, 1, 1 }));
-    BST_REQUIRE(nmos::is_nc_worker(nmos::nc_worker_class_id));
-    BST_REQUIRE(nmos::is_nc_worker(nmos::make_nc_class_id(nmos::nc_worker_class_id, { 1 })));
+    BST_REQUIRE_EQUAL(false, nmos::nc::is_worker({ }));
+    BST_REQUIRE_EQUAL(false, nmos::nc::is_worker({ 1 }));
+    BST_REQUIRE_EQUAL(false, nmos::nc::is_worker({ 1, 1 }));
+    BST_REQUIRE_EQUAL(false, nmos::nc::is_worker({ 1, 1, 1 }));
+    BST_REQUIRE(nmos::nc::is_worker(nmos::nc_worker_class_id));
+    BST_REQUIRE(nmos::nc::is_worker(nmos::nc::make_class_id(nmos::nc_worker_class_id, { 1 })));
 
-    BST_REQUIRE_EQUAL(false, nmos::is_nc_manager({ }));
-    BST_REQUIRE_EQUAL(false, nmos::is_nc_manager({ 1 }));
-    BST_REQUIRE_EQUAL(false, nmos::is_nc_manager({ 1, 1 }));
-    BST_REQUIRE_EQUAL(false, nmos::is_nc_manager({ 1, 1, 1 }));
-    BST_REQUIRE(nmos::is_nc_manager(nmos::nc_manager_class_id));
-    BST_REQUIRE(nmos::is_nc_manager(nmos::make_nc_class_id(nmos::nc_manager_class_id, { 1 })));
+    BST_REQUIRE_EQUAL(false, nmos::nc::is_manager({ }));
+    BST_REQUIRE_EQUAL(false, nmos::nc::is_manager({ 1 }));
+    BST_REQUIRE_EQUAL(false, nmos::nc::is_manager({ 1, 1 }));
+    BST_REQUIRE_EQUAL(false, nmos::nc::is_manager({ 1, 1, 1 }));
+    BST_REQUIRE(nmos::nc::is_manager(nmos::nc_manager_class_id));
+    BST_REQUIRE(nmos::nc::is_manager(nmos::nc::make_class_id(nmos::nc_manager_class_id, { 1 })));
 
-    BST_REQUIRE_EQUAL(false, nmos::is_nc_device_manager({ }));
-    BST_REQUIRE_EQUAL(false, nmos::is_nc_device_manager({ 1 }));
-    BST_REQUIRE_EQUAL(false, nmos::is_nc_device_manager({ 1, 1 }));
-    BST_REQUIRE_EQUAL(false, nmos::is_nc_device_manager({ 1, 1, 1 }));
-    BST_REQUIRE_EQUAL(false, nmos::is_nc_device_manager({ 1, 3, 2 }));
-    BST_REQUIRE(nmos::is_nc_device_manager(nmos::nc_device_manager_class_id));
-    BST_REQUIRE(nmos::is_nc_device_manager(nmos::make_nc_class_id(nmos::nc_device_manager_class_id, { 1 })));
+    BST_REQUIRE_EQUAL(false, nmos::nc::is_device_manager({ }));
+    BST_REQUIRE_EQUAL(false, nmos::nc::is_device_manager({ 1 }));
+    BST_REQUIRE_EQUAL(false, nmos::nc::is_device_manager({ 1, 1 }));
+    BST_REQUIRE_EQUAL(false, nmos::nc::is_device_manager({ 1, 1, 1 }));
+    BST_REQUIRE_EQUAL(false, nmos::nc::is_device_manager({ 1, 3, 2 }));
+    BST_REQUIRE(nmos::nc::is_device_manager(nmos::nc_device_manager_class_id));
+    BST_REQUIRE(nmos::nc::is_device_manager(nmos::nc::make_class_id(nmos::nc_device_manager_class_id, { 1 })));
 
-    BST_REQUIRE_EQUAL(false, nmos::is_nc_class_manager({ }));
-    BST_REQUIRE_EQUAL(false, nmos::is_nc_class_manager({ 1 }));
-    BST_REQUIRE_EQUAL(false, nmos::is_nc_class_manager({ 1, 1 }));
-    BST_REQUIRE_EQUAL(false, nmos::is_nc_class_manager({ 1, 1, 1 }));
-    BST_REQUIRE_EQUAL(false, nmos::is_nc_class_manager({ 1, 3, 1 }));
-    BST_REQUIRE(nmos::is_nc_class_manager(nmos::nc_class_manager_class_id));
-    BST_REQUIRE(nmos::is_nc_class_manager(nmos::make_nc_class_id(nmos::nc_class_manager_class_id, { 1 })));
+    BST_REQUIRE_EQUAL(false, nmos::nc::is_class_manager({ }));
+    BST_REQUIRE_EQUAL(false, nmos::nc::is_class_manager({ 1 }));
+    BST_REQUIRE_EQUAL(false, nmos::nc::is_class_manager({ 1, 1 }));
+    BST_REQUIRE_EQUAL(false, nmos::nc::is_class_manager({ 1, 1, 1 }));
+    BST_REQUIRE_EQUAL(false, nmos::nc::is_class_manager({ 1, 3, 1 }));
+    BST_REQUIRE(nmos::nc::is_class_manager(nmos::nc_class_manager_class_id));
+    BST_REQUIRE(nmos::nc::is_class_manager(nmos::nc::make_class_id(nmos::nc_class_manager_class_id, { 1 })));
 }
 
 BST_TEST_CASE(testFindProperty)
@@ -681,22 +681,22 @@ BST_TEST_CASE(testFindProperty)
 
     {
         // valid - find members property in NcBlock
-        auto property = nmos::find_property_descriptor(nc_block_members_property_id, nc_block_class_id, get_control_protocol_class_descriptor);
+        auto property = nmos::nc::find_property_descriptor(nc_block_members_property_id, nc_block_class_id, get_control_protocol_class_descriptor);
         BST_REQUIRE(!property.is_null());
     }
     {
         // invalid - find members property in NcWorker
-        auto property = nmos::find_property_descriptor(nc_block_members_property_id, nc_worker_class_id, get_control_protocol_class_descriptor);
+        auto property = nmos::nc::find_property_descriptor(nc_block_members_property_id, nc_worker_class_id, get_control_protocol_class_descriptor);
         BST_REQUIRE(property.is_null());
     }
     {
-        // invalid - find unknown propertry in NcBlock
-        auto property = nmos::find_property_descriptor(invalid_property_id, nc_block_class_id, get_control_protocol_class_descriptor);
+        // invalid - find unknown property in NcBlock
+        auto property = nmos::nc::find_property_descriptor(invalid_property_id, nc_block_class_id, get_control_protocol_class_descriptor);
         BST_REQUIRE(property.is_null());
     }
     {
         // invalid - find unknown property in unknown class
-        auto property = nmos::find_property_descriptor(invalid_property_id, invalid_class_id, get_control_protocol_class_descriptor);
+        auto property = nmos::nc::find_property_descriptor(invalid_property_id, invalid_class_id, get_control_protocol_class_descriptor);
         BST_REQUIRE(property.is_null());
     }
 }
@@ -713,64 +713,74 @@ BST_TEST_CASE(testConstraints)
     // constraints
 
     // runtime constraints
-    const auto runtime_property_string_constraints = nmos::details::make_nc_property_constraints_string(property_string_id, 10, U("^[0-9]+$"));
-    const auto runtime_property_int32_constraints = nmos::details::make_nc_property_constraints_number(property_int32_id, 10, 1000, 1);
+    const auto runtime_property_string_constraints = nmos::nc::details::make_property_constraints_string(property_string_id, 10, U("^[0-9]+$"));
+    const auto runtime_property_int32_constraints = nmos::nc::details::make_property_constraints_number(property_int32_id, 10, 1000, 1);
 
     const auto runtime_property_constraints = value_of({
         { runtime_property_string_constraints },
         { runtime_property_int32_constraints }
     });
 
-    // propertry constraints
-    const auto property_string_constraints = nmos::details::make_nc_parameter_constraints_string(5, U("^[a-z]+$"));
-    const auto property_int32_constraints = nmos::details::make_nc_parameter_constraints_number(50, 500, 5);
+    // property constraints
+    const auto property_string_constraints = nmos::nc::details::make_parameter_constraints_string(5, U("^[a-z]+$"));
+    const auto property_int32_constraints = nmos::nc::details::make_parameter_constraints_number(50, 500, 5);
 
     // datatype constraints
-    const auto datatype_string_constraints = nmos::details::make_nc_parameter_constraints_string(2, U("^[0-9a-z]+$"));
-    const auto datatype_int32_constraints = nmos::details::make_nc_parameter_constraints_number(100, 250, 10);
+    const auto datatype_string_constraints = nmos::nc::details::make_parameter_constraints_string(2, U("^[0-9a-z]+$"));
+    const auto datatype_int32_constraints = nmos::nc::details::make_parameter_constraints_number(100, 250, 10);
 
     // datatypes
-    const auto no_constraints_bool_datatype = nmos::details::make_nc_datatype_typedef(U("No constraints boolean datatype"), U("NoConstraintsBoolean"), false, U("NcBoolean"), value::null());
-    const auto no_constraints_int16_datatype = nmos::details::make_nc_datatype_typedef(U("No constraints int16 datatype"), U("NoConstraintsInt16"), false, U("NcInt16"), value::null());
-    const auto no_constraints_int32_datatype = nmos::details::make_nc_datatype_typedef(U("No constraints int32 datatype"), U("NoConstraintsInt32"), false, U("NcInt32"), value::null());
-    const auto no_constraints_int64_datatype = nmos::details::make_nc_datatype_typedef(U("No constraints int64 datatype"), U("NoConstraintsInt64"), false, U("NcInt64"), value::null());
-    const auto no_constraints_uint16_datatype = nmos::details::make_nc_datatype_typedef(U("No constraints uint16 datatype"), U("NoConstraintsUint16"), false, U("NcUint16"), value::null());
-    const auto no_constraints_uint32_datatype = nmos::details::make_nc_datatype_typedef(U("No constraints uint32 datatype"), U("NoConstraintsUint32"), false, U("NcUint32"), value::null());
-    const auto no_constraints_uint64_datatype = nmos::details::make_nc_datatype_typedef(U("No constraints uint64 datatype"), U("NoConstraintsUint64"), false, U("NcUint64"), value::null());
-    const auto no_constraints_float32_datatype = nmos::details::make_nc_datatype_typedef(U("No constraints float32 datatype"), U("NoConstraintsFloat32"), false, U("NcFloat32"), value::null());
-    const auto no_constraints_float64_datatype = nmos::details::make_nc_datatype_typedef(U("No constraints float64 datatype"), U("NoConstraintsFloat64"), false, U("NcFloat64"), value::null());
-    const auto no_constraints_string_datatype = nmos::details::make_nc_datatype_typedef(U("No constraints string datatype"), U("NoConstraintsString"), false, U("NcString"), value::null());
-    const auto with_constraints_string_datatype = nmos::details::make_nc_datatype_typedef(U("With constraints string datatype"), U("WithConstraintsString"), false, U("NcString"), datatype_string_constraints);
-    const auto with_constraints_int32_datatype = nmos::details::make_nc_datatype_typedef(U("With constraints int32 datatype"), U("WithConstraintsInt32"), false, U("NcInt32"), datatype_int32_constraints);
-    const auto no_constraints_int32_seq_datatype = nmos::details::make_nc_datatype_typedef(U("No constraints int64 datatype"), U("NoConstraintsInt64"), true, U("NcInt32"), value::null());
-    const auto no_constraints_string_seq_datatype = nmos::details::make_nc_datatype_typedef(U("No constraints string datatype"), U("NoConstraintsString"), true, U("NcString"), value::null());
+    const auto no_constraints_bool_datatype = nmos::nc::details::make_datatype_typedef(U("No constraints boolean datatype"), U("NoConstraintsBoolean"), false, U("NcBoolean"), value::null());
+    const auto no_constraints_int16_datatype = nmos::nc::details::make_datatype_typedef(U("No constraints int16 datatype"), U("NoConstraintsInt16"), false, U("NcInt16"), value::null());
+    const auto no_constraints_int32_datatype = nmos::nc::details::make_datatype_typedef(U("No constraints int32 datatype"), U("NoConstraintsInt32"), false, U("NcInt32"), value::null());
+    const auto no_constraints_int64_datatype = nmos::nc::details::make_datatype_typedef(U("No constraints int64 datatype"), U("NoConstraintsInt64"), false, U("NcInt64"), value::null());
+    const auto no_constraints_uint16_datatype = nmos::nc::details::make_datatype_typedef(U("No constraints uint16 datatype"), U("NoConstraintsUint16"), false, U("NcUint16"), value::null());
+    const auto no_constraints_uint32_datatype = nmos::nc::details::make_datatype_typedef(U("No constraints uint32 datatype"), U("NoConstraintsUint32"), false, U("NcUint32"), value::null());
+    const auto no_constraints_uint64_datatype = nmos::nc::details::make_datatype_typedef(U("No constraints uint64 datatype"), U("NoConstraintsUint64"), false, U("NcUint64"), value::null());
+    const auto no_constraints_float32_datatype = nmos::nc::details::make_datatype_typedef(U("No constraints float32 datatype"), U("NoConstraintsFloat32"), false, U("NcFloat32"), value::null());
+    const auto no_constraints_float64_datatype = nmos::nc::details::make_datatype_typedef(U("No constraints float64 datatype"), U("NoConstraintsFloat64"), false, U("NcFloat64"), value::null());
+    const auto no_constraints_string_datatype = nmos::nc::details::make_datatype_typedef(U("No constraints string datatype"), U("NoConstraintsString"), false, U("NcString"), value::null());
+    const auto with_constraints_string_datatype = nmos::nc::details::make_datatype_typedef(U("With constraints string datatype"), U("WithConstraintsString"), false, U("NcString"), datatype_string_constraints);
+    const auto with_constraints_int32_datatype = nmos::nc::details::make_datatype_typedef(U("With constraints int32 datatype"), U("WithConstraintsInt32"), false, U("NcInt32"), datatype_int32_constraints);
+    const auto no_constraints_int32_seq_datatype = nmos::nc::details::make_datatype_typedef(U("No constraints int64 datatype"), U("NoConstraintsInt64"), true, U("NcInt32"), value::null());
+    const auto no_constraints_string_seq_datatype = nmos::nc::details::make_datatype_typedef(U("No constraints string datatype"), U("NoConstraintsString"), true, U("NcString"), value::null());
 
     enum enum_value { foo, bar, baz };
     auto items = value::array();
-    web::json::push_back(items, nmos::details::make_nc_enum_item_descriptor(U("foo"), U("foo"), enum_value::foo));
-    web::json::push_back(items, nmos::details::make_nc_enum_item_descriptor(U("bar"), U("bar"), enum_value::bar));
-    web::json::push_back(items, nmos::details::make_nc_enum_item_descriptor(U("baz"), U("baz"), enum_value::baz));
-    const auto enum_datatype = nmos::details::make_nc_datatype_descriptor_enum(U("enum datatype"), U("enumDatatype"), items, value::null()); // no datatype constraints for enum datatype
+    web::json::push_back(items, nmos::nc::details::make_enum_item_descriptor(U("foo"), U("foo"), enum_value::foo));
+    web::json::push_back(items, nmos::nc::details::make_enum_item_descriptor(U("bar"), U("bar"), enum_value::bar));
+    web::json::push_back(items, nmos::nc::details::make_enum_item_descriptor(U("baz"), U("baz"), enum_value::baz));
+    const auto enum_datatype = nmos::nc::details::make_datatype_descriptor_enum(U("enum datatype"), U("enumDatatype"), items, value::null()); // no datatype constraints for enum datatype
 
     auto simple_struct_fields = value::array();
-    web::json::push_back(simple_struct_fields, nmos::details::make_nc_field_descriptor(U("simple enum property example"), U("simpleEnumProperty"), U("enumDatatype"), false, false, value::null())); // no field constraints for enum field, as it is already described by its type
-    web::json::push_back(simple_struct_fields, nmos::details::make_nc_field_descriptor(U("simple string property example"), U("simpleStringProperty"), U("NcString"), false, false, datatype_string_constraints));
-    web::json::push_back(simple_struct_fields, nmos::details::make_nc_field_descriptor(U("simple number property example"), U("simpleNumberProperty"), U("NcInt32"), false, false, datatype_int32_constraints));
-    web::json::push_back(simple_struct_fields, nmos::details::make_nc_field_descriptor(U("simle boolean property example"), U("simpleBooleanProperty"), U("NcBoolean"), false, false, value::null())); // no field constraints for boolean field, as it is already described by its type
-    const auto simple_struct_datatype = nmos::details::make_nc_datatype_descriptor_struct(U("simple struct datatype"), U("simpleStructDatatype"), simple_struct_fields, value::null()); // no datatype constraints for struct datatype
+    web::json::push_back(simple_struct_fields, nmos::nc::details::make_field_descriptor(U("simple enum property example"), U("simpleEnumProperty"), U("enumDatatype"), false, false, value::null())); // no field constraints for enum field, as it is already described by its type
+    web::json::push_back(simple_struct_fields, nmos::nc::details::make_field_descriptor(U("simple string property example"), U("simpleStringProperty"), U("NcString"), false, false, datatype_string_constraints));
+    web::json::push_back(simple_struct_fields, nmos::nc::details::make_field_descriptor(U("simple number property example"), U("simpleNumberProperty"), U("NcInt32"), false, false, datatype_int32_constraints));
+    web::json::push_back(simple_struct_fields, nmos::nc::details::make_field_descriptor(U("simle boolean property example"), U("simpleBooleanProperty"), U("NcBoolean"), false, false, value::null())); // no field constraints for boolean field, as it is already described by its type
+    const auto simple_struct_datatype = nmos::nc::details::make_datatype_descriptor_struct(U("simple struct datatype"), U("simpleStructDatatype"), simple_struct_fields, value::null()); // no datatype constraints for struct datatype
 
     auto fields = value::array();
-    web::json::push_back(fields, nmos::details::make_nc_field_descriptor(U("Enum property example"), U("enumProperty"), U("enumDatatype"), false, false, value::null())); // no field constraints for enum field, as it is already described by its type
-    web::json::push_back(fields, nmos::details::make_nc_field_descriptor(U("String property example"), U("stringProperty"), U("NcString"), false, false, datatype_string_constraints));
-    web::json::push_back(fields, nmos::details::make_nc_field_descriptor(U("Number property example"), U("numberProperty"), U("NcInt32"), false, false, datatype_int32_constraints));
-    web::json::push_back(fields, nmos::details::make_nc_field_descriptor(U("Boolean property example"), U("booleanProperty"), U("NcBoolean"), false, false, value::null())); // no field constraints for boolean field, as it is already described by its type
-    web::json::push_back(fields, nmos::details::make_nc_field_descriptor(U("Struct property example"), U("structProperty"), U("simpleStructDatatype"), false, false, value::null())); // no datatype constraints for struct datatype
-    web::json::push_back(fields, nmos::details::make_nc_field_descriptor(U("Sequence enum property example"), U("sequenceEnumProperty"), U("enumDatatype"), false, false, value::null())); // no field constraints for enum field, as it is already described by its type
-    web::json::push_back(fields, nmos::details::make_nc_field_descriptor(U("Sequence string property example"), U("sequenceStringProperty"), U("NcString"), false, false, datatype_string_constraints));
-    web::json::push_back(fields, nmos::details::make_nc_field_descriptor(U("Sequence number property example"), U("sequenceNumberProperty"), U("NcInt32"), false, false, datatype_int32_constraints));
-    web::json::push_back(fields, nmos::details::make_nc_field_descriptor(U("Sequence boolean property example"), U("sequenceBooleanProperty"), U("NcBoolean"), false, false, value::null())); // no field constraints for boolean field, as it is already described by its type
-    web::json::push_back(fields, nmos::details::make_nc_field_descriptor(U("Sequence struct property example"), U("sequenceStructProperty"), U("simpleStructDatatype"), false, false, value::null())); // no field constraints for struct field
-    const auto struct_datatype = nmos::details::make_nc_datatype_descriptor_struct(U("struct datatype"), U("structDatatype"), fields, value::null()); // no datatype constraints for struct datatype
+    web::json::push_back(fields, nmos::nc::details::make_field_descriptor(U("Enum property example"), U("enumProperty"), U("enumDatatype"), false, false, value::null())); // no field constraints for enum field, as it is already described by its type
+    web::json::push_back(fields, nmos::nc::details::make_field_descriptor(U("String property example"), U("stringProperty"), U("NcString"), false, false, datatype_string_constraints));
+    web::json::push_back(fields, nmos::nc::details::make_field_descriptor(U("Number property example"), U("numberProperty"), U("NcInt32"), false, false, datatype_int32_constraints));
+    web::json::push_back(fields, nmos::nc::details::make_field_descriptor(U("Boolean property example"), U("booleanProperty"), U("NcBoolean"), false, false, value::null())); // no field constraints for boolean field, as it is already described by its type
+    web::json::push_back(fields, nmos::nc::details::make_field_descriptor(U("Struct property example"), U("structProperty"), U("simpleStructDatatype"), false, false, value::null())); // no datatype constraints for struct datatype
+    web::json::push_back(fields, nmos::nc::details::make_field_descriptor(U("Sequence enum property example"), U("sequenceEnumProperty"), U("enumDatatype"), false, true, value::null())); // no field constraints for enum field, as it is already described by its type
+    web::json::push_back(fields, nmos::nc::details::make_field_descriptor(U("Sequence string property example"), U("sequenceStringProperty"), U("NcString"), false, true, datatype_string_constraints));
+    web::json::push_back(fields, nmos::nc::details::make_field_descriptor(U("Sequence number property example"), U("sequenceNumberProperty"), U("NcInt32"), false, true, datatype_int32_constraints));
+    web::json::push_back(fields, nmos::nc::details::make_field_descriptor(U("Sequence boolean property example"), U("sequenceBooleanProperty"), U("NcBoolean"), false, true, value::null())); // no field constraints for boolean field, as it is already described by its type
+    web::json::push_back(fields, nmos::nc::details::make_field_descriptor(U("Sequence struct property example"), U("sequenceStructProperty"), U("simpleStructDatatype"), false, true, value::null())); // no field constraints for struct field
+    web::json::push_back(fields, nmos::nc::details::make_field_descriptor(U("Nullable Enum property example"), U("enumPropertyNullable"), U("enumDatatype"), true, false, value::null())); // no field constraints for enum field, as it is already described by its type
+    web::json::push_back(fields, nmos::nc::details::make_field_descriptor(U("Nullable String property example"), U("stringPropertyNullable"), U("NcString"), true, false, datatype_string_constraints));
+    web::json::push_back(fields, nmos::nc::details::make_field_descriptor(U("Nullable Number property example"), U("numberPropertyNullable"), U("NcInt32"), true, false, datatype_int32_constraints));
+    web::json::push_back(fields, nmos::nc::details::make_field_descriptor(U("Nullable Boolean property example"), U("booleanPropertyNullable"), U("NcBoolean"), true, false, value::null())); // no field constraints for boolean field, as it is already described by its type
+    web::json::push_back(fields, nmos::nc::details::make_field_descriptor(U("Nullable Struct property example"), U("structPropertyNullable"), U("simpleStructDatatype"), true, false, value::null())); // no datatype constraints for struct datatype
+    web::json::push_back(fields, nmos::nc::details::make_field_descriptor(U("Nullable Sequence enum property example"), U("sequenceEnumPropertyNullable"), U("enumDatatype"), true, true, value::null())); // no field constraints for enum field, as it is already described by its type
+    web::json::push_back(fields, nmos::nc::details::make_field_descriptor(U("Nullable Sequence string property example"), U("sequenceStringPropertyNullable"), U("NcString"), true, true, datatype_string_constraints));
+    web::json::push_back(fields, nmos::nc::details::make_field_descriptor(U("Nullable Sequence number property example"), U("sequenceNumberPropertyNullable"), U("NcInt32"), true, true, datatype_int32_constraints));
+    web::json::push_back(fields, nmos::nc::details::make_field_descriptor(U("Nullable Sequence boolean property example"), U("sequenceBooleanPropertyNullable"), U("NcBoolean"), true, true, value::null())); // no field constraints for boolean field, as it is already described by its type
+    web::json::push_back(fields, nmos::nc::details::make_field_descriptor(U("Nullable Sequence struct property example"), U("sequenceStructPropertyNullable"), U("simpleStructDatatype"), true, true, value::null())); // no field constraints for struct field
+    const auto struct_datatype = nmos::nc::details::make_datatype_descriptor_struct(U("struct datatype"), U("structDatatype"), fields, value::null()); // no datatype constraints for struct datatype
 
     // setup datatypes in control_protocol_state
     nmos::experimental::control_protocol_state control_protocol_state;
@@ -789,131 +799,133 @@ BST_TEST_CASE(testConstraints)
     control_protocol_state.insert(nmos::experimental::datatype_descriptor{ no_constraints_string_seq_datatype });
 
     // test get_runtime_property_constraints
-    BST_REQUIRE_EQUAL(nmos::details::get_runtime_property_constraints(property_string_id, runtime_property_constraints), runtime_property_string_constraints);
-    BST_REQUIRE_EQUAL(nmos::details::get_runtime_property_constraints(property_int32_id, runtime_property_constraints), runtime_property_int32_constraints);
-    BST_REQUIRE_EQUAL(nmos::details::get_runtime_property_constraints(unknown_property_id, runtime_property_constraints), value::null());
+    BST_REQUIRE_EQUAL(nmos::nc::details::get_runtime_property_constraints(property_string_id, runtime_property_constraints), runtime_property_string_constraints);
+    BST_REQUIRE_EQUAL(nmos::nc::details::get_runtime_property_constraints(property_int32_id, runtime_property_constraints), runtime_property_int32_constraints);
+    BST_REQUIRE_EQUAL(nmos::nc::details::get_runtime_property_constraints(unknown_property_id, runtime_property_constraints), value::null());
 
     // string property constraints validation
 
     // runtime property constraints validation
-    const nmos::details::datatype_constraints_validation_parameters with_constraints_string_constraints_validation_params{ with_constraints_string_datatype, nmos::make_get_control_protocol_datatype_descriptor_handler(control_protocol_state) };
-    BST_REQUIRE_NO_THROW(nmos::details::constraints_validation(value::string(U("1234567890")), runtime_property_string_constraints, property_string_constraints, with_constraints_string_constraints_validation_params));
-    BST_REQUIRE_THROW(nmos::details::constraints_validation(value::string(U("12345678901")), runtime_property_string_constraints, property_string_constraints, with_constraints_string_constraints_validation_params), nmos::control_protocol_exception);
-    BST_REQUIRE_THROW(nmos::details::constraints_validation(value::string(U("123456789A")), runtime_property_string_constraints, property_string_constraints, with_constraints_string_constraints_validation_params), nmos::control_protocol_exception);
-    BST_REQUIRE_NO_THROW(nmos::details::constraints_validation(value_of({ value::string(U("1234567890")), value::string(U("1234567890")) }), runtime_property_string_constraints, property_string_constraints, with_constraints_string_constraints_validation_params));
-    BST_REQUIRE_THROW(nmos::details::constraints_validation(value_of({ value::string(U("1234567890")), value::string(U("12345678901")) }), runtime_property_string_constraints, property_string_constraints, with_constraints_string_constraints_validation_params), nmos::control_protocol_exception);
-    BST_REQUIRE_THROW(nmos::details::constraints_validation(value_of({ value::string(U("1234567890")), 1 }), runtime_property_string_constraints, property_string_constraints, with_constraints_string_constraints_validation_params), nmos::control_protocol_exception);
+    const nmos::nc::details::datatype_constraints_validation_parameters with_constraints_string_constraints_validation_params{ with_constraints_string_datatype, nmos::make_get_control_protocol_datatype_descriptor_handler(control_protocol_state) };
+    BST_REQUIRE_NO_THROW(nmos::nc::details::constraints_validation(value::string(U("1234567890")), runtime_property_string_constraints, property_string_constraints, with_constraints_string_constraints_validation_params));
+    BST_REQUIRE_THROW(nmos::nc::details::constraints_validation(value::string(U("12345678901")), runtime_property_string_constraints, property_string_constraints, with_constraints_string_constraints_validation_params), nmos::control_protocol_exception);
+    BST_REQUIRE_THROW(nmos::nc::details::constraints_validation(value::string(U("123456789A")), runtime_property_string_constraints, property_string_constraints, with_constraints_string_constraints_validation_params), nmos::control_protocol_exception);
+    BST_REQUIRE_NO_THROW(nmos::nc::details::constraints_validation(value_of({ value::string(U("1234567890")), value::string(U("1234567890")) }), runtime_property_string_constraints, property_string_constraints, with_constraints_string_constraints_validation_params));
+    BST_REQUIRE_THROW(nmos::nc::details::constraints_validation(value_of({ value::string(U("1234567890")), value::string(U("12345678901")) }), runtime_property_string_constraints, property_string_constraints, with_constraints_string_constraints_validation_params), nmos::control_protocol_exception);
+    BST_REQUIRE_THROW(nmos::nc::details::constraints_validation(value_of({ value::string(U("1234567890")), 1 }), runtime_property_string_constraints, property_string_constraints, with_constraints_string_constraints_validation_params), nmos::control_protocol_exception);
     // property constraints validation
-    BST_REQUIRE_NO_THROW(nmos::details::constraints_validation(value::string(U("abcde")), value::null(), property_string_constraints, with_constraints_string_constraints_validation_params));
-    BST_REQUIRE_THROW(nmos::details::constraints_validation(value::string(U("abcdef")), value::null(), property_string_constraints, with_constraints_string_constraints_validation_params), nmos::control_protocol_exception);
-    BST_REQUIRE_THROW(nmos::details::constraints_validation(value::string(U("abcd1")), value::null(), property_string_constraints, with_constraints_string_constraints_validation_params), nmos::control_protocol_exception);
-    BST_REQUIRE_NO_THROW(nmos::details::constraints_validation(value_of({ value::string(U("abcde")), value::string(U("abcde")) }), value::null(), property_string_constraints, with_constraints_string_constraints_validation_params));
-    BST_REQUIRE_THROW(nmos::details::constraints_validation(value_of({ value::string(U("abcde")), value::string(U("abcdef")) }), value::null(), property_string_constraints, with_constraints_string_constraints_validation_params), nmos::control_protocol_exception);
-    BST_REQUIRE_THROW(nmos::details::constraints_validation(value_of({ value::string(U("abcde")), 1 }), value::null(), property_string_constraints, with_constraints_string_constraints_validation_params), nmos::control_protocol_exception);
+    BST_REQUIRE_NO_THROW(nmos::nc::details::constraints_validation(value::string(U("abcde")), value::null(), property_string_constraints, with_constraints_string_constraints_validation_params));
+    BST_REQUIRE_THROW(nmos::nc::details::constraints_validation(value::string(U("abcdef")), value::null(), property_string_constraints, with_constraints_string_constraints_validation_params), nmos::control_protocol_exception);
+    BST_REQUIRE_THROW(nmos::nc::details::constraints_validation(value::string(U("abcd1")), value::null(), property_string_constraints, with_constraints_string_constraints_validation_params), nmos::control_protocol_exception);
+    BST_REQUIRE_NO_THROW(nmos::nc::details::constraints_validation(value_of({ value::string(U("abcde")), value::string(U("abcde")) }), value::null(), property_string_constraints, with_constraints_string_constraints_validation_params));
+    BST_REQUIRE_THROW(nmos::nc::details::constraints_validation(value_of({ value::string(U("abcde")), value::string(U("abcdef")) }), value::null(), property_string_constraints, with_constraints_string_constraints_validation_params), nmos::control_protocol_exception);
+    BST_REQUIRE_THROW(nmos::nc::details::constraints_validation(value_of({ value::string(U("abcde")), 1 }), value::null(), property_string_constraints, with_constraints_string_constraints_validation_params), nmos::control_protocol_exception);
     // datatype constraints validation
-    BST_REQUIRE_NO_THROW(nmos::details::constraints_validation(value::string(U("1a")), value::null(), value::null(), with_constraints_string_constraints_validation_params));
-    BST_REQUIRE_THROW(nmos::details::constraints_validation(value::string(U("1a2")), value::null(), value::null(), with_constraints_string_constraints_validation_params), nmos::control_protocol_exception);
-    BST_REQUIRE_THROW(nmos::details::constraints_validation(value::string(U("1*")), value::null(), value::null(), with_constraints_string_constraints_validation_params), nmos::control_protocol_exception);
-    const nmos::details::datatype_constraints_validation_parameters no_constraints_string_constraints_validation_params{ no_constraints_string_datatype, nmos::make_get_control_protocol_datatype_descriptor_handler(control_protocol_state) };
-    BST_REQUIRE_NO_THROW(nmos::details::constraints_validation(value::string(U("1234567890-abcde-!\"$%^&*()_+=")), value::null(), value::null(), no_constraints_string_constraints_validation_params));
+    BST_REQUIRE_NO_THROW(nmos::nc::details::constraints_validation(value::string(U("1a")), value::null(), value::null(), with_constraints_string_constraints_validation_params));
+    BST_REQUIRE_THROW(nmos::nc::details::constraints_validation(value::string(U("1a2")), value::null(), value::null(), with_constraints_string_constraints_validation_params), nmos::control_protocol_exception);
+    BST_REQUIRE_THROW(nmos::nc::details::constraints_validation(value::string(U("1*")), value::null(), value::null(), with_constraints_string_constraints_validation_params), nmos::control_protocol_exception);
+    const nmos::nc::details::datatype_constraints_validation_parameters no_constraints_string_constraints_validation_params{ no_constraints_string_datatype, nmos::make_get_control_protocol_datatype_descriptor_handler(control_protocol_state) };
+    BST_REQUIRE_NO_THROW(nmos::nc::details::constraints_validation(value::string(U("1234567890-abcde-!\"$%^&*()_+=")), value::null(), value::null(), no_constraints_string_constraints_validation_params));
 
     // number property constraints validation
 
     // runtime property constraints validation
-    const nmos::details::datatype_constraints_validation_parameters with_constraints_int32_constraints_validation_params{ with_constraints_int32_datatype, nmos::make_get_control_protocol_datatype_descriptor_handler(control_protocol_state) };
-    BST_REQUIRE_NO_THROW(nmos::details::constraints_validation(10, runtime_property_int32_constraints, property_int32_constraints, with_constraints_int32_constraints_validation_params));
-    BST_REQUIRE_NO_THROW(nmos::details::constraints_validation(1000, runtime_property_int32_constraints, property_int32_constraints, with_constraints_int32_constraints_validation_params));
-    BST_REQUIRE_THROW(nmos::details::constraints_validation(9, runtime_property_int32_constraints, property_int32_constraints, with_constraints_int32_constraints_validation_params), nmos::control_protocol_exception);
-    BST_REQUIRE_THROW(nmos::details::constraints_validation(1001, runtime_property_int32_constraints, property_int32_constraints, with_constraints_int32_constraints_validation_params), nmos::control_protocol_exception);
-    BST_REQUIRE_NO_THROW(nmos::details::constraints_validation(value_of({ 10, 1000 }), runtime_property_int32_constraints, property_int32_constraints, with_constraints_int32_constraints_validation_params));
-    BST_REQUIRE_THROW(nmos::details::constraints_validation(value_of({ 10, 1001 }), runtime_property_int32_constraints, property_int32_constraints, with_constraints_int32_constraints_validation_params), nmos::control_protocol_exception);
-    BST_REQUIRE_THROW(nmos::details::constraints_validation(value_of({ 10, value::string(U("a")) }), runtime_property_int32_constraints, property_int32_constraints, with_constraints_int32_constraints_validation_params), nmos::control_protocol_exception);
+    const nmos::nc::details::datatype_constraints_validation_parameters with_constraints_int32_constraints_validation_params{ with_constraints_int32_datatype, nmos::make_get_control_protocol_datatype_descriptor_handler(control_protocol_state) };
+    BST_REQUIRE_NO_THROW(nmos::nc::details::constraints_validation(10, runtime_property_int32_constraints, property_int32_constraints, with_constraints_int32_constraints_validation_params));
+    BST_REQUIRE_NO_THROW(nmos::nc::details::constraints_validation(1000, runtime_property_int32_constraints, property_int32_constraints, with_constraints_int32_constraints_validation_params));
+    BST_REQUIRE_THROW(nmos::nc::details::constraints_validation(9, runtime_property_int32_constraints, property_int32_constraints, with_constraints_int32_constraints_validation_params), nmos::control_protocol_exception);
+    BST_REQUIRE_THROW(nmos::nc::details::constraints_validation(1001, runtime_property_int32_constraints, property_int32_constraints, with_constraints_int32_constraints_validation_params), nmos::control_protocol_exception);
+    BST_REQUIRE_NO_THROW(nmos::nc::details::constraints_validation(value_of({ 10, 1000 }), runtime_property_int32_constraints, property_int32_constraints, with_constraints_int32_constraints_validation_params));
+    BST_REQUIRE_THROW(nmos::nc::details::constraints_validation(value_of({ 10, 1001 }), runtime_property_int32_constraints, property_int32_constraints, with_constraints_int32_constraints_validation_params), nmos::control_protocol_exception);
+    BST_REQUIRE_THROW(nmos::nc::details::constraints_validation(value_of({ 10, value::string(U("a")) }), runtime_property_int32_constraints, property_int32_constraints, with_constraints_int32_constraints_validation_params), nmos::control_protocol_exception);
     // property constraints validation
-    BST_REQUIRE_NO_THROW(nmos::details::constraints_validation(50, value::null(), property_int32_constraints, with_constraints_int32_constraints_validation_params));
-    BST_REQUIRE_NO_THROW(nmos::details::constraints_validation(500, value::null(), property_int32_constraints, with_constraints_int32_constraints_validation_params));
-    BST_REQUIRE_THROW(nmos::details::constraints_validation(45, value::null(), property_int32_constraints, with_constraints_int32_constraints_validation_params), nmos::control_protocol_exception);
-    BST_REQUIRE_THROW(nmos::details::constraints_validation(505, value::null(), property_int32_constraints, with_constraints_int32_constraints_validation_params), nmos::control_protocol_exception);
-    BST_REQUIRE_THROW(nmos::details::constraints_validation(499, value::null(), property_int32_constraints, with_constraints_int32_constraints_validation_params), nmos::control_protocol_exception);
-    BST_REQUIRE_NO_THROW(nmos::details::constraints_validation(value_of({ 50, 500 }), value::null(), property_int32_constraints, with_constraints_int32_constraints_validation_params));
-    BST_REQUIRE_THROW(nmos::details::constraints_validation(value_of({ 49, 500 }), value::null(), property_int32_constraints, with_constraints_int32_constraints_validation_params), nmos::control_protocol_exception);
-    BST_REQUIRE_THROW(nmos::details::constraints_validation(value_of({ 50, 501 }), value::null(), property_int32_constraints, with_constraints_int32_constraints_validation_params), nmos::control_protocol_exception);
-    BST_REQUIRE_THROW(nmos::details::constraints_validation(value_of({ 45, 500 }), value::null(), property_int32_constraints, with_constraints_int32_constraints_validation_params), nmos::control_protocol_exception);
-    BST_REQUIRE_THROW(nmos::details::constraints_validation(value_of({ 50, value::string(U("a")) }), value::null(), property_int32_constraints, with_constraints_int32_constraints_validation_params), nmos::control_protocol_exception);
+    BST_REQUIRE_NO_THROW(nmos::nc::details::constraints_validation(50, value::null(), property_int32_constraints, with_constraints_int32_constraints_validation_params));
+    BST_REQUIRE_NO_THROW(nmos::nc::details::constraints_validation(500, value::null(), property_int32_constraints, with_constraints_int32_constraints_validation_params));
+    BST_REQUIRE_THROW(nmos::nc::details::constraints_validation(45, value::null(), property_int32_constraints, with_constraints_int32_constraints_validation_params), nmos::control_protocol_exception);
+    BST_REQUIRE_THROW(nmos::nc::details::constraints_validation(505, value::null(), property_int32_constraints, with_constraints_int32_constraints_validation_params), nmos::control_protocol_exception);
+    BST_REQUIRE_THROW(nmos::nc::details::constraints_validation(499, value::null(), property_int32_constraints, with_constraints_int32_constraints_validation_params), nmos::control_protocol_exception);
+    BST_REQUIRE_NO_THROW(nmos::nc::details::constraints_validation(value_of({ 50, 500 }), value::null(), property_int32_constraints, with_constraints_int32_constraints_validation_params));
+    BST_REQUIRE_THROW(nmos::nc::details::constraints_validation(value_of({ 49, 500 }), value::null(), property_int32_constraints, with_constraints_int32_constraints_validation_params), nmos::control_protocol_exception);
+    BST_REQUIRE_THROW(nmos::nc::details::constraints_validation(value_of({ 50, 501 }), value::null(), property_int32_constraints, with_constraints_int32_constraints_validation_params), nmos::control_protocol_exception);
+    BST_REQUIRE_THROW(nmos::nc::details::constraints_validation(value_of({ 45, 500 }), value::null(), property_int32_constraints, with_constraints_int32_constraints_validation_params), nmos::control_protocol_exception);
+    BST_REQUIRE_THROW(nmos::nc::details::constraints_validation(value_of({ 50, value::string(U("a")) }), value::null(), property_int32_constraints, with_constraints_int32_constraints_validation_params), nmos::control_protocol_exception);
     // datatype constraints validation
-    BST_REQUIRE_NO_THROW(nmos::details::constraints_validation(100, value::null(), value::null(), with_constraints_int32_constraints_validation_params));
-    BST_REQUIRE_NO_THROW(nmos::details::constraints_validation(250, value::null(), value::null(), with_constraints_int32_constraints_validation_params));
-    BST_REQUIRE_THROW(nmos::details::constraints_validation(90, value::null(), value::null(), with_constraints_int32_constraints_validation_params), nmos::control_protocol_exception);
-    BST_REQUIRE_THROW(nmos::details::constraints_validation(260, value::null(), value::null(), with_constraints_int32_constraints_validation_params), nmos::control_protocol_exception);
-    BST_REQUIRE_THROW(nmos::details::constraints_validation(99, value::null(), value::null(), with_constraints_int32_constraints_validation_params), nmos::control_protocol_exception);
+    BST_REQUIRE_NO_THROW(nmos::nc::details::constraints_validation(100, value::null(), value::null(), with_constraints_int32_constraints_validation_params));
+    BST_REQUIRE_NO_THROW(nmos::nc::details::constraints_validation(250, value::null(), value::null(), with_constraints_int32_constraints_validation_params));
+    BST_REQUIRE_THROW(nmos::nc::details::constraints_validation(90, value::null(), value::null(), with_constraints_int32_constraints_validation_params), nmos::control_protocol_exception);
+    BST_REQUIRE_THROW(nmos::nc::details::constraints_validation(260, value::null(), value::null(), with_constraints_int32_constraints_validation_params), nmos::control_protocol_exception);
+    BST_REQUIRE_THROW(nmos::nc::details::constraints_validation(99, value::null(), value::null(), with_constraints_int32_constraints_validation_params), nmos::control_protocol_exception);
     // int16 datatype constraints validation
-    const nmos::details::datatype_constraints_validation_parameters no_constraints_int16_constraints_validation_params{ no_constraints_int16_datatype, nmos::make_get_control_protocol_datatype_descriptor_handler(control_protocol_state) };
-    BST_REQUIRE_THROW(nmos::details::constraints_validation(int64_t(std::numeric_limits<int16_t>::min()) - 1, value::null(), value::null(), no_constraints_int16_constraints_validation_params), nmos::control_protocol_exception);
-    BST_REQUIRE_THROW(nmos::details::constraints_validation(int64_t(std::numeric_limits<int16_t>::max()) + 1, value::null(), value::null(), no_constraints_int16_constraints_validation_params), nmos::control_protocol_exception);
-    BST_REQUIRE_NO_THROW(nmos::details::constraints_validation(std::numeric_limits<int16_t>::min(), value::null(), value::null(), no_constraints_int16_constraints_validation_params));
-    BST_REQUIRE_NO_THROW(nmos::details::constraints_validation(std::numeric_limits<int16_t>::max(), value::null(), value::null(), no_constraints_int16_constraints_validation_params));
+    const nmos::nc::details::datatype_constraints_validation_parameters no_constraints_int16_constraints_validation_params{ no_constraints_int16_datatype, nmos::make_get_control_protocol_datatype_descriptor_handler(control_protocol_state) };
+    BST_REQUIRE_THROW(nmos::nc::details::constraints_validation(int64_t(std::numeric_limits<int16_t>::min()) - 1, value::null(), value::null(), no_constraints_int16_constraints_validation_params), nmos::control_protocol_exception);
+    BST_REQUIRE_THROW(nmos::nc::details::constraints_validation(int64_t(std::numeric_limits<int16_t>::max()) + 1, value::null(), value::null(), no_constraints_int16_constraints_validation_params), nmos::control_protocol_exception);
+    BST_REQUIRE_NO_THROW(nmos::nc::details::constraints_validation(std::numeric_limits<int16_t>::min(), value::null(), value::null(), no_constraints_int16_constraints_validation_params));
+    BST_REQUIRE_NO_THROW(nmos::nc::details::constraints_validation(std::numeric_limits<int16_t>::max(), value::null(), value::null(), no_constraints_int16_constraints_validation_params));
     // int32 datatype constraints validation
-    const nmos::details::datatype_constraints_validation_parameters no_constraints_int32_constraints_validation_params{ no_constraints_int32_datatype, nmos::make_get_control_protocol_datatype_descriptor_handler(control_protocol_state) };
-    BST_REQUIRE_THROW(nmos::details::constraints_validation(int64_t(std::numeric_limits<int32_t>::min()) - 1, value::null(), value::null(), no_constraints_int32_constraints_validation_params), nmos::control_protocol_exception);
-    BST_REQUIRE_THROW(nmos::details::constraints_validation(int64_t(std::numeric_limits<int32_t>::max()) + 1, value::null(), value::null(), no_constraints_int32_constraints_validation_params), nmos::control_protocol_exception);
-    BST_REQUIRE_NO_THROW(nmos::details::constraints_validation(std::numeric_limits<int32_t>::min(), value::null(), value::null(), no_constraints_int32_constraints_validation_params));
-    BST_REQUIRE_NO_THROW(nmos::details::constraints_validation(std::numeric_limits<int32_t>::max(), value::null(), value::null(), no_constraints_int32_constraints_validation_params));
+    const nmos::nc::details::datatype_constraints_validation_parameters no_constraints_int32_constraints_validation_params{ no_constraints_int32_datatype, nmos::make_get_control_protocol_datatype_descriptor_handler(control_protocol_state) };
+    BST_REQUIRE_THROW(nmos::nc::details::constraints_validation(int64_t(std::numeric_limits<int32_t>::min()) - 1, value::null(), value::null(), no_constraints_int32_constraints_validation_params), nmos::control_protocol_exception);
+    BST_REQUIRE_THROW(nmos::nc::details::constraints_validation(int64_t(std::numeric_limits<int32_t>::max()) + 1, value::null(), value::null(), no_constraints_int32_constraints_validation_params), nmos::control_protocol_exception);
+    BST_REQUIRE_NO_THROW(nmos::nc::details::constraints_validation(std::numeric_limits<int32_t>::min(), value::null(), value::null(), no_constraints_int32_constraints_validation_params));
+    BST_REQUIRE_NO_THROW(nmos::nc::details::constraints_validation(std::numeric_limits<int32_t>::max(), value::null(), value::null(), no_constraints_int32_constraints_validation_params));
     // int64 datatype constraints validation
-    const nmos::details::datatype_constraints_validation_parameters no_constraints_int64_constraints_validation_params{ no_constraints_int64_datatype, nmos::make_get_control_protocol_datatype_descriptor_handler(control_protocol_state) };
-    BST_REQUIRE_THROW(nmos::details::constraints_validation(std::numeric_limits<double_t>::min(), value::null(), value::null(), no_constraints_int64_constraints_validation_params), nmos::control_protocol_exception);
-    BST_REQUIRE_THROW(nmos::details::constraints_validation(std::numeric_limits<double_t>::max(), value::null(), value::null(), no_constraints_int64_constraints_validation_params), nmos::control_protocol_exception);
-    BST_REQUIRE_NO_THROW(nmos::details::constraints_validation(std::numeric_limits<int64_t>::min(), value::null(), value::null(), no_constraints_int64_constraints_validation_params));
-    BST_REQUIRE_NO_THROW(nmos::details::constraints_validation(std::numeric_limits<int64_t>::max(), value::null(), value::null(), no_constraints_int64_constraints_validation_params));
+    const nmos::nc::details::datatype_constraints_validation_parameters no_constraints_int64_constraints_validation_params{ no_constraints_int64_datatype, nmos::make_get_control_protocol_datatype_descriptor_handler(control_protocol_state) };
+    BST_REQUIRE_THROW(nmos::nc::details::constraints_validation(std::numeric_limits<double_t>::min(), value::null(), value::null(), no_constraints_int64_constraints_validation_params), nmos::control_protocol_exception);
+    BST_REQUIRE_THROW(nmos::nc::details::constraints_validation(std::numeric_limits<double_t>::max(), value::null(), value::null(), no_constraints_int64_constraints_validation_params), nmos::control_protocol_exception);
+    BST_REQUIRE_NO_THROW(nmos::nc::details::constraints_validation(std::numeric_limits<int64_t>::min(), value::null(), value::null(), no_constraints_int64_constraints_validation_params));
+    BST_REQUIRE_NO_THROW(nmos::nc::details::constraints_validation(std::numeric_limits<int64_t>::max(), value::null(), value::null(), no_constraints_int64_constraints_validation_params));
     // uint16 datatype constraints validation
-    const nmos::details::datatype_constraints_validation_parameters no_constraints_uint16_constraints_validation_params{ no_constraints_uint16_datatype, nmos::make_get_control_protocol_datatype_descriptor_handler(control_protocol_state) };
-    BST_REQUIRE_THROW(nmos::details::constraints_validation(-1, value::null(), value::null(), no_constraints_uint16_constraints_validation_params), nmos::control_protocol_exception);
-    BST_REQUIRE_THROW(nmos::details::constraints_validation(uint64_t(std::numeric_limits<uint16_t>::max()) + 1, value::null(), value::null(), no_constraints_uint16_constraints_validation_params), nmos::control_protocol_exception);
-    BST_REQUIRE_NO_THROW(nmos::details::constraints_validation(std::numeric_limits<uint16_t>::min(), value::null(), value::null(), no_constraints_uint16_constraints_validation_params));
-    BST_REQUIRE_NO_THROW(nmos::details::constraints_validation(std::numeric_limits<uint16_t>::max(), value::null(), value::null(), no_constraints_uint16_constraints_validation_params));
+    const nmos::nc::details::datatype_constraints_validation_parameters no_constraints_uint16_constraints_validation_params{ no_constraints_uint16_datatype, nmos::make_get_control_protocol_datatype_descriptor_handler(control_protocol_state) };
+    BST_REQUIRE_THROW(nmos::nc::details::constraints_validation(-1, value::null(), value::null(), no_constraints_uint16_constraints_validation_params), nmos::control_protocol_exception);
+    BST_REQUIRE_THROW(nmos::nc::details::constraints_validation(uint64_t(std::numeric_limits<uint16_t>::max()) + 1, value::null(), value::null(), no_constraints_uint16_constraints_validation_params), nmos::control_protocol_exception);
+    BST_REQUIRE_NO_THROW(nmos::nc::details::constraints_validation(std::numeric_limits<uint16_t>::min(), value::null(), value::null(), no_constraints_uint16_constraints_validation_params));
+    BST_REQUIRE_NO_THROW(nmos::nc::details::constraints_validation(std::numeric_limits<uint16_t>::max(), value::null(), value::null(), no_constraints_uint16_constraints_validation_params));
     // uint32 datatype constraints validation
-    const nmos::details::datatype_constraints_validation_parameters no_constraints_uint32_constraints_validation_params{ no_constraints_uint32_datatype, nmos::make_get_control_protocol_datatype_descriptor_handler(control_protocol_state) };
-    BST_REQUIRE_THROW(nmos::details::constraints_validation(-1, value::null(), value::null(), no_constraints_uint32_constraints_validation_params), nmos::control_protocol_exception);
-    BST_REQUIRE_THROW(nmos::details::constraints_validation(uint64_t(std::numeric_limits<uint32_t>::max()) + 1, value::null(), value::null(), no_constraints_uint32_constraints_validation_params), nmos::control_protocol_exception);
-    BST_REQUIRE_NO_THROW(nmos::details::constraints_validation(std::numeric_limits<uint32_t>::min(), value::null(), value::null(), no_constraints_uint32_constraints_validation_params));
-    BST_REQUIRE_NO_THROW(nmos::details::constraints_validation(std::numeric_limits<uint32_t>::max(), value::null(), value::null(), no_constraints_uint32_constraints_validation_params));
+    const nmos::nc::details::datatype_constraints_validation_parameters no_constraints_uint32_constraints_validation_params{ no_constraints_uint32_datatype, nmos::make_get_control_protocol_datatype_descriptor_handler(control_protocol_state) };
+    BST_REQUIRE_THROW(nmos::nc::details::constraints_validation(-1, value::null(), value::null(), no_constraints_uint32_constraints_validation_params), nmos::control_protocol_exception);
+    BST_REQUIRE_THROW(nmos::nc::details::constraints_validation(uint64_t(std::numeric_limits<uint32_t>::max()) + 1, value::null(), value::null(), no_constraints_uint32_constraints_validation_params), nmos::control_protocol_exception);
+    BST_REQUIRE_NO_THROW(nmos::nc::details::constraints_validation(std::numeric_limits<uint32_t>::min(), value::null(), value::null(), no_constraints_uint32_constraints_validation_params));
+    BST_REQUIRE_NO_THROW(nmos::nc::details::constraints_validation(std::numeric_limits<uint32_t>::max(), value::null(), value::null(), no_constraints_uint32_constraints_validation_params));
     // uint64 datatype constraints validation
-    const nmos::details::datatype_constraints_validation_parameters no_constraints_uint64_constraints_validation_params{ no_constraints_uint64_datatype, nmos::make_get_control_protocol_datatype_descriptor_handler(control_protocol_state) };
-    BST_REQUIRE_THROW(nmos::details::constraints_validation(-1, value::null(), value::null(), no_constraints_uint64_constraints_validation_params), nmos::control_protocol_exception);
-    BST_REQUIRE_THROW(nmos::details::constraints_validation(std::numeric_limits<double_t>::max(), value::null(), value::null(), no_constraints_int64_constraints_validation_params), nmos::control_protocol_exception);
-    BST_REQUIRE_NO_THROW(nmos::details::constraints_validation(std::numeric_limits<uint64_t>::min(), value::null(), value::null(), no_constraints_uint64_constraints_validation_params));
-    BST_REQUIRE_NO_THROW(nmos::details::constraints_validation(std::numeric_limits<uint64_t>::max(), value::null(), value::null(), no_constraints_uint64_constraints_validation_params));
+    const nmos::nc::details::datatype_constraints_validation_parameters no_constraints_uint64_constraints_validation_params{ no_constraints_uint64_datatype, nmos::make_get_control_protocol_datatype_descriptor_handler(control_protocol_state) };
+    BST_REQUIRE_THROW(nmos::nc::details::constraints_validation(-1, value::null(), value::null(), no_constraints_uint64_constraints_validation_params), nmos::control_protocol_exception);
+    BST_REQUIRE_THROW(nmos::nc::details::constraints_validation(std::numeric_limits<double_t>::max(), value::null(), value::null(), no_constraints_int64_constraints_validation_params), nmos::control_protocol_exception);
+    BST_REQUIRE_NO_THROW(nmos::nc::details::constraints_validation(std::numeric_limits<uint64_t>::min(), value::null(), value::null(), no_constraints_uint64_constraints_validation_params));
+    BST_REQUIRE_NO_THROW(nmos::nc::details::constraints_validation(std::numeric_limits<uint64_t>::max(), value::null(), value::null(), no_constraints_uint64_constraints_validation_params));
     // float32 datatype constraints validation
-    const nmos::details::datatype_constraints_validation_parameters no_constraints_float32_constraints_validation_params{ no_constraints_float32_datatype, nmos::make_get_control_protocol_datatype_descriptor_handler(control_protocol_state) };
-    BST_REQUIRE_THROW(nmos::details::constraints_validation(std::numeric_limits<double>::min(), value::null(), value::null(), no_constraints_float32_constraints_validation_params), nmos::control_protocol_exception);
-    BST_REQUIRE_THROW(nmos::details::constraints_validation(std::numeric_limits<double>::max(), value::null(), value::null(), no_constraints_float32_constraints_validation_params), nmos::control_protocol_exception);
-    BST_REQUIRE_NO_THROW(nmos::details::constraints_validation(std::numeric_limits<float_t>::min(), value::null(), value::null(), no_constraints_float32_constraints_validation_params));
-    BST_REQUIRE_NO_THROW(nmos::details::constraints_validation(std::numeric_limits<float_t>::max(), value::null(), value::null(), no_constraints_float32_constraints_validation_params));
+    const nmos::nc::details::datatype_constraints_validation_parameters no_constraints_float32_constraints_validation_params{ no_constraints_float32_datatype, nmos::make_get_control_protocol_datatype_descriptor_handler(control_protocol_state) };
+    BST_REQUIRE_THROW(nmos::nc::details::constraints_validation(std::numeric_limits<double>::lowest(), value::null(), value::null(), no_constraints_float32_constraints_validation_params), nmos::control_protocol_exception);
+    BST_REQUIRE_THROW(nmos::nc::details::constraints_validation(std::numeric_limits<double>::max(), value::null(), value::null(), no_constraints_float32_constraints_validation_params), nmos::control_protocol_exception);
+    BST_REQUIRE_NO_THROW(nmos::nc::details::constraints_validation(std::numeric_limits<float_t>::lowest(), value::null(), value::null(), no_constraints_float32_constraints_validation_params));
+    BST_REQUIRE_NO_THROW(nmos::nc::details::constraints_validation(std::numeric_limits<float_t>::max(), value::null(), value::null(), no_constraints_float32_constraints_validation_params));
+    BST_REQUIRE_NO_THROW(nmos::nc::details::constraints_validation(0.0, value::null(), value::null(), no_constraints_float32_constraints_validation_params));
+    BST_REQUIRE_NO_THROW(nmos::nc::details::constraints_validation(-1000.0, value::null(), value::null(), no_constraints_float32_constraints_validation_params));
     // float64 datatype constraints validation
-    const nmos::details::datatype_constraints_validation_parameters no_constraints_float64_constraints_validation_params{ no_constraints_float64_datatype, nmos::make_get_control_protocol_datatype_descriptor_handler(control_protocol_state) };
-    BST_REQUIRE_THROW(nmos::details::constraints_validation(1000, value::null(), value::null(), no_constraints_float64_constraints_validation_params), nmos::control_protocol_exception);
-    BST_REQUIRE_NO_THROW(nmos::details::constraints_validation(1000.0, value::null(), value::null(), no_constraints_float64_constraints_validation_params));
-    BST_REQUIRE_NO_THROW(nmos::details::constraints_validation(std::numeric_limits<double_t>::min(), value::null(), value::null(), no_constraints_float64_constraints_validation_params));
-    BST_REQUIRE_NO_THROW(nmos::details::constraints_validation(std::numeric_limits<double_t>::max(), value::null(), value::null(), no_constraints_float64_constraints_validation_params));
+    const nmos::nc::details::datatype_constraints_validation_parameters no_constraints_float64_constraints_validation_params{ no_constraints_float64_datatype, nmos::make_get_control_protocol_datatype_descriptor_handler(control_protocol_state) };
+    BST_REQUIRE_THROW(nmos::nc::details::constraints_validation(1000, value::null(), value::null(), no_constraints_float64_constraints_validation_params), nmos::control_protocol_exception);
+    BST_REQUIRE_NO_THROW(nmos::nc::details::constraints_validation(1000.0, value::null(), value::null(), no_constraints_float64_constraints_validation_params));
+    BST_REQUIRE_NO_THROW(nmos::nc::details::constraints_validation(std::numeric_limits<double_t>::min(), value::null(), value::null(), no_constraints_float64_constraints_validation_params));
+    BST_REQUIRE_NO_THROW(nmos::nc::details::constraints_validation(std::numeric_limits<double_t>::max(), value::null(), value::null(), no_constraints_float64_constraints_validation_params));
     // enum property datatype constraints validation
-    const nmos::details::datatype_constraints_validation_parameters enum_constraints_validation_params{ enum_datatype, nmos::make_get_control_protocol_datatype_descriptor_handler(control_protocol_state) };
-    BST_REQUIRE_NO_THROW(nmos::details::constraints_validation(enum_value::foo, value::null(), value::null(), enum_constraints_validation_params));
-    BST_REQUIRE_THROW(nmos::details::constraints_validation(4, value::null(), value::null(), enum_constraints_validation_params), nmos::control_protocol_exception);
+    const nmos::nc::details::datatype_constraints_validation_parameters enum_constraints_validation_params{ enum_datatype, nmos::make_get_control_protocol_datatype_descriptor_handler(control_protocol_state) };
+    BST_REQUIRE_NO_THROW(nmos::nc::details::constraints_validation(enum_value::foo, value::null(), value::null(), enum_constraints_validation_params));
+    BST_REQUIRE_THROW(nmos::nc::details::constraints_validation(4, value::null(), value::null(), enum_constraints_validation_params), nmos::control_protocol_exception);
     // invalid data vs primitive datatype constraints
-    const nmos::details::datatype_constraints_validation_parameters no_constraints_string_seq_constraints_validation_params{ no_constraints_string_seq_datatype, nmos::make_get_control_protocol_datatype_descriptor_handler(control_protocol_state) };
-    BST_REQUIRE_NO_THROW(nmos::details::constraints_validation(value_of({ value::string(U("1234567890-abcde-!\"$%^&*()_+=")) }), value::null(), value::null(), no_constraints_string_seq_constraints_validation_params));
-    BST_REQUIRE_NO_THROW(nmos::details::constraints_validation(value_of({ value::string(U("1234567890-abcde-!\"$%^&*()_+=")), value::string(U("1234567890-abcde-!\"$%^&*()_+=")) }), value::null(), value::null(), no_constraints_string_seq_constraints_validation_params));
-    BST_REQUIRE_THROW(nmos::details::constraints_validation(value_of({ 1 }), value::null(), value::null(), no_constraints_string_seq_constraints_validation_params), nmos::control_protocol_exception);
-    BST_REQUIRE_THROW(nmos::details::constraints_validation(1, value::null(), value::null(), no_constraints_string_seq_constraints_validation_params), nmos::control_protocol_exception);
-    const nmos::details::datatype_constraints_validation_parameters no_constraints_int32_seq_constraints_validation_params{ no_constraints_int32_seq_datatype, nmos::make_get_control_protocol_datatype_descriptor_handler(control_protocol_state) };
-    BST_REQUIRE_THROW(nmos::details::constraints_validation(value_of({ value::string(U("1234567890-abcde-!\"$%^&*()_+=")) }), value::null(), value::null(), no_constraints_int32_seq_constraints_validation_params), nmos::control_protocol_exception);
-    BST_REQUIRE_NO_THROW(nmos::details::constraints_validation(value_of({ 1 }), value::null(), value::null(), no_constraints_int32_seq_constraints_validation_params));
-    BST_REQUIRE_NO_THROW(nmos::details::constraints_validation(value_of({ 1, 2 }), value::null(), value::null(), no_constraints_int32_seq_constraints_validation_params));
-    BST_REQUIRE_THROW(nmos::details::constraints_validation(value_of({ value::string(U("1234567890-abcde-!\"$%^&*()_+=")) }), value::null(), value::null(), no_constraints_int32_seq_constraints_validation_params), nmos::control_protocol_exception);
-    BST_REQUIRE_THROW(nmos::details::constraints_validation(value::string(U("1234567890-abcde-!\"$%^&*()_+=")), value::null(), value::null(), no_constraints_int32_seq_constraints_validation_params), nmos::control_protocol_exception);
-    BST_REQUIRE_THROW(nmos::details::constraints_validation(value_of({ 1, 2 }), value::null(), value::null(), with_constraints_int32_constraints_validation_params), nmos::control_protocol_exception);
-    BST_REQUIRE_THROW(nmos::details::constraints_validation(value_of({ 1, 2 }), value::null(), value::null(), with_constraints_string_constraints_validation_params), nmos::control_protocol_exception);
+    const nmos::nc::details::datatype_constraints_validation_parameters no_constraints_string_seq_constraints_validation_params{ no_constraints_string_seq_datatype, nmos::make_get_control_protocol_datatype_descriptor_handler(control_protocol_state) };
+    BST_REQUIRE_NO_THROW(nmos::nc::details::constraints_validation(value_of({ value::string(U("1234567890-abcde-!\"$%^&*()_+=")) }), value::null(), value::null(), no_constraints_string_seq_constraints_validation_params));
+    BST_REQUIRE_NO_THROW(nmos::nc::details::constraints_validation(value_of({ value::string(U("1234567890-abcde-!\"$%^&*()_+=")), value::string(U("1234567890-abcde-!\"$%^&*()_+=")) }), value::null(), value::null(), no_constraints_string_seq_constraints_validation_params));
+    BST_REQUIRE_THROW(nmos::nc::details::constraints_validation(value_of({ 1 }), value::null(), value::null(), no_constraints_string_seq_constraints_validation_params), nmos::control_protocol_exception);
+    BST_REQUIRE_THROW(nmos::nc::details::constraints_validation(1, value::null(), value::null(), no_constraints_string_seq_constraints_validation_params), nmos::control_protocol_exception);
+    const nmos::nc::details::datatype_constraints_validation_parameters no_constraints_int32_seq_constraints_validation_params{ no_constraints_int32_seq_datatype, nmos::make_get_control_protocol_datatype_descriptor_handler(control_protocol_state) };
+    BST_REQUIRE_THROW(nmos::nc::details::constraints_validation(value_of({ value::string(U("1234567890-abcde-!\"$%^&*()_+=")) }), value::null(), value::null(), no_constraints_int32_seq_constraints_validation_params), nmos::control_protocol_exception);
+    BST_REQUIRE_NO_THROW(nmos::nc::details::constraints_validation(value_of({ 1 }), value::null(), value::null(), no_constraints_int32_seq_constraints_validation_params));
+    BST_REQUIRE_NO_THROW(nmos::nc::details::constraints_validation(value_of({ 1, 2 }), value::null(), value::null(), no_constraints_int32_seq_constraints_validation_params));
+    BST_REQUIRE_THROW(nmos::nc::details::constraints_validation(value_of({ value::string(U("1234567890-abcde-!\"$%^&*()_+=")) }), value::null(), value::null(), no_constraints_int32_seq_constraints_validation_params), nmos::control_protocol_exception);
+    BST_REQUIRE_THROW(nmos::nc::details::constraints_validation(value::string(U("1234567890-abcde-!\"$%^&*()_+=")), value::null(), value::null(), no_constraints_int32_seq_constraints_validation_params), nmos::control_protocol_exception);
+    BST_REQUIRE_THROW(nmos::nc::details::constraints_validation(value_of({ 1, 2 }), value::null(), value::null(), with_constraints_int32_constraints_validation_params), nmos::control_protocol_exception);
+    BST_REQUIRE_THROW(nmos::nc::details::constraints_validation(value_of({ 1, 2 }), value::null(), value::null(), with_constraints_string_constraints_validation_params), nmos::control_protocol_exception);
 
     // struct property datatype constraints validation
-    const auto good_struct = value_of({
+    const auto good_struct1 = value_of({
         { U("enumProperty"), enum_value::baz },
         { U("stringProperty"), U("xy") },
         { U("numberProperty"), 100 },
@@ -939,7 +951,71 @@ BST_TEST_CASE(testConstraints)
             { U("simpleStringProperty"), U("ab") },
             { U("simpleNumberProperty"), 200 },
             { U("simpleBooleanProperty"), false }
+        }) }) },
+        { U("enumPropertyNullable"), enum_value::baz },
+        { U("stringPropertyNullable"), U("xy") },
+        { U("numberPropertyNullable"), 100 },
+        { U("booleanPropertyNullable"), true },
+        { U("structPropertyNullable"), value_of({
+            { U("simpleEnumProperty"), enum_value::bar },
+            { U("simpleStringProperty"), U("xy") },
+            { U("simpleNumberProperty"), 100 },
+            { U("simpleBooleanProperty"), true }
+        }) },
+        { U("sequenceEnumPropertyNullable"), value_of({ enum_value::foo, enum_value::bar }) },
+        { U("sequenceStringPropertyNullable"), value_of({ U("aa"), U("bb") }) },
+        { U("sequenceNumberPropertyNullable"), value_of({ 100, 110 }) },
+        { U("sequenceBooleanPropertyNullable"), value_of({ true, false }) },
+        { U("sequenceStructPropertyNullable"), value_of({
+            value_of({
+            { U("simpleEnumProperty"), enum_value::bar },
+            { U("simpleStringProperty"), U("xy") },
+            { U("simpleNumberProperty"), 100 },
+            { U("simpleBooleanProperty"), true }
+        }), value_of({
+            { U("simpleEnumProperty"), enum_value::foo },
+            { U("simpleStringProperty"), U("ab") },
+            { U("simpleNumberProperty"), 200 },
+            { U("simpleBooleanProperty"), false }
         }) }) }
+    });
+    const auto good_struct2 = value_of({
+        { U("enumProperty"), enum_value::baz },
+        { U("stringProperty"), U("xy") },
+        { U("numberProperty"), 100 },
+        { U("booleanProperty"), true },
+        { U("structProperty"), value_of({
+            { U("simpleEnumProperty"), enum_value::bar },
+            { U("simpleStringProperty"), U("xy") },
+            { U("simpleNumberProperty"), 100 },
+            { U("simpleBooleanProperty"), true }
+        }) },
+        { U("sequenceEnumProperty"), value_of({ enum_value::foo, enum_value::bar }) },
+        { U("sequenceStringProperty"), value_of({ U("aa"), U("bb") }) },
+        { U("sequenceNumberProperty"), value_of({ 100, 110 }) },
+        { U("sequenceBooleanProperty"), value_of({ true, false }) },
+        { U("sequenceStructProperty"), value_of({
+            value_of({
+            { U("simpleEnumProperty"), enum_value::bar },
+            { U("simpleStringProperty"), U("xy") },
+            { U("simpleNumberProperty"), 100 },
+            { U("simpleBooleanProperty"), true }
+        }), value_of({
+            { U("simpleEnumProperty"), enum_value::foo },
+            { U("simpleStringProperty"), U("ab") },
+            { U("simpleNumberProperty"), 200 },
+            { U("simpleBooleanProperty"), false }
+        }) }) },
+        { U("enumPropertyNullable"), value::null() },
+        { U("stringPropertyNullable"), value::null() },
+        { U("numberPropertyNullable"), value::null() },
+        { U("booleanPropertyNullable"), value::null() },
+        { U("structPropertyNullable"), value::null() },
+        { U("sequenceEnumPropertyNullable"), value::null() },
+        { U("sequenceStringPropertyNullable"), value::null() },
+        { U("sequenceNumberPropertyNullable"), value::null() },
+        { U("sequenceBooleanPropertyNullable"), value::null() },
+        { U("sequenceStructPropertyNullable"), value::null() }
     });
     // missing field
     const auto bad_struct1 = value_of({
@@ -967,7 +1043,17 @@ BST_TEST_CASE(testConstraints)
             { U("simpleStringProperty"), U("ab") },
             { U("simpleNumberProperty"), 200 },
             { U("simpleBooleanProperty"), false }
-        }) }) }
+        }) }) },
+        { U("enumPropertyNullable"), value::null() },
+        { U("stringPropertyNullable"), value::null() },
+        { U("numberPropertyNullable"), value::null() },
+        { U("booleanPropertyNullable"), value::null() },
+        { U("structPropertyNullable"), value::null() },
+        { U("sequenceEnumPropertyNullable"), value::null() },
+        { U("sequenceStringPropertyNullable"), value::null() },
+        { U("sequenceNumberPropertyNullable"), value::null() },
+        { U("sequenceBooleanPropertyNullable"), value::null() },
+        { U("sequenceStructPropertyNullable"), value::null() }
     });
     // invalid fields
     const auto bad_struct2 = value_of({
@@ -996,7 +1082,17 @@ BST_TEST_CASE(testConstraints)
             { U("simpleStringProperty"), U("ab") },
             { U("simpleNumberProperty"), 200 },
             { U("simpleBooleanProperty"), false }
-        }) }) }
+        }) }) },
+        { U("enumPropertyNullable"), value::null() },
+        { U("stringPropertyNullable"), value::null() },
+        { U("numberPropertyNullable"), value::null() },
+        { U("booleanPropertyNullable"), value::null() },
+        { U("structPropertyNullable"), value::null() },
+        { U("sequenceEnumPropertyNullable"), value::null() },
+        { U("sequenceStringPropertyNullable"), value::null() },
+        { U("sequenceNumberPropertyNullable"), value::null() },
+        { U("sequenceBooleanPropertyNullable"), value::null() },
+        { U("sequenceStructPropertyNullable"), value::null() }
     });
     const auto bad_struct2_1 = value_of({
         { U("enumProperty"), enum_value::foo },
@@ -1024,7 +1120,17 @@ BST_TEST_CASE(testConstraints)
             { U("simpleStringProperty"), U("ab") },
             { U("simpleNumberProperty"), 200 },
             { U("simpleBooleanProperty"), false }
-        }) }) }
+        }) }) },
+        { U("enumPropertyNullable"), value::null() },
+        { U("stringPropertyNullable"), value::null() },
+        { U("numberPropertyNullable"), value::null() },
+        { U("booleanPropertyNullable"), value::null() },
+        { U("structPropertyNullable"), value::null() },
+        { U("sequenceEnumPropertyNullable"), value::null() },
+        { U("sequenceStringPropertyNullable"), value::null() },
+        { U("sequenceNumberPropertyNullable"), value::null() },
+        { U("sequenceBooleanPropertyNullable"), value::null() },
+        { U("sequenceStructPropertyNullable"), value::null() }
     });
     const auto bad_struct2_2 = value_of({
         { U("enumProperty"), enum_value::foo },
@@ -1052,7 +1158,17 @@ BST_TEST_CASE(testConstraints)
             { U("simpleStringProperty"), U("ab") },
             { U("simpleNumberProperty"), 200 },
             { U("simpleBooleanProperty"), false }
-        }) }) }
+        }) }) },
+        { U("enumPropertyNullable"), value::null() },
+        { U("stringPropertyNullable"), value::null() },
+        { U("numberPropertyNullable"), value::null() },
+        { U("booleanPropertyNullable"), value::null() },
+        { U("structPropertyNullable"), value::null() },
+        { U("sequenceEnumPropertyNullable"), value::null() },
+        { U("sequenceStringPropertyNullable"), value::null() },
+        { U("sequenceNumberPropertyNullable"), value::null() },
+        { U("sequenceBooleanPropertyNullable"), value::null() },
+        { U("sequenceStructPropertyNullable"), value::null() }
     });
     const auto bad_struct2_3 = value_of({
         { U("enumProperty"), enum_value::foo },
@@ -1074,7 +1190,17 @@ BST_TEST_CASE(testConstraints)
             { U("simpleStringProperty"), U("ab") },
             { U("simpleNumberProperty"), 200 },
             { U("simpleBooleanProperty"), false }
-        }) }) }
+        }) }) },
+        { U("enumPropertyNullable"), value::null() },
+        { U("stringPropertyNullable"), value::null() },
+        { U("numberPropertyNullable"), value::null() },
+        { U("booleanPropertyNullable"), value::null() },
+        { U("structPropertyNullable"), value::null() },
+        { U("sequenceEnumPropertyNullable"), value::null() },
+        { U("sequenceStringPropertyNullable"), value::null() },
+        { U("sequenceNumberPropertyNullable"), value::null() },
+        { U("sequenceBooleanPropertyNullable"), value::null() },
+        { U("sequenceStructPropertyNullable"), value::null() }
     });
     const auto bad_struct2_4 = value_of({
         { U("enumProperty"), enum_value::foo },
@@ -1102,7 +1228,17 @@ BST_TEST_CASE(testConstraints)
             { U("simpleStringProperty"), U("ab") },
             { U("simpleNumberProperty"), 200 },
             { U("simpleBooleanProperty"), false }
-        }) }) }
+        }) }) },
+        { U("enumPropertyNullable"), value::null() },
+        { U("stringPropertyNullable"), value::null() },
+        { U("numberPropertyNullable"), value::null() },
+        { U("booleanPropertyNullable"), value::null() },
+        { U("structPropertyNullable"), value::null() },
+        { U("sequenceEnumPropertyNullable"), value::null() },
+        { U("sequenceStringPropertyNullable"), value::null() },
+        { U("sequenceNumberPropertyNullable"), value::null() },
+        { U("sequenceBooleanPropertyNullable"), value::null() },
+        { U("sequenceStructPropertyNullable"), value::null() }
     });
     const auto bad_struct2_5 = value_of({
         { U("enumProperty"), enum_value::foo },
@@ -1158,7 +1294,17 @@ BST_TEST_CASE(testConstraints)
             { U("simpleStringProperty"), U("ab") },
             { U("simpleNumberProperty"), 200 },
             { U("simpleBooleanProperty"), false }
-        }) }) }
+        }) }) },
+        { U("enumPropertyNullable"), value::null() },
+        { U("stringPropertyNullable"), value::null() },
+        { U("numberPropertyNullable"), value::null() },
+        { U("booleanPropertyNullable"), value::null() },
+        { U("structPropertyNullable"), value::null() },
+        { U("sequenceEnumPropertyNullable"), value::null() },
+        { U("sequenceStringPropertyNullable"), value::null() },
+        { U("sequenceNumberPropertyNullable"), value::null() },
+        { U("sequenceBooleanPropertyNullable"), value::null() },
+        { U("sequenceStructPropertyNullable"), value::null() }
     });
     const auto bad_struct2_5_2 = value_of({
         { U("enumProperty"), enum_value::foo },
@@ -1186,7 +1332,17 @@ BST_TEST_CASE(testConstraints)
             { U("simpleStringProperty"), U("ab") },
             { U("simpleNumberProperty"), 200 },
             { U("simpleBooleanProperty"), false }
-        }) }) }
+        }) }) },
+        { U("enumPropertyNullable"), value::null() },
+        { U("stringPropertyNullable"), value::null() },
+        { U("numberPropertyNullable"), value::null() },
+        { U("booleanPropertyNullable"), value::null() },
+        { U("structPropertyNullable"), value::null() },
+        { U("sequenceEnumPropertyNullable"), value::null() },
+        { U("sequenceStringPropertyNullable"), value::null() },
+        { U("sequenceNumberPropertyNullable"), value::null() },
+        { U("sequenceBooleanPropertyNullable"), value::null() },
+        { U("sequenceStructPropertyNullable"), value::null() }
     });
     const auto bad_struct2_5_3 = value_of({
         { U("enumProperty"), enum_value::foo },
@@ -1214,7 +1370,17 @@ BST_TEST_CASE(testConstraints)
             { U("simpleStringProperty"), U("ab") },
             { U("simpleNumberProperty"), 200 },
             { U("simpleBooleanProperty"), false }
-        }) }) }
+        }) }) },
+        { U("enumPropertyNullable"), value::null() },
+        { U("stringPropertyNullable"), value::null() },
+        { U("numberPropertyNullable"), value::null() },
+        { U("booleanPropertyNullable"), value::null() },
+        { U("structPropertyNullable"), value::null() },
+        { U("sequenceEnumPropertyNullable"), value::null() },
+        { U("sequenceStringPropertyNullable"), value::null() },
+        { U("sequenceNumberPropertyNullable"), value::null() },
+        { U("sequenceBooleanPropertyNullable"), value::null() },
+        { U("sequenceStructPropertyNullable"), value::null() }
     });
     const auto bad_struct2_6 = value_of({
         { U("enumProperty"), enum_value::foo },
@@ -1242,7 +1408,17 @@ BST_TEST_CASE(testConstraints)
             { U("simpleStringProperty"), U("ab") },
             { U("simpleNumberProperty"), 200 },
             { U("simpleBooleanProperty"), false }
-        }) }) }
+        }) }) },
+        { U("enumPropertyNullable"), value::null() },
+        { U("stringPropertyNullable"), value::null() },
+        { U("numberPropertyNullable"), value::null() },
+        { U("booleanPropertyNullable"), value::null() },
+        { U("structPropertyNullable"), value::null() },
+        { U("sequenceEnumPropertyNullable"), value::null() },
+        { U("sequenceStringPropertyNullable"), value::null() },
+        { U("sequenceNumberPropertyNullable"), value::null() },
+        { U("sequenceBooleanPropertyNullable"), value::null() },
+        { U("sequenceStructPropertyNullable"), value::null() }
     });
     const auto bad_struct2_6_1 = value_of({
         { U("enumProperty"), enum_value::foo },
@@ -1270,7 +1446,17 @@ BST_TEST_CASE(testConstraints)
             { U("simpleStringProperty"), U("ab") },
             { U("simpleNumberProperty"), 200 },
             { U("simpleBooleanProperty"), false }
-        }) }) }
+        }) }) },
+        { U("enumPropertyNullable"), value::null() },
+        { U("stringPropertyNullable"), value::null() },
+        { U("numberPropertyNullable"), value::null() },
+        { U("booleanPropertyNullable"), value::null() },
+        { U("structPropertyNullable"), value::null() },
+        { U("sequenceEnumPropertyNullable"), value::null() },
+        { U("sequenceStringPropertyNullable"), value::null() },
+        { U("sequenceNumberPropertyNullable"), value::null() },
+        { U("sequenceBooleanPropertyNullable"), value::null() },
+        { U("sequenceStructPropertyNullable"), value::null() }
     });
     const auto bad_struct2_6_2 = value_of({
         { U("enumProperty"), enum_value::foo },
@@ -1298,7 +1484,17 @@ BST_TEST_CASE(testConstraints)
             { U("simpleStringProperty"), U("ab") },
             { U("simpleNumberProperty"), 200 },
             { U("simpleBooleanProperty"), false }
-        }) }) }
+        }) }) },
+        { U("enumPropertyNullable"), value::null() },
+        { U("stringPropertyNullable"), value::null() },
+        { U("numberPropertyNullable"), value::null() },
+        { U("booleanPropertyNullable"), value::null() },
+        { U("structPropertyNullable"), value::null() },
+        { U("sequenceEnumPropertyNullable"), value::null() },
+        { U("sequenceStringPropertyNullable"), value::null() },
+        { U("sequenceNumberPropertyNullable"), value::null() },
+        { U("sequenceBooleanPropertyNullable"), value::null() },
+        { U("sequenceStructPropertyNullable"), value::null() }
     });
     const auto bad_struct2_6_3 = value_of({
         { U("enumProperty"), enum_value::foo },
@@ -1326,7 +1522,17 @@ BST_TEST_CASE(testConstraints)
             { U("simpleStringProperty"), U("ab") },
             { U("simpleNumberProperty"), 200 },
             { U("simpleBooleanProperty"), false }
-        }) }) }
+        }) }) },
+        { U("enumPropertyNullable"), value::null() },
+        { U("stringPropertyNullable"), value::null() },
+        { U("numberPropertyNullable"), value::null() },
+        { U("booleanPropertyNullable"), value::null() },
+        { U("structPropertyNullable"), value::null() },
+        { U("sequenceEnumPropertyNullable"), value::null() },
+        { U("sequenceStringPropertyNullable"), value::null() },
+        { U("sequenceNumberPropertyNullable"), value::null() },
+        { U("sequenceBooleanPropertyNullable"), value::null() },
+        { U("sequenceStructPropertyNullable"), value::null() }
     });
     const auto bad_struct2_7 = value_of({
         { U("enumProperty"), enum_value::foo },
@@ -1354,7 +1560,17 @@ BST_TEST_CASE(testConstraints)
             { U("simpleStringProperty"), U("ab") },
             { U("simpleNumberProperty"), 200 },
             { U("simpleBooleanProperty"), false }
-        }) }) }
+        }) }) },
+        { U("enumPropertyNullable"), value::null() },
+        { U("stringPropertyNullable"), value::null() },
+        { U("numberPropertyNullable"), value::null() },
+        { U("booleanPropertyNullable"), value::null() },
+        { U("structPropertyNullable"), value::null() },
+        { U("sequenceEnumPropertyNullable"), value::null() },
+        { U("sequenceStringPropertyNullable"), value::null() },
+        { U("sequenceNumberPropertyNullable"), value::null() },
+        { U("sequenceBooleanPropertyNullable"), value::null() },
+        { U("sequenceStructPropertyNullable"), value::null() }
     });
     const auto bad_struct2_7_1 = value_of({
         { U("enumProperty"), enum_value::foo },
@@ -1382,7 +1598,17 @@ BST_TEST_CASE(testConstraints)
             { U("simpleStringProperty"), U("abc") }, // bad value
             { U("simpleNumberProperty"), 200 },
             { U("simpleBooleanProperty"), false }
-        }) }) }
+        }) }) },
+        { U("enumPropertyNullable"), value::null() },
+        { U("stringPropertyNullable"), value::null() },
+        { U("numberPropertyNullable"), value::null() },
+        { U("booleanPropertyNullable"), value::null() },
+        { U("structPropertyNullable"), value::null() },
+        { U("sequenceEnumPropertyNullable"), value::null() },
+        { U("sequenceStringPropertyNullable"), value::null() },
+        { U("sequenceNumberPropertyNullable"), value::null() },
+        { U("sequenceBooleanPropertyNullable"), value::null() },
+        { U("sequenceStructPropertyNullable"), value::null() }
     });
     const auto bad_struct2_7_2 = value_of({
         { U("enumProperty"), enum_value::foo },
@@ -1410,7 +1636,17 @@ BST_TEST_CASE(testConstraints)
             { U("simpleStringProperty"), U("ab") },
             { U("simpleNumberProperty"), 251 }, // bad value
             { U("simpleBooleanProperty"), false }
-        }) }) }
+        }) }) },
+        { U("enumPropertyNullable"), value::null() },
+        { U("stringPropertyNullable"), value::null() },
+        { U("numberPropertyNullable"), value::null() },
+        { U("booleanPropertyNullable"), value::null() },
+        { U("structPropertyNullable"), value::null() },
+        { U("sequenceEnumPropertyNullable"), value::null() },
+        { U("sequenceStringPropertyNullable"), value::null() },
+        { U("sequenceNumberPropertyNullable"), value::null() },
+        { U("sequenceBooleanPropertyNullable"), value::null() },
+        { U("sequenceStructPropertyNullable"), value::null() }
     });
     const auto bad_struct2_7_3 = value_of({
         { U("enumProperty"), enum_value::foo },
@@ -1438,27 +1674,188 @@ BST_TEST_CASE(testConstraints)
             { U("simpleStringProperty"), U("ab") },
             { U("simpleNumberProperty"), 200 },
             { U("simpleBooleanProperty"), 0 } // bad value
-        }) }) }
+        }) }) },
+        { U("enumPropertyNullable"), value::null() },
+        { U("stringPropertyNullable"), value::null() },
+        { U("numberPropertyNullable"), value::null() },
+        { U("booleanPropertyNullable"), value::null() },
+        { U("structPropertyNullable"), value::null() },
+        { U("sequenceEnumPropertyNullable"), value::null() },
+        { U("sequenceStringPropertyNullable"), value::null() },
+        { U("sequenceNumberPropertyNullable"), value::null() },
+        { U("sequenceBooleanPropertyNullable"), value::null() },
+        { U("sequenceStructPropertyNullable"), value::null() }
+    });
+    const auto bad_struct3 = value_of({
+        { U("enumProperty"), value::null() }, //bad value
+        { U("stringProperty"), U("xy") },
+        { U("numberProperty"), 100 },
+        { U("booleanProperty"), true },
+        { U("structProperty"), value_of({
+            { U("simpleEnumProperty"), enum_value::bar },
+            { U("simpleStringProperty"), U("xy") },
+            { U("simpleNumberProperty"), 100 },
+            { U("simpleBooleanProperty"), true }
+        }) },
+        { U("sequenceEnumProperty"), value_of({ enum_value::foo, enum_value::bar }) },
+        { U("sequenceStringProperty"), value_of({ U("aa"), U("bb") }) },
+        { U("sequenceNumberProperty"), value_of({ 100, 110 }) },
+        { U("sequenceBooleanProperty"), value_of({ true, false }) },
+        { U("sequenceStructProperty"), value_of({
+            value_of({
+            { U("simpleEnumProperty"), enum_value::bar },
+            { U("simpleStringProperty"), U("xy") },
+            { U("simpleNumberProperty"), 100 },
+            { U("simpleBooleanProperty"), true }
+        }), value_of({
+            { U("simpleEnumProperty"), enum_value::foo },
+            { U("simpleStringProperty"), U("ab") },
+            { U("simpleNumberProperty"), 200 },
+            { U("simpleBooleanProperty"), false }
+        }) }) },
+        { U("enumPropertyNullable"), value::null() },
+        { U("stringPropertyNullable"), value::null() },
+        { U("numberPropertyNullable"), value::null() },
+        { U("booleanPropertyNullable"), value::null() },
+        { U("structPropertyNullable"), value::null() },
+        { U("sequenceEnumPropertyNullable"), value::null() },
+        { U("sequenceStringPropertyNullable"), value::null() },
+        { U("sequenceNumberPropertyNullable"), value::null() },
+        { U("sequenceBooleanPropertyNullable"), value::null() },
+        { U("sequenceStructPropertyNullable"), value::null() }
     });
 
-    const nmos::details::datatype_constraints_validation_parameters struct_constraints_validation_params{ struct_datatype, nmos::make_get_control_protocol_datatype_descriptor_handler(control_protocol_state) };
-    BST_REQUIRE_NO_THROW(nmos::details::constraints_validation(good_struct, value::null(), value::null(), struct_constraints_validation_params));
-    BST_REQUIRE_THROW(nmos::details::constraints_validation(bad_struct1, value::null(), value::null(), struct_constraints_validation_params), nmos::control_protocol_exception);
-    BST_REQUIRE_THROW(nmos::details::constraints_validation(bad_struct2, value::null(), value::null(), struct_constraints_validation_params), nmos::control_protocol_exception);
-    BST_REQUIRE_THROW(nmos::details::constraints_validation(bad_struct2_1, value::null(), value::null(), struct_constraints_validation_params), nmos::control_protocol_exception);
-    BST_REQUIRE_THROW(nmos::details::constraints_validation(bad_struct2_2, value::null(), value::null(), struct_constraints_validation_params), nmos::control_protocol_exception);
-    BST_REQUIRE_THROW(nmos::details::constraints_validation(bad_struct2_3, value::null(), value::null(), struct_constraints_validation_params), nmos::control_protocol_exception);
-    BST_REQUIRE_THROW(nmos::details::constraints_validation(bad_struct2_4, value::null(), value::null(), struct_constraints_validation_params), nmos::control_protocol_exception);
-    BST_REQUIRE_THROW(nmos::details::constraints_validation(bad_struct2_5, value::null(), value::null(), struct_constraints_validation_params), nmos::control_protocol_exception);
-    BST_REQUIRE_THROW(nmos::details::constraints_validation(bad_struct2_5_1, value::null(), value::null(), struct_constraints_validation_params), nmos::control_protocol_exception);
-    BST_REQUIRE_THROW(nmos::details::constraints_validation(bad_struct2_5_2, value::null(), value::null(), struct_constraints_validation_params), nmos::control_protocol_exception);
-    BST_REQUIRE_THROW(nmos::details::constraints_validation(bad_struct2_5_3, value::null(), value::null(), struct_constraints_validation_params), nmos::control_protocol_exception);
-    BST_REQUIRE_THROW(nmos::details::constraints_validation(bad_struct2_6, value::null(), value::null(), struct_constraints_validation_params), nmos::control_protocol_exception);
-    BST_REQUIRE_THROW(nmos::details::constraints_validation(bad_struct2_6_1, value::null(), value::null(), struct_constraints_validation_params), nmos::control_protocol_exception);
-    BST_REQUIRE_THROW(nmos::details::constraints_validation(bad_struct2_6_2, value::null(), value::null(), struct_constraints_validation_params), nmos::control_protocol_exception);
-    BST_REQUIRE_THROW(nmos::details::constraints_validation(bad_struct2_6_3, value::null(), value::null(), struct_constraints_validation_params), nmos::control_protocol_exception);
-    BST_REQUIRE_THROW(nmos::details::constraints_validation(bad_struct2_7, value::null(), value::null(), struct_constraints_validation_params), nmos::control_protocol_exception);
-    BST_REQUIRE_THROW(nmos::details::constraints_validation(bad_struct2_7_1, value::null(), value::null(), struct_constraints_validation_params), nmos::control_protocol_exception);
-    BST_REQUIRE_THROW(nmos::details::constraints_validation(bad_struct2_7_2, value::null(), value::null(), struct_constraints_validation_params), nmos::control_protocol_exception);
-    BST_REQUIRE_THROW(nmos::details::constraints_validation(bad_struct2_7_3, value::null(), value::null(), struct_constraints_validation_params), nmos::control_protocol_exception);
+    const auto bad_struct3_1 = value_of({
+        { U("enumProperty"), enum_value::baz },
+        { U("stringProperty"), U("xy") },
+        { U("numberProperty"), value::null() }, // bad value
+        { U("booleanProperty"), true },
+        { U("structProperty"), value_of({
+            { U("simpleEnumProperty"), enum_value::bar },
+            { U("simpleStringProperty"), U("xy") },
+            { U("simpleNumberProperty"), 100 },
+            { U("simpleBooleanProperty"), true }
+        }) },
+        { U("sequenceEnumProperty"), value_of({ enum_value::foo, enum_value::bar }) },
+        { U("sequenceStringProperty"), value_of({ U("aa"), U("bb") }) },
+        { U("sequenceNumberProperty"), value_of({ 100, 110 }) },
+        { U("sequenceBooleanProperty"), value_of({ true, false }) },
+        { U("sequenceStructProperty"), value_of({
+            value_of({
+            { U("simpleEnumProperty"), enum_value::bar },
+            { U("simpleStringProperty"), U("xy") },
+            { U("simpleNumberProperty"), 100 },
+            { U("simpleBooleanProperty"), true }
+        }), value_of({
+            { U("simpleEnumProperty"), enum_value::foo },
+            { U("simpleStringProperty"), U("ab") },
+            { U("simpleNumberProperty"), 200 },
+            { U("simpleBooleanProperty"), false }
+        }) }) },
+        { U("enumPropertyNullable"), value::null() },
+        { U("stringPropertyNullable"), value::null() },
+        { U("numberPropertyNullable"), value::null() },
+        { U("booleanPropertyNullable"), value::null() },
+        { U("structPropertyNullable"), value::null() },
+        { U("sequenceEnumPropertyNullable"), value::null() },
+        { U("sequenceStringPropertyNullable"), value::null() },
+        { U("sequenceNumberPropertyNullable"), value::null() },
+        { U("sequenceBooleanPropertyNullable"), value::null() },
+        { U("sequenceStructPropertyNullable"), value::null() }
+    });
+
+    const auto bad_struct3_2 = value_of({
+        { U("enumProperty"), enum_value::baz },
+        { U("stringProperty"), U("xy") },
+        { U("numberProperty"), 100 },
+        { U("booleanProperty"), true },
+        { U("structProperty"), value::null() }, // bad value
+        { U("sequenceEnumProperty"), value_of({ enum_value::foo, enum_value::bar }) },
+        { U("sequenceStringProperty"), value_of({ U("aa"), U("bb") }) },
+        { U("sequenceNumberProperty"), value_of({ 100, 110 }) },
+        { U("sequenceBooleanProperty"), value_of({ true, false }) },
+        { U("sequenceStructProperty"), value_of({
+            value_of({
+            { U("simpleEnumProperty"), enum_value::bar },
+            { U("simpleStringProperty"), U("xy") },
+            { U("simpleNumberProperty"), 100 },
+            { U("simpleBooleanProperty"), true }
+        }), value_of({
+            { U("simpleEnumProperty"), enum_value::foo },
+            { U("simpleStringProperty"), U("ab") },
+            { U("simpleNumberProperty"), 200 },
+            { U("simpleBooleanProperty"), false }
+        }) }) },
+        { U("enumPropertyNullable"), value::null() },
+        { U("stringPropertyNullable"), value::null() },
+        { U("numberPropertyNullable"), value::null() },
+        { U("booleanPropertyNullable"), value::null() },
+        { U("structPropertyNullable"), value::null() },
+        { U("sequenceEnumPropertyNullable"), value::null() },
+        { U("sequenceStringPropertyNullable"), value::null() },
+        { U("sequenceNumberPropertyNullable"), value::null() },
+        { U("sequenceBooleanPropertyNullable"), value::null() },
+        { U("sequenceStructPropertyNullable"), value::null() }
+        });
+
+    const auto bad_struct3_3 = value_of({
+        { U("enumProperty"), enum_value::baz },
+        { U("stringProperty"), U("xy") },
+        { U("numberProperty"), 100 }, // bad value
+        { U("booleanProperty"), true },
+        { U("structProperty"), value_of({
+            { U("simpleEnumProperty"), enum_value::bar },
+            { U("simpleStringProperty"), U("xy") },
+            { U("simpleNumberProperty"), 100 },
+            { U("simpleBooleanProperty"), true }
+        }) },
+        { U("sequenceEnumProperty"), value_of({ enum_value::foo, enum_value::bar }) },
+        { U("sequenceStringProperty"), value_of({ U("aa"), U("bb") }) },
+        { U("sequenceNumberProperty"), value_of({ 100, 110 }) },
+        { U("sequenceBooleanProperty"), value_of({ true, false }) },
+        { U("sequenceStructProperty"), value_of({
+            value_of({
+            { U("simpleEnumProperty"), enum_value::bar },
+            { U("simpleStringProperty"), U("xy") },
+            { U("simpleNumberProperty"), 100 },
+            { U("simpleBooleanProperty"), true }
+        }), value::null() // bad value
+            }) },
+        { U("enumPropertyNullable"), value::null() },
+        { U("stringPropertyNullable"), value::null() },
+        { U("numberPropertyNullable"), value::null() },
+        { U("booleanPropertyNullable"), value::null() },
+        { U("structPropertyNullable"), value::null() },
+        { U("sequenceEnumPropertyNullable"), value::null() },
+        { U("sequenceStringPropertyNullable"), value::null() },
+        { U("sequenceNumberPropertyNullable"), value::null() },
+        { U("sequenceBooleanPropertyNullable"), value::null() },
+        { U("sequenceStructPropertyNullable"), value::null() }
+        });
+
+    const nmos::nc::details::datatype_constraints_validation_parameters struct_constraints_validation_params{ struct_datatype, nmos::make_get_control_protocol_datatype_descriptor_handler(control_protocol_state) };
+    BST_REQUIRE_NO_THROW(nmos::nc::details::constraints_validation(good_struct1, value::null(), value::null(), struct_constraints_validation_params));
+    BST_REQUIRE_NO_THROW(nmos::nc::details::constraints_validation(good_struct2, value::null(), value::null(), struct_constraints_validation_params));
+    BST_REQUIRE_THROW(nmos::nc::details::constraints_validation(bad_struct1, value::null(), value::null(), struct_constraints_validation_params), nmos::control_protocol_exception);
+    BST_REQUIRE_THROW(nmos::nc::details::constraints_validation(bad_struct2, value::null(), value::null(), struct_constraints_validation_params), nmos::control_protocol_exception);
+    BST_REQUIRE_THROW(nmos::nc::details::constraints_validation(bad_struct2_1, value::null(), value::null(), struct_constraints_validation_params), nmos::control_protocol_exception);
+    BST_REQUIRE_THROW(nmos::nc::details::constraints_validation(bad_struct2_2, value::null(), value::null(), struct_constraints_validation_params), nmos::control_protocol_exception);
+    BST_REQUIRE_THROW(nmos::nc::details::constraints_validation(bad_struct2_3, value::null(), value::null(), struct_constraints_validation_params), nmos::control_protocol_exception);
+    BST_REQUIRE_THROW(nmos::nc::details::constraints_validation(bad_struct2_4, value::null(), value::null(), struct_constraints_validation_params), nmos::control_protocol_exception);
+    BST_REQUIRE_THROW(nmos::nc::details::constraints_validation(bad_struct2_5, value::null(), value::null(), struct_constraints_validation_params), nmos::control_protocol_exception);
+    BST_REQUIRE_THROW(nmos::nc::details::constraints_validation(bad_struct2_5_1, value::null(), value::null(), struct_constraints_validation_params), nmos::control_protocol_exception);
+    BST_REQUIRE_THROW(nmos::nc::details::constraints_validation(bad_struct2_5_2, value::null(), value::null(), struct_constraints_validation_params), nmos::control_protocol_exception);
+    BST_REQUIRE_THROW(nmos::nc::details::constraints_validation(bad_struct2_5_3, value::null(), value::null(), struct_constraints_validation_params), nmos::control_protocol_exception);
+    BST_REQUIRE_THROW(nmos::nc::details::constraints_validation(bad_struct2_6, value::null(), value::null(), struct_constraints_validation_params), nmos::control_protocol_exception);
+    BST_REQUIRE_THROW(nmos::nc::details::constraints_validation(bad_struct2_6_1, value::null(), value::null(), struct_constraints_validation_params), nmos::control_protocol_exception);
+    BST_REQUIRE_THROW(nmos::nc::details::constraints_validation(bad_struct2_6_2, value::null(), value::null(), struct_constraints_validation_params), nmos::control_protocol_exception);
+    BST_REQUIRE_THROW(nmos::nc::details::constraints_validation(bad_struct2_6_3, value::null(), value::null(), struct_constraints_validation_params), nmos::control_protocol_exception);
+    BST_REQUIRE_THROW(nmos::nc::details::constraints_validation(bad_struct2_7, value::null(), value::null(), struct_constraints_validation_params), nmos::control_protocol_exception);
+    BST_REQUIRE_THROW(nmos::nc::details::constraints_validation(bad_struct2_7_1, value::null(), value::null(), struct_constraints_validation_params), nmos::control_protocol_exception);
+    BST_REQUIRE_THROW(nmos::nc::details::constraints_validation(bad_struct2_7_2, value::null(), value::null(), struct_constraints_validation_params), nmos::control_protocol_exception);
+    BST_REQUIRE_THROW(nmos::nc::details::constraints_validation(bad_struct2_7_3, value::null(), value::null(), struct_constraints_validation_params), nmos::control_protocol_exception);
+    BST_REQUIRE_THROW(nmos::nc::details::constraints_validation(bad_struct3, value::null(), value::null(), struct_constraints_validation_params), nmos::control_protocol_exception);
+    BST_REQUIRE_THROW(nmos::nc::details::constraints_validation(bad_struct3_1, value::null(), value::null(), struct_constraints_validation_params), nmos::control_protocol_exception);
+    BST_REQUIRE_THROW(nmos::nc::details::constraints_validation(bad_struct3_2, value::null(), value::null(), struct_constraints_validation_params), nmos::control_protocol_exception);
+    BST_REQUIRE_THROW(nmos::nc::details::constraints_validation(bad_struct3_3, value::null(), value::null(), struct_constraints_validation_params), nmos::control_protocol_exception);
 }

@@ -51,12 +51,7 @@ namespace web
             return !(lhs == rhs);
         }
 
-        inline bool operator<(const web::json::object& lhs, const web::json::object& rhs)
-        {
-            using std::begin;
-            using std::end;
-            return std::lexicographical_compare(begin(lhs), end(lhs), begin(rhs), end(rhs));
-        }
+        inline bool operator<(const web::json::object& lhs, const web::json::object& rhs);
 
         inline bool operator>(const web::json::object& lhs, const web::json::object& rhs)
         {
@@ -87,12 +82,7 @@ namespace web
             return !(lhs == rhs);
         }
 
-        inline bool operator<(const web::json::array& lhs, const web::json::array& rhs)
-        {
-            using std::begin;
-            using std::end;
-            return std::lexicographical_compare(begin(lhs), end(lhs), begin(rhs), end(rhs));
-        }
+        inline bool operator<(const web::json::array& lhs, const web::json::array& rhs);
 
         inline bool operator>(const web::json::array& lhs, const web::json::array& rhs)
         {
@@ -141,6 +131,20 @@ namespace web
         inline bool operator>=(const web::json::value& lhs, const web::json::value& rhs)
         {
             return !(lhs < rhs);
+        }
+
+        inline bool operator<(const web::json::array& lhs, const web::json::array& rhs)
+        {
+            using std::begin;
+            using std::end;
+            return std::lexicographical_compare(begin(lhs), end(lhs), begin(rhs), end(rhs));
+        }
+
+        inline bool operator<(const web::json::object& lhs, const web::json::object& rhs)
+        {
+            using std::begin;
+            using std::end;
+            return std::lexicographical_compare(begin(lhs), end(lhs), begin(rhs), end(rhs));
         }
     }
 }

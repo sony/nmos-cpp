@@ -1,0 +1,28 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "description": "PUT request body for invoking SetPropertiesByPath method on NcBulkPropertiesManager",
+  "title": "Bulk properties Set request",
+  "required": [
+    "arguments"
+  ],
+  "properties": {
+    "arguments": {
+      "type": "object",
+      "description": "Method arguments. The rolePath is offered in the URL and is not part of these arguments",
+      "properties": {
+        "dataSet": {
+          "type": "object",
+          "description": "NcBulkPropertiesHolder datatype"
+        },
+        "recurse": {
+          "type": "boolean"
+        },
+        "restoreMode": {
+          "type": "integer",
+          "description": "numeric representation of NcRestoreMode enum options"
+        }
+      }
+    }
+  }
+}

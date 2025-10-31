@@ -1,5 +1,12 @@
 #include "mdns/service_discovery_impl.h"
 
+#if defined(_WIN32)
+#include <ws2tcpip.h>
+#include <iphlpapi.h>
+#pragma comment(lib, "IPHLPAPI.lib")
+#else
+#include <net/if.h>
+#endif
 #include <boost/asio/ip/address.hpp>
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/algorithm/string/erase.hpp>
@@ -24,6 +31,24 @@ namespace mdns_details
     {
         return kDNSServiceInterfaceIndexLocalOnly == interfaceIndex ? kDNSServiceInterfaceIndexAny : interfaceIndex;
     }
+
+    static inline std::string get_interface_name(std::uint32_t interfaceIndex)
+    {
+        char if_name[IF_NAMESIZE];
+
+        if (kDNSServiceInterfaceIndexAny == interfaceIndex) return "any interface";
+        // hm, on Windows, if_indextoname returns a name that is neither the AdapterName nor the FriendlyName from GetAdaptersAddresses
+        if (0 != if_indextoname(interfaceIndex, if_name)) return if_name;
+        return "unknown interface";
+    }
+
+    struct if_name_manip
+    {
+        std::uint32_t i = kDNSServiceInterfaceIndexAny;
+        explicit if_name_manip(std::uint32_t i) : i(i) {}
+        friend std::ostream& operator<<(std::ostream& os, const if_name_manip& manip) { return os << manip.i << " (" << get_interface_name(manip.i) << ")"; }
+    };
+    static inline if_name_manip put_interface_id(std::uint32_t interface_id) { return if_name_manip{ interface_id }; }
 
     struct browse_context
     {
@@ -52,7 +77,7 @@ namespace mdns_details
             {
                 const browse_result result{ serviceName, regtype, replyDomain, make_interface_id(interfaceIndex) };
 
-                slog::log<slog::severities::more_info>(impl->gate, SLOG_FLF) << "After DNSServiceBrowse, DNSServiceBrowseReply got service: " << result.name << " for regtype: " << result.type << " domain: " << result.domain << " on interface: " << result.interface_id;
+                slog::log<slog::severities::more_info>(impl->gate, SLOG_FLF) << "After DNSServiceBrowse, DNSServiceBrowseReply got service: " << result.name << " for regtype: " << result.type << " domain: " << result.domain << " on interface: " << put_interface_id(result.interface_id);
 
                 impl->had_enough = impl->handler(result);
             }
@@ -81,8 +106,7 @@ namespace mdns_details
         const auto latest_timeout = now + latest_timeout_;
         const auto earliest_timeout = now + earliest_timeout_;
 
-        // could use if_indextoname to get a name for the interface (remembering that 0 means "do the right thing", i.e. usually any interface, and there are some other special values too; see dns_sd.h)
-        slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "DNSServiceBrowse for regtype: " << type << " domain: " << domain << " on interface: " << interface_id;
+        slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "DNSServiceBrowse for regtype: " << type << " domain: " << domain << " on interface: " << put_interface_id(interface_id);
 
         browse_context context{ handler, had_enough, more_coming, gate };
         DNSServiceErrorType errorCode = DNSServiceBrowse(&client, 0, interface_id, type.c_str(), !domain.empty() ? domain.c_str() : NULL, browse_reply, &context);
@@ -285,8 +309,7 @@ namespace mdns_details
         const auto latest_timeout = now + latest_timeout_;
         const auto earliest_timeout = now + earliest_timeout_;
 
-        // could use if_indextoname to get a name for the interface (remembering that 0 means "do the right thing", i.e. usually any interface, and there are some other special values too; see dns_sd.h)
-        slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "DNSServiceResolve for name: " << name << " regtype: " << type << " domain: " << domain << " on interface: " << interface_id;
+        slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "DNSServiceResolve for name: " << name << " regtype: " << type << " domain: " << domain << " on interface: " << put_interface_id(interface_id);
 
         resolve_context context{ handler, had_enough, more_coming, gate };
         DNSServiceErrorType errorCode = DNSServiceResolve(&client, 0, interface_id, name.c_str(), type.c_str(), domain.c_str(), (DNSServiceResolveReply)resolve_reply, &context);
@@ -352,12 +375,12 @@ namespace mdns_details
         if (protocol == kDNSServiceProtocol_IPv4 && interface_id >= kIPv6IfIndexBase)
         {
             // no point trying in this case!
-            slog::log<slog::severities::too_much_info>(gate, SLOG_FLF) << "DNSServiceGetAddrInfo not tried for hostname: " << host_name << " on interface: " << interface_id;
+            slog::log<slog::severities::too_much_info>(gate, SLOG_FLF) << "DNSServiceGetAddrInfo not tried for hostname: " << host_name << " on interface: " << put_interface_id(interface_id);
         }
         else
 #endif
         {
-            slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "DNSServiceGetAddrInfo for hostname: " << host_name << " on interface: " << interface_id;
+            slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "DNSServiceGetAddrInfo for hostname: " << host_name << " on interface: " << put_interface_id(interface_id);
 
             getaddrinfo_context context{ handler, had_enough, more_coming, gate };
             DNSServiceErrorType errorCode = DNSServiceGetAddrInfo(&client, 0, interface_id, protocol, host_name.c_str(), getaddrinfo_reply, &context);

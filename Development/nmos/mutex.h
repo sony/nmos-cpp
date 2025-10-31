@@ -1,7 +1,7 @@
 #ifndef NMOS_MUTEX_H
 #define NMOS_MUTEX_H
 
-#include <condition_variable>
+#include <mutex>
 #include "bst/shared_mutex.h"
 
 namespace nmos
@@ -12,7 +12,7 @@ namespace nmos
     typedef std::unique_lock<mutex> write_lock;
 
     // locking strategy tag structs must be usable for both read_lock and write_lock
-#ifndef BST_SHARED_MUTEX_BOOST
+#ifndef BST_THREAD_BOOST
     typedef std::adopt_lock_t adopt_lock_t;
     typedef std::defer_lock_t defer_lock_t;
     typedef std::try_to_lock_t try_to_lock_t;
@@ -28,8 +28,8 @@ namespace nmos
     const try_to_lock_t try_to_lock;
 #endif
 
-    typedef std::condition_variable_any condition_variable;
-    typedef std::cv_status cv_status;
+    typedef bst::condition_variable_any condition_variable;
+    typedef bst::cv_status cv_status;
 
     template <typename Func>
     auto with_read_lock(nmos::mutex& mutex, Func&& func) -> decltype(func())

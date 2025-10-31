@@ -198,7 +198,7 @@ namespace nmos
             if ((nmos::tai_clock::time_point::max)() != earliest_scheduled_activation)
             {
                 slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Next scheduled channel mapping activation is at " << nmos::make_version(nmos::tai_from_time_point(earliest_scheduled_activation))
-                    << " in about " << std::fixed << std::setprecision(3) << std::chrono::duration_cast<std::chrono::duration<double>>(earliest_scheduled_activation - now).count() << " seconds time";
+                    << " in about " << std::fixed << std::setprecision(3) << bst::chrono::duration_cast<bst::chrono::duration<double>>(earliest_scheduled_activation - now).count() << " seconds time";
             }
 
             if (notify)

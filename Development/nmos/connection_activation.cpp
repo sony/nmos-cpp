@@ -9,7 +9,7 @@
 
 namespace nmos
 {
-    void connection_activation_thread(nmos::node_model& model, connection_resource_auto_resolver resolve_auto, connection_sender_transportfile_setter set_transportfile, connection_activation_handler connection_activated, slog::base_gate& gate)
+    void connection_activation_thread(nmos::node_model& model, connection_resource_auto_resolver resolve_auto, connection_sender_transportfile_setter set_transportfile, connection_activation_handler connection_activated, control_protocol_connection_activation_handler monitor_connection_activated, slog::base_gate& gate)
     {
         auto lock = model.write_lock(); // in order to update the resources
 
@@ -182,6 +182,12 @@ namespace nmos
                         // this callback should not throw exceptions, as the active transport parameters will already have been changed and those changes will not be rolled back
                         connection_activated(*matching_resource, resource);
                     }
+
+                    if (monitor_connection_activated)
+                    {
+                        // this callback should not throw exceptions
+                        monitor_connection_activated(*matching_resource, resource);
+                    }
                 }
                 catch (...)
                 {
@@ -194,7 +200,7 @@ namespace nmos
             if ((nmos::tai_clock::time_point::max)() != earliest_scheduled_activation)
             {
                 slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Next scheduled activation is at " << nmos::make_version(nmos::tai_from_time_point(earliest_scheduled_activation))
-                    << " in about " << std::fixed << std::setprecision(3) << std::chrono::duration_cast<std::chrono::duration<double>>(earliest_scheduled_activation - now).count() << " seconds time";
+                    << " in about " << std::fixed << std::setprecision(3) << bst::chrono::duration_cast<bst::chrono::duration<double>>(earliest_scheduled_activation - now).count() << " seconds time";
             }
 
             if (notify)
