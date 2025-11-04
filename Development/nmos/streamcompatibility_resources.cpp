@@ -44,7 +44,7 @@ namespace nmos
                 { nmos::fields::intersection_of_caps_and_constraints, value::array() }
             });
 
-            return{ is11_versions::v1_0, types::sender, std::move(data), id, false };
+            return{ is11_versions::v1_0, types::sender, std::move(data), id, true };
         }
 
         nmos::resource make_streamcompatibility_receiver(const nmos::id& id, const std::vector<nmos::id>& outputs)
@@ -59,7 +59,7 @@ namespace nmos
                 { nmos::fields::status, value_of({ { nmos::fields::state, nmos::receiver_states::unknown.name } }) },
             });
 
-            return{ is11_versions::v1_0, types::receiver, std::move(data), id, false };
+            return{ is11_versions::v1_0, types::receiver, std::move(data), id, true };
         }
 
         web::json::value make_streamcompatibility_dummy_edid_endpoint(bool locked)
@@ -115,7 +115,7 @@ namespace nmos
             data[nmos::fields::senders] = value_from_elements(senders);
             data[nmos::fields::status] = value_of({ { nmos::fields::state, nmos::input_states::signal_present.name } });
 
-            return{ is11_versions::v1_0, types::input, std::move(data), id, false };
+            return{ is11_versions::v1_0, types::input, std::move(data), id, true };
         }
 
         nmos::resource make_streamcompatibility_input(const nmos::id& id, const nmos::id& device_id, bool connected, bool base_edid_support, const boost::variant<utility::string_t, web::uri>& effective_edid, const std::vector<nmos::id>& senders, const nmos::settings& settings)
@@ -141,7 +141,7 @@ namespace nmos
             data[nmos::fields::senders] = value_from_elements(senders);
             data[nmos::fields::status] = value_of({ { nmos::fields::state, nmos::input_states::signal_present.name } });
 
-            return{ is11_versions::v1_0, types::input, std::move(data), id, false };
+            return{ is11_versions::v1_0, types::input, std::move(data), id, true };
         }
 
         nmos::resource make_streamcompatibility_output(const nmos::id& id, const nmos::id& device_id, bool connected, const std::vector<nmos::id>& receivers, const nmos::settings& settings)
@@ -153,7 +153,7 @@ namespace nmos
             data[nmos::fields::receivers] = value_from_elements(receivers);
             data[nmos::fields::status] = value_of({ { nmos::fields::state, nmos::output_states::signal_present.name } });
 
-            return{ is11_versions::v1_0, types::output, std::move(data), id, false };
+            return{ is11_versions::v1_0, types::output, std::move(data), id, true };
         }
 
         nmos::resource make_streamcompatibility_output(const nmos::id& id, const nmos::id& device_id, bool connected, const bst::optional<boost::variant<utility::string_t, web::uri>>& edid, const std::vector<nmos::id>& receivers, const nmos::settings& settings)
@@ -170,7 +170,7 @@ namespace nmos
                 data[nmos::fields::endpoint_edid] = boost::apply_visitor(edid_file_visitor(), *edid);
             }
 
-            return{ is11_versions::v1_0, types::output, std::move(data), id, false };
+            return{ is11_versions::v1_0, types::output, std::move(data), id, true };
         }
     }
 }
