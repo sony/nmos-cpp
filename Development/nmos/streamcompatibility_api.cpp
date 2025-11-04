@@ -782,7 +782,7 @@ namespace nmos
             streamcompatibility_api.support(U("/") + nmos::patterns::senderType.pattern + U("/") + nmos::patterns::resourceId.pattern + U("/constraints/active/?"), methods::PUT, [&model, validator, active_constraints_handler, effective_edid_setter, &gate_](http_request req, http_response res, const string_t&, const route_parameters& parameters)
             {
                 nmos::api_gate gate(gate_, req, parameters);
-                return nmos::details::extract_json(req, gate).then([&model, req, res, parameters, &validator, &active_constraints_handler, &effective_edid_setter, gate](value data) mutable
+                return nmos::details::extract_json(req, gate).then([&model, req, res, parameters, &validator, active_constraints_handler, effective_edid_setter, gate](value data) mutable
                 {
                     const nmos::api_version version = nmos::parse_api_version(parameters.at(nmos::patterns::version.name));
 
