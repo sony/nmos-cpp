@@ -311,10 +311,6 @@ namespace nmos
 
                     set_reply(res, status_codes::OK, nmos::make_sub_routes_body(std::move(sub_routes), req, res));
                 }
-                else if (nmos::details::is_erased_resource(resources, id_type))
-                {
-                    set_error_reply(res, status_codes::NotFound, U("Not Found; ") + nmos::details::make_erased_resource_error());
-                }
                 else
                 {
                     set_reply(res, status_codes::NotFound);
@@ -354,10 +350,6 @@ namespace nmos
 
                     set_reply(res, status_codes::OK, web::json::value_from_elements(filter(resource->data)));
                 }
-                else if (nmos::details::is_erased_resource(resources, id_type))
-                {
-                    set_error_reply(res, status_codes::NotFound, U("Not Found; ") + nmos::details::make_erased_resource_error());
-                }
                 else
                 {
                     set_reply(res, status_codes::NotFound);
@@ -385,10 +377,6 @@ namespace nmos
                     }
 
                     set_reply(res, status_codes::OK, nmos::fields::status(resource->data));
-                }
-                else if (nmos::details::is_erased_resource(resources, id_type))
-                {
-                    set_error_reply(res, status_codes::NotFound, U("Not Found; ") + nmos::details::make_erased_resource_error());
                 }
                 else
                 {
@@ -418,10 +406,6 @@ namespace nmos
                     std::set<utility::string_t> sub_routes{ U("active/"), U("supported/") };
 
                     set_reply(res, status_codes::OK, nmos::make_sub_routes_body(std::move(sub_routes), req, res));
-                }
-                else if (nmos::details::is_erased_resource(resources, id_type))
-                {
-                    set_error_reply(res, status_codes::NotFound, U("Not Found; ") + nmos::details::make_erased_resource_error());
                 }
                 else
                 {
@@ -458,10 +442,6 @@ namespace nmos
                     else {
                         set_reply(res, status_codes::NotFound);
                     }
-                }
-                else if (nmos::details::is_erased_resource(resources, id_type))
-                {
-                    set_error_reply(res, status_codes::NotFound, U("Not Found; ") + nmos::details::make_erased_resource_error());
                 }
                 else
                 {
@@ -509,10 +489,6 @@ namespace nmos
 
                     set_reply(res, status_codes::OK, data);
                 }
-                else if (nmos::details::is_erased_resource(resources, id_type))
-                {
-                    set_error_reply(res, status_codes::NotFound, U("Not Found; ") + nmos::details::make_erased_resource_error());
-                }
                 else
                 {
                     set_reply(res, status_codes::NotFound);
@@ -550,10 +526,6 @@ namespace nmos
                         set_reply(res, status_codes::NotImplemented);
                     }
                 }
-                else if (nmos::details::is_erased_resource(resources, id_type))
-                {
-                    set_error_reply(res, status_codes::NotFound, U("Not Found; ") + nmos::details::make_erased_resource_error());
-                }
                 else
                 {
                     set_reply(res, status_codes::NotFound);
@@ -584,10 +556,6 @@ namespace nmos
                     slog::log<slog::severities::info>(gate, SLOG_FLF) << "EDID requested for " << id_type << ": " << edidType;
 
                     details::set_edid_endpoint_as_reply(res, id_type, edid_endpoint, gate);
-                }
-                else if (nmos::details::is_erased_resource(resources, id_type))
-                {
-                    set_error_reply(res, status_codes::NotFound, U("Not Found; ") + nmos::details::make_erased_resource_error());
                 }
                 else
                 {
@@ -686,10 +654,6 @@ namespace nmos
                         set_error_reply(res, status_codes::MethodNotAllowed);
                     }
                 }
-                else if (nmos::details::is_erased_resource(resources, id_type))
-                {
-                    set_error_reply(res, status_codes::NotFound, U("Not Found; ") + nmos::details::make_erased_resource_error());
-                }
                 else
                 {
                     set_reply(res, status_codes::NotFound);
@@ -767,10 +731,6 @@ namespace nmos
                         set_error_reply(res, status_codes::MethodNotAllowed);
                     }
                 }
-                else if (nmos::details::is_erased_resource(resources, id_type))
-                {
-                    set_error_reply(res, status_codes::NotFound, U("Not Found; ") + nmos::details::make_erased_resource_error());
-                }
                 else
                 {
                     set_reply(res, status_codes::NotFound);
@@ -841,10 +801,6 @@ namespace nmos
                             set_error_reply(res, status_codes::Locked);
                         }
                     }
-                    else if (nmos::details::is_erased_resource(resources, id_type))
-                    {
-                        set_error_reply(res, status_codes::NotFound, U("Not Found; ") + nmos::details::make_erased_resource_error());
-                    }
                     else
                     {
                         set_reply(res, status_codes::NotFound);
@@ -888,10 +844,6 @@ namespace nmos
                         slog::log<slog::severities::warning>(gate, SLOG_FLF) << "Active Constraints update is requested for " << id_type << " but this operation is locked";
                         set_error_reply(res, status_codes::Locked);
                     }
-                }
-                else if (nmos::details::is_erased_resource(resources, id_type))
-                {
-                    set_error_reply(res, status_codes::NotFound, U("Not Found; ") + nmos::details::make_erased_resource_error());
                 }
                 else
                 {
