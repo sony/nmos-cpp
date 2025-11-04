@@ -502,7 +502,7 @@ namespace nmos
                         // only update pending received time if not already set
                         if (pending_received_time.as_integer() == 0)
                         {
-                            if (!set_property(resources, oid, status_pending_received_time_field_name, now_time, gate))
+                            if (!set_property(resources, oid, status_pending_received_time_field_name, static_cast<int64_t>(now_time), gate))
                             {
                                 return false;
                             }
@@ -797,7 +797,7 @@ namespace nmos
                         {
                             const auto& class_id = nc::details::parse_class_id(nmos::fields::nc::class_id(descriptor));
 
-                            if (include_derived) { return !boost::find_first(class_id, class_id_).empty(); }
+                            if (include_derived) { return class_id_.size() <= class_id.size() && std::equal(class_id_.begin(), class_id_.end(), class_id.begin()); }
                             else { return class_id == class_id_; }
                         };
 
