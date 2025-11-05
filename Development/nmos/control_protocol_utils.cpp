@@ -993,7 +993,7 @@ namespace nmos
             {
                 if (!resource.data.has_field(nmos::fields::nc::name(property_descriptor)))
                 {
-                    return false;
+                    throw control_protocol_exception("missing control resource property" + utility::us2s(nmos::fields::nc::name(property_descriptor)));
                 }
             }
             return true;

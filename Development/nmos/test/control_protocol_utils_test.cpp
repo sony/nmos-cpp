@@ -1288,8 +1288,8 @@ BST_TEST_CASE(testValidateResource)
     BST_CHECK(nmos::nc::validate_resource(monitor1, receiver_monitor_class_descriptor));
 
     // Negative tests
-    BST_CHECK(!nmos::nc::validate_resource(root_block, receiver_monitor_class_descriptor));
-    BST_CHECK(!nmos::nc::validate_resource(receivers, class_manager_class_descriptor));
-    BST_CHECK(!nmos::nc::validate_resource(class_manager, block_class_descriptor));
-    BST_CHECK(!nmos::nc::validate_resource(monitor1, block_class_descriptor));
+    BST_CHECK_THROW(nmos::nc::validate_resource(root_block, receiver_monitor_class_descriptor), nmos::control_protocol_exception);
+    BST_CHECK_THROW(nmos::nc::validate_resource(receivers, class_manager_class_descriptor), nmos::control_protocol_exception);
+    BST_CHECK_THROW(nmos::nc::validate_resource(class_manager, block_class_descriptor), nmos::control_protocol_exception);
+    BST_CHECK_THROW(nmos::nc::validate_resource(monitor1, block_class_descriptor), nmos::control_protocol_exception);
 }
