@@ -10,7 +10,6 @@
 #include "nmos/configuration_handlers.h"
 #include "nmos/control_protocol_handlers.h"
 #include "nmos/streamcompatibility_api.h"
-#include "nmos/streamcompatibility_behaviour.h"
 #include "nmos/streamcompatibility_validation.h"
 #include "nmos/node_behaviour.h"
 #include "nmos/node_system_behaviour.h"
@@ -31,7 +30,7 @@ namespace nmos
         // underlying implementation into the server instance for the NMOS Node
         struct node_implementation
         {
-			node_implementation(nmos::load_server_certificates_handler load_server_certificates, nmos::load_dh_param_handler load_dh_param, nmos::load_ca_certificates_handler load_ca_certificates, nmos::system_global_handler system_changed, nmos::registration_handler registration_changed, nmos::transport_file_parser parse_transport_file, nmos::details::connection_resource_patch_validator validate_staged, nmos::connection_resource_auto_resolver resolve_auto, nmos::connection_sender_transportfile_setter set_transportfile, nmos::connection_activation_handler connection_activated, nmos::ocsp_response_handler get_ocsp_response, get_authorization_bearer_token_handler get_authorization_bearer_token, validate_authorization_handler validate_authorization, ws_validate_authorization_handler ws_validate_authorization, nmos::load_rsa_private_keys_handler load_rsa_private_keys, load_authorization_clients_handler load_authorization_clients, save_authorization_client_handler save_authorization_client, request_authorization_code_handler request_authorization_code, nmos::get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, nmos::get_control_protocol_datatype_descriptor_handler get_control_protocol_datatype_descriptor, nmos::get_control_protocol_method_descriptor_handler get_control_protocol_method_descriptor, nmos::control_protocol_property_changed_handler control_protocol_property_changed, nmos::create_validation_fingerprint_handler create_validation_fingerprint, nmos::validate_validation_fingerprint_handler validate_validation_fingerprint, nmos::get_read_only_modification_allow_list_handler get_read_only_modification_allow_list, remove_device_model_object_handler remove_device_model_object, create_device_model_object_handler create_device_model_object,nmos::control_protocol_connection_activation_handler monitor_connection_activated, nmos::get_packet_counters_handler get_lost_packet_counters, nmos::get_packet_counters_handler get_late_packet_counters, nmos::reset_monitor_handler reset_monitor)
+			node_implementation(nmos::load_server_certificates_handler load_server_certificates, nmos::load_dh_param_handler load_dh_param, nmos::load_ca_certificates_handler load_ca_certificates, nmos::system_global_handler system_changed, nmos::registration_handler registration_changed, nmos::transport_file_parser parse_transport_file, nmos::details::connection_resource_patch_validator validate_staged, nmos::connection_resource_auto_resolver resolve_auto, nmos::connection_sender_transportfile_setter set_transportfile, nmos::connection_activation_handler connection_activated, nmos::ocsp_response_handler get_ocsp_response, get_authorization_bearer_token_handler get_authorization_bearer_token, validate_authorization_handler validate_authorization, ws_validate_authorization_handler ws_validate_authorization, nmos::load_rsa_private_keys_handler load_rsa_private_keys, load_authorization_clients_handler load_authorization_clients, save_authorization_client_handler save_authorization_client, request_authorization_code_handler request_authorization_code, nmos::get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, nmos::get_control_protocol_datatype_descriptor_handler get_control_protocol_datatype_descriptor, nmos::get_control_protocol_method_descriptor_handler get_control_protocol_method_descriptor, nmos::control_protocol_property_changed_handler control_protocol_property_changed, nmos::create_validation_fingerprint_handler create_validation_fingerprint, nmos::validate_validation_fingerprint_handler validate_validation_fingerprint, nmos::get_read_only_modification_allow_list_handler get_read_only_modification_allow_list, remove_device_model_object_handler remove_device_model_object, create_device_model_object_handler create_device_model_object,nmos::control_protocol_connection_activation_handler monitor_connection_activated, nmos::get_packet_counters_handler get_lost_packet_counters, nmos::get_packet_counters_handler get_late_packet_counters, nmos::reset_monitor_handler reset_monitor, nmos::experimental::details::streamcompatibility_base_edid_handler base_edid_changed, nmos::experimental::details::streamcompatibility_effective_edid_setter set_effective_edid, nmos::experimental::details::streamcompatibility_active_constraints_handler active_constraints_changed, nmos::experimental::details::streamcompatibility_sender_validator validate_sender_resources, nmos::experimental::details::streamcompatibility_receiver_validator validate_receiver)
                 : load_server_certificates(std::move(load_server_certificates))
                 , load_dh_param(std::move(load_dh_param))
                 , load_ca_certificates(std::move(load_ca_certificates))
@@ -63,6 +62,11 @@ namespace nmos
                 , get_lost_packet_counters(std::move(get_lost_packet_counters))
                 , get_late_packet_counters(std::move(get_late_packet_counters))
                 , reset_monitor(std::move(reset_monitor))
+                , base_edid_changed(std::move(base_edid_changed))
+                , set_effective_edid(std::move(set_effective_edid))
+                , active_constraints_changed(std::move(active_constraints_changed))
+                , validate_sender_resources(std::move(validate_sender_resources))
+                , validate_receiver(std::move(validate_receiver))
             {}
 
             // use the default constructor and chaining member functions for fluent initialization
@@ -149,6 +153,7 @@ namespace nmos
             save_authorization_client_handler save_authorization_client;
             request_authorization_code_handler request_authorization_code;
 
+            // Stream Compatibility Management handlers
             nmos::experimental::details::streamcompatibility_base_edid_handler base_edid_changed;
             nmos::experimental::details::streamcompatibility_effective_edid_setter set_effective_edid;
             nmos::experimental::details::streamcompatibility_active_constraints_handler active_constraints_changed;
