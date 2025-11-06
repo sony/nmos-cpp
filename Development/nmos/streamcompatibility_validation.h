@@ -46,43 +46,57 @@ namespace nmos
         // (this is the default transport file validator)
         void validate_rtp_transport_file(const nmos::resource& receiver, const utility::string_t& transport_file_type, const utility::string_t& transport_file_data);
 
-        typedef std::map<utility::string_t, std::function<bool(const web::json::value& resource, const web::json::value& con)>> parameter_constraints;
+        typedef std::map<utility::string_t, std::function<bool(const web::json::value& resource, const web::json::value& constraint)>> parameter_constraints;
 
         // NMOS Parameter Registers - Capabilities register
         // See https://github.com/AMWA-TV/nmos-parameter-registers/blob/main/capabilities/README.md
-        const std::map<utility::string_t, std::function<bool(const web::json::value& source, const web::json::value& con)>> source_parameter_constraints
+
+        const parameter_constraints source_parameter_constraints
         {
             // Audio Constraints
 
-            { nmos::caps::format::channel_count, [](const web::json::value& source, const web::json::value& con) { return nmos::match_integer_constraint((uint32_t)nmos::fields::channels(source).size(), con); } }
+            // urn:x-nmos:cap:format:channel_count - see https://github.com/AMWA-TV/nmos-parameter-registers/blob/main/capabilities/README.md#channel-count
+            { nmos::caps::format::channel_count, [](const web::json::value& source, const web::json::value& constraint) { return nmos::match_integer_constraint((uint32_t)nmos::fields::channels(source).size(), constraint); } }
         };
 
-        const std::map<utility::string_t, std::function<bool(const web::json::value& flow, const web::json::value& con)>> flow_parameter_constraints
+        const parameter_constraints flow_parameter_constraints
         {
             // General Constraints
 
-            { nmos::caps::format::media_type, [](const web::json::value& flow, const web::json::value& con) { return nmos::match_string_constraint(nmos::fields::media_type(flow), con); } },
-            { nmos::caps::format::grain_rate, [](const web::json::value& flow, const web::json::value& con) { return nmos::match_rational_constraint(nmos::parse_rational(nmos::fields::grain_rate(flow)), con); } },
+            // urn:x-nmos:cap:format:media_type - see https://github.com/AMWA-TV/nmos-parameter-registers/blob/main/capabilities/README.md#media-type
+            { nmos::caps::format::media_type, [](const web::json::value& flow, const web::json::value& constraint) { return nmos::match_string_constraint(nmos::fields::media_type(flow), constraint); } },
+            // urn:x-nmos:cap:format:grain_rate - see https://github.com/AMWA-TV/nmos-parameter-registers/blob/main/capabilities/README.md#grain-rate
+            { nmos::caps::format::grain_rate, [](const web::json::value& flow, const web::json::value& constraint) { return nmos::match_rational_constraint(nmos::parse_rational(nmos::fields::grain_rate(flow)), constraint); } },
 
             // Video Constraints
 
-            { nmos::caps::format::frame_height, [](const web::json::value& flow, const web::json::value& con) { return nmos::match_integer_constraint(nmos::fields::frame_height(flow), con); } },
-            { nmos::caps::format::frame_width, [](const web::json::value& flow, const web::json::value& con) { return nmos::match_integer_constraint(nmos::fields::frame_width(flow), con); } },
-            { nmos::caps::format::color_sampling, [](const web::json::value& flow, const web::json::value& con) { return nmos::match_string_constraint(nmos::details::make_sampling(nmos::fields::components(flow)).name, con); } },
-            { nmos::caps::format::interlace_mode, [](const web::json::value& flow, const web::json::value& con) { return nmos::match_string_constraint(nmos::fields::interlace_mode(flow), con); } },
-            { nmos::caps::format::colorspace, [](const web::json::value& flow, const web::json::value& con) { return nmos::match_string_constraint(nmos::fields::colorspace(flow), con); } },
-            { nmos::caps::format::transfer_characteristic, [](const web::json::value& flow, const web::json::value& con) { return nmos::match_string_constraint(nmos::fields::transfer_characteristic(flow), con); } },
-            { nmos::caps::format::component_depth, [](const web::json::value& flow, const web::json::value& con) { return nmos::match_integer_constraint(nmos::fields::bit_depth(nmos::fields::components(flow).at(0)), con); } },
+            // urn:x-nmos:cap:format:frame_height - see https://github.com/AMWA-TV/nmos-parameter-registers/blob/main/capabilities/README.md#frame-height
+            { nmos::caps::format::frame_height, [](const web::json::value& flow, const web::json::value& constraint) { return nmos::match_integer_constraint(nmos::fields::frame_height(flow), constraint); } },
+            // urn:x-nmos:cap:format:frame_width - see https://github.com/AMWA-TV/nmos-parameter-registers/blob/main/capabilities/README.md#frame-width
+            { nmos::caps::format::frame_width, [](const web::json::value& flow, const web::json::value& constraint) { return nmos::match_integer_constraint(nmos::fields::frame_width(flow), constraint); } },
+            // urn:x-nmos:cap:format:color_sampling - https://github.com/AMWA-TV/nmos-parameter-registers/blob/main/capabilities/README.md#color-sampling
+            { nmos::caps::format::color_sampling, [](const web::json::value& flow, const web::json::value& constraint) { return nmos::match_string_constraint(nmos::details::make_sampling(nmos::fields::components(flow)).name, constraint); } },
+            // urn:x-nmos:cap:format:interlace_mode - see https://github.com/AMWA-TV/nmos-parameter-registers/blob/main/capabilities/README.md#interlace-mode
+            { nmos::caps::format::interlace_mode, [](const web::json::value& flow, const web::json::value& constraint) { return nmos::match_string_constraint(nmos::fields::interlace_mode(flow), constraint); } },
+            // urn:x-nmos:cap:format:colorspace - see https://github.com/AMWA-TV/nmos-parameter-registers/blob/main/capabilities/README.md#colorspace
+            { nmos::caps::format::colorspace, [](const web::json::value& flow, const web::json::value& constraint) { return nmos::match_string_constraint(nmos::fields::colorspace(flow), constraint); } },
+            // transfer_characteristic - see https://github.com/AMWA-TV/nmos-parameter-registers/blob/main/capabilities/README.md#transfer-characteristic
+            { nmos::caps::format::transfer_characteristic, [](const web::json::value& flow, const web::json::value& constraint) { return nmos::match_string_constraint(nmos::fields::transfer_characteristic(flow), constraint); } },
+            // urn:x-nmos:cap:format:component_depth - see https://github.com/AMWA-TV/nmos-parameter-registers/blob/main/capabilities/README.md#component-depth
+            { nmos::caps::format::component_depth, [](const web::json::value& flow, const web::json::value& constraint) { return nmos::match_integer_constraint(nmos::fields::bit_depth(nmos::fields::components(flow).at(0)), constraint); } },
 
             // Audio Constraints
 
-            { nmos::caps::format::sample_rate, [](const web::json::value& flow, const web::json::value& con) { return nmos::match_rational_constraint(nmos::parse_rational(nmos::fields::sample_rate(flow)), con); } },
-            { nmos::caps::format::sample_depth, [](const web::json::value& flow, const web::json::value& con) { return nmos::match_integer_constraint(nmos::fields::bit_depth(flow), con); } }
+            // urn:x-nmos:cap:format:sample_rate - see https://github.com/AMWA-TV/nmos-parameter-registers/blob/main/capabilities/README.md#sample-rate
+            { nmos::caps::format::sample_rate, [](const web::json::value& flow, const web::json::value& constraint) { return nmos::match_rational_constraint(nmos::parse_rational(nmos::fields::sample_rate(flow)), constraint); } },
+            // urn:x-nmos:cap:format:sample_depth - see https://github.com/AMWA-TV/nmos-parameter-registers/blob/main/capabilities/README.md#sample-depth
+            { nmos::caps::format::sample_depth, [](const web::json::value& flow, const web::json::value& constraint) { return nmos::match_integer_constraint(nmos::fields::bit_depth(flow), constraint); } }
         };
 
-        const std::map<utility::string_t, std::function<bool(const web::json::value& sender, const web::json::value& con)>> sender_parameter_constraints
+        const parameter_constraints sender_parameter_constraints
         {
-            { nmos::caps::transport::st2110_21_sender_type, [](const web::json::value& sender, const web::json::value& con) { return nmos::match_string_constraint(nmos::fields::st2110_21_sender_type(sender), con); } }
+            // urn:x-nmos:cap:transport:st2110_21_sender_type - see https://github.com/AMWA-TV/nmos-parameter-registers/blob/main/capabilities/README.md#st-2110-21-sender-type
+            { nmos::caps::transport::st2110_21_sender_type, [](const web::json::value& sender, const web::json::value& constraint) { return nmos::match_string_constraint(nmos::fields::st2110_21_sender_type(sender), constraint); } }
         };
 
         namespace detail

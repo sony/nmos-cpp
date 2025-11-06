@@ -261,7 +261,7 @@ namespace nmos
         const web::json::field_as_value_or endpoint_edid{ U("endpoint_edid"), {} }; // object
         const web::json::field_as_value_or edid_binary{ U("edid_binary"), {} }; // string
         const web::json::field_as_value_or edid_href{ U("edid_href"), {} }; // string
-        
+
         // IS-12 Control Protocol and MS-05 model definitions
         namespace nc
         {

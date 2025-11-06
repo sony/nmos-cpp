@@ -38,14 +38,14 @@ namespace nmos
 
         struct edid_file_visitor : public boost::static_visitor<web::json::value>
         {
-            web::json::value operator()(utility::string_t edid_file) const
+            web::json::value operator()(const utility::string_t& edid_file_binary) const
             {
-                return make_streamcompatibility_edid_endpoint(edid_file);
+                return make_streamcompatibility_edid_endpoint(edid_file_binary);
             }
 
-            web::json::value operator()(web::uri edid_file) const
+            web::json::value operator()(const web::uri& edid_file_uri) const
             {
-                return make_streamcompatibility_edid_endpoint(edid_file);
+                return make_streamcompatibility_edid_endpoint(edid_file_uri);
             }
         };
     }

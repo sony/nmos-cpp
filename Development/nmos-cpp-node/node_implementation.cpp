@@ -1741,6 +1741,7 @@ void node_implementation_run(nmos::node_model& model, nmos::experimental::contro
                 }
             }
 
+            // example setting video sender stream status
             if (update_sender)
             {
                 const auto streamcompatibility_video_sender_id = impl::make_id(seed_id, nmos::types::sender, impl::ports::video, streamcompatibility_index);
@@ -2252,6 +2253,7 @@ nmos::experimental::details::streamcompatibility_active_constraints_handler make
     };
 }
 
+// Example Stream Compatibility Management API callback to validate sender and its associated resources, returns sender's "state" and "debug" values
 nmos::experimental::details::streamcompatibility_sender_validator make_node_implementation_streamcompatibility_sender_validator()
 {
     using nmos::experimental::make_streamcompatibility_sender_resources_validator;
@@ -2266,8 +2268,7 @@ nmos::experimental::details::streamcompatibility_sender_validator make_node_impl
     {
         if (nmos::media_types::video_jxsv.name == nmos::fields::media_type(flow.data))
         {
-            std::pair<nmos::sender_state, utility::string_t> res = validate_video_jxsv_sender_resources(source, flow, sender, connection_sender, constraint_sets);
-            return res;
+            return validate_video_jxsv_sender_resources(source, flow, sender, connection_sender, constraint_sets);
         }
         else
         {

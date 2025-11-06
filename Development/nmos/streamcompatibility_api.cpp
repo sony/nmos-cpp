@@ -474,7 +474,7 @@ namespace nmos
                 {
                     auto data = resource->data;
 
-                    // EDID endpoints hold information about EDID binary and they shouldn't be included in the response
+                    // Note: input/output resources hold information about the EDID binary and they shouldn't be included in the response
                     if (nmos::types::input == nmos::type_from_resourceType(resourceType))
                     {
                         if (!nmos::fields::endpoint_base_edid(resource->data).is_null())
@@ -524,19 +524,23 @@ namespace nmos
                 auto resource = find_resource(resources, id_type);
                 if (resources.end() != resource)
                 {
-                    if (nmos::types::input == nmos::type_from_resourceType(resourceType)) {
+                    if (nmos::types::input == nmos::type_from_resourceType(resourceType))
+                    {
                         std::set<utility::string_t> sub_routes{ U("base/"), U("effective/") };
 
                         set_reply(res, status_codes::OK, nmos::make_sub_routes_body(std::move(sub_routes), req, res));
                     }
-                    else if (nmos::types::output == nmos::type_from_resourceType(resourceType)) {
+                    else if (nmos::types::output == nmos::type_from_resourceType(resourceType))
+                    {
                         auto& edid_endpoint = nmos::fields::endpoint_edid(resource->data);
 
                         slog::log<slog::severities::info>(gate, SLOG_FLF) << "EDID requested for " << id_type;
 
                         details::set_edid_endpoint_as_reply(res, id_type, edid_endpoint, gate);
                     }
-                    else {
+                    else
+                    {
+                        // should never happen
                         set_reply(res, status_codes::NotImplemented);
                     }
                 }

@@ -44,7 +44,7 @@ namespace nmos
             const auto session_description = sdp::parse_session_description(utility::us2s(transport_file_data));
             auto sdp_transport_params = nmos::parse_session_description(session_description);
 
-            // Validate transport file according to the IS-04 receiver
+            // Validate transport file according to the IS-04 receiver, throws an exception when validation fails
 
             validate_sdp_parameters(receiver.data, sdp_transport_params.first);
         }

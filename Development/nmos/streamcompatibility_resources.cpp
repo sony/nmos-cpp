@@ -71,22 +71,22 @@ namespace nmos
             });
         }
 
-        web::json::value make_streamcompatibility_edid_endpoint(const web::uri& edid_file, bool locked)
+        web::json::value make_streamcompatibility_edid_endpoint(const web::uri& edid_file_uri, bool locked)
         {
             using web::json::value_of;
 
             return value_of({
-                { nmos::fields::edid_href, edid_file.to_string() },
+                { nmos::fields::edid_href, edid_file_uri.to_string() },
                 { nmos::fields::temporarily_locked, locked },
             });
         }
 
-        web::json::value make_streamcompatibility_edid_endpoint(const utility::string_t& edid_file, bool locked)
+        web::json::value make_streamcompatibility_edid_endpoint(const utility::string_t& edid_file_binary, bool locked)
         {
             using web::json::value_of;
 
             return value_of({
-                { nmos::fields::edid_binary, edid_file },
+                { nmos::fields::edid_binary, edid_file_binary },
                 { nmos::fields::temporarily_locked, locked },
             });
         }

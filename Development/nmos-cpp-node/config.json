@@ -115,7 +115,7 @@
 
     // is10_versions [registry, node]: used to specify the enabled API versions for a version-locked configuration
     //"is10_versions": ["v1.0"],
-    
+
     // is11_versions [node]: used to specify the enabled API versions for a version-locked configuration
     //"is11_versions": ["v1.0"],
 
