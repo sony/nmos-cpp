@@ -966,7 +966,8 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
         if (!insert_resource_after(delay_millis, model.channelmapping_resources, std::move(channelmapping_output), gate)) throw node_implementation_init_exception();
     }
 
-    // Example IS-11 Input and Senders
+    // example IS-11 input and senders
+    if (0 <= nmos::fields::streamcompatibility_port(model.settings))
     {
         unsigned char edid_bytes[] = {
             0x00, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x00,
@@ -995,7 +996,7 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
             ? nmos::experimental::make_streamcompatibility_input(input_id, device_id, true, true, edid, sender_ids, model.settings)
             : nmos::experimental::make_streamcompatibility_input(input_id, device_id, true, sender_ids, model.settings);
         impl::set_label_description(input, impl::ports::mux, 0); // The single Input consumes both video and audio signals
-        if (!insert_resource_after(delay_millis, model.streamcompatibility_resources, std::move(input), gate)) return;
+        if (!insert_resource_after(delay_millis, model.streamcompatibility_resources, std::move(input), gate)) throw node_implementation_init_exception();
 
         const std::vector<utility::string_t> video_parameter_constraints{
             nmos::caps::meta::label.key,
@@ -1026,11 +1027,12 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
             const auto sender_id = impl::make_id(seed_id, nmos::types::sender, port, streamcompatibility_index);
             const auto& supported_param_constraints = port == impl::ports::video ? video_parameter_constraints : audio_parameter_constraints;
             auto streamcompatibility_sender = nmos::experimental::make_streamcompatibility_sender(sender_id, { input_id }, supported_param_constraints);
-            if (!insert_resource_after(delay_millis, model.streamcompatibility_resources, std::move(streamcompatibility_sender), gate)) return;
+            if (!insert_resource_after(delay_millis, model.streamcompatibility_resources, std::move(streamcompatibility_sender), gate)) throw node_implementation_init_exception();
         }
     }
 
-    // Example IS-11 Output and Receivers
+    // example IS-11 output and receivers
+    if (0 <= nmos::fields::streamcompatibility_port(model.settings))
     {
         unsigned char edid_bytes[] = {
             0x00, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x00,
@@ -1059,12 +1061,12 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
             ? nmos::experimental::make_streamcompatibility_output(output_id, device_id, true, boost::variant<utility::string_t, web::uri>(edid), receiver_ids, model.settings)
             : nmos::experimental::make_streamcompatibility_output(output_id, device_id, true, receiver_ids, model.settings);
         impl::set_label_description(output, impl::ports::mux, 0); // The single Output produces both video and audio signals
-        if (!insert_resource_after(delay_millis, model.streamcompatibility_resources, std::move(output), gate)) return;
+        if (!insert_resource_after(delay_millis, model.streamcompatibility_resources, std::move(output), gate)) throw node_implementation_init_exception();
 
         for (const auto& receiver_id : receiver_ids)
         {
             auto streamcompatibility_receiver = nmos::experimental::make_streamcompatibility_receiver(receiver_id, { output_id });
-            if (!insert_resource_after(delay_millis, model.streamcompatibility_resources, std::move(streamcompatibility_receiver), gate)) return;
+            if (!insert_resource_after(delay_millis, model.streamcompatibility_resources, std::move(streamcompatibility_receiver), gate)) throw node_implementation_init_exception();
         }
     }
 
