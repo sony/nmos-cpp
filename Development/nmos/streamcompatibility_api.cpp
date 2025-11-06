@@ -495,6 +495,11 @@ namespace nmos
                         }
                         data.erase(nmos::fields::receivers);
                     }
+                    else
+                    {
+                        // should never happen
+                        set_reply(res, status_codes::NotImplemented);
+                    }
 
                     set_reply(res, status_codes::OK, data);
                 }
