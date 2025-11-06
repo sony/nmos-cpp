@@ -285,13 +285,14 @@ namespace nmos
                 auto resource = find_resource(resources, id_type);
                 if (resources.end() != resource)
                 {
+                    // check if there is a matching IS-04 sender/receiver resource
                     if (nmos::types::sender == resource->type ||
                         nmos::types::receiver == resource->type)
                     {
                         auto matching_resource = find_resource(model.node_resources, id_type);
                         if (model.node_resources.end() == matching_resource)
                         {
-                            throw std::logic_error("matching IS-04 resource not found");
+                            throw std::logic_error("matching IS-04 " + utility::us2s(id_type.second.name) + " not found");
                         }
                     }
 
@@ -338,10 +339,11 @@ namespace nmos
                 auto resource = find_resource(resources, id_type);
                 if (resources.end() != resource && consistentTypes)
                 {
+                    // check if there is a matching IS-04 sender/receiver resource
                     auto matching_resource = find_resource(model.node_resources, id_type);
                     if (model.node_resources.end() == matching_resource)
                     {
-                        throw std::logic_error("matching IS-04 resource not found");
+                        throw std::logic_error("matching IS-04 " + utility::us2s(id_type.second.name) + " not found");
                     }
 
                     const auto filter = (nmos::types::input == associatedResourceType) ?
@@ -370,10 +372,11 @@ namespace nmos
                 auto resource = find_resource(resources, id_type);
                 if (resources.end() != resource)
                 {
+                    // check if there is a matching IS-04 sender/receiver resource
                     auto matching_resource = find_resource(model.node_resources, id_type);
                     if (model.node_resources.end() == matching_resource)
                     {
-                        throw std::logic_error("matching IS-04 resource not found");
+                        throw std::logic_error("matching IS-04 " + utility::us2s(id_type.second.name) + " not found");
                     }
 
                     set_reply(res, status_codes::OK, nmos::fields::status(resource->data));
@@ -397,10 +400,11 @@ namespace nmos
                 auto resource = find_resource(resources, id_type);
                 if (resources.end() != resource)
                 {
+                    // check if there is a matching IS-04 sender/receiver resource
                     auto matching_resource = find_resource(model.node_resources, id_type);
                     if (model.node_resources.end() == matching_resource)
                     {
-                        throw std::logic_error("matching IS-04 resource not found");
+                        throw std::logic_error("matching IS-04 " + utility::us2s(id_type.second.name) + " not found");
                     }
 
                     std::set<utility::string_t> sub_routes{ U("active/"), U("supported/") };
@@ -427,19 +431,24 @@ namespace nmos
                 auto resource = find_resource(resources, id_type);
                 if (resources.end() != resource)
                 {
+                    // check if there is a matching IS-04 sender/receiver resource
                     auto matching_resource = find_resource(model.node_resources, id_type);
                     if (model.node_resources.end() == matching_resource)
                     {
-                        throw std::logic_error("matching IS-04 resource not found");
+                        throw std::logic_error("matching IS-04 " + utility::us2s(id_type.second.name) + " not found");
                     }
 
-                    if (U("active") == constraintsType) {
+                    if (U("active") == constraintsType)
+                    {
                         set_reply(res, status_codes::OK, nmos::fields::active_constraint_sets(nmos::fields::endpoint_active_constraints(resource->data)));
                     }
-                    else if (U("supported") == constraintsType) {
+                    else if (U("supported") == constraintsType)
+                    {
                         set_reply(res, status_codes::OK, nmos::fields::supported_param_constraints(resource->data));
                     }
-                    else {
+                    else
+                    {
+                        // should never happen
                         set_reply(res, status_codes::NotFound);
                     }
                 }
