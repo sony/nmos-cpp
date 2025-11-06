@@ -51,14 +51,14 @@ namespace nmos
                     {
                         slog::log<slog::severities::warning>(gate, SLOG_FLF) << "EDID requested for " << id_type << " does not exist";
 
-                        nmos::set_error_reply(res, web::http::status_codes::NoContent);
+                        set_reply(res, web::http::status_codes::NoContent);
                     }
                 }
                 else
                 {
                     slog::log<slog::severities::warning>(gate, SLOG_FLF) << "EDID requested for " << id_type << " does not exist";
 
-                    nmos::set_error_reply(res, web::http::status_codes::NoContent);
+                    set_reply(res, web::http::status_codes::NoContent);
                 }
             }
 
