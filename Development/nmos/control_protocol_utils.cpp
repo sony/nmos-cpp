@@ -996,7 +996,6 @@ namespace nmos
                     throw control_protocol_exception("missing control resource property" + utility::us2s(nmos::fields::nc::name(property_descriptor)));
                 }
             }
-            return true;
         }
 
         resources::const_iterator find_resource_by_role_path(const resources& resources, const web::json::array& role_path_)
