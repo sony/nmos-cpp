@@ -1312,7 +1312,7 @@ namespace nmos
         {
             // A monitor is expected to go through a period of instability upon activation. Therefore, on monitor activation
             // domain specific statuses offering an Inactive option MUST transition immediately to the Healthy state.
-            // Furthermore, after activation, as long as the monitor isnt being deactivated, it MUST delay the reporting
+            // Furthermore, after activation, as long as the monitor isn't being deactivated, it MUST delay the reporting
             // of non Healthy states for the duration specified by statusReportingDelay, and then transition to any other appropriate state.
             const auto& found = find_resource(resources, utility::s2us(std::to_string(oid)));
             if (resources.end() != found && nc::is_status_monitor(nc::details::parse_class_id(nmos::fields::nc::class_id(found->data))))
