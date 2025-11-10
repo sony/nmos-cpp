@@ -127,7 +127,7 @@ namespace nmos
         void method_parameters_contraints_validation(const web::json::value& arguments, const web::json::value& nc_method_descriptor, get_control_protocol_datatype_descriptor_handler get_control_protocol_datatype_descriptor);
 
         // Object validation functions
-        bool validate_resource(const control_protocol_resource& resource, const experimental::control_class_descriptor& class_descriptor);
+        void validate_resource(const resource& resource, const experimental::control_class_descriptor& class_descriptor);
 
         resources::const_iterator find_touchpoint_resource(const resources& resources, const resource& resource);
 

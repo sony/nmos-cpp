@@ -986,12 +986,12 @@ namespace nmos
         }
 
         // Validate that the resource has been correctly constructed according to the class_descriptor
-        bool validate_resource(const control_protocol_resource& resource, const experimental::control_class_descriptor& class_descriptor)
+        void validate_resource(const resource& resource, const experimental::control_class_descriptor& class_descriptor)
         {
             // Validate properties
             for (const auto& property_descriptor : class_descriptor.property_descriptors.as_array())
             {
-                if (!resource.data.has_field(nmos::fields::nc::name(property_descriptor)))
+                if ((resource.data.is_null()) || (!resource.data.has_field(nmos::fields::nc::name(property_descriptor))))
                 {
                     throw control_protocol_exception("missing control resource property" + utility::us2s(nmos::fields::nc::name(property_descriptor)));
                 }
@@ -1313,7 +1313,7 @@ namespace nmos
         {
             // A monitor is expected to go through a period of instability upon activation. Therefore, on monitor activation
             // domain specific statuses offering an Inactive option MUST transition immediately to the Healthy state.
-            // Furthermore, after activation, as long as the monitor isn’t being deactivated, it MUST delay the reporting
+            // Furthermore, after activation, as long as the monitor isnÂ’t being deactivated, it MUST delay the reporting
             // of non Healthy states for the duration specified by statusReportingDelay, and then transition to any other appropriate state.
             const auto& found = find_resource(resources, utility::s2us(std::to_string(oid)));
             if (resources.end() != found && nc::is_status_monitor(nc::details::parse_class_id(nmos::fields::nc::class_id(found->data))))

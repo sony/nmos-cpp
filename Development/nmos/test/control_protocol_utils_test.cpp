@@ -1276,16 +1276,16 @@ BST_TEST_CASE(testValidateResource)
 
     auto block_class_descriptor = get_control_protocol_class_descriptor(nmos::nc_block_class_id);
 
-    BST_CHECK(nmos::nc::validate_resource(root_block, block_class_descriptor));
-    BST_CHECK(nmos::nc::validate_resource(receivers, block_class_descriptor));
+    BST_CHECK_NO_THROW(nmos::nc::validate_resource(root_block, block_class_descriptor));
+    BST_CHECK_NO_THROW(nmos::nc::validate_resource(receivers, block_class_descriptor));
 
     auto class_manager_class_descriptor = get_control_protocol_class_descriptor(nmos::nc_class_manager_class_id);
 
-    BST_CHECK(nmos::nc::validate_resource(class_manager, class_manager_class_descriptor));
+    BST_CHECK_NO_THROW(nmos::nc::validate_resource(class_manager, class_manager_class_descriptor));
 
     auto receiver_monitor_class_descriptor = get_control_protocol_class_descriptor(nmos::nc_receiver_monitor_class_id);
 
-    BST_CHECK(nmos::nc::validate_resource(monitor1, receiver_monitor_class_descriptor));
+    BST_CHECK_NO_THROW(nmos::nc::validate_resource(monitor1, receiver_monitor_class_descriptor));
 
     // Negative tests
     BST_CHECK_THROW(nmos::nc::validate_resource(root_block, receiver_monitor_class_descriptor), nmos::control_protocol_exception);
