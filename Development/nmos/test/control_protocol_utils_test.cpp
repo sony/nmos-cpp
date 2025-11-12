@@ -1255,7 +1255,7 @@ BST_TEST_CASE(testFindMembersByClassId)
     }
 }
 
-BST_TEST_CASE(testValidateResource)
+BST_TEST_CASE(testValidateResourceProperties)
 {
     using web::json::value_of;
     using web::json::value;
@@ -1292,4 +1292,64 @@ BST_TEST_CASE(testValidateResource)
     BST_CHECK_THROW(nmos::nc::validate_resource(receivers, class_manager_class_descriptor), nmos::control_protocol_exception);
     BST_CHECK_THROW(nmos::nc::validate_resource(class_manager, block_class_descriptor), nmos::control_protocol_exception);
     BST_CHECK_THROW(nmos::nc::validate_resource(monitor1, block_class_descriptor), nmos::control_protocol_exception);
+}
+
+BST_TEST_CASE(testValidateResourceMethods)
+{
+    using web::json::value_of;
+    using web::json::value;
+
+    nmos::experimental::control_protocol_state control_protocol_state;
+    auto get_control_protocol_class_descriptor = nmos::make_get_control_protocol_class_descriptor_handler(control_protocol_state);
+
+    auto root_block = nmos::make_root_block();
+
+    auto example_method_with_no_args = [](nmos::resources& resources, const nmos::resource& resource, const web::json::value& arguments, bool is_deprecated, slog::base_gate& gate)
+        {
+            return nmos::nc::details::make_method_result({ is_deprecated ? nmos::nc_method_status::method_deprecated : nmos::nc_method_status::ok });
+        };
+
+    auto control_class_id = nmos::nc::make_class_id(nmos::nc_worker_class_id, 0, { 2 });
+    // Define class descriptor with method and associated method - should succeed on validate
+    {
+        std::vector<web::json::value> property_descriptors = {};
+
+        std::vector<nmos::experimental::method> method_descriptors =
+        {
+            { nmos::experimental::make_control_class_method_descriptor(U("Example method with no arguments"), { 3, 1 }, U("MethodNoArgs"), U("NcMethodResult"), {}, false, example_method_with_no_args) }
+        };
+
+        auto control_class_descriptor = nmos::experimental::make_control_class_descriptor(U(""), nmos::nc::make_class_id(nmos::nc_worker_class_id, 0, { 2 }), U("ControlClass"), property_descriptors, method_descriptors, {});
+
+        auto make_control_object = [&](nmos::nc_oid oid)
+            {
+                auto data = nmos::nc::details::make_worker(control_class_id, oid, true, 1, U("role"), value::string(U("")), U(""), value::null(), value::null(), true);
+                return nmos::control_protocol_resource{ nmos::is12_versions::v1_0, nmos::types::nc_worker, std::move(data), true };
+            };
+
+        auto control_object = make_control_object(3);
+
+        BST_CHECK_NO_THROW(nmos::nc::validate_resource(control_object, control_class_descriptor));
+    }
+    // Define class descriptor with method with no associated method - should throw on validate
+    {
+        std::vector<web::json::value> property_descriptors = {};
+
+        std::vector<nmos::experimental::method> method_descriptors =
+        {
+            { nmos::experimental::make_control_class_method_descriptor(U("Example method with no arguments"), { 3, 1 }, U("MethodNoArgs"), U("NcMethodResult"), {}, false, nullptr) }
+        };
+
+        auto control_class_descriptor = nmos::experimental::make_control_class_descriptor(U(""), nmos::nc::make_class_id(nmos::nc_worker_class_id, 0, { 2 }), U("ControlClass"), property_descriptors, method_descriptors, {});
+
+        auto make_control_object = [&](nmos::nc_oid oid)
+            {
+                auto data = nmos::nc::details::make_worker(control_class_id, oid, true, 1, U("role"), value::string(U("")), U(""), value::null(), value::null(), true);
+                return nmos::control_protocol_resource{ nmos::is12_versions::v1_0, nmos::types::nc_worker, std::move(data), true };
+            };
+
+        auto control_object = make_control_object(3);
+
+        BST_CHECK_THROW(nmos::nc::validate_resource(control_object, control_class_descriptor), nmos::control_protocol_exception);
+    }
 }

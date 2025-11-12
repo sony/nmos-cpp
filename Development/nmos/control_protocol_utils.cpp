@@ -993,7 +993,16 @@ namespace nmos
             {
                 if ((resource.data.is_null()) || (!resource.data.has_field(nmos::fields::nc::name(property_descriptor))))
                 {
-                    throw control_protocol_exception("missing control resource property" + utility::us2s(nmos::fields::nc::name(property_descriptor)));
+                    throw control_protocol_exception("missing control resource property: " + utility::us2s(nmos::fields::nc::name(property_descriptor)));
+                }
+            }
+
+            // Validate methods
+            for (const auto& method_descriptor : class_descriptor.method_descriptors)
+            {
+                if (!method_descriptor.second)
+                {
+                    throw control_protocol_exception("method not implemented: " + utility::us2s(nmos::fields::nc::name(method_descriptor.first)));
                 }
             }
         }
