@@ -24,7 +24,7 @@ namespace nmos
 
             // find the relevant nc_property_descriptor
             const auto& property = nc::find_property_descriptor(details::parse_property_id(property_id), details::parse_class_id(nmos::fields::nc::class_id(resource.data)), get_control_protocol_class_descriptor);
-            if (!property.is_null())
+            if (!property.is_null() && resource.data.has_field(nmos::fields::nc::name(property)))
             {
                 return details::make_method_result({is_deprecated ? nmos::nc_method_status::method_deprecated : nmos::fields::nc::is_deprecated(property) ? nc_method_status::property_deprecated : nc_method_status::ok}, resource.data.at(nmos::fields::nc::name(property)));
             }
