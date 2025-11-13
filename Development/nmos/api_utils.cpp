@@ -651,12 +651,14 @@ namespace nmos
                 slog::log<slog::severities::warning>(gate, SLOG_FLF) << "HTTP error: " << e.what() << " [" << e.error_code() << "]";
                 set_error_reply(res, status_codes::BadRequest, e);
             }
+#ifdef BST_THREAD_BOOST
             // Boost lock error indicates cannot get lock, perhaps lock limit exceeded
             catch (const boost::lock_error& e)
             {
                 slog::log<slog::severities::error>(gate, SLOG_FLF) << "Boost lock error: " << e.what() << " Perhaps lock limit exceeded";
                 set_error_reply(res, status_codes::ServiceUnavailable, {}, U("Cannot get lock. Perhaps lock limit exceeded"));
             }
+#endif
             // while a runtime_error (often) indicates an unimplemented feature
             catch (const std::runtime_error& e)
             {
