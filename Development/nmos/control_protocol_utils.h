@@ -126,6 +126,9 @@ namespace nmos
         // method parameters constraints validation, may throw nmos::control_protocol_exception
         void method_parameters_contraints_validation(const web::json::value& arguments, const web::json::value& nc_method_descriptor, get_control_protocol_datatype_descriptor_handler get_control_protocol_datatype_descriptor);
 
+        // Validate that the resource has been correctly constructed according to the class_descriptor
+        void validate_resource(const resource& resource, const experimental::control_class_descriptor& class_descriptor);
+
         resources::const_iterator find_touchpoint_resource(const resources& resources, const resource& resource);
 
         // insert 'value changed', 'sequence item added', 'sequence item changed' or 'sequence item removed' notification events into all grains whose subscriptions match the specified version, type and "pre" or "post" values
