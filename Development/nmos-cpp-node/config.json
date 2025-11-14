@@ -69,8 +69,9 @@
     // streamcompatibility_index: specifies index of video/audio sender/receiver for marking as IS-11 compatible
     //"streamcompatibility_index": 0,
 
-    // volatile_status_of_sender: specifies whether Status of Sender voluntarily changes (for demo purposes)
-    //"volatile_status_of_sender": false,
+    // simulate_sender_volatile_activity: when true sender status will change randomly after activation
+    // this can trigger the Stream Compatibility behaviour thread to stop the active sender
+    //"simulate_sender_volatile_activity": false,
 
     // Configuration settings and defaults for logging
 

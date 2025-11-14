@@ -50,6 +50,7 @@
 #include "nmos/slog.h"
 #include "nmos/st2110_21_sender_type.h"
 #include "nmos/streamcompatibility_resources.h"
+#include "nmos/streamcompatibility_utils.h"
 #include "nmos/streamcompatibility_validation.h"
 #include "nmos/system_resources.h"
 #include "nmos/transfer_characteristic.h"
@@ -138,8 +139,9 @@ namespace impl
         // streamcompatibility_index: specifies index of video/audio sender/receiver for marking as IS-11 compatible
         const web::json::field_as_integer_or streamcompatibility_index{ U("streamcompatibility_index"), 0 };
 
-        // volatile_status_of_sender: specifies whether Status of Sender voluntarily changes (for demo purposes)
-        const web::json::field_as_bool_or volatile_status_of_sender{ U("volatile_status_of_sender"), false };
+        // simulate_sender_volatile_activity: when true sender status will change randomly after activation
+        // this can trigger the Stream Compatibility behaviour thread to stop the active sender
+        const web::json::field_as_bool_or simulate_sender_volatile_activity{ U("simulate_sender_volatile_activity"), false };
     }
 
     nmos::interlace_mode get_interlace_mode(const nmos::settings& settings);
@@ -1498,6 +1500,7 @@ void node_implementation_run(nmos::node_model& model, nmos::experimental::contro
     const auto ws_sender_ports = boost::copy_range<std::vector<impl::port>>(sender_ports | boost::adaptors::filtered(impl::is_ws_port));
     const auto rtp_receiver_ports = boost::copy_range<std::vector<impl::port>>(impl::parse_ports(impl::fields::receivers(model.settings)) | boost::adaptors::filtered(impl::is_rtp_port));
     const auto simulate_status_monitor_activity = impl::fields::simulate_status_monitor_activity(model.settings);
+    const auto simulate_sender_volatile_activity = impl::fields::simulate_sender_volatile_activity(model.settings);
 
     auto& control_protocol_resources = model.control_protocol_resources;
 
@@ -1517,7 +1520,6 @@ void node_implementation_run(nmos::node_model& model, nmos::experimental::contro
     auto set_sender_monitor_synchronization_source_id = nmos::make_set_sender_monitor_synchronization_source_id_handler(control_protocol_resources, control_protocol_state, gate);
 
     const auto streamcompatibility_index = impl::fields::streamcompatibility_index(model.settings);
-    const auto update_sender = impl::fields::volatile_status_of_sender(model.settings);
 
     // start background tasks to intermittently update the state of the event sources, to cause events to be emitted to connected receivers
 
@@ -1527,10 +1529,10 @@ void node_implementation_run(nmos::node_model& model, nmos::experimental::contro
     auto cancellation_source = pplx::cancellation_token_source();
 
     auto token = cancellation_source.get_token();
-    auto events = pplx::do_while([&model, seed_id, how_many, simulate_status_monitor_activity, ws_sender_ports, rtp_receiver_ports, rtp_sender_ports, get_control_protocol_property, set_receiver_monitor_link_status, set_receiver_monitor_connection_status, set_receiver_monitor_external_synchronization_status, set_receiver_monitor_stream_status, set_receiver_monitor_synchronization_source_id, set_sender_monitor_link_status, set_sender_monitor_transmission_status, set_sender_monitor_external_synchronization_status, set_sender_monitor_essence_status, set_sender_monitor_synchronization_source_id, set_control_protocol_property, streamcompatibility_index, update_sender, events_engine, &gate, token]
+    auto events = pplx::do_while([&model, seed_id, how_many, simulate_status_monitor_activity, simulate_sender_volatile_activity, streamcompatibility_index, ws_sender_ports, rtp_receiver_ports, rtp_sender_ports, get_control_protocol_property, set_receiver_monitor_link_status, set_receiver_monitor_connection_status, set_receiver_monitor_external_synchronization_status, set_receiver_monitor_stream_status, set_receiver_monitor_synchronization_source_id, set_sender_monitor_link_status, set_sender_monitor_transmission_status, set_sender_monitor_external_synchronization_status, set_sender_monitor_essence_status, set_sender_monitor_synchronization_source_id, set_control_protocol_property, events_engine, &gate, token]
     {
         const auto event_interval = std::uniform_real_distribution<>(0.5, 5.0)(*events_engine);
-        return pplx::complete_after(std::chrono::milliseconds(std::chrono::milliseconds::rep(1000 * event_interval)), token).then([&model, seed_id, how_many, simulate_status_monitor_activity, ws_sender_ports, rtp_receiver_ports, rtp_sender_ports, get_control_protocol_property, set_receiver_monitor_link_status, set_receiver_monitor_connection_status, set_receiver_monitor_external_synchronization_status, set_receiver_monitor_stream_status, set_receiver_monitor_synchronization_source_id, set_sender_monitor_link_status, set_sender_monitor_transmission_status, set_sender_monitor_external_synchronization_status, set_sender_monitor_essence_status, set_sender_monitor_synchronization_source_id, set_control_protocol_property, streamcompatibility_index, update_sender, events_engine, &gate]
+        return pplx::complete_after(std::chrono::milliseconds(std::chrono::milliseconds::rep(1000 * event_interval)), token).then([&model, seed_id, how_many, simulate_status_monitor_activity, simulate_sender_volatile_activity, streamcompatibility_index, ws_sender_ports, rtp_receiver_ports, rtp_sender_ports, get_control_protocol_property, set_receiver_monitor_link_status, set_receiver_monitor_connection_status, set_receiver_monitor_external_synchronization_status, set_receiver_monitor_stream_status, set_receiver_monitor_synchronization_source_id, set_sender_monitor_link_status, set_sender_monitor_transmission_status, set_sender_monitor_external_synchronization_status, set_sender_monitor_essence_status, set_sender_monitor_synchronization_source_id, set_control_protocol_property, events_engine, &gate]
         {
             auto lock = model.write_lock();
 
@@ -1741,24 +1743,15 @@ void node_implementation_run(nmos::node_model& model, nmos::experimental::contro
                 }
             }
 
-            // example setting video sender stream status
-            if (update_sender)
+            // example volatiling video sender stream status
+            if (simulate_sender_volatile_activity)
             {
-                const auto streamcompatibility_video_sender_id = impl::make_id(seed_id, nmos::types::sender, impl::ports::video, streamcompatibility_index);
-                const auto states_of_sender = { U("no_essence"), U("awaiting_essence"), U("constrained") };
-                const auto& state_of_sender = *(states_of_sender.begin() + (std::min)(std::geometric_distribution<size_t>()(*events_engine), states_of_sender.size() - 1));
+                const auto sender_id = impl::make_id(seed_id, nmos::types::sender, impl::ports::video, streamcompatibility_index);
+                const auto states = { nmos::sender_states::no_essence, nmos::sender_states::awaiting_essence, nmos::sender_states::constrained };
+                const auto& state = *(states.begin() + (std::min)(std::geometric_distribution<size_t>()(*events_engine), states.size() - 1));
 
-                modify_resource(model.streamcompatibility_resources, streamcompatibility_video_sender_id, [&](nmos::resource& resource)
-                {
-                    resource.data[nmos::fields::status] = web::json::value_of({ { nmos::fields::state, state_of_sender } });
-                });
-
-                modify_resource(model.node_resources, streamcompatibility_video_sender_id, [&](nmos::resource& resource)
-                {
-                    resource.data[nmos::fields::version] = web::json::value::string(nmos::make_version());
-                });
-
-                slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Status of Sender " << streamcompatibility_video_sender_id << " updated: " << state_of_sender;
+                slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Changing IS-11 sender: " << sender_id << " status to " << state.name;
+                nmos::experimental::set_sender_status(model.streamcompatibility_resources, model.node_resources, sender_id, state, gate);
             }
 
             model.notify();
@@ -2074,9 +2067,9 @@ nmos::channelmapping_activation_handler make_node_implementation_channelmapping_
 // Example Stream Compatibility Management API Base EDID update callback to perform application-specific operations to apply updated Base EDID
 nmos::experimental::details::streamcompatibility_base_edid_handler make_node_implementation_streamcompatibility_base_edid_handler(slog::base_gate& gate)
 {
-    return [&gate](const nmos::id& input_id, const bst::optional<utility::string_t>& base_edid)
+    return [&gate](const nmos::id& input_id, const bst::optional<utility::string_t>& base_edid_binary)
     {
-        if (base_edid)
+        if (base_edid_binary)
         {
             slog::log<slog::severities::info>(gate, SLOG_FLF) << "Base EDID updated for Input " << input_id;
         }
@@ -2087,7 +2080,7 @@ nmos::experimental::details::streamcompatibility_base_edid_handler make_node_imp
     };
 }
 
-// Example Stream Compatibility Management API callback to update Effective EDID - captures streamcompatibility_resources by reference!
+// Example Stream Compatibility Management API callback to update Effective EDID
 nmos::experimental::details::streamcompatibility_effective_edid_setter make_node_implementation_streamcompatibility_effective_edid_setter(const nmos::resources& streamcompatibility_resources, slog::base_gate& gate)
 {
     return [&streamcompatibility_resources, &gate](const nmos::id& input_id, boost::variant<utility::string_t, web::uri>& effective_edid)
@@ -2111,60 +2104,64 @@ nmos::experimental::details::streamcompatibility_effective_edid_setter make_node
             0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
         };
 
-        bst::optional<utility::string_t> base_edid = bst::nullopt;
+        bst::optional<utility::string_t> base_edid_binary{};
 
-        const std::pair<nmos::id, nmos::type> id_type{ input_id, nmos::types::input };
-        const auto streamcompatibility_input = find_resource(streamcompatibility_resources, id_type);
+        const std::pair<nmos::id, nmos::type> input_id_type{ input_id, nmos::types::input };
+        const auto streamcompatibility_input = find_resource(streamcompatibility_resources, input_id_type);
         if (streamcompatibility_resources.end() != streamcompatibility_input)
         {
-            for (const auto& sender_id_ : nmos::fields::senders(streamcompatibility_input->data))
+            // hmm, just log the input adjust_to_caps and the intersection_of_caps_and_constraints of all senders
             {
-                const auto sender_id = sender_id_.as_string();
-                const std::pair<nmos::id, nmos::type> sender_id_type{ sender_id, nmos::types::sender };
-                const auto streamcompatibility_sender = find_resource(streamcompatibility_resources, sender_id_type);
-                if (streamcompatibility_resources.end() != streamcompatibility_sender)
+                std::stringstream ss;
+
+                ss << "Intersection of Sender Caps and Active Constraints for";
+
+                for (const auto& sender_id_ : nmos::fields::senders(streamcompatibility_input->data))
                 {
-                    slog::log<slog::severities::info>(gate, SLOG_FLF)
-                        << "Intersection of Sender Caps and Active Constraints for Sender " << sender_id << " is "
-                        << utility::us2s(nmos::fields::intersection_of_caps_and_constraints(streamcompatibility_sender->data).serialize());
+                    const auto sender_id = sender_id_.as_string();
+                    const std::pair<nmos::id, nmos::type> sender_id_type{ sender_id, nmos::types::sender };
+                    const auto streamcompatibility_sender = find_resource(streamcompatibility_resources, sender_id_type);
+                    if (streamcompatibility_resources.end() != streamcompatibility_sender)
+                    {
+                        ss << "\nsender: " << utility::us2s(sender_id) << " is " << utility::us2s(nmos::fields::intersection_of_caps_and_constraints(streamcompatibility_sender->data).serialize());
+                    }
                 }
+
+                if (nmos::fields::adjust_to_caps(streamcompatibility_input->data))
+                {
+                    ss << "\nand capabilities of an Input itself and Senders associated with this Input: " << utility::us2s(streamcompatibility_input->id);
+                }
+
+                slog::log<slog::severities::info>(gate, SLOG_FLF) << ss.str();
             }
 
-            bool adjust_to_caps = nmos::fields::adjust_to_caps(streamcompatibility_input->data);
-            slog::log<slog::severities::info>(gate, SLOG_FLF) << "adjust_to_caps is " << adjust_to_caps;
-
+            // get input's Base EDID binary
             const auto& edid_endpoint = nmos::fields::endpoint_base_edid(streamcompatibility_input->data);
-
             if (!edid_endpoint.is_null())
             {
                 const auto& edid_binary = nmos::fields::edid_binary(edid_endpoint);
-
                 if (!edid_binary.is_null())
                 {
-                    base_edid = edid_binary.as_string();
+                    base_edid_binary = edid_binary.as_string();
                 }
             }
         }
         else
         {
-            slog::log<slog::severities::error>(gate, SLOG_FLF) << "Requested " << id_type << " not found";
+            slog::log<slog::severities::error>(gate, SLOG_FLF) << "Effective EDID not created, " << input_id_type << " not found";
             return;
         }
 
-        if (base_edid)
-        {
-            effective_edid = *base_edid;
-        }
-        else
-        {
-            effective_edid = utility::string_t(edid_bytes, edid_bytes + sizeof(edid_bytes));
-        }
+        // set effective EDID
+        effective_edid = base_edid_binary ? *base_edid_binary : utility::string_t(edid_bytes, edid_bytes + sizeof(edid_bytes));
 
-        slog::log<slog::severities::info>(gate, SLOG_FLF) << "Effective EDID is set for Input " << input_id;
+        slog::log<slog::severities::info>(gate, SLOG_FLF) << "Effective EDID is created for " << input_id_type;
     };
 }
 
-// Example Stream Compatibility Management API callback to update Active Constraints of a Sender
+// Example Stream Compatibility Management API callback to perform application-specific sender capabilities against active constraints, returns the intersection of capabilities constraints (may throw)
+// it may throw web::json::json_exception, which will be mapped to a 400 Bad Request status code with NMOS error "debug" information including the exception message
+// or std::runtime_error, which will be mapped to a 500 Internal Error status code with NMOS error "debug" information including the exception message
 nmos::experimental::details::streamcompatibility_active_constraints_handler make_node_implementation_streamcompatibility_active_constraints_handler(const nmos::node_model& model, slog::base_gate& gate)
 {
     using web::json::value_of;
@@ -2244,7 +2241,7 @@ nmos::experimental::details::streamcompatibility_active_constraints_handler make
 
         if (v.empty())
         {
-            slog::log<slog::severities::info>(gate, SLOG_FLF) << "Sender " << sender_id << " doesn't support proposed Active Constraints";
+            slog::log<slog::severities::info>(gate, SLOG_FLF) << "Sender: " << sender_id << " doesn't support proposed Active Constraints: " << nmos::fields::constraint_sets(active_constraints).serialize();
             return false;
         }
 
@@ -2253,7 +2250,8 @@ nmos::experimental::details::streamcompatibility_active_constraints_handler make
     };
 }
 
-// Example Stream Compatibility Management API callback to validate sender and its associated resources, returns sender's "state" and "debug" values
+// Example Stream Compatibility Management API callback to perform application-specific sender validation with its associated resources, returns sender's "state" and "debug" values
+// It may throw exception, which will be logged
 nmos::experimental::details::streamcompatibility_sender_validator make_node_implementation_streamcompatibility_sender_validator()
 {
     using nmos::experimental::make_streamcompatibility_sender_resources_validator;
@@ -2262,12 +2260,11 @@ nmos::experimental::details::streamcompatibility_sender_validator make_node_impl
     const auto validate_video_jxsv_sender_resources = make_streamcompatibility_sender_resources_validator(&nmos::experimental::match_video_jxsv_resource_parameters_constraint_set, make_streamcompatibility_sdp_constraint_sets_matcher(&nmos::match_video_jxsv_sdp_parameters_constraint_sets));
     const auto validate_sender_resources = make_streamcompatibility_sender_resources_validator(&nmos::experimental::match_resource_parameters_constraint_set, make_streamcompatibility_sdp_constraint_sets_matcher(&nmos::match_sdp_parameters_constraint_sets));
 
-    // this example uses a custom sender resources validator to handle video/jxsv in addition to the core media types
-    // (if this callback is specified, an 'empty' std::function is not allowed)
     return [validate_video_jxsv_sender_resources, validate_sender_resources](const nmos::resource& source, const nmos::resource& flow, const nmos::resource& sender, const nmos::resource& connection_sender, const web::json::array& constraint_sets) -> std::pair<nmos::sender_state, utility::string_t>
     {
         if (nmos::media_types::video_jxsv.name == nmos::fields::media_type(flow.data))
         {
+            // validate "video/jxsv"
             return validate_video_jxsv_sender_resources(source, flow, sender, connection_sender, constraint_sets);
         }
         else
@@ -2278,6 +2275,8 @@ nmos::experimental::details::streamcompatibility_sender_validator make_node_impl
     };
 }
 
+// Example Stream Compatibility Management API callback to perform application-specific receiver validation with its transport file, returns receiver's "state" and "debug" values
+// It may throw exception, which will be logged
 nmos::experimental::details::streamcompatibility_receiver_validator make_node_implementation_streamcompatibility_receiver_validator()
 {
     // this example uses a custom transport file validator to handle video/jxsv in addition to the core media types
@@ -2568,6 +2567,7 @@ namespace impl
 // into the server instance for the NMOS Node.
 nmos::experimental::node_implementation make_node_implementation(nmos::node_model& model, slog::base_gate& gate)
 {
+    // may be omitted if IS-11 not required and IS-11 Set Effective EDID functionality not required
     const auto set_effective_edid = impl::fields::edid_support(model.settings)
         ? make_node_implementation_streamcompatibility_effective_edid_setter(model.streamcompatibility_resources, gate)
         : nmos::experimental::details::streamcompatibility_effective_edid_setter{};
@@ -2585,8 +2585,8 @@ nmos::experimental::node_implementation make_node_implementation(nmos::node_mode
         .on_connection_activated(make_node_implementation_connection_activation_handler(model, gate))
         .on_validate_channelmapping_output_map(make_node_implementation_map_validator()) // may be omitted if not required
         .on_channelmapping_activated(make_node_implementation_channelmapping_activation_handler(gate))
-        .on_base_edid_changed(make_node_implementation_streamcompatibility_base_edid_handler(gate))
-        .on_set_effective_edid(set_effective_edid) // may be omitted if not required
+        .on_base_edid_changed(make_node_implementation_streamcompatibility_base_edid_handler(gate))  // may be omitted if IS-11 not required
+        .on_set_effective_edid(set_effective_edid) // may be omitted if IS-11 not required and IS-11 Set Effective EDID functionality not required
         .on_active_constraints_changed(make_node_implementation_streamcompatibility_active_constraints_handler(model, gate))
         .on_validate_sender_resources_against_active_constraints(make_node_implementation_streamcompatibility_sender_validator()) // may be omitted if the default is sufficient
         .on_validate_receiver_against_transport_file(make_node_implementation_streamcompatibility_receiver_validator()) // may be omitted if the default is sufficient

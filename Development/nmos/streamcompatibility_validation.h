@@ -27,15 +27,26 @@ namespace nmos
     {
         namespace details
         {
-            // returns Sender's "state" and "debug" values
+            // Sender validation with its associated resources, returns sender's "state" and "debug" values
+            // It is used by the stream compatibility behaviour thread
+            // It may throw exception, which will be logged
             typedef std::function<std::pair<nmos::sender_state, utility::string_t>(const nmos::resource& source, const nmos::resource& flow, const nmos::resource& sender, const nmos::resource& connection_sender, const web::json::array& constraint_sets)> streamcompatibility_sender_validator;
-            // returns Receiver's "state" and "debug" values
+
+            // Receiver validation with its transport file, returns receiver's "state" and "debug" values
+            // It is used by the stream compatibility behaviour thread
+            // It may throw exception, which will be logged
             typedef std::function<std::pair<nmos::receiver_state, utility::string_t>(const nmos::resource& receiver, const web::json::value& transport_file)> streamcompatibility_receiver_validator;
 
+            // Check the specified receiver against the specified transport file
             typedef std::function<void(const nmos::resource& receiver, const utility::string_t& transportfile_type, const utility::string_t& transportfile_data)> transport_file_validator;
 
+            // Check the specified resource against the specified constraint sets
             typedef std::function<bool(const nmos::resource& resource, const web::json::value& constraint_set)> resource_constraints_matcher;
+
+            // Check the specified transport file against the specified constraint sets
             typedef std::function<bool(const std::pair<utility::string_t, utility::string_t>& transport_file, const web::json::array& constraint_sets)> transport_file_constraint_sets_matcher;
+
+            // Check the specified sdp parameters against the specified constraint sets
             typedef std::function<bool(const web::json::array& constraint_sets, const sdp_parameters& sdp_params)> sdp_constraint_sets_matcher;
 
             // Validate the specified transport file for the specified receiver using the specified validator

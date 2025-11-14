@@ -26,7 +26,6 @@ namespace nmos
                     return constraints.end() != found && !found->second(resource, constraint.second);
                 });
             }
-
         }
 
         void validate_rtp_transport_file(const nmos::resource& receiver, const utility::string_t& transport_file_type, const utility::string_t& transport_file_data)
@@ -161,7 +160,7 @@ namespace nmos
                         {
                             validate_transport_file(receiver, transport_file.first, transport_file.second);
                         }
-                        catch (const std::runtime_error& e)
+                        catch (const std::exception& e)
                         {
                             receiver_state = nmos::receiver_states::non_compliant_stream;
                             receiver_state_debug = utility::conversions::to_string_t(e.what());

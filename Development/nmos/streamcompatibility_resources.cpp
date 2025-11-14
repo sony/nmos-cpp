@@ -36,7 +36,7 @@ namespace nmos
 
             auto data = value_of({
                 { nmos::fields::id, id },
-                { nmos::fields::device_id, U("these are not the droids you are looking for") },
+                { nmos::fields::device_id, U("these are not the droids you are looking for") }, // hmm, the device_id key is used to satisfy when inserting this resource into the model while using the nmos::insert_resource()
                 { nmos::fields::endpoint_active_constraints, make_streamcompatibility_active_constraints_endpoint(value::array()) },
                 { nmos::fields::inputs, value_from_elements(inputs) },
                 { nmos::fields::supported_param_constraints, supported_param_constraints },
@@ -54,7 +54,7 @@ namespace nmos
 
             auto data = value_of({
                 { nmos::fields::id, id },
-                { nmos::fields::device_id, U("these are not the droids you are looking for") },
+                { nmos::fields::device_id, U("these are not the droids you are looking for") }, // hmm, the device_id key is used to satisfy when inserting this resource into the model while using the nmos::insert_resource()
                 { nmos::fields::outputs, value_from_elements(outputs) },
                 { nmos::fields::status, value_of({ { nmos::fields::state, nmos::receiver_states::unknown.name } }) },
             });
