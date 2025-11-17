@@ -36,7 +36,9 @@ expected_disabled_IS_08_02=0
 expected_disabled_IS_09_02=0
 expected_disabled_IS_04_02=0
 expected_disabled_IS_09_01=0
-# expected_disabled_IS_11_01=0
+# IS-11 test_01_01, test_01_02, test_01_03, test_01_05, test_01_06, test_02_03_04, test_02_03_05_01, 
+#   test_02_03_05_02, test_02_04, test_02_04_01, test_03_00, test_04_04, test_04_04_01, test_04_04_02
+expected_disabled_IS_11_01=14
 expected_disabled_IS_12_01=0
 expected_disabled_IS_14_01=1
 expected_disabled_BCP_006_01_01=0
@@ -148,9 +150,7 @@ else
   (( expected_disabled_IS_07_02+=21 ))
   (( expected_disabled_IS_08_01+=7 ))
   (( expected_disabled_IS_08_02+=14 ))
-  # test_04_03, test_04_03_01, test_04_03_01_01, test_04_03_02, test_04_03_02_01
-  # (( expected_disabled_IS_11_01+=26 ))
-  # test_33, test_33_1
+  (( expected_disabled_IS_11_01+=21 ))
   (( expected_disabled_IS_04_02+=16 ))
   (( expected_disabled_IS_09_01+=7 ))
   (( expected_disabled_IS_14_01+=7 ))
@@ -223,7 +223,7 @@ do_run_test IS-08-02 $expected_disabled_IS_08_02 --host "${host}" "${host}" --po
 
 do_run_test IS-09-02 $expected_disabled_IS_09_02 --host "${host}" null --port 0 0 --version null v1.0
 
-# do_run_test IS-11-01 $expected_disabled_IS_11_01 --host "${host}" "${host}" "${host}" --port 1080 1080 1080 --version v1.0 v1.3 v1.1
+do_run_test IS-11-01 $expected_disabled_IS_11_01 --host "${host}" "${host}" "${host}" --port 1080 1080 1080 --version v1.0 v1.3 v1.1
 
 do_run_test IS-12-01 $expected_disabled_IS_12_01 --host "${host}" "${host}" null null --port 1080 1082 0 0 --version v1.3 v1.0 v1.0 v1.0 --urlpath null x-nmos/ncp/v1.0 null null
 
