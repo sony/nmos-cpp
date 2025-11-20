@@ -97,38 +97,6 @@ namespace nmos
             return extract_json<>(res, gate);
         }
 
-        // extract istream into vector of bytes after checking the Content-Type header
-        template <typename HttpMessage>
-        inline pplx::task<std::vector<unsigned char>> extract_istream_to_vector(const HttpMessage& msg, slog::base_gate& gate)
-        {
-            auto mime_type = web::http::details::get_mime_type(msg.headers().content_type());
-
-            if (U("application/octet-stream") == mime_type)
-            {
-                return msg.extract_vector();
-            }
-            else if (mime_type.empty())
-            {
-                // "If a Content-Type header field is not present, the recipient MAY
-                // [...] examine the data to determine its type."
-                // See https://tools.ietf.org/html/rfc7231#section-3.1.1.5
-
-                slog::log<slog::severities::warning>(gate, SLOG_FLF) << "Missing Content-Type: should be application/octet-stream";
-
-                return msg.extract_vector();
-            }
-            else
-            {
-                // more helpful message than from web::http::details::http_msg_base::parse_and_check_content_type for unacceptable content-type
-                return pplx::task_from_exception<std::vector<unsigned char>>(web::http::http_exception(U("Incorrect Content-Type: ") + msg.headers().content_type() + U(", should be application/octet-stream")));
-            }
-        }
-
-        pplx::task<std::vector<unsigned char>> extract_istream_to_vector(const web::http::http_request& req, slog::base_gate& gate)
-        {
-            return extract_istream_to_vector<>(req, gate);
-        }
-
         // add the NMOS-specified CORS response headers
         web::http::http_response& add_cors_preflight_headers(const web::http::http_request& req, web::http::http_response& res)
         {
