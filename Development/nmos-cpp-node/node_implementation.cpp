@@ -2064,9 +2064,12 @@ nmos::channelmapping_activation_handler make_node_implementation_channelmapping_
     };
 }
 
-// Example Stream Compatibility Management API Base EDID update callback to perform application-specific operations to apply updated Base EDID
+// Example Stream Compatibility Management API callback to perform application-specific validation of the Base EDID update during a PUT /edid/base request
+// Note: Since decoding the EDID does not formed part of the IS-11 specification, no validation is implemented for the reference example.
+// i.e. it doesn't reject an invalid EDIDs.
 nmos::experimental::details::streamcompatibility_base_edid_handler make_node_implementation_streamcompatibility_base_edid_handler(slog::base_gate& gate)
 {
+    // should decode the EDID
     return [&gate](const nmos::id& input_id, const bst::optional<utility::string_t>& base_edid_binary)
     {
         if (base_edid_binary)
@@ -2585,8 +2588,8 @@ nmos::experimental::node_implementation make_node_implementation(nmos::node_mode
         .on_connection_activated(make_node_implementation_connection_activation_handler(model, gate))
         .on_validate_channelmapping_output_map(make_node_implementation_map_validator()) // may be omitted if not required
         .on_channelmapping_activated(make_node_implementation_channelmapping_activation_handler(gate))
-        .on_base_edid_changed(make_node_implementation_streamcompatibility_base_edid_handler(gate))  // may be omitted if IS-11 not required
-        .on_set_effective_edid(set_effective_edid) // may be omitted if IS-11 not required and IS-11 Set Effective EDID functionality not required
+        .on_validate_base_edid(make_node_implementation_streamcompatibility_base_edid_handler(gate))  // may be omitted if IS-11 not required
+        .on_set_effective_edid(set_effective_edid) // may be omitted if IS-11 not required, or IS-11 Set Effective EDID functionality not required
         .on_active_constraints_changed(make_node_implementation_streamcompatibility_active_constraints_handler(model, gate))
         .on_validate_sender_resources_against_active_constraints(make_node_implementation_streamcompatibility_sender_validator()) // may be omitted if the default is sufficient
         .on_validate_receiver_against_transport_file(make_node_implementation_streamcompatibility_receiver_validator()) // may be omitted if the default is sufficient

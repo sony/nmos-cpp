@@ -17,7 +17,7 @@ namespace nmos
     {
         namespace details
         {
-            // a streamcompatibility_base_edid_handler is a notification that the Base EDID for the specified IS-11 input has changed (PUT or DELETEd)
+            // a streamcompatibility_base_edid_handler is a notification that the Base EDID for the specified IS-11 input has received the modification request (PUT or DELETEd)
             // it can be used to perform any final validation of the specified Base EDID
             // when PUT, it may throw web::json::json_exception, which will be mapped to a 400 Bad Request status code with NMOS error "debug" information including the exception message
             // or std::runtime_error, which will be mapped to a 500 Internal Error status code with NMOS error "debug" information including the exception message
@@ -37,7 +37,7 @@ namespace nmos
             typedef std::function<void(const nmos::id& input_id, boost::variant<utility::string_t, web::uri>& effective_edid)> streamcompatibility_effective_edid_setter;
         }
 
-        web::http::experimental::listener::api_router make_streamcompatibility_api(nmos::node_model& model, details::streamcompatibility_base_edid_handler base_edid_handler, details::streamcompatibility_effective_edid_setter effective_edid_setter, details::streamcompatibility_active_constraints_handler active_constraints_handler, web::http::experimental::listener::route_handler validate_authorization, slog::base_gate& gate);
+        web::http::experimental::listener::api_router make_streamcompatibility_api(nmos::node_model& model, details::streamcompatibility_base_edid_handler validate_base_edid, details::streamcompatibility_effective_edid_setter effective_edid_setter, details::streamcompatibility_active_constraints_handler active_constraints_handler, web::http::experimental::listener::route_handler validate_authorization, slog::base_gate& gate);
     }
 }
 

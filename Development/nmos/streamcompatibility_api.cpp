@@ -175,9 +175,9 @@ namespace nmos
             }
         }
 
-        web::http::experimental::listener::api_router make_unmounted_streamcompatibility_api(nmos::node_model& model, details::streamcompatibility_base_edid_handler base_edid_changed, details::streamcompatibility_effective_edid_setter effective_edid_setter, details::streamcompatibility_active_constraints_handler active_constraints_handler, slog::base_gate& gate);
+        web::http::experimental::listener::api_router make_unmounted_streamcompatibility_api(nmos::node_model& model, details::streamcompatibility_base_edid_handler validate_base_edid, details::streamcompatibility_effective_edid_setter effective_edid_setter, details::streamcompatibility_active_constraints_handler active_constraints_handler, slog::base_gate& gate);
 
-        web::http::experimental::listener::api_router make_streamcompatibility_api(nmos::node_model& model, details::streamcompatibility_base_edid_handler base_edid_changed, details::streamcompatibility_effective_edid_setter effective_edid_setter, details::streamcompatibility_active_constraints_handler active_constraints_handler, web::http::experimental::listener::route_handler validate_authorization, slog::base_gate& gate)
+        web::http::experimental::listener::api_router make_streamcompatibility_api(nmos::node_model& model, details::streamcompatibility_base_edid_handler validate_base_edid, details::streamcompatibility_effective_edid_setter effective_edid_setter, details::streamcompatibility_active_constraints_handler active_constraints_handler, web::http::experimental::listener::route_handler validate_authorization, slog::base_gate& gate)
         {
             using namespace web::http::experimental::listener::api_router_using_declarations;
 
@@ -208,12 +208,12 @@ namespace nmos
                 return pplx::task_from_result(true);
             });
 
-            streamcompatibility_api.mount(U("/x-nmos/") + nmos::patterns::streamcompatibility_api.pattern + U("/") + nmos::patterns::version.pattern, make_unmounted_streamcompatibility_api(model, base_edid_changed, effective_edid_setter, active_constraints_handler, gate));
+            streamcompatibility_api.mount(U("/x-nmos/") + nmos::patterns::streamcompatibility_api.pattern + U("/") + nmos::patterns::version.pattern, make_unmounted_streamcompatibility_api(model, validate_base_edid, effective_edid_setter, active_constraints_handler, gate));
 
             return streamcompatibility_api;
         }
 
-        web::http::experimental::listener::api_router make_unmounted_streamcompatibility_api(nmos::node_model& model, details::streamcompatibility_base_edid_handler base_edid_changed, details::streamcompatibility_effective_edid_setter effective_edid_setter, details::streamcompatibility_active_constraints_handler active_constraints_handler, slog::base_gate& gate_)
+        web::http::experimental::listener::api_router make_unmounted_streamcompatibility_api(nmos::node_model& model, details::streamcompatibility_base_edid_handler validate_base_edid, details::streamcompatibility_effective_edid_setter effective_edid_setter, details::streamcompatibility_active_constraints_handler active_constraints_handler, slog::base_gate& gate_)
         {
             using namespace web::http::experimental::listener::api_router_using_declarations;
 
@@ -586,7 +586,7 @@ namespace nmos
                 return pplx::task_from_result(true);
             });
 
-            streamcompatibility_api.support(U("/") + nmos::patterns::inputType.pattern + U("/") + nmos::patterns::resourceId.pattern + U("/edid/base/?"), methods::PUT, [&model, base_edid_changed, effective_edid_setter, &gate_](http_request req, http_response res, const string_t&, const route_parameters& parameters)
+            streamcompatibility_api.support(U("/") + nmos::patterns::inputType.pattern + U("/") + nmos::patterns::resourceId.pattern + U("/edid/base/?"), methods::PUT, [&model, validate_base_edid, effective_edid_setter, &gate_](http_request req, http_response res, const string_t&, const route_parameters& parameters)
             {
                 nmos::api_gate gate(gate_, req, parameters);
 
@@ -605,9 +605,9 @@ namespace nmos
                 auto lock = model.read_lock();
                 auto& resources = model.streamcompatibility_resources;
 
-                const string_t input_Id = parameters.at(nmos::patterns::resourceId.name);
+                const string_t inputId = parameters.at(nmos::patterns::resourceId.name);
 
-                const std::pair<nmos::id, nmos::type> id_type{ input_Id, nmos::types::input };
+                const std::pair<nmos::id, nmos::type> id_type{ inputId, nmos::types::input };
 
                 auto resource = find_resource(resources, id_type);
                 if (resources.end() != resource)
@@ -618,30 +618,31 @@ namespace nmos
                     {
                         if (!nmos::fields::temporarily_locked(endpoint_base_edid))
                         {
-                            return nmos::details::extract_istream_vector(req, gate).then([&model, req, res, parameters, input_Id, adjust_to_caps, base_edid_changed, effective_edid_setter, gate](std::vector<unsigned char> body) mutable
+                            return nmos::details::extract_istream_vector(req, gate).then([&model, req, res, parameters, inputId, adjust_to_caps, validate_base_edid, effective_edid_setter, gate](std::vector<unsigned char> body) mutable
                             {
                                 auto lock = model.write_lock();
-                                auto& streamcompatibility_resources = model.streamcompatibility_resources;
-                                auto& node_resources = model.node_resources;
+                                auto& streamcompatibilityResources = model.streamcompatibility_resources;
+                                auto& nodeResources = model.node_resources;
 
-                                const std::pair<nmos::id, nmos::type> id_type{ input_Id, nmos::types::input };
+                                const std::pair<nmos::id, nmos::type> id_type{ inputId, nmos::types::input };
 
-                                const utility::string_t base_edid_binary{ body.begin(), body.end() };
+                                const utility::string_t baseEdidBinary{ body.begin(), body.end() };
 
-                                auto streamcompatibility_resource = find_resource(streamcompatibility_resources, id_type);
+                                auto streamcompatibilityResource = find_resource(streamcompatibilityResources, id_type);
 
-                                slog::log<slog::severities::info>(gate, SLOG_FLF) << "PUT Base EDID binary requested for " << id_type << " with binary data size " << base_edid_binary.size();
+                                slog::log<slog::severities::info>(gate, SLOG_FLF) << "PUT Base EDID binary requested for " << id_type << " with binary data size " << baseEdidBinary.size();
 
-                                // Notify the application code that the Base EDID for the IS-11 input has changed
-                                if (base_edid_changed)
+                                // Notify the application code for the Base EDID modification request
+                                // It's thrown to indicate there are EDID failures (e.g. EDID validation failure)
+                                if (validate_base_edid)
                                 {
-                                    base_edid_changed(input_Id, base_edid_binary);
+                                    validate_base_edid(inputId, baseEdidBinary);
                                 }
 
                                 // Pre-check for resources existence before Base EDID modified and effective_edid_setter executed
                                 if (effective_edid_setter)
                                 {
-                                    if (!details::all_resources_exist(node_resources, nmos::fields::senders(streamcompatibility_resource->data), nmos::types::sender))
+                                    if (!details::all_resources_exist(nodeResources, nmos::fields::senders(streamcompatibilityResource->data), nmos::types::sender))
                                     {
                                         throw std::logic_error("associated IS-04 sender not found");
                                     }
@@ -650,9 +651,9 @@ namespace nmos
                                 utility::string_t updated_timestamp{ nmos::make_version() };
 
                                 // Update Base EDID in streamcompatibility_resources
-                                modify_resource(streamcompatibility_resources, input_Id, [&base_edid_binary, &updated_timestamp, &adjust_to_caps](nmos::resource& input)
+                                modify_resource(streamcompatibilityResources, inputId, [&baseEdidBinary, &updated_timestamp, &adjust_to_caps](nmos::resource& input)
                                 {
-                                    input.data[nmos::fields::endpoint_base_edid] = make_streamcompatibility_edid_endpoint(base_edid_binary);
+                                    input.data[nmos::fields::endpoint_base_edid] = make_streamcompatibility_edid_endpoint(baseEdidBinary);
                                     input.data[nmos::fields::adjust_to_caps] = value::boolean(adjust_to_caps);
 
                                     input.data[nmos::fields::version] = web::json::value::string(updated_timestamp);
@@ -660,12 +661,12 @@ namespace nmos
 
                                 // hmmmmmm,
                                 // `When properties of any Input/Output are changed, then the version attribute of the relevant IS-04 Device MUST be incremented. Inputs/Outputs identify the corresponding Devices via the device_id property.`
-                                update_version(node_resources, nmos::fields::senders(streamcompatibility_resource->data), updated_timestamp);
+                                update_version(nodeResources, nmos::fields::senders(streamcompatibilityResource->data), updated_timestamp);
 
                                 // Update IS-11 input effective EDID, which is provided by the application code
                                 if (effective_edid_setter)
                                 {
-                                    details::update_effective_edid(model, effective_edid_setter, input_Id);
+                                    details::update_effective_edid(model, effective_edid_setter, inputId);
                                 }
 
                                 model.notify();
@@ -695,7 +696,7 @@ namespace nmos
                 return pplx::task_from_result(true);
             });
 
-            streamcompatibility_api.support(U("/") + nmos::patterns::inputType.pattern + U("/") + nmos::patterns::resourceId.pattern + U("/edid/base/?"), methods::DEL, [&model, base_edid_changed, effective_edid_setter, &gate_](http_request req, http_response res, const string_t&, const route_parameters& parameters)
+            streamcompatibility_api.support(U("/") + nmos::patterns::inputType.pattern + U("/") + nmos::patterns::resourceId.pattern + U("/edid/base/?"), methods::DEL, [&model, validate_base_edid, effective_edid_setter, &gate_](http_request req, http_response res, const string_t&, const route_parameters& parameters)
             {
                 nmos::api_gate gate(gate_, req, parameters);
                 auto lock = model.write_lock();
@@ -715,10 +716,10 @@ namespace nmos
                         {
                             slog::log<slog::severities::info>(gate, SLOG_FLF) << "Delete " << id_type << " Base EDID";
 
-                            // notify the application code that the Base EDID for the IS-11 input has changed (cleared)
-                            if (base_edid_changed)
+                            // Notify the application code for the Base EDID modification request. (delete Base EDID)
+                            if (validate_base_edid)
                             {
-                                base_edid_changed(resourceId, {});
+                                validate_base_edid(resourceId, {});
                             }
 
                             // Pre-check for resources existence before Base EDID modified and effective_edid_setter executed
