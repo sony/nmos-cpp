@@ -589,13 +589,6 @@ namespace nmos
             streamcompatibility_api.support(U("/") + nmos::patterns::inputType.pattern + U("/") + nmos::patterns::resourceId.pattern + U("/edid/base/?"), methods::PUT, [&model, base_edid_changed, effective_edid_setter, &gate_](http_request req, http_response res, const string_t&, const route_parameters& parameters)
             {
                 nmos::api_gate gate(gate_, req, parameters);
-                auto lock = model.write_lock();
-                auto& resources = model.streamcompatibility_resources;
-
-                const string_t input_Id = parameters.at(nmos::patterns::resourceId.name);
-
-                const std::pair<nmos::id, nmos::type> id_type{ input_Id, nmos::types::input };
-                auto resource = find_resource(resources, id_type);
 
                 // Extract "adjust_to_caps" query parameter
                 bool adjust_to_caps = false;
@@ -609,6 +602,14 @@ namespace nmos
                     }
                 }
 
+                auto lock = model.read_lock();
+                auto& resources = model.streamcompatibility_resources;
+
+                const string_t input_Id = parameters.at(nmos::patterns::resourceId.name);
+
+                const std::pair<nmos::id, nmos::type> id_type{ input_Id, nmos::types::input };
+
+                auto resource = find_resource(resources, id_type);
                 if (resources.end() != resource)
                 {
                     auto& endpoint_base_edid = nmos::fields::endpoint_base_edid(resource->data);
@@ -617,51 +618,62 @@ namespace nmos
                     {
                         if (!nmos::fields::temporarily_locked(endpoint_base_edid))
                         {
-                            // hmm, should use task to extract body ???
-                            const auto request_body = req.content_ready().get().extract_vector().get();
-                            const utility::string_t base_edid_binary{ request_body.begin(), request_body.end() };
-
-                            slog::log<slog::severities::info>(gate, SLOG_FLF) << "PUT Base EDID binary requested for " << id_type << " with binary data size " << base_edid_binary.size();
-
-                            // Notify the application code that the Base EDID for the IS-11 input has changed
-                            if (base_edid_changed)
+                            return nmos::details::extract_istream_vector(req, gate).then([&model, req, res, parameters, input_Id, adjust_to_caps, base_edid_changed, effective_edid_setter, gate](std::vector<unsigned char> body) mutable
                             {
-                                base_edid_changed(input_Id, base_edid_binary);
-                            }
+                                auto lock = model.write_lock();
+                                auto& streamcompatibility_resources = model.streamcompatibility_resources;
+                                auto& node_resources = model.node_resources;
 
-                            // Pre-check for resources existence before Base EDID modified and effective_edid_setter executed
-                            if (effective_edid_setter)
-                            {
-                                if (!details::all_resources_exist(model.node_resources, nmos::fields::senders(resource->data), nmos::types::sender))
+                                const std::pair<nmos::id, nmos::type> id_type{ input_Id, nmos::types::input };
+
+                                const utility::string_t base_edid_binary{ body.begin(), body.end() };
+
+                                auto streamcompatibility_resource = find_resource(streamcompatibility_resources, id_type);
+
+                                slog::log<slog::severities::info>(gate, SLOG_FLF) << "PUT Base EDID binary requested for " << id_type << " with binary data size " << base_edid_binary.size();
+
+                                // Notify the application code that the Base EDID for the IS-11 input has changed
+                                if (base_edid_changed)
                                 {
-                                    throw std::logic_error("associated IS-04 sender not found");
+                                    base_edid_changed(input_Id, base_edid_binary);
                                 }
-                            }
 
-                            utility::string_t updated_timestamp{ nmos::make_version() };
+                                // Pre-check for resources existence before Base EDID modified and effective_edid_setter executed
+                                if (effective_edid_setter)
+                                {
+                                    if (!details::all_resources_exist(node_resources, nmos::fields::senders(streamcompatibility_resource->data), nmos::types::sender))
+                                    {
+                                        throw std::logic_error("associated IS-04 sender not found");
+                                    }
+                                }
 
-                            // Update Base EDID in streamcompatibility_resources
-                            modify_resource(resources, input_Id, [&base_edid_binary, &updated_timestamp, &adjust_to_caps](nmos::resource& input)
-                            {
-                                input.data[nmos::fields::endpoint_base_edid] = make_streamcompatibility_edid_endpoint(base_edid_binary);
-                                input.data[nmos::fields::adjust_to_caps] = value::boolean(adjust_to_caps);
+                                utility::string_t updated_timestamp{ nmos::make_version() };
 
-                                input.data[nmos::fields::version] = web::json::value::string(updated_timestamp);
+                                // Update Base EDID in streamcompatibility_resources
+                                modify_resource(streamcompatibility_resources, input_Id, [&base_edid_binary, &updated_timestamp, &adjust_to_caps](nmos::resource& input)
+                                {
+                                    input.data[nmos::fields::endpoint_base_edid] = make_streamcompatibility_edid_endpoint(base_edid_binary);
+                                    input.data[nmos::fields::adjust_to_caps] = value::boolean(adjust_to_caps);
+
+                                    input.data[nmos::fields::version] = web::json::value::string(updated_timestamp);
+                                });
+
+                                // hmmmmmm,
+                                // `When properties of any Input/Output are changed, then the version attribute of the relevant IS-04 Device MUST be incremented. Inputs/Outputs identify the corresponding Devices via the device_id property.`
+                                update_version(node_resources, nmos::fields::senders(streamcompatibility_resource->data), updated_timestamp);
+
+                                // Update IS-11 input effective EDID, which is provided by the application code
+                                if (effective_edid_setter)
+                                {
+                                    details::update_effective_edid(model, effective_edid_setter, input_Id);
+                                }
+
+                                model.notify();
+
+                                set_reply(res, status_codes::NoContent);
+
+                                return true;
                             });
-
-                            // hmmmmmm,
-                            // `When properties of any Input/Output are changed, then the version attribute of the relevant IS-04 Device MUST be incremented. Inputs/Outputs identify the corresponding Devices via the device_id property.`
-                            update_version(model.node_resources, nmos::fields::senders(resource->data), updated_timestamp);
-
-                            // Update IS-11 input effective EDID, which is provided by the application code
-                            if (effective_edid_setter)
-                            {
-                                details::update_effective_edid(model, effective_edid_setter, input_Id);
-                            }
-
-                            model.notify();
-
-                            set_reply(res, status_codes::NoContent);
                         }
                         else
                         {
