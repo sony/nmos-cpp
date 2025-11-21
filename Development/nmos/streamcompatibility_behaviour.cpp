@@ -22,144 +22,116 @@ namespace nmos
 {
     namespace experimental
     {
-        std::vector<nmos::id> get_resources_ids(const nmos::resources& resources, const nmos::type& type)
+        namespace details
         {
-            return boost::copy_range<std::vector<nmos::id>>(resources | boost::adaptors::filtered([&type] (const nmos::resource& resource)
+            std::vector<nmos::id> get_resources_ids(const nmos::resources& resources, const nmos::type& type)
             {
-                return type == resource.type;
-            }) | boost::adaptors::transformed([](const nmos::resource& resource)
-            {
-                return std::vector<nmos::id>::value_type{ resource.id };
-            }));
-        }
-
-        nmos::sender_state update_sender_status(nmos::node_model& model, const nmos::id& sender_id, const details::streamcompatibility_sender_validator& validate_sender_resources, slog::base_gate& gate)
-        {
-            using web::json::value;
-
-            auto& node_resources = model.node_resources;
-            auto& connection_resources = model.connection_resources;
-            auto& streamcompatibility_resources = model.streamcompatibility_resources;
-
-            const std::pair<nmos::id, nmos::type> sender_id_type{ sender_id, nmos::types::sender };
-            auto sender = find_resource(node_resources, sender_id_type);
-            if (node_resources.end() == sender) throw std::logic_error("matching IS-04 sender not found");
-
-            const std::pair<nmos::id, nmos::type> flow_id_type{ nmos::fields::flow_id(sender->data).as_string(), nmos::types::flow };
-            auto flow = find_resource(node_resources, flow_id_type);
-            if (node_resources.end() == flow) throw std::logic_error("matching IS-04 flow not found");
-
-            const std::pair<nmos::id, nmos::type> source_id_type{ nmos::fields::source_id(flow->data), nmos::types::source };
-            auto source = find_resource(node_resources, source_id_type);
-            if (node_resources.end() == source) throw std::logic_error("matching IS-04 source not found");
-
-            auto connection_sender = find_resource(connection_resources, sender_id_type);
-            if (connection_resources.end() == connection_sender) throw std::logic_error("matching IS-05 sender not found");
-
-            auto streamcompatibility_sender = find_resource(streamcompatibility_resources, sender_id_type);
-            if (streamcompatibility_resources.end() == streamcompatibility_sender) throw std::logic_error("matching IS-11 sender not found");
-
-            nmos::sender_state sender_state(nmos::fields::state(nmos::fields::status(streamcompatibility_sender->data)));
-            utility::string_t sender_state_debug;
-
-            slog::log<slog::severities::too_much_info>(gate, SLOG_FLF) << "IS-11 " << sender_id_type << " status before active constraints validation: " << sender_state.name;
-
-            // Setting the State to any value except for "no_essence" or "awaiting_essence" triggers Active Constraints validation
-            if (sender_state != nmos::sender_states::no_essence && sender_state != nmos::sender_states::awaiting_essence)
-            {
-                const auto& constraint_sets = nmos::fields::constraint_sets(nmos::fields::active_constraint_sets(nmos::fields::endpoint_active_constraints(streamcompatibility_sender->data))).as_array();
-
-                slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Validating " << sender_id_type << " active constraints against with its sender, flow, source and transport file";
-                if (validate_sender_resources)
+                return boost::copy_range<std::vector<nmos::id>>(resources | boost::adaptors::filtered([&type](const nmos::resource& resource)
                 {
-                    // do custom sender_source_flow constraints validation to update the sender_state and sender_state_debug
-                    std::tie(sender_state, sender_state_debug) = validate_sender_resources(*source, *flow, *sender, *connection_sender, constraint_sets);
+                    return type == resource.type;
+                }) | boost::adaptors::transformed([](const nmos::resource& resource)
+                    {
+                        return std::vector<nmos::id>::value_type{ resource.id };
+                    }));
+            }
+
+            nmos::sender_state update_sender_status(nmos::node_model& model, const nmos::id& sender_id, const details::streamcompatibility_sender_validator& validate_sender_resources, slog::base_gate& gate)
+            {
+                using web::json::value;
+
+                auto& node_resources = model.node_resources;
+                auto& connection_resources = model.connection_resources;
+                auto& streamcompatibility_resources = model.streamcompatibility_resources;
+
+                const std::pair<nmos::id, nmos::type> sender_id_type{ sender_id, nmos::types::sender };
+                auto sender = find_resource(node_resources, sender_id_type);
+                if (node_resources.end() == sender) throw std::logic_error("matching IS-04 sender not found");
+
+                const std::pair<nmos::id, nmos::type> flow_id_type{ nmos::fields::flow_id(sender->data).as_string(), nmos::types::flow };
+                auto flow = find_resource(node_resources, flow_id_type);
+                if (node_resources.end() == flow) throw std::logic_error("matching IS-04 flow not found");
+
+                const std::pair<nmos::id, nmos::type> source_id_type{ nmos::fields::source_id(flow->data), nmos::types::source };
+                auto source = find_resource(node_resources, source_id_type);
+                if (node_resources.end() == source) throw std::logic_error("matching IS-04 source not found");
+
+                auto connection_sender = find_resource(connection_resources, sender_id_type);
+                if (connection_resources.end() == connection_sender) throw std::logic_error("matching IS-05 sender not found");
+
+                auto streamcompatibility_sender = find_resource(streamcompatibility_resources, sender_id_type);
+                if (streamcompatibility_resources.end() == streamcompatibility_sender) throw std::logic_error("matching IS-11 sender not found");
+
+                nmos::sender_state sender_state(nmos::fields::state(nmos::fields::status(streamcompatibility_sender->data)));
+                utility::string_t sender_state_debug;
+
+                slog::log<slog::severities::too_much_info>(gate, SLOG_FLF) << "IS-11 " << sender_id_type << " status before active constraints validation: " << sender_state.name;
+
+                // Setting the State to any value except for "no_essence" or "awaiting_essence" triggers Active Constraints validation
+                if (sender_state != nmos::sender_states::no_essence && sender_state != nmos::sender_states::awaiting_essence)
+                {
+                    const auto& constraint_sets = nmos::fields::constraint_sets(nmos::fields::active_constraint_sets(nmos::fields::endpoint_active_constraints(streamcompatibility_sender->data))).as_array();
+
+                    slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Validating " << sender_id_type << " active constraints against with its sender, flow, source and transport file";
+                    if (validate_sender_resources)
+                    {
+                        // do custom sender_source_flow constraints validation to update the sender_state and sender_state_debug
+                        std::tie(sender_state, sender_state_debug) = validate_sender_resources(*source, *flow, *sender, *connection_sender, constraint_sets);
+                    }
                 }
-            }
 
-            slog::log<slog::severities::too_much_info>(gate, SLOG_FLF) << "IS-11 " << sender_id_type << " status after active constraints validation: " << sender_state.name;
+                slog::log<slog::severities::too_much_info>(gate, SLOG_FLF) << "IS-11 " << sender_id_type << " status after active constraints validation: " << sender_state.name;
 
-            // update sender state and sender_state_debug if state has changed
-            if (nmos::fields::state(nmos::fields::status(streamcompatibility_sender->data)) != sender_state.name)
-            {
-                utility::string_t updated_timestamp{ nmos::make_version() };
-
-                modify_resource(streamcompatibility_resources, sender_id, [&sender_state, &sender_state_debug, &updated_timestamp, &gate](nmos::resource& sender)
+                // update sender state and sender_state_debug if state has changed
+                if (nmos::fields::state(nmos::fields::status(streamcompatibility_sender->data)) != sender_state.name)
                 {
-                    // update sender state
-                    nmos::fields::status(sender.data)[nmos::fields::state] = value::string(sender_state.name);
+                    utility::string_t updated_timestamp{ nmos::make_version() };
 
-                    // update sender state debug
-                    if (!sender_state_debug.empty())
-                    {
-                        nmos::fields::status(sender.data)[nmos::fields::debug] = value::string(sender_state_debug);
-                    }
-                    else if (nmos::fields::status(sender.data).has_field(nmos::fields::debug) && !nmos::fields::debug(nmos::fields::status(sender.data)).empty())
-                    {
-                        nmos::fields::status(sender.data).erase(nmos::fields::debug);
-                    }
-
-                    sender.data[nmos::fields::version] = value::string(updated_timestamp);
-                });
-
-                update_version(node_resources, sender_id, updated_timestamp);
-            }
-
-            return sender_state;
-        }
-
-        nmos::receiver_state update_receiver_status(nmos::node_model& model, const nmos::id& receiver_id, const details::streamcompatibility_receiver_validator& validate_receiver, slog::base_gate& gate)
-        {
-            using web::json::value;
-
-            auto& node_resources = model.node_resources;
-            auto& connection_resources = model.connection_resources;
-            auto& streamcompatibility_resources = model.streamcompatibility_resources;
-
-            const std::pair<nmos::id, nmos::type> receiver_id_type{ receiver_id, nmos::types::receiver };
-
-            auto node_receiver = find_resource(node_resources, receiver_id_type);
-            if (node_resources.end() == node_receiver) throw std::logic_error("matching IS-04 receiver not found");
-
-            auto connection_receiver = find_resource(connection_resources, receiver_id_type);
-            if (connection_resources.end() == connection_receiver) throw std::logic_error("matching IS-05 receiver not found");
-
-            auto streamcompatibility_receiver = find_resource(streamcompatibility_resources, receiver_id_type);
-            if (streamcompatibility_resources.end() == streamcompatibility_receiver) throw std::logic_error("matching IS-11 receiver not found");
-
-            nmos::receiver_state receiver_state(nmos::receiver_states::unknown);
-            utility::string_t receiver_state_debug;
-
-            if (nmos::fields::master_enable(nmos::fields::endpoint_active(connection_receiver->data)))
-            {
-                const auto& transport_file = nmos::fields::transport_file(nmos::fields::endpoint_active(connection_receiver->data));
-
-                slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Validating " << receiver_id_type << " against with its transport file";
-                if (validate_receiver)
-                {
-                    std::tie(receiver_state, receiver_state_debug) = validate_receiver(*node_receiver, transport_file);
+                    set_sender_status(node_resources, streamcompatibility_resources, sender_id, sender_state, sender_state_debug, gate);
                 }
+
+                return sender_state;
             }
 
-            if (nmos::fields::state(nmos::fields::status(streamcompatibility_receiver->data)) != receiver_state.name)
+            nmos::receiver_state update_receiver_status(nmos::node_model& model, const nmos::id& receiver_id, const details::streamcompatibility_receiver_validator& validate_receiver, slog::base_gate& gate)
             {
-                modify_resource(streamcompatibility_resources, receiver_id, [&receiver_state, &receiver_state_debug, &gate](nmos::resource& receiver)
+                using web::json::value;
+
+                auto& node_resources = model.node_resources;
+                auto& connection_resources = model.connection_resources;
+                auto& streamcompatibility_resources = model.streamcompatibility_resources;
+
+                const std::pair<nmos::id, nmos::type> receiver_id_type{ receiver_id, nmos::types::receiver };
+
+                auto node_receiver = find_resource(node_resources, receiver_id_type);
+                if (node_resources.end() == node_receiver) throw std::logic_error("matching IS-04 receiver not found");
+
+                auto connection_receiver = find_resource(connection_resources, receiver_id_type);
+                if (connection_resources.end() == connection_receiver) throw std::logic_error("matching IS-05 receiver not found");
+
+                auto streamcompatibility_receiver = find_resource(streamcompatibility_resources, receiver_id_type);
+                if (streamcompatibility_resources.end() == streamcompatibility_receiver) throw std::logic_error("matching IS-11 receiver not found");
+
+                nmos::receiver_state receiver_state(nmos::receiver_states::unknown);
+                utility::string_t receiver_state_debug;
+
+                if (nmos::fields::master_enable(nmos::fields::endpoint_active(connection_receiver->data)))
                 {
-                    nmos::fields::status(receiver.data)[nmos::fields::state] = value::string(receiver_state.name);
-                    if (!receiver_state_debug.empty())
-                    {
-                        nmos::fields::status(receiver.data)[nmos::fields::debug] = value::string(receiver_state_debug);
-                    }
-                    else if (nmos::fields::status(receiver.data).has_field(nmos::fields::debug) && !nmos::fields::debug(nmos::fields::status(receiver.data)).empty())
-                    {
-                        nmos::fields::status(receiver.data).erase(nmos::fields::debug);
-                    }
-                });
+                    const auto& transport_file = nmos::fields::transport_file(nmos::fields::endpoint_active(connection_receiver->data));
 
-                update_version(node_resources, receiver_id, nmos::make_version());
+                    slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Validating " << receiver_id_type << " against with its transport file";
+                    if (validate_receiver)
+                    {
+                        std::tie(receiver_state, receiver_state_debug) = validate_receiver(*node_receiver, transport_file);
+                    }
+                }
+
+                if (nmos::fields::state(nmos::fields::status(streamcompatibility_receiver->data)) != receiver_state.name)
+                {
+                    set_receiver_status(node_resources, streamcompatibility_resources, receiver_id, receiver_state, receiver_state_debug, gate);
+                }
+
+                return receiver_state;
             }
-
-            return receiver_state;
         }
 
         void streamcompatibility_behaviour_thread(nmos::node_model& model, details::streamcompatibility_sender_validator validate_sender_resources, details::streamcompatibility_receiver_validator validate_receiver, slog::base_gate& gate)
@@ -180,7 +152,7 @@ namespace nmos
                 if (model.shutdown) break;
 
                 // find Senders with recently updated IS-11 properties, associated Flow or Source
-                auto streamcompatibility_senders_ids = get_resources_ids(streamcompatibility_resources, nmos::types::sender);
+                auto streamcompatibility_senders_ids = details::get_resources_ids(streamcompatibility_resources, nmos::types::sender);
                 for (const nmos::id& sender_id : streamcompatibility_senders_ids)
                 {
                     const std::pair<nmos::id, nmos::type> sender_id_type{ sender_id, nmos::types::sender };
@@ -208,7 +180,7 @@ namespace nmos
                             slog::log<slog::severities::info>(gate, SLOG_FLF) << "The " << sender_id_type << ", its Flow, or its Source has been updated recently, and now's the time to update its IS-11 status.";
 
                             // update sender status against sender constraints
-                            const auto sender_state = update_sender_status(model, sender_id, validate_sender_resources, gate);
+                            const auto sender_state = details::update_sender_status(model, sender_id, validate_sender_resources, gate);
 
                             // `At any time if State of an active Sender becomes active_constraints_violation, the Sender MUST become inactive. An inactive Sender in this state MUST NOT allow activations.`
                             // See https://specs.amwa.tv/is-11/branches/v1.0.x/docs/Behaviour_-_Server_Side.html#preventing-restrictions-violation
@@ -240,7 +212,7 @@ namespace nmos
                 }
 
                 // find IS-11 Receivers with recently updated "caps" to check whether the active transport file still satisfies them
-                auto streamcompatibility_receivers_ids = get_resources_ids(streamcompatibility_resources, nmos::types::receiver);
+                auto streamcompatibility_receivers_ids = details::get_resources_ids(streamcompatibility_resources, nmos::types::receiver);
                 for (const nmos::id& receiver_id : streamcompatibility_receivers_ids)
                 {
                     const std::pair<nmos::id, nmos::type> receiver_id_type{ receiver_id, nmos::types::receiver };
@@ -256,7 +228,7 @@ namespace nmos
                             slog::log<slog::severities::info>(gate, SLOG_FLF) << "The " << receiver_id_type << " has been updated recently, and now's the time to update its IS-11 status.";
 
                             // update receiver status against receiver constraints
-                            const auto receiver_state = update_receiver_status(model, receiver_id, validate_receiver, gate);
+                            const auto receiver_state = details::update_receiver_status(model, receiver_id, validate_receiver, gate);
 
                             // `At any time if State of an active Receiver becomes non_compliant_stream, the Receiver SHOULD become inactive. An inactive Receiver in this state SHOULD NOT allow activations.`
                             // See https://specs.amwa.tv/is-11/branches/v1.0.x/docs/Behaviour_-_Server_Side.html#preventing-restrictions-violation

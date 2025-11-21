@@ -1751,7 +1751,7 @@ void node_implementation_run(nmos::node_model& model, nmos::experimental::contro
                 const auto& state = *(states.begin() + (std::min)(std::geometric_distribution<size_t>()(*events_engine), states.size() - 1));
 
                 slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Changing IS-11 sender: " << sender_id << " status to " << state.name;
-                nmos::experimental::set_sender_status(model.streamcompatibility_resources, model.node_resources, sender_id, state, gate);
+                nmos::experimental::set_sender_status(model.node_resources, model.streamcompatibility_resources, sender_id, state, {}, gate);
             }
 
             model.notify();

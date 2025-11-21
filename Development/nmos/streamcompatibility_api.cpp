@@ -92,7 +92,7 @@ namespace nmos
             }
 
             // it's expected that model write lock is already obtained and an input with the input_id exists
-            void update_effective_edid(nmos::node_model& model, const streamcompatibility_effective_edid_setter& effective_edid_setter, const nmos::id& input_id)
+            void update_effective_edid(nmos::resources& node_resources, nmos::resources& streamcompatibility_resources, const streamcompatibility_effective_edid_setter& effective_edid_setter, const nmos::id& input_id)
             {
                 boost::variant<utility::string_t, web::uri> effective_edid;
 
@@ -101,7 +101,7 @@ namespace nmos
 
                 utility::string_t updated_timestamp{ nmos::make_version() };
 
-                modify_resource(model.streamcompatibility_resources, input_id, [&effective_edid, updated_timestamp](nmos::resource& input)
+                modify_resource(streamcompatibility_resources, input_id, [&effective_edid, updated_timestamp](nmos::resource& input)
                 {
                     input.data[nmos::fields::endpoint_effective_edid] = boost::apply_visitor(edid_file_visitor(), effective_edid);
 
@@ -109,21 +109,33 @@ namespace nmos
                 });
 
                 const std::pair<nmos::id, nmos::type> id_type{ input_id, nmos::types::input };
-                auto resource = find_resource(model.streamcompatibility_resources, id_type);
+                auto input = find_resource(streamcompatibility_resources, id_type);
 
-                // hmmmmmmmmm, to fix
-                // `When properties of any Input is changed, then the version attribute of the relevant IS-04 Device MUST be incremented. Inputs identify the corresponding Devices via the device_id property.`
+                // `If the Effective EDID for the Input changes and it is associated with any Senders, then all of the Senders in question MUST update their versions`
+                // See https://specs.amwa.tv/is-11/branches/v1.0.x/docs/Behaviour_-_Server_Side.html#effective-edid
+                const auto& sender_ids = nmos::fields::senders(input->data);
+                update_version(node_resources,
+                    boost::copy_range<std::set<nmos::id>>(sender_ids | boost::adaptors::transformed([&node_resources](const web::json::value& sender_id) {return sender_id.as_string(); })),
+                    updated_timestamp);
+
+                // `When properties of any Input/Output are changed, then the version attribute of the relevant IS-04 Device MUST be incremented.
+                // Inputs/Outputs identify the corresponding Devices via the device_id property.`
                 // See https://specs.amwa.tv/is-11/branches/v1.0.x/docs/Interoperability.html#version-increments
-                update_version(model.node_resources, nmos::fields::senders(resource->data), updated_timestamp);
+                const auto device_ids = boost::copy_range<std::set<nmos::id>>(sender_ids | boost::adaptors::transformed([&node_resources](const web::json::value& sender_id)
+                    {
+                        auto sender = find_resource(node_resources, { sender_id.as_string(), nmos::types::sender });
+                        return (node_resources.end() != sender && sender->has_data()) ? nmos::fields::device_id(sender->data) : nmos::id{};
+                    }));
+                update_version(node_resources, device_ids, updated_timestamp);
             }
 
             // it's expected that model write lock is already obtained and IS-11 sender exists
-            void set_active_constraints(nmos::node_model& model, const nmos::id& sender_id, const web::json::value& constraints, const web::json::value& intersection, const streamcompatibility_effective_edid_setter& effective_edid_setter)
+            void set_active_constraints(nmos::resources& node_resources, nmos::resources& streamcompatibility_resources, const nmos::id& sender_id, const web::json::value& constraints, const web::json::value& intersection, const streamcompatibility_effective_edid_setter& effective_edid_setter)
             {
                 const std::pair<nmos::id, nmos::type> sender_id_type{ sender_id, nmos::types::sender };
-                auto resource = find_resource(model.streamcompatibility_resources, sender_id_type);
-                auto matching_resource = find_resource(model.node_resources, sender_id_type);
-                if (model.node_resources.end() == matching_resource)
+                auto resource = find_resource(streamcompatibility_resources, sender_id_type);
+                auto matching_resource = find_resource(node_resources, sender_id_type);
+                if (node_resources.end() == matching_resource)
                 {
                     throw std::logic_error("matching IS-04 resource not found");
                 }
@@ -134,10 +146,10 @@ namespace nmos
                     for (const auto& input_id : nmos::fields::inputs(resource->data))
                     {
                         const std::pair<nmos::id, nmos::type> input_id_type{ input_id.as_string(), nmos::types::input };
-                        auto input = find_resource(model.streamcompatibility_resources, input_id_type);
-                        if (model.streamcompatibility_resources.end() != input)
+                        auto input = find_resource(streamcompatibility_resources, input_id_type);
+                        if (streamcompatibility_resources.end() != input)
                         {
-                            if (!all_resources_exist(model.node_resources, nmos::fields::senders(input->data), nmos::types::sender))
+                            if (!all_resources_exist(node_resources, nmos::fields::senders(input->data), nmos::types::sender))
                             {
                                 throw std::logic_error("associated IS-04 sender not found");
                             }
@@ -152,7 +164,7 @@ namespace nmos
                 utility::string_t updated_timestamp{ nmos::make_version() };
 
                 // Update Active Constraints in streamcompatibility_resources
-                modify_resource(model.streamcompatibility_resources, sender_id, [&constraints, &intersection, &updated_timestamp](nmos::resource& sender)
+                modify_resource(streamcompatibility_resources, sender_id, [&constraints, &intersection, &updated_timestamp](nmos::resource& sender)
                 {
                     sender.data[nmos::fields::intersection_of_caps_and_constraints] = intersection;
                     sender.data[nmos::fields::endpoint_active_constraints] = make_streamcompatibility_active_constraints_endpoint(constraints);
@@ -160,18 +172,20 @@ namespace nmos
                     sender.data[nmos::fields::version] = web::json::value::string(updated_timestamp);
                 });
 
-                update_version(model.node_resources, sender_id, updated_timestamp);
+                // `When Active Constraints of Sender are modified, then the version attribute of the relevant IS-04 Sender MUST be incremented.`
+                // See https://specs.amwa.tv/is-11/branches/v1.0.x/docs/Interoperability.html#version-increments
+                update_version(node_resources, sender_id, updated_timestamp);
 
-                // Update IS-11 input effective EDID, which is provided by the application code
+                // hmmmm, should the version of the associated Device be incremented?
+
+                // Update Input effective EDID, which is provided by the application code
                 if (effective_edid_setter)
                 {
                     for (const auto& input_id : nmos::fields::inputs(resource->data))
                     {
-                        details::update_effective_edid(model, effective_edid_setter, input_id.as_string());
+                        details::update_effective_edid(node_resources, streamcompatibility_resources, effective_edid_setter, input_id.as_string());
                     }
                 }
-
-                model.notify();
             }
         }
 
@@ -605,9 +619,9 @@ namespace nmos
                 auto lock = model.read_lock();
                 auto& resources = model.streamcompatibility_resources;
 
-                const string_t inputId = parameters.at(nmos::patterns::resourceId.name);
+                const string_t input_id = parameters.at(nmos::patterns::resourceId.name);
 
-                const std::pair<nmos::id, nmos::type> id_type{ inputId, nmos::types::input };
+                const std::pair<nmos::id, nmos::type> id_type{ input_id, nmos::types::input };
 
                 auto resource = find_resource(resources, id_type);
                 if (resources.end() != resource)
@@ -618,31 +632,31 @@ namespace nmos
                     {
                         if (!nmos::fields::temporarily_locked(endpoint_base_edid))
                         {
-                            return nmos::details::extract_istream_vector(req, gate).then([&model, req, res, parameters, inputId, adjust_to_caps, validate_base_edid, effective_edid_setter, gate](std::vector<unsigned char> body) mutable
+                            return nmos::details::extract_istream_vector(req, gate).then([&model, req, res, parameters, input_id, adjust_to_caps, validate_base_edid, effective_edid_setter, gate](std::vector<unsigned char> body) mutable
                             {
                                 auto lock = model.write_lock();
-                                auto& streamcompatibilityResources = model.streamcompatibility_resources;
-                                auto& nodeResources = model.node_resources;
+                                auto& streamcompatibility_resources = model.streamcompatibility_resources;
+                                auto& node_resources = model.node_resources;
 
-                                const std::pair<nmos::id, nmos::type> id_type{ inputId, nmos::types::input };
+                                const std::pair<nmos::id, nmos::type> id_type{ input_id, nmos::types::input };
 
-                                const utility::string_t baseEdidBinary{ body.begin(), body.end() };
+                                const utility::string_t base_edid_binary{ body.begin(), body.end() };
 
-                                auto streamcompatibilityResource = find_resource(streamcompatibilityResources, id_type);
+                                auto streamcompatibility_resource = find_resource(streamcompatibility_resources, id_type);
 
-                                slog::log<slog::severities::info>(gate, SLOG_FLF) << "PUT Base EDID binary requested for " << id_type << " with binary data size " << baseEdidBinary.size();
+                                slog::log<slog::severities::info>(gate, SLOG_FLF) << "PUT Base EDID binary requested for " << id_type << " with binary data size " << base_edid_binary.size();
 
                                 // Notify the application code for the Base EDID modification request
                                 // It's thrown to indicate there are EDID failures (e.g. EDID validation failure)
                                 if (validate_base_edid)
                                 {
-                                    validate_base_edid(inputId, baseEdidBinary);
+                                    validate_base_edid(input_id, base_edid_binary);
                                 }
 
                                 // Pre-check for resources existence before Base EDID modified and effective_edid_setter executed
                                 if (effective_edid_setter)
                                 {
-                                    if (!details::all_resources_exist(nodeResources, nmos::fields::senders(streamcompatibilityResource->data), nmos::types::sender))
+                                    if (!details::all_resources_exist(node_resources, nmos::fields::senders(streamcompatibility_resource->data), nmos::types::sender))
                                     {
                                         throw std::logic_error("associated IS-04 sender not found");
                                     }
@@ -651,22 +665,35 @@ namespace nmos
                                 utility::string_t updated_timestamp{ nmos::make_version() };
 
                                 // Update Base EDID in streamcompatibility_resources
-                                modify_resource(streamcompatibilityResources, inputId, [&baseEdidBinary, &updated_timestamp, &adjust_to_caps](nmos::resource& input)
+                                modify_resource(streamcompatibility_resources, input_id, [&base_edid_binary, &updated_timestamp, &adjust_to_caps](nmos::resource& input)
                                 {
-                                    input.data[nmos::fields::endpoint_base_edid] = make_streamcompatibility_edid_endpoint(baseEdidBinary);
+                                    input.data[nmos::fields::endpoint_base_edid] = make_streamcompatibility_edid_endpoint(base_edid_binary);
                                     input.data[nmos::fields::adjust_to_caps] = value::boolean(adjust_to_caps);
 
                                     input.data[nmos::fields::version] = web::json::value::string(updated_timestamp);
                                 });
 
-                                // hmmmmmm,
-                                // `When properties of any Input/Output are changed, then the version attribute of the relevant IS-04 Device MUST be incremented. Inputs/Outputs identify the corresponding Devices via the device_id property.`
-                                update_version(nodeResources, nmos::fields::senders(streamcompatibilityResource->data), updated_timestamp);
+                                // `If the Base EDID for an Input changes, then all Senders associated with this Input MUST update their versions`
+                                // See https://specs.amwa.tv/is-11/branches/v1.0.x/docs/Behaviour_-_Server_Side.html#base-edid
+                                const auto& sender_ids = nmos::fields::senders(streamcompatibility_resource->data);
+                                update_version(node_resources,
+                                    boost::copy_range<std::set<nmos::id>>(sender_ids | boost::adaptors::transformed([&node_resources](const web::json::value& sender_id) {return sender_id.as_string(); })),
+                                    updated_timestamp);
 
-                                // Update IS-11 input effective EDID, which is provided by the application code
+                                // `When properties of any Input/Output are changed, then the version attribute of the relevant IS-04 Device MUST be incremented.
+                                // Inputs/Outputs identify the corresponding Devices via the device_id property.`
+                                // See https://specs.amwa.tv/is-11/branches/v1.0.x/docs/Interoperability.html#version-increments
+                                const auto device_ids = boost::copy_range<std::set<nmos::id>>(sender_ids | boost::adaptors::transformed([&node_resources](const web::json::value& sender_id)
+                                    {
+                                        auto sender = find_resource(node_resources, { sender_id.as_string(), nmos::types::sender });
+                                        return (node_resources.end() != sender && sender->has_data()) ? nmos::fields::device_id(sender->data) : nmos::id{};
+                                    }));
+                                update_version(node_resources, device_ids, updated_timestamp);
+
+                                // Update Input effective EDID, which is provided by the application code
                                 if (effective_edid_setter)
                                 {
-                                    details::update_effective_edid(model, effective_edid_setter, inputId);
+                                    details::update_effective_edid(node_resources, streamcompatibility_resources, effective_edid_setter, input_id);
                                 }
 
                                 model.notify();
@@ -700,15 +727,16 @@ namespace nmos
             {
                 nmos::api_gate gate(gate_, req, parameters);
                 auto lock = model.write_lock();
-                auto& resources = model.streamcompatibility_resources;
+                auto& streamcompatibility_resources = model.streamcompatibility_resources;
+                auto& node_resources = model.node_resources;
 
                 const string_t resourceId = parameters.at(nmos::patterns::resourceId.name);
 
                 const std::pair<nmos::id, nmos::type> id_type{ resourceId, nmos::types::input };
-                auto resource = find_resource(resources, id_type);
-                if (resources.end() != resource)
+                auto streamcompatibility_resource = find_resource(streamcompatibility_resources, id_type);
+                if (streamcompatibility_resources.end() != streamcompatibility_resource)
                 {
-                    auto& endpoint_base_edid = nmos::fields::endpoint_base_edid(resource->data);
+                    auto& endpoint_base_edid = nmos::fields::endpoint_base_edid(streamcompatibility_resource->data);
 
                     if (!endpoint_base_edid.is_null())
                     {
@@ -725,7 +753,7 @@ namespace nmos
                             // Pre-check for resources existence before Base EDID modified and effective_edid_setter executed
                             if (effective_edid_setter)
                             {
-                                if (!details::all_resources_exist(model.node_resources, nmos::fields::senders(resource->data), nmos::types::sender))
+                                if (!details::all_resources_exist(model.node_resources, nmos::fields::senders(streamcompatibility_resource->data), nmos::types::sender))
                                 {
                                     throw std::logic_error("associated IS-04 sender not found");
                                 }
@@ -733,19 +761,34 @@ namespace nmos
 
                             utility::string_t updated_timestamp{ nmos::make_version() };
 
-                            modify_resource(resources, resourceId, [&updated_timestamp](nmos::resource& input)
+                            modify_resource(streamcompatibility_resources, resourceId, [&updated_timestamp](nmos::resource& input)
                             {
                                 input.data[nmos::fields::endpoint_base_edid] = make_streamcompatibility_dummy_edid_endpoint();
 
                                 input.data[nmos::fields::version] = web::json::value::string(updated_timestamp);
                             });
 
-                            update_version(model.node_resources, nmos::fields::senders(resource->data), updated_timestamp);
+                            // `If the Base EDID for an Input changes, then all Senders associated with this Input MUST update their versions`
+                            // See https://specs.amwa.tv/is-11/branches/v1.0.x/docs/Behaviour_-_Server_Side.html#base-edid
+                            const auto& sender_ids = nmos::fields::senders(streamcompatibility_resource->data);
+                            update_version(node_resources,
+                                boost::copy_range<std::set<nmos::id>>(sender_ids | boost::adaptors::transformed([&node_resources](const web::json::value& sender_id) {return sender_id.as_string(); })),
+                                updated_timestamp);
 
-                            // Update IS-11 input effective EDID, which is provided by the application code
+                            // `When properties of any Input/Output are changed, then the version attribute of the relevant IS-04 Device MUST be incremented.
+                            // Inputs/Outputs identify the corresponding Devices via the device_id property.`
+                            // See https://specs.amwa.tv/is-11/branches/v1.0.x/docs/Interoperability.html#version-increments
+                            const auto device_ids = boost::copy_range<std::set<nmos::id>>(sender_ids | boost::adaptors::transformed([&node_resources](const web::json::value& sender_id)
+                                {
+                                    auto sender = find_resource(node_resources, { sender_id.as_string(), nmos::types::sender });
+                                    return (node_resources.end() != sender && sender->has_data()) ? nmos::fields::device_id(sender->data) : nmos::id{};
+                                }));
+                            update_version(node_resources, device_ids, updated_timestamp);
+
+                            // Update Input effective EDID, which is provided by the application code
                             if (effective_edid_setter)
                             {
-                                details::update_effective_edid(model, effective_edid_setter, resourceId);
+                                details::update_effective_edid(node_resources, streamcompatibility_resources, effective_edid_setter, resourceId);
                             }
 
                             model.notify();
@@ -820,7 +863,10 @@ namespace nmos
 
                                 if (can_adhere)
                                 {
-                                    details::set_active_constraints(model, resourceId, nmos::fields::constraint_sets(data), intersection, effective_edid_setter);
+                                    details::set_active_constraints(model.node_resources, model.streamcompatibility_resources, resourceId, nmos::fields::constraint_sets(data), intersection, effective_edid_setter);
+
+                                    model.notify();
+
                                     set_reply(res, status_codes::OK, data);
                                 }
                             }
@@ -870,7 +916,9 @@ namespace nmos
 
                         // hmm, test active_constraints_handler before use
                         active_constraints_handler(*streamcompatibility_sender, active_constraints, intersection);
-                        details::set_active_constraints(model, resourceId, nmos::fields::constraint_sets(active_constraints), intersection, effective_edid_setter);
+                        details::set_active_constraints(model.node_resources, model.streamcompatibility_resources, resourceId, nmos::fields::constraint_sets(active_constraints), intersection, effective_edid_setter);
+
+                        model.notify();
 
                         set_reply(res, status_codes::OK, nmos::fields::active_constraint_sets(nmos::fields::endpoint_active_constraints(streamcompatibility_sender->data)));
                     }
