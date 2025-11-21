@@ -94,7 +94,7 @@ namespace nmos
                     {
                         nmos::fields::status(sender.data)[nmos::fields::debug] = value::string(sender_state_debug);
                     }
-                    else if (!nmos::fields::debug(nmos::fields::status(sender.data)).empty())
+                    else if (nmos::fields::status(sender.data).has_field(nmos::fields::debug) && !nmos::fields::debug(nmos::fields::status(sender.data)).empty())
                     {
                         nmos::fields::status(sender.data).erase(nmos::fields::debug);
                     }
@@ -150,7 +150,7 @@ namespace nmos
                     {
                         nmos::fields::status(receiver.data)[nmos::fields::debug] = value::string(receiver_state_debug);
                     }
-                    else if (!nmos::fields::debug(nmos::fields::status(receiver.data)).empty())
+                    else if (nmos::fields::status(receiver.data).has_field(nmos::fields::debug) && !nmos::fields::debug(nmos::fields::status(receiver.data)).empty())
                     {
                         nmos::fields::status(receiver.data).erase(nmos::fields::debug);
                     }
