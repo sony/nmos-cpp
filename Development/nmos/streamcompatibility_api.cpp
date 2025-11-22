@@ -643,14 +643,25 @@ namespace nmos
                                 const utility::string_t base_edid_binary{ body.begin(), body.end() };
 
                                 auto streamcompatibility_resource = find_resource(streamcompatibility_resources, id_type);
+                                if (streamcompatibility_resources.end() == streamcompatibility_resource)
+                                {
+                                    // should never happen, just in case
+                                    throw std::logic_error("associated IS-11 input not found");
+                                }
 
                                 slog::log<slog::severities::info>(gate, SLOG_FLF) << "PUT Base EDID binary requested for " << id_type << " with binary data size " << base_edid_binary.size();
 
                                 // Notify the application code for the Base EDID modification request
-                                // It's thrown to indicate there are EDID failures (e.g. EDID validation failure)
+                                // It throws exception to indicate there are EDID failures (e.g. EDID validation failure)
                                 if (validate_base_edid)
                                 {
-                                    validate_base_edid(input_id, base_edid_binary);
+                                    const auto result = validate_base_edid(input_id, base_edid_binary);
+                                    if (!result.first)
+                                    {
+                                        slog::log<slog::severities::error>(gate, SLOG_FLF) << "Rejecting PUT Base EDID request for " << id_type << " due to " << result.second;
+                                        set_error_reply(res, status_codes::BadRequest, {}, result.second);
+                                        return true;
+                                    }
                                 }
 
                                 // Pre-check for resources existence before Base EDID modified and effective_edid_setter executed
@@ -705,13 +716,13 @@ namespace nmos
                         }
                         else
                         {
-                            slog::log<slog::severities::warning>(gate, SLOG_FLF) << "Rejecting PUT Base EDID request for " << id_type << " due to operation is locked";
+                            slog::log<slog::severities::error>(gate, SLOG_FLF) << "Rejecting PUT Base EDID request for " << id_type << " due to operation is locked";
                             set_error_reply(res, status_codes::Locked);
                         }
                     }
                     else
                     {
-                        slog::log<slog::severities::warning>(gate, SLOG_FLF) << "Rejecting PUT Base EDID request for " << id_type << " due to this input not configured to allow it";
+                        slog::log<slog::severities::error>(gate, SLOG_FLF) << "Rejecting PUT Base EDID request for " << id_type << " due to this input not configured to allow it";
                         set_error_reply(res, status_codes::MethodNotAllowed);
                     }
                 }
@@ -742,12 +753,19 @@ namespace nmos
                     {
                         if (!nmos::fields::temporarily_locked(endpoint_base_edid))
                         {
-                            slog::log<slog::severities::info>(gate, SLOG_FLF) << "Delete " << id_type << " Base EDID";
+                            slog::log<slog::severities::info>(gate, SLOG_FLF) << "DELETE Base EDID binary requested for " << id_type;
 
-                            // Notify the application code for the Base EDID modification request. (delete Base EDID)
+                            // Notify the application code for the Base EDID deletion request
                             if (validate_base_edid)
                             {
-                                validate_base_edid(resourceId, {});
+                                const auto result = validate_base_edid(resourceId, {});
+                                if (!result.first)
+                                {
+                                    slog::log<slog::severities::error>(gate, SLOG_FLF) << "Rejecting DELETE Base EDID request for " << id_type << " due to " << result.second;
+                                    set_error_reply(res, status_codes::BadRequest, {}, result.second);
+
+                                    return pplx::task_from_result(true);
+                                }
                             }
 
                             // Pre-check for resources existence before Base EDID modified and effective_edid_setter executed
@@ -797,13 +815,13 @@ namespace nmos
                         }
                         else
                         {
-                            slog::log<slog::severities::warning>(gate, SLOG_FLF) << "Rejecting DELETE Base EDID request for " << id_type << " due to operation is locked";
+                            slog::log<slog::severities::error>(gate, SLOG_FLF) << "Rejecting DELETE Base EDID request for " << id_type << " due to operation is locked";
                             set_error_reply(res, status_codes::Locked);
                         }
                     }
                     else
                     {
-                        slog::log<slog::severities::warning>(gate, SLOG_FLF) << "Rejecting DELETE Base EDID request for " << id_type << " due to this input not configured to allow it";
+                        slog::log<slog::severities::error>(gate, SLOG_FLF) << "Rejecting DELETE Base EDID request for " << id_type << " due to this input not configured to allow it";
                         set_error_reply(res, status_codes::MethodNotAllowed);
                     }
                 }

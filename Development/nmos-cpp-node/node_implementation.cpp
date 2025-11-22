@@ -2064,26 +2064,27 @@ nmos::channelmapping_activation_handler make_node_implementation_channelmapping_
     };
 }
 
-// Example Stream Compatibility Management API callback to perform application-specific validation of the Base EDID update during a PUT /edid/base request
+// Example Stream Compatibility Management API callback to perform application-specific validation of the Base EDID update during a PUT /edid/base or DEL /edid/base request
 // Note: Since decoding the EDID does not formed part of the IS-11 specification, no validation is implemented for the reference example.
 // i.e. it doesn't reject an invalid EDIDs.
 nmos::experimental::details::streamcompatibility_base_edid_handler make_node_implementation_streamcompatibility_base_edid_handler(slog::base_gate& gate)
 {
-    // should decode the EDID
     return [&gate](const nmos::id& input_id, const bst::optional<utility::string_t>& base_edid_binary)
     {
         if (base_edid_binary)
         {
-            slog::log<slog::severities::info>(gate, SLOG_FLF) << "Base EDID updated for Input " << input_id;
+            slog::log<slog::severities::info>(gate, SLOG_FLF) << "validate the Base EDID for input: " << input_id;
         }
         else
         {
-            slog::log<slog::severities::info>(gate, SLOG_FLF) << "Base EDID deleted for Input " << input_id;
+            slog::log<slog::severities::info>(gate, SLOG_FLF) << "delete Base EDID for input: " << input_id;
         }
+        return std::make_pair<bool, utility::string_t>( true, U("succeeded") );
     };
 }
 
-// Example Stream Compatibility Management API callback to update Effective EDID
+// Example Stream Compatibility Management API callback to update Effective EDID for the specified IS-11 Input
+// during PUT /edid/base, DEL /edid/base, PUT /constraints/active or DEL /constraints/active request
 nmos::experimental::details::streamcompatibility_effective_edid_setter make_node_implementation_streamcompatibility_effective_edid_setter(const nmos::resources& streamcompatibility_resources, slog::base_gate& gate)
 {
     return [&streamcompatibility_resources, &gate](const nmos::id& input_id, boost::variant<utility::string_t, web::uri>& effective_edid)

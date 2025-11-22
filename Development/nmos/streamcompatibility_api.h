@@ -19,10 +19,9 @@ namespace nmos
         {
             // a streamcompatibility_base_edid_handler is a notification that the Base EDID for the specified IS-11 input has received the modification request (PUT or DELETEd)
             // it can be used to perform any final validation of the specified Base EDID
-            // when PUT, it may throw web::json::json_exception, which will be mapped to a 400 Bad Request status code with NMOS error "debug" information including the exception message
-            // or std::runtime_error, which will be mapped to a 500 Internal Error status code with NMOS error "debug" information including the exception message
-            // when DELETE, this callback should not throw exceptions, as the Base EDID will already have been changed and those changes will not be rolled back
-            typedef std::function<void(const nmos::id& input_id, const bst::optional<utility::string_t>& base_edid)> streamcompatibility_base_edid_handler;
+            // the validation result is returned along with the error string
+            // this callback should not throw exceptions
+            typedef std::function<std::pair<bool, utility::string_t>(const nmos::id& input_id, const bst::optional<utility::string_t>& base_edid)> streamcompatibility_base_edid_handler;
 
             // a streamcompatibility_active_constraints_handler is a notification that the Active Constraints for the specified IS-11 sender has changed (PUT or DELETEd)
             // it can be used to perform any final validation of the specified Active Constraints
