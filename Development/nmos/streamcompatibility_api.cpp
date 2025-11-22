@@ -137,7 +137,7 @@ namespace nmos
                 auto matching_resource = find_resource(node_resources, sender_id_type);
                 if (node_resources.end() == matching_resource)
                 {
-                    throw std::logic_error("matching IS-04 resource not found");
+                    throw std::logic_error("matching IS-04 sender not found");
                 }
 
                 // Pre-check for resources existence before Active Constraints modified and effective_edid_setter executed
@@ -860,22 +860,25 @@ namespace nmos
                                 return std::unordered_set<utility::string_t>::value_type{ param_constraint.as_string() };
                             }));
 
+                            // validate the requested constraint sets against the supported constraint sets
                             if (details::validate_constraint_sets(nmos::fields::constraint_sets(data).as_array(), supported_param_constraints))
                             {
-                                slog::log<slog::severities::info>(gate, SLOG_FLF) << "Update " << id_type << " Active Constraints: " << nmos::fields::constraint_sets(data).serialize();
+                                slog::log<slog::severities::info>(gate, SLOG_FLF) << "PUT " << id_type << " Active Constraints requested: " << nmos::fields::constraint_sets(data).serialize();
 
                                 bool can_adhere = true;
                                 web::json::value intersection = web::json::value::array();
 
-                                // sender capabilities against active constraints, returns the intersection of capabilities constraints (hmmmmm, may throw!!!!)
+                                // Notify the application code for the Sender Active Constraints modification request, it returns the intersection of the capabilities constraints
+                                // It throws exception to indicate there are failures
                                 if (active_constraints_handler)
                                 {
-                                    if (!active_constraints_handler(*streamcompatibility_sender, data, intersection))
+                                    const auto result = active_constraints_handler(*streamcompatibility_sender, data, intersection);
+                                    if (!result.first)
                                     {
                                         can_adhere = false;
 
-                                        slog::log<slog::severities::warning>(gate, SLOG_FLF) << "Rejecting PUT Active Constraints request for " << id_type << " due to sender can't adhere to these Constraints: " << nmos::fields::constraint_sets(data).serialize();
-                                        set_error_reply(res, status_codes::UnprocessableEntity);
+                                        slog::log<slog::severities::error>(gate, SLOG_FLF) << "Rejecting PUT Active Constraints request for " << id_type << " due to sender can't adhere to these Constraints: " << nmos::fields::constraint_sets(data).serialize();
+                                        set_error_reply(res, status_codes::UnprocessableEntity, {}, result.second);
                                     }
                                 }
 
@@ -890,12 +893,13 @@ namespace nmos
                             }
                             else
                             {
-                                set_error_reply(res, status_codes::BadRequest, U("The requested Constraint Set uses Parameter Constraints unsupported by this Sender"));
+                                slog::log<slog::severities::error>(gate, SLOG_FLF) << "Rejecting PUT Active Constraints request for " << id_type << " due to unsupported Parameter Constraint URN used in any of the Constraints: " << nmos::fields::constraint_sets(data).serialize();
+                                set_error_reply(res, status_codes::BadRequest, U("The requested constraint set includes parameter constraints that this sender does not support"));
                             }
                         }
                         else
                         {
-                            slog::log<slog::severities::warning>(gate, SLOG_FLF) << "Rejecting PUT Active Constraints request for " << id_type << " due to operation is locked";
+                            slog::log<slog::severities::error>(gate, SLOG_FLF) << "Rejecting PUT Active Constraints request for " << id_type << " due to operation is locked";
                             set_error_reply(res, status_codes::Locked);
                         }
                     }
@@ -925,16 +929,26 @@ namespace nmos
 
                     if (!nmos::fields::temporarily_locked(endpoint_active_constraints))
                     {
-                        slog::log<slog::severities::info>(gate, SLOG_FLF) << "Delete " << id_type << " Active Constraints";
+                        slog::log<slog::severities::info>(gate, SLOG_FLF) << "DELETE " << id_type << " Active Constraints requested";
 
-                        const auto active_constraints = web::json::value_of({
+                        // create an empty constraint_sets
+                        const auto empty_active_constraints = web::json::value_of({
                             { nmos::fields::constraint_sets, web::json::value::array() }
                         });
-                        web::json::value intersection = web::json::value::array();
+                        web::json::value dummy_intersection = web::json::value::array();
 
-                        // hmm, test active_constraints_handler before use
-                        active_constraints_handler(*streamcompatibility_sender, active_constraints, intersection);
-                        details::set_active_constraints(model.node_resources, model.streamcompatibility_resources, resourceId, nmos::fields::constraint_sets(active_constraints), intersection, effective_edid_setter);
+                        // Notify the application code for the Sender Active Constraints deletion request, it returns the intersection of the capabilities constraints is ignored
+                        // It throws exception to indicate there are failures
+                        if (active_constraints_handler)
+                        {
+                            const auto result = active_constraints_handler(*streamcompatibility_sender, empty_active_constraints, dummy_intersection);
+                            if (!result.first)
+                            {
+                                slog::log<slog::severities::warning>(gate, SLOG_FLF) << "Rejecting DELETE Active Constraints request for " << id_type << " due to " << result.second;
+                                throw std::runtime_error(utility::us2s(result.second));
+                            }
+                        }
+                        details::set_active_constraints(model.node_resources, model.streamcompatibility_resources, resourceId, nmos::fields::constraint_sets(empty_active_constraints), {}, effective_edid_setter);
 
                         model.notify();
 
@@ -942,7 +956,7 @@ namespace nmos
                     }
                     else
                     {
-                        slog::log<slog::severities::warning>(gate, SLOG_FLF) << "Rejecting DELETE Active Constraints request for " << id_type << " due to operation is locked";
+                        slog::log<slog::severities::error>(gate, SLOG_FLF) << "Rejecting DELETE Active Constraints request for " << id_type << " due to operation is locked";
                         set_error_reply(res, status_codes::Locked);
                     }
                 }

@@ -2163,9 +2163,8 @@ nmos::experimental::details::streamcompatibility_effective_edid_setter make_node
     };
 }
 
-// Example Stream Compatibility Management API callback to perform application-specific sender capabilities against active constraints, returns the intersection of capabilities constraints (may throw)
-// it may throw web::json::json_exception, which will be mapped to a 400 Bad Request status code with NMOS error "debug" information including the exception message
-// or std::runtime_error, which will be mapped to a 500 Internal Error status code with NMOS error "debug" information including the exception message
+// Example Stream Compatibility Management API callback to perform application-specific sender capabilities against active constraints,
+// during PUT /constraints/active or DEL /constraints/active request, this callback returns the intersection of capabilities constraints via the callback parameters
 nmos::experimental::details::streamcompatibility_active_constraints_handler make_node_implementation_streamcompatibility_active_constraints_handler(const nmos::node_model& model, slog::base_gate& gate)
 {
     using web::json::value_of;
@@ -2218,14 +2217,19 @@ nmos::experimental::details::streamcompatibility_active_constraints_handler make
         if (web::json::empty(constraint_sets))
         {
             intersection = web::json::value::array();
-            return true;
+            return std::make_pair<bool, utility::string_t>(true, U("Succeeded"));
         }
 
         const auto& sender_id = streamcompatibility_sender.id;
         const bool video_found = video_sender_ids.end() != boost::range::find(video_sender_ids, sender_id);
         const bool audio_found = audio_sender_ids.end() != boost::range::find(audio_sender_ids, sender_id);
 
-        const auto& sender_capabilities_ = video_found ? video_sender_capabilities : audio_found ? audio_sender_capabilities : throw std::logic_error("No Sender Capabilities found");
+        const auto& sender_capabilities_ = video_found ? video_sender_capabilities : audio_found ? audio_sender_capabilities : web::json::value{};
+        if (sender_capabilities_.is_null())
+        {
+            return std::make_pair<bool, utility::string_t>(false, U("No Sender Capabilities found"));
+        }
+
         const auto& sender_capabilities = sender_capabilities_.as_array();
 
         std::vector<web::json::value> v;
@@ -2245,12 +2249,12 @@ nmos::experimental::details::streamcompatibility_active_constraints_handler make
 
         if (v.empty())
         {
-            slog::log<slog::severities::info>(gate, SLOG_FLF) << "Sender: " << sender_id << " doesn't support proposed Active Constraints: " << nmos::fields::constraint_sets(active_constraints).serialize();
-            return false;
+            slog::log<slog::severities::warning>(gate, SLOG_FLF) << "Sender: " << sender_id << " doesn't support proposed Active Constraints: " << nmos::fields::constraint_sets(active_constraints).serialize();
+            return std::make_pair<bool, utility::string_t>(false, U("Sender doesn't support proposed Active Constraints"));
         }
 
         intersection = value_from_elements(v);
-        return true;
+        return std::make_pair<bool, utility::string_t>(true, U("Succeeded"));
     };
 }
 
