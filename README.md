@@ -143,6 +143,7 @@ The implementation is designed to be extended. Development is ongoing, following
 
 Recent activity on the project (newest first):
 
+- Added support for IS-11 NMOS Stream Compatibility Management
 - Added support for IS-14 NMOS Device Configuration
 - Added support for BCP-008-01 Receiver Status Monitoring
 - Added support for BCP-008-02 Sender Status Monitoring

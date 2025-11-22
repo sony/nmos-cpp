@@ -325,7 +325,7 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
     const unsigned int delay_millis{ 0 };
 
     // it is important that the model be locked before inserting, updating or deleting a resource
-    // and that the the node behaviour thread be notified after doing so
+    // and that the node behaviour thread be notified after doing so
     const auto insert_resource_after = [&model, &lock](unsigned int milliseconds, nmos::resources& resources, nmos::resource&& resource, slog::base_gate& gate)
     {
         if (nmos::details::wait_for(model.shutdown_condition, lock, bst::chrono::milliseconds(milliseconds), [&] { return model.shutdown; })) return false;
@@ -2079,7 +2079,7 @@ nmos::experimental::details::streamcompatibility_base_edid_handler make_node_imp
         {
             slog::log<slog::severities::info>(gate, SLOG_FLF) << "delete Base EDID for input: " << input_id;
         }
-        return std::make_pair<bool, utility::string_t>( true, U("succeeded") );
+        return std::make_pair<bool, utility::string_t>( true, U("Succeeded") );
     };
 }
 

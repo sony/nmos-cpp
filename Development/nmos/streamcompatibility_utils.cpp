@@ -7,7 +7,6 @@ namespace nmos
 {
     namespace experimental
     {
-        // it's expected that write lock is already catched for the model
         void update_version(nmos::resources& resources, const nmos::id& resource_id, const utility::string_t& version)
         {
             using web::json::value;
@@ -18,7 +17,6 @@ namespace nmos
             });
         }
 
-        // it's expected that write lock is already catched for the model
         void update_version(nmos::resources& resources, const std::set<nmos::id>& resource_ids, const utility::string_t& version)
         {
             for (const auto& resource_id : resource_ids)

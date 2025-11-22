@@ -62,7 +62,6 @@ namespace nmos
                 }
             }
 
-            // it's expected that model read lock is already obtained
             bool all_resources_exist(nmos::resources& resources, const web::json::array& resource_ids, const nmos::type& type)
             {
                 for (const auto& resource_id : resource_ids)
@@ -83,11 +82,11 @@ namespace nmos
                     if (param_constraints.end() != std::find_if(param_constraints.begin(), param_constraints.end(), [&supported_param_constraints](const std::pair<utility::string_t, web::json::value>& constraint)
                     {
                         return supported_param_constraints.count(constraint.first) == 0;
-                    })) {
+                    }))
+                    {
                         return false;
                     }
                 }
-
                 return true;
             }
 
