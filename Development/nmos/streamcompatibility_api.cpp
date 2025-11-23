@@ -188,9 +188,9 @@ namespace nmos
             }
         }
 
-        web::http::experimental::listener::api_router make_unmounted_streamcompatibility_api(nmos::node_model& model, details::streamcompatibility_base_edid_handler validate_base_edid, details::streamcompatibility_effective_edid_setter effective_edid_setter, details::streamcompatibility_active_constraints_handler active_constraints_handler, slog::base_gate& gate);
+        web::http::experimental::listener::api_router make_unmounted_streamcompatibility_api(nmos::node_model& model, details::streamcompatibility_base_edid_handler validate_base_edid, details::streamcompatibility_effective_edid_setter effective_edid_setter, details::streamcompatibility_active_constraints_handler validate_active_constraints, slog::base_gate& gate);
 
-        web::http::experimental::listener::api_router make_streamcompatibility_api(nmos::node_model& model, details::streamcompatibility_base_edid_handler validate_base_edid, details::streamcompatibility_effective_edid_setter effective_edid_setter, details::streamcompatibility_active_constraints_handler active_constraints_handler, web::http::experimental::listener::route_handler validate_authorization, slog::base_gate& gate)
+        web::http::experimental::listener::api_router make_streamcompatibility_api(nmos::node_model& model, details::streamcompatibility_base_edid_handler validate_base_edid, details::streamcompatibility_effective_edid_setter effective_edid_setter, details::streamcompatibility_active_constraints_handler validate_active_constraints, web::http::experimental::listener::route_handler validate_authorization, slog::base_gate& gate)
         {
             using namespace web::http::experimental::listener::api_router_using_declarations;
 
@@ -221,12 +221,12 @@ namespace nmos
                 return pplx::task_from_result(true);
             });
 
-            streamcompatibility_api.mount(U("/x-nmos/") + nmos::patterns::streamcompatibility_api.pattern + U("/") + nmos::patterns::version.pattern, make_unmounted_streamcompatibility_api(model, validate_base_edid, effective_edid_setter, active_constraints_handler, gate));
+            streamcompatibility_api.mount(U("/x-nmos/") + nmos::patterns::streamcompatibility_api.pattern + U("/") + nmos::patterns::version.pattern, make_unmounted_streamcompatibility_api(model, validate_base_edid, effective_edid_setter, validate_active_constraints, gate));
 
             return streamcompatibility_api;
         }
 
-        web::http::experimental::listener::api_router make_unmounted_streamcompatibility_api(nmos::node_model& model, details::streamcompatibility_base_edid_handler validate_base_edid, details::streamcompatibility_effective_edid_setter effective_edid_setter, details::streamcompatibility_active_constraints_handler active_constraints_handler, slog::base_gate& gate_)
+        web::http::experimental::listener::api_router make_unmounted_streamcompatibility_api(nmos::node_model& model, details::streamcompatibility_base_edid_handler validate_base_edid, details::streamcompatibility_effective_edid_setter effective_edid_setter, details::streamcompatibility_active_constraints_handler validate_active_constraints, slog::base_gate& gate_)
         {
             using namespace web::http::experimental::listener::api_router_using_declarations;
 
@@ -832,10 +832,10 @@ namespace nmos
                 return pplx::task_from_result(true);
             });
 
-            streamcompatibility_api.support(U("/") + nmos::patterns::senderType.pattern + U("/") + nmos::patterns::resourceId.pattern + U("/constraints/active/?"), methods::PUT, [&model, validator, active_constraints_handler, effective_edid_setter, &gate_](http_request req, http_response res, const string_t&, const route_parameters& parameters)
+            streamcompatibility_api.support(U("/") + nmos::patterns::senderType.pattern + U("/") + nmos::patterns::resourceId.pattern + U("/constraints/active/?"), methods::PUT, [&model, validator, validate_active_constraints, effective_edid_setter, &gate_](http_request req, http_response res, const string_t&, const route_parameters& parameters)
             {
                 nmos::api_gate gate(gate_, req, parameters);
-                return nmos::details::extract_json(req, gate).then([&model, req, res, parameters, &validator, active_constraints_handler, effective_edid_setter, gate](value data) mutable
+                return nmos::details::extract_json(req, gate).then([&model, req, res, parameters, &validator, validate_active_constraints, effective_edid_setter, gate](value data) mutable
                 {
                     const nmos::api_version version = nmos::parse_api_version(parameters.at(nmos::patterns::version.name));
 
@@ -868,10 +868,9 @@ namespace nmos
                                 web::json::value intersection = web::json::value::array();
 
                                 // Notify the application code for the Sender Active Constraints modification request, it returns the intersection of the capabilities constraints
-                                // It throws exception to indicate there are failures
-                                if (active_constraints_handler)
+                                if (validate_active_constraints)
                                 {
-                                    const auto result = active_constraints_handler(*streamcompatibility_sender, data, intersection);
+                                    const auto result = validate_active_constraints(*streamcompatibility_sender, data, intersection);
                                     if (!result.first)
                                     {
                                         can_adhere = false;
@@ -911,7 +910,7 @@ namespace nmos
                 });
             });
 
-            streamcompatibility_api.support(U("/") + nmos::patterns::senderType.pattern + U("/") + nmos::patterns::resourceId.pattern + U("/constraints/active/?"), methods::DEL, [&model, effective_edid_setter, active_constraints_handler, &gate_](http_request req, http_response res, const string_t&, const route_parameters& parameters)
+            streamcompatibility_api.support(U("/") + nmos::patterns::senderType.pattern + U("/") + nmos::patterns::resourceId.pattern + U("/constraints/active/?"), methods::DEL, [&model, effective_edid_setter, validate_active_constraints, &gate_](http_request req, http_response res, const string_t&, const route_parameters& parameters)
             {
                 nmos::api_gate gate(gate_, req, parameters);
                 auto lock = model.write_lock();
@@ -937,10 +936,9 @@ namespace nmos
                         web::json::value dummy_intersection = web::json::value::array();
 
                         // Notify the application code for the Sender Active Constraints deletion request, it returns the intersection of the capabilities constraints is ignored
-                        // It throws exception to indicate there are failures
-                        if (active_constraints_handler)
+                        if (validate_active_constraints)
                         {
-                            const auto result = active_constraints_handler(*streamcompatibility_sender, empty_active_constraints, dummy_intersection);
+                            const auto result = validate_active_constraints(*streamcompatibility_sender, empty_active_constraints, dummy_intersection);
                             if (!result.first)
                             {
                                 slog::log<slog::severities::warning>(gate, SLOG_FLF) << "Rejecting DELETE Active Constraints request for " << id_type << " due to " << result.second;

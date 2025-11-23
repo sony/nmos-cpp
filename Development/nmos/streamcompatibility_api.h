@@ -23,7 +23,7 @@ namespace nmos
             // this callback should not throw exceptions
             typedef std::function<std::pair<bool, utility::string_t>(const nmos::id& input_id, const bst::optional<utility::string_t>& base_edid)> streamcompatibility_base_edid_handler;
 
-            // a streamcompatibility_active_constraints_handler is a notification that the Active Constraints for the specified IS-11 sender has changed (PUT or DELETEd)
+            // a streamcompatibility_active_constraints_handler is a notification that the Active Constraints for the specified IS-11 sender has received the modification request (PUT or DELETEd)
             // it can be used to perform any final validation of the specified Active Constraints
             // the validation result is returned along with the error string
             // this callback should not throw exceptions
