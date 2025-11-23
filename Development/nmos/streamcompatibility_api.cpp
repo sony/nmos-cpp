@@ -8,6 +8,7 @@
 #include "cpprest/json_validator.h"
 #include "nmos/api_utils.h" // for set_error_reply
 #include "nmos/capabilities.h" // for nmos::fields::constraint_sets
+#include "nmos/streamcompatibility_resource.h"
 #include "nmos/streamcompatibility_resources.h"
 #include "nmos/is11_versions.h"
 #include "nmos/json_schema.h"
@@ -780,7 +781,7 @@ namespace nmos
 
                             modify_resource(streamcompatibility_resources, resourceId, [&updated_timestamp](nmos::resource& input)
                             {
-                                input.data[nmos::fields::endpoint_base_edid] = make_streamcompatibility_dummy_edid_endpoint();
+                                input.data[nmos::fields::endpoint_base_edid] = make_streamcompatibility_edid_endpoint();
 
                                 input.data[nmos::fields::version] = web::json::value::string(updated_timestamp);
                             });

@@ -1,29 +1,15 @@
 #include "nmos/streamcompatibility_resources.h"
 
-#include <unordered_set>
 #include "nmos/capabilities.h" // for nmos::fields::constraint_sets
 #include "nmos/is11_versions.h"
 #include "nmos/resource.h"
+#include "nmos/streamcompatibility_resource.h"
 #include "nmos/streamcompatibility_state.h"
 
 namespace nmos
 {
     namespace experimental
     {
-        web::json::value make_streamcompatibility_active_constraints_endpoint(const web::json::value& constraint_sets, bool locked)
-        {
-            using web::json::value_of;
-
-            auto active_constraint_sets = value_of({
-                { nmos::fields::constraint_sets, constraint_sets }
-            });
-
-            return value_of({
-                { nmos::fields::active_constraint_sets, active_constraint_sets },
-                { nmos::fields::temporarily_locked, locked }
-            });
-        }
-
         nmos::resource make_streamcompatibility_sender(const nmos::id& id, const std::vector<nmos::id>& inputs, const std::vector<utility::string_t>& param_constraints)
         {
             using web::json::value;
@@ -62,48 +48,6 @@ namespace nmos
             return{ is11_versions::v1_0, types::receiver, std::move(data), id, true };
         }
 
-        web::json::value make_streamcompatibility_dummy_edid_endpoint(bool locked)
-        {
-            using web::json::value_of;
-
-            return value_of({
-                { nmos::fields::temporarily_locked, locked },
-            });
-        }
-
-        web::json::value make_streamcompatibility_edid_endpoint(const web::uri& edid_file_uri, bool locked)
-        {
-            using web::json::value_of;
-
-            return value_of({
-                { nmos::fields::edid_href, edid_file_uri.to_string() },
-                { nmos::fields::temporarily_locked, locked },
-            });
-        }
-
-        web::json::value make_streamcompatibility_edid_endpoint(const utility::string_t& edid_file_binary, bool locked)
-        {
-            using web::json::value_of;
-
-            return value_of({
-                { nmos::fields::edid_binary, edid_file_binary },
-                { nmos::fields::temporarily_locked, locked },
-            });
-        }
-
-        web::json::value make_streamcompatibility_input_output_base(const nmos::id& id, const nmos::id& device_id, bool connected, bool edid_support, const nmos::settings& settings)
-        {
-            using web::json::value;
-
-            auto data = details::make_resource_core(id, settings);
-
-            data[nmos::fields::connected] = value::boolean(connected);
-            data[nmos::fields::device_id] = value::string(device_id);
-            data[nmos::fields::edid_support] = value::boolean(edid_support);
-
-            return data;
-        }
-
         nmos::resource make_streamcompatibility_input(const nmos::id& id, const nmos::id& device_id, bool connected, const std::vector<nmos::id>& senders, const nmos::settings& settings)
         {
             using web::json::value;
@@ -128,7 +72,7 @@ namespace nmos
 
             if (base_edid_support)
             {
-                data[nmos::fields::endpoint_base_edid] = make_streamcompatibility_dummy_edid_endpoint(false);
+                data[nmos::fields::endpoint_base_edid] = make_streamcompatibility_edid_endpoint(false);
             }
 
             data[nmos::fields::endpoint_effective_edid] = boost::apply_visitor(edid_file_visitor(), effective_edid);

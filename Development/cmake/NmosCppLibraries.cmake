@@ -1125,11 +1125,6 @@ set(NMOS_CPP_NMOS_SOURCES
     nmos/events_ws_api.cpp
     nmos/events_ws_client.cpp
     nmos/filesystem_route.cpp
-    nmos/streamcompatibility_api.cpp
-    nmos/streamcompatibility_behaviour.cpp
-    nmos/streamcompatibility_resources.cpp
-    nmos/streamcompatibility_utils.cpp
-    nmos/streamcompatibility_validation.cpp
     nmos/group_hint.cpp
     nmos/id.cpp
     nmos/lldp_handler.cpp
@@ -1172,6 +1167,12 @@ set(NMOS_CPP_NMOS_SOURCES
     nmos/server_utils.cpp
     nmos/settings.cpp
     nmos/settings_api.cpp
+    nmos/streamcompatibility_api.cpp
+    nmos/streamcompatibility_behaviour.cpp
+    nmos/streamcompatibility_resource.cpp
+    nmos/streamcompatibility_resources.cpp
+    nmos/streamcompatibility_utils.cpp
+    nmos/streamcompatibility_validation.cpp	
     nmos/system_api.cpp
     nmos/system_resources.cpp
     nmos/video_jxsv.cpp
@@ -1235,11 +1236,6 @@ set(NMOS_CPP_NMOS_HEADERS
     nmos/events_ws_api.h
     nmos/events_ws_client.h
     nmos/filesystem_route.h
-    nmos/streamcompatibility_api.h
-    nmos/streamcompatibility_behaviour.h
-    nmos/streamcompatibility_resources.h
-    nmos/streamcompatibility_utils.h
-    nmos/streamcompatibility_validation.h
     nmos/format.h
     nmos/group_hint.h
     nmos/health.h
@@ -1309,6 +1305,12 @@ set(NMOS_CPP_NMOS_HEADERS
     nmos/slog.h
     nmos/ssl_context_options.h
     nmos/st2110_21_sender_type.h
+    nmos/streamcompatibility_api.h
+    nmos/streamcompatibility_behaviour.h
+    nmos/streamcompatibility_resource.h
+    nmos/streamcompatibility_resources.h
+    nmos/streamcompatibility_utils.h
+    nmos/streamcompatibility_validation.h	
     nmos/string_enum.h
     nmos/string_enum_fwd.h
     nmos/system_api.h
