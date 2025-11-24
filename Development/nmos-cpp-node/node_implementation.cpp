@@ -136,11 +136,8 @@ namespace impl
         // edid_support: controls whether inputs and output have EDID support
         const web::json::field_as_bool_or edid_support{ U("edid_support"), false };
 
-        // streamcompatibility_index: specifies index of video/audio sender/receiver for marking as IS-11 compatible
-        const web::json::field_as_integer_or streamcompatibility_index{ U("streamcompatibility_index"), 0 };
-
         // simulate_sender_volatile_activity: when true sender status will change randomly after activation
-        // this can trigger the Stream Compatibility behaviour thread to stop the active sender
+        // this can trigger the Stream Compatibility behaviour thread to deactivate the active sender when its status has changed to active_constraints_violation
         const web::json::field_as_bool_or simulate_sender_volatile_activity{ U("simulate_sender_volatile_activity"), false };
     }
 
@@ -310,7 +307,6 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
     const auto channel_count = impl::fields::channel_count(model.settings);
     const auto smpte2022_7 = impl::fields::smpte2022_7(model.settings);
     const auto edid_support = impl::fields::edid_support(model.settings);
-    const auto streamcompatibility_index = impl::fields::streamcompatibility_index(model.settings);
 
     // for now, some typical values for video/jxsv, based on VSF TR-08:2022
     // see https://vsf.tv/download/technical_recommendations/VSF_TR-08_2022-04-20.pdf
@@ -992,7 +988,7 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
         utility::string_t edid(edid_bytes, edid_bytes + sizeof(edid_bytes));
 
         const auto input_id = impl::make_id(seed_id, nmos::types::input);
-        const auto sender_ids = impl::make_ids(seed_id, nmos::types::sender, { impl::ports::video, impl::ports::audio });
+        const auto sender_ids = impl::make_ids(seed_id, nmos::types::sender, { impl::ports::video, impl::ports::audio }, how_many);
 
         auto input = edid_support
             ? nmos::experimental::make_streamcompatibility_input(input_id, device_id, true, true, edid, sender_ids, model.settings)
@@ -1024,12 +1020,15 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
             nmos::caps::format::sample_depth.key
         };
 
-        for (const auto& port : { impl::ports::video, impl::ports::audio })
+        for (int index = 0; index < how_many; ++index)
         {
-            const auto sender_id = impl::make_id(seed_id, nmos::types::sender, port, streamcompatibility_index);
-            const auto& supported_param_constraints = port == impl::ports::video ? video_parameter_constraints : audio_parameter_constraints;
-            auto streamcompatibility_sender = nmos::experimental::make_streamcompatibility_sender(sender_id, { input_id }, supported_param_constraints);
-            if (!insert_resource_after(delay_millis, model.streamcompatibility_resources, std::move(streamcompatibility_sender), gate)) throw node_implementation_init_exception();
+            for (const auto& port : { impl::ports::video, impl::ports::audio })
+            {
+                const auto sender_id = impl::make_id(seed_id, nmos::types::sender, port, index);
+                const auto& supported_param_constraints = port == impl::ports::video ? video_parameter_constraints : audio_parameter_constraints;
+                auto streamcompatibility_sender = nmos::experimental::make_streamcompatibility_sender(sender_id, { input_id }, supported_param_constraints);
+                if (!insert_resource_after(delay_millis, model.streamcompatibility_resources, std::move(streamcompatibility_sender), gate)) throw node_implementation_init_exception();
+            }
         }
     }
 
@@ -1057,7 +1056,7 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
         utility::string_t edid(edid_bytes, edid_bytes + sizeof(edid_bytes));
 
         const auto output_id = impl::make_id(seed_id, nmos::types::output);
-        const auto receiver_ids = impl::make_ids(seed_id, nmos::types::receiver, { impl::ports::video, impl::ports::audio });
+        const auto receiver_ids = impl::make_ids(seed_id, nmos::types::receiver, { impl::ports::video, impl::ports::audio }, how_many);
 
         auto output = edid_support
             ? nmos::experimental::make_streamcompatibility_output(output_id, device_id, true, boost::variant<utility::string_t, web::uri>(edid), receiver_ids, model.settings)
@@ -1519,8 +1518,6 @@ void node_implementation_run(nmos::node_model& model, nmos::experimental::contro
     auto set_sender_monitor_essence_status = nmos::make_set_sender_monitor_essence_status_handler(control_protocol_resources, control_protocol_state, gate);
     auto set_sender_monitor_synchronization_source_id = nmos::make_set_sender_monitor_synchronization_source_id_handler(control_protocol_resources, control_protocol_state, gate);
 
-    const auto streamcompatibility_index = impl::fields::streamcompatibility_index(model.settings);
-
     // start background tasks to intermittently update the state of the event sources, to cause events to be emitted to connected receivers
 
     nmos::details::seed_generator events_seeder;
@@ -1529,10 +1526,10 @@ void node_implementation_run(nmos::node_model& model, nmos::experimental::contro
     auto cancellation_source = pplx::cancellation_token_source();
 
     auto token = cancellation_source.get_token();
-    auto events = pplx::do_while([&model, seed_id, how_many, simulate_status_monitor_activity, simulate_sender_volatile_activity, streamcompatibility_index, ws_sender_ports, rtp_receiver_ports, rtp_sender_ports, get_control_protocol_property, set_receiver_monitor_link_status, set_receiver_monitor_connection_status, set_receiver_monitor_external_synchronization_status, set_receiver_monitor_stream_status, set_receiver_monitor_synchronization_source_id, set_sender_monitor_link_status, set_sender_monitor_transmission_status, set_sender_monitor_external_synchronization_status, set_sender_monitor_essence_status, set_sender_monitor_synchronization_source_id, set_control_protocol_property, events_engine, &gate, token]
+    auto events = pplx::do_while([&model, seed_id, how_many, simulate_status_monitor_activity, simulate_sender_volatile_activity, ws_sender_ports, rtp_receiver_ports, rtp_sender_ports, get_control_protocol_property, set_receiver_monitor_link_status, set_receiver_monitor_connection_status, set_receiver_monitor_external_synchronization_status, set_receiver_monitor_stream_status, set_receiver_monitor_synchronization_source_id, set_sender_monitor_link_status, set_sender_monitor_transmission_status, set_sender_monitor_external_synchronization_status, set_sender_monitor_essence_status, set_sender_monitor_synchronization_source_id, set_control_protocol_property, events_engine, &gate, token]
     {
         const auto event_interval = std::uniform_real_distribution<>(0.5, 5.0)(*events_engine);
-        return pplx::complete_after(std::chrono::milliseconds(std::chrono::milliseconds::rep(1000 * event_interval)), token).then([&model, seed_id, how_many, simulate_status_monitor_activity, simulate_sender_volatile_activity, streamcompatibility_index, ws_sender_ports, rtp_receiver_ports, rtp_sender_ports, get_control_protocol_property, set_receiver_monitor_link_status, set_receiver_monitor_connection_status, set_receiver_monitor_external_synchronization_status, set_receiver_monitor_stream_status, set_receiver_monitor_synchronization_source_id, set_sender_monitor_link_status, set_sender_monitor_transmission_status, set_sender_monitor_external_synchronization_status, set_sender_monitor_essence_status, set_sender_monitor_synchronization_source_id, set_control_protocol_property, events_engine, &gate]
+        return pplx::complete_after(std::chrono::milliseconds(std::chrono::milliseconds::rep(1000 * event_interval)), token).then([&model, seed_id, how_many, simulate_status_monitor_activity, simulate_sender_volatile_activity, ws_sender_ports, rtp_receiver_ports, rtp_sender_ports, get_control_protocol_property, set_receiver_monitor_link_status, set_receiver_monitor_connection_status, set_receiver_monitor_external_synchronization_status, set_receiver_monitor_stream_status, set_receiver_monitor_synchronization_source_id, set_sender_monitor_link_status, set_sender_monitor_transmission_status, set_sender_monitor_external_synchronization_status, set_sender_monitor_essence_status, set_sender_monitor_synchronization_source_id, set_control_protocol_property, events_engine, &gate]
         {
             auto lock = model.write_lock();
 
@@ -1746,12 +1743,15 @@ void node_implementation_run(nmos::node_model& model, nmos::experimental::contro
             // example volatiling video sender stream status
             if (simulate_sender_volatile_activity)
             {
-                const auto sender_id = impl::make_id(seed_id, nmos::types::sender, impl::ports::video, streamcompatibility_index);
-                const auto states = { nmos::sender_states::no_essence, nmos::sender_states::awaiting_essence, nmos::sender_states::constrained };
-                const auto& state = *(states.begin() + (std::min)(std::geometric_distribution<size_t>()(*events_engine), states.size() - 1));
+                for (int index = 0; index < how_many; ++index)
+                {
+                    const auto sender_id = impl::make_id(seed_id, nmos::types::sender, impl::ports::video, index);
+                    const auto states = { nmos::sender_states::no_essence, nmos::sender_states::awaiting_essence, nmos::sender_states::constrained };
+                    const auto& state = *(states.begin() + (std::min)(std::geometric_distribution<size_t>()(*events_engine), states.size() - 1));
 
-                slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Changing IS-11 sender: " << sender_id << " status to " << state.name;
-                nmos::experimental::set_sender_status(model.node_resources, model.streamcompatibility_resources, sender_id, state, {}, gate);
+                    slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Changing IS-11 sender: " << sender_id << " status to " << state.name << " for sender volatile activity simulation";
+                    nmos::experimental::set_sender_status(model.node_resources, model.streamcompatibility_resources, sender_id, state, {}, gate);
+                }
             }
 
             model.notify();
