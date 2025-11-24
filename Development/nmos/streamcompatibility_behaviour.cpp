@@ -37,8 +37,6 @@ namespace nmos
 
             nmos::sender_state update_sender_status(nmos::node_model& model, const nmos::id& sender_id, const details::streamcompatibility_sender_validator& validate_sender_resources, slog::base_gate& gate)
             {
-                using web::json::value;
-
                 auto& node_resources = model.node_resources;
                 auto& connection_resources = model.connection_resources;
                 auto& streamcompatibility_resources = model.streamcompatibility_resources;
@@ -84,8 +82,6 @@ namespace nmos
                 // update sender state and sender_state_debug if state has changed
                 if (nmos::fields::state(nmos::fields::status(streamcompatibility_sender->data)) != sender_state.name)
                 {
-                    utility::string_t updated_timestamp{ nmos::make_version() };
-
                     set_sender_status(node_resources, streamcompatibility_resources, sender_id, sender_state, sender_state_debug, gate);
                 }
 
@@ -94,8 +90,6 @@ namespace nmos
 
             nmos::receiver_state update_receiver_status(nmos::node_model& model, const nmos::id& receiver_id, const details::streamcompatibility_receiver_validator& validate_receiver, slog::base_gate& gate)
             {
-                using web::json::value;
-
                 auto& node_resources = model.node_resources;
                 auto& connection_resources = model.connection_resources;
                 auto& streamcompatibility_resources = model.streamcompatibility_resources;
@@ -121,6 +115,7 @@ namespace nmos
                     slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Validating " << receiver_id_type << " against with its transport file";
                     if (validate_receiver)
                     {
+                        // do custom receiver constraints validation to update the receiver_state and receiver_state_debug
                         std::tie(receiver_state, receiver_state_debug) = validate_receiver(*node_receiver, transport_file);
                     }
                 }
@@ -137,7 +132,6 @@ namespace nmos
         void streamcompatibility_behaviour_thread(nmos::node_model& model, details::streamcompatibility_sender_validator validate_sender_resources, details::streamcompatibility_receiver_validator validate_receiver, slog::base_gate& gate)
         {
             using web::json::value;
-            using web::json::value_of;
 
             auto lock = model.write_lock(); // in order to update state of Sender/Receiver
             auto& node_resources = model.node_resources;
@@ -148,7 +142,7 @@ namespace nmos
 
             for (;;)
             {
-                model.wait(lock, [&] { return model.shutdown || most_recent_update < nmos::most_recent_update(node_resources); }); // check for any IS-04 resources updated, shouldn't be checking IS-11 instead of IS-04 ???
+                model.wait(lock, [&] { return model.shutdown || most_recent_update < nmos::most_recent_update(node_resources); });
                 if (model.shutdown) break;
 
                 // find Senders with recently updated IS-11 properties, associated Flow or Source

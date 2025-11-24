@@ -649,7 +649,7 @@ namespace nmos
                                     throw std::logic_error("associated IS-11 input not found");
                                 }
 
-                                slog::log<slog::severities::info>(gate, SLOG_FLF) << "PUT Base EDID binary requested for " << id_type << " with binary data size " << base_edid_binary.size();
+                                slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "PUT Base EDID binary requested for " << id_type << " with binary data size " << base_edid_binary.size();
 
                                 // Notify the application code for the Base EDID modification request
                                 // It throws exception to indicate there are EDID failures (e.g. EDID validation failure)
@@ -658,7 +658,7 @@ namespace nmos
                                     const auto result = validate_base_edid(input_id, base_edid_binary);
                                     if (!result.first)
                                     {
-                                        slog::log<slog::severities::error>(gate, SLOG_FLF) << "Rejecting PUT Base EDID request for " << id_type << " due to " << result.second;
+                                        slog::log<slog::severities::warning>(gate, SLOG_FLF) << "Rejecting PUT Base EDID request for " << id_type << " due to " << result.second;
                                         set_error_reply(res, status_codes::BadRequest, {}, result.second);
                                         return true;
                                     }
@@ -716,13 +716,13 @@ namespace nmos
                         }
                         else
                         {
-                            slog::log<slog::severities::error>(gate, SLOG_FLF) << "Rejecting PUT Base EDID request for " << id_type << " due to operation is locked";
+                            slog::log<slog::severities::warning>(gate, SLOG_FLF) << "Rejecting PUT Base EDID request for " << id_type << " due to operation is locked";
                             set_error_reply(res, status_codes::Locked);
                         }
                     }
                     else
                     {
-                        slog::log<slog::severities::error>(gate, SLOG_FLF) << "Rejecting PUT Base EDID request for " << id_type << " due to this input not configured to allow it";
+                        slog::log<slog::severities::warning>(gate, SLOG_FLF) << "Rejecting PUT Base EDID request for " << id_type << " due to this input not configured to allow it";
                         set_error_reply(res, status_codes::MethodNotAllowed);
                     }
                 }
@@ -753,7 +753,7 @@ namespace nmos
                     {
                         if (!nmos::fields::temporarily_locked(endpoint_base_edid))
                         {
-                            slog::log<slog::severities::info>(gate, SLOG_FLF) << "DELETE Base EDID binary requested for " << id_type;
+                            slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "DELETE Base EDID binary requested for " << id_type;
 
                             // Notify the application code for the Base EDID deletion request
                             if (validate_base_edid)
@@ -761,7 +761,7 @@ namespace nmos
                                 const auto result = validate_base_edid(resourceId, {});
                                 if (!result.first)
                                 {
-                                    slog::log<slog::severities::error>(gate, SLOG_FLF) << "Rejecting DELETE Base EDID request for " << id_type << " due to " << result.second;
+                                    slog::log<slog::severities::warning>(gate, SLOG_FLF) << "Rejecting DELETE Base EDID request for " << id_type << " due to " << result.second;
                                     set_error_reply(res, status_codes::BadRequest, {}, result.second);
 
                                     return pplx::task_from_result(true);
@@ -815,13 +815,13 @@ namespace nmos
                         }
                         else
                         {
-                            slog::log<slog::severities::error>(gate, SLOG_FLF) << "Rejecting DELETE Base EDID request for " << id_type << " due to operation is locked";
+                            slog::log<slog::severities::warning>(gate, SLOG_FLF) << "Rejecting DELETE Base EDID request for " << id_type << " due to operation is locked";
                             set_error_reply(res, status_codes::Locked);
                         }
                     }
                     else
                     {
-                        slog::log<slog::severities::error>(gate, SLOG_FLF) << "Rejecting DELETE Base EDID request for " << id_type << " due to this input not configured to allow it";
+                        slog::log<slog::severities::warning>(gate, SLOG_FLF) << "Rejecting DELETE Base EDID request for " << id_type << " due to this input not configured to allow it";
                         set_error_reply(res, status_codes::MethodNotAllowed);
                     }
                 }
@@ -863,7 +863,7 @@ namespace nmos
                             // validate the requested constraint sets against the supported constraint sets
                             if (details::validate_constraint_sets(nmos::fields::constraint_sets(data).as_array(), supported_param_constraints))
                             {
-                                slog::log<slog::severities::info>(gate, SLOG_FLF) << "PUT " << id_type << " Active Constraints requested: " << nmos::fields::constraint_sets(data).serialize();
+                                slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "PUT " << id_type << " Active Constraints requested: " << nmos::fields::constraint_sets(data).serialize();
 
                                 bool can_adhere = true;
                                 web::json::value intersection = web::json::value::array();
@@ -876,7 +876,7 @@ namespace nmos
                                     {
                                         can_adhere = false;
 
-                                        slog::log<slog::severities::error>(gate, SLOG_FLF) << "Rejecting PUT Active Constraints request for " << id_type << " due to sender can't adhere to these Constraints: " << nmos::fields::constraint_sets(data).serialize();
+                                        slog::log<slog::severities::warning>(gate, SLOG_FLF) << "Rejecting PUT Active Constraints request for " << id_type << " due to sender can't adhere to these Constraints: " << nmos::fields::constraint_sets(data).serialize();
                                         set_error_reply(res, status_codes::UnprocessableEntity, {}, result.second);
                                     }
                                 }
@@ -892,13 +892,13 @@ namespace nmos
                             }
                             else
                             {
-                                slog::log<slog::severities::error>(gate, SLOG_FLF) << "Rejecting PUT Active Constraints request for " << id_type << " due to unsupported Parameter Constraint URN used in any of the Constraints: " << nmos::fields::constraint_sets(data).serialize();
+                                slog::log<slog::severities::warning>(gate, SLOG_FLF) << "Rejecting PUT Active Constraints request for " << id_type << " due to unsupported Parameter Constraint URN used in any of the Constraints: " << nmos::fields::constraint_sets(data).serialize();
                                 set_error_reply(res, status_codes::BadRequest, U("The requested constraint set includes parameter constraints that this sender does not support"));
                             }
                         }
                         else
                         {
-                            slog::log<slog::severities::error>(gate, SLOG_FLF) << "Rejecting PUT Active Constraints request for " << id_type << " due to operation is locked";
+                            slog::log<slog::severities::warning>(gate, SLOG_FLF) << "Rejecting PUT Active Constraints request for " << id_type << " due to operation is locked";
                             set_error_reply(res, status_codes::Locked);
                         }
                     }
@@ -928,7 +928,7 @@ namespace nmos
 
                     if (!nmos::fields::temporarily_locked(endpoint_active_constraints))
                     {
-                        slog::log<slog::severities::info>(gate, SLOG_FLF) << "DELETE " << id_type << " Active Constraints requested";
+                        slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "DELETE " << id_type << " Active Constraints requested";
 
                         // create an empty constraint_sets
                         const auto empty_active_constraints = web::json::value_of({
@@ -954,7 +954,7 @@ namespace nmos
                     }
                     else
                     {
-                        slog::log<slog::severities::error>(gate, SLOG_FLF) << "Rejecting DELETE Active Constraints request for " << id_type << " due to operation is locked";
+                        slog::log<slog::severities::warning>(gate, SLOG_FLF) << "Rejecting DELETE Active Constraints request for " << id_type << " due to operation is locked";
                         set_error_reply(res, status_codes::Locked);
                     }
                 }
