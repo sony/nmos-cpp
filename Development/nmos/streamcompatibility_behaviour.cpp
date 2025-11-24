@@ -235,30 +235,40 @@ namespace nmos
                         const auto updated = most_recent_update < receiver->updated;
                         if (updated)
                         {
-                            slog::log<slog::severities::info>(gate, SLOG_FLF) << "The " << receiver_id_type << " has been updated recently, and now's the time to update its IS-11 status.";
+                            slog::log<slog::severities::info>(gate, SLOG_FLF) << "The " << receiver_id_type << " has been updated recently, and now's the time to update its IS-11 status";
 
                             // update receiver status against receiver constraints
                             const auto receiver_state = details::update_receiver_status(model, receiver_id, validate_receiver, gate);
 
                             // `At any time if State of an active Receiver becomes non_compliant_stream, the Receiver SHOULD become inactive. An inactive Receiver in this state SHOULD NOT allow activations.`
                             // See https://specs.amwa.tv/is-11/branches/v1.0.x/docs/Behaviour_-_Server_Side.html#preventing-restrictions-violation
-                            // hmm, todo check receiver current activation status before stop sender when active Receiver becomes non_compliant_stream
                             if (nmos::receiver_states::non_compliant_stream == receiver_state)
                             {
-                                slog::log<slog::severities::info>(gate, SLOG_FLF) << "IS-11 " << receiver_id_type << " status changed to " << receiver_state.name << " -> Stopping " << receiver_id_type;
-                                web::json::value merged;
-                                nmos::modify_resource(connection_resources, receiver_id, [&merged](nmos::resource& connection_resource)
+                                // deactivate receiver if it has not already deactivated
+                                auto connection_receiver = find_resource(connection_resources, receiver_id_type);
+                                if (connection_resources.end() == connection_receiver) throw std::logic_error("matching IS-05 receiver not found");
+                                const auto& active = nmos::fields::endpoint_active(connection_receiver->data);
+                                if (nmos::fields::master_enable(active))
                                 {
-                                    connection_resource.data[nmos::fields::version] = web::json::value::string(nmos::make_version());
-                                    merged = nmos::fields::endpoint_staged(connection_resource.data);
-                                    merged[nmos::fields::master_enable] = value::boolean(false);
-                                    auto activation = nmos::make_activation();
-                                    activation[nmos::fields::mode] = value::string(nmos::activation_modes::activate_immediate.name);
-                                    nmos::details::merge_activation(merged[nmos::fields::activation], activation, nmos::tai_now());
-                                    connection_resource.data[nmos::fields::endpoint_staged] = merged;
-                                });
+                                    slog::log<slog::severities::info>(gate, SLOG_FLF) << "The IS-11 " << receiver_id_type << " status has changed to " << receiver_state.name << " -> Deactivate " << receiver_id_type;
+                                    web::json::value merged;
+                                    nmos::modify_resource(connection_resources, receiver_id, [&merged](nmos::resource& connection_resource)
+                                    {
+                                        connection_resource.data[nmos::fields::version] = web::json::value::string(nmos::make_version());
+                                        merged = nmos::fields::endpoint_staged(connection_resource.data);
+                                        merged[nmos::fields::master_enable] = value::boolean(false);
+                                        auto activation = nmos::make_activation();
+                                        activation[nmos::fields::mode] = value::string(nmos::activation_modes::activate_immediate.name);
+                                        nmos::details::merge_activation(merged[nmos::fields::activation], activation, nmos::tai_now());
+                                        connection_resource.data[nmos::fields::endpoint_staged] = merged;
+                                    });
 
-                                nmos::details::handle_immediate_activation_pending(model, lock, receiver_id_type, merged[nmos::fields::activation], gate);
+                                    nmos::details::handle_immediate_activation_pending(model, lock, receiver_id_type, merged[nmos::fields::activation], gate);
+                                }
+                                else
+                                {
+                                    slog::log<slog::severities::info>(gate, SLOG_FLF) << "The IS-11 " << receiver_id_type << " status has changed to " << receiver_state.name << ", no deactivation required; it has already been deactivated";
+                                }
                             }
                         }
                     }
