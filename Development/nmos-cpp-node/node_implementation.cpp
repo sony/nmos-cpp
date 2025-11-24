@@ -2133,7 +2133,7 @@ nmos::experimental::details::streamcompatibility_effective_edid_setter make_node
 
                 if (nmos::fields::adjust_to_caps(streamcompatibility_input->data))
                 {
-                    ss << "\nand capabilities of an Input itself and Senders associated with this Input: " << utility::us2s(streamcompatibility_input->id);
+                    ss << "\nand input: " << utility::us2s(streamcompatibility_input->id) << " support adjusting Base EDID to internal capabilities";
                 }
 
                 slog::log<slog::severities::info>(gate, SLOG_FLF) << ss.str();
