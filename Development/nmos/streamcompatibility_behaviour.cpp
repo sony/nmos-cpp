@@ -274,7 +274,6 @@ namespace nmos
                     }
                 }
 
-                model.notify();
                 most_recent_update = nmos::most_recent_update(node_resources);
             }
         }
