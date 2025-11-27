@@ -92,8 +92,12 @@ jobs:
       working-directory: ${{ env.GITHUB_WORKSPACE }}
       run: |
         mkdir -p gdrive
-        echo "${{ env.SECRET_GOOGLE_CREDENTIALS }}"  > secret.b64
+        printf "%s\n" "${{ env.SECRET_GOOGLE_CREDENTIALS }}"  > secret.b64
+        echo "***base64***"
+        cat secret.b64
         openssl base64 -d -A -in secret.b64 -out gdrive/credentials.json
+        echo "***JSON***"
+        cat gdrive/credentials.json
         echo "GDRIVE_CREDENTIALS=`pwd`/gdrive/credentials.json" >> $GITHUB_ENV
 
     - name: install conan
@@ -561,7 +565,7 @@ jobs:
         exit 0
 
     - name: upload to google sheets
-      if: github.ref == 'refs/heads/master' && github.event_name == 'push'
+      #if: github.ref == 'refs/heads/master' && github.event_name == 'push'
       working-directory: ${{ env.RUNNER_WORKSPACE }}
       shell: bash
       run: |
