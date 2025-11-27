@@ -92,7 +92,8 @@ jobs:
       working-directory: ${{ env.GITHUB_WORKSPACE }}
       run: |
         mkdir -p gdrive
-        echo "${{ env.SECRET_GOOGLE_CREDENTIALS }}" | openssl base64 -d -A -out gdrive/credentials.json
+        echo "${{ env.SECRET_GOOGLE_CREDENTIALS }}"  > secret.b64
+        openssl base64 -d -A -in secret.b64 -out gdrive/credentials.json
         echo "GDRIVE_CREDENTIALS=`pwd`/gdrive/credentials.json" >> $GITHUB_ENV
 
     - name: install conan
