@@ -74,7 +74,7 @@ namespace nmos
                     {
                         // get resource based on the oid
                         const auto& oid = nmos::fields::nc::oid(member);
-                        const auto& found = nmos::find_resource(resources, utility::s2us(std::to_string(oid)));
+                        const auto found = nmos::find_resource(resources, utility::s2us(std::to_string(oid)));
                         if (resources.end() != found)
                         {
                             build_role_paths(resources, *found, role_path, role_paths);
