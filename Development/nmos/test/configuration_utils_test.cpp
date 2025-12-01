@@ -407,7 +407,7 @@ BST_TEST_CASE(testApplyBackupDataSet)
     };
 
     // Capture initial state of device model so we can reset after each check
-    const auto& root_resource = nmos::nc::find_resource_by_role_path(resources, value_of({ U("root") }).as_array());
+    const auto root_resource = nmos::nc::find_resource_by_role_path(resources, value_of({ U("root") }).as_array());
     auto initial_backup_dataset = nmos::get_properties_by_path(resources, *root_resource, true, false, get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor, nullptr);
     auto& initial_object_properties_holders = nmos::fields::nc::values(nmos::fields::nc::value(initial_backup_dataset));
 
