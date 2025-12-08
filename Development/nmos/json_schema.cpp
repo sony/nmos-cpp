@@ -10,6 +10,8 @@
 #include "nmos/is09_versions.h"
 #include "nmos/is09_schemas/is09_schemas.h"
 #include "nmos/is10_schemas/is10_schemas.h"
+#include "nmos/is11_versions.h"
+#include "nmos/is11_schemas/is11_schemas.h"
 #include "nmos/is12_versions.h"
 #include "nmos/is12_schemas/is12_schemas.h"
 #include "nmos/is14_versions.h"
@@ -154,6 +156,23 @@ namespace nmos
         }
     }
 
+    namespace is11_schemas
+    {
+        web::uri make_schema_uri(const utility::string_t& tag, const utility::string_t& ref = {})
+        {
+            return{ _XPLATSTR("https://github.com/AMWA-TV/is-11/raw/") + tag + _XPLATSTR("/APIs/schemas/") + ref };
+        }
+
+        // See https://github.com/AMWA-TV/is-11/tree/v1.0-dev/APIs/schemas/
+        namespace v1_0
+        {
+            using namespace nmos::is11_schemas::v1_0_x;
+            const utility::string_t tag(_XPLATSTR("v1.0-dev"));
+
+            const web::uri senders_active_constraints_put_request_uri = make_schema_uri(tag, _XPLATSTR("constraints_active.json"));
+        }
+    }
+    
     namespace is12_schemas
     {
         web::uri make_schema_uri(const utility::string_t& tag, const utility::string_t& ref = {})
@@ -394,6 +413,24 @@ namespace nmos
             };
         }
 
+        static std::map<web::uri, web::json::value> make_is11_schemas()
+        {
+            using namespace nmos::is11_schemas;
+
+            return
+            {
+                // v1.0
+                { make_schema_uri(v1_0::tag, _XPLATSTR("constraints_active.json")), make_schema(v1_0::constraints_active) },
+                { make_schema_uri(v1_0::tag, _XPLATSTR("constraint_set.json")), make_schema(v1_0::constraint_set) },
+                { make_schema_uri(v1_0::tag, _XPLATSTR("param_constraint_boolean.json")), make_schema(v1_0::param_constraint_boolean) },
+                { make_schema_uri(v1_0::tag, _XPLATSTR("param_constraint_integer.json")), make_schema(v1_0::param_constraint_integer) },
+                { make_schema_uri(v1_0::tag, _XPLATSTR("param_constraint.json")), make_schema(v1_0::param_constraint) },
+                { make_schema_uri(v1_0::tag, _XPLATSTR("param_constraint_number.json")), make_schema(v1_0::param_constraint_number) },
+                { make_schema_uri(v1_0::tag, _XPLATSTR("param_constraint_rational.json")), make_schema(v1_0::param_constraint_rational) },
+                { make_schema_uri(v1_0::tag, _XPLATSTR("param_constraint_string.json")), make_schema(v1_0::param_constraint_string) },
+            };
+        }
+
         static std::map<web::uri, web::json::value> make_is12_schemas()
         {
             using namespace nmos::is12_schemas;
@@ -439,6 +476,7 @@ namespace nmos
             merge(result, make_is08_schemas());
             merge(result, make_is09_schemas());
             merge(result, make_is10_schemas());
+            merge(result, make_is11_schemas());
             merge(result, make_is12_schemas());
             merge(result, make_is14_schemas());
             return result;
@@ -530,6 +568,11 @@ namespace nmos
         web::uri make_authapi_token_response_schema_uri(const nmos::api_version& version)
         {
             return is10_schemas::v1_0::authapi_token_response_schema_uri;
+        }
+
+        web::uri make_streamcompatibilityapi_senders_active_constraints_put_request_uri(const nmos::api_version& version)
+        {
+            return is11_schemas::v1_0::senders_active_constraints_put_request_uri;
         }
 
         web::uri make_controlprotocolapi_base_message_schema_uri(const nmos::api_version& version)

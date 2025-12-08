@@ -63,6 +63,13 @@
     // simulate_status_monitor_activity: when true status monitor statuses will change randomly after activation
     //"simulate_status_monitor_activity": true,
 
+    // edid_support: controls whether inputs and output have EDID support
+    //"edid_support": false,
+
+    // simulate_sender_volatile_activity: when true sender status will change randomly after activation
+    // this can trigger the Stream Compatibility behaviour thread to deactivate the active sender when its status has changed to active_constraints_violation
+    //"simulate_sender_volatile_activity": false,
+
     // Configuration settings and defaults for logging
 
     // error_log [registry, node]: filename for the error log or an empty string to write to stderr
@@ -106,6 +113,9 @@
 
     // is10_versions [registry, node]: used to specify the enabled API versions for a version-locked configuration
     //"is10_versions": ["v1.0"],
+
+    // is11_versions [node]: used to specify the enabled API versions for a version-locked configuration
+    //"is11_versions": ["v1.0"],
 
     // is12_versions [node]: used to specify the enabled API versions for a version-locked configuration
     //"is12_versions": ["v1.0"],
@@ -153,6 +163,7 @@
     // control_protocol_ws_port [node]: used to construct request URLs for the Control Protocol websocket, or negative to disable the control protocol features
     //"control_protocol_ws_port": 3218,
     //"configuration_port": 3219,
+    //"streamcompatibility_port": 3220,
 
     // listen_backlog [registry, node]: the maximum length of the queue of pending connections, or zero for the implementation default (the implementation may not honour this value)
     //"listen_backlog": 0,

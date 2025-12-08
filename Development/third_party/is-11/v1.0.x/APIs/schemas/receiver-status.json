@@ -1,0 +1,22 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema",
+  "type": "object",
+  "description": "Status of Receiver",
+  "required": [
+    "state"
+  ],
+  "properties": {
+    "state": {
+      "type": "string",
+      "enum": [
+        "unknown",
+        "compliant_stream",
+        "non_compliant_stream"
+      ]
+    },
+    "debug": {
+      "description": "Debug information which may give additional information on the state",
+      "type": "string"
+    }
+  }
+}
