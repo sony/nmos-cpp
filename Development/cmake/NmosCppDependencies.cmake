@@ -6,7 +6,7 @@ set(BOOST_VERSION_CUR "1.83.0")
 # note: some components are only required for one platform or other
 # so find_package(Boost) is called after adding those components
 # adding the "headers" component seems to be unnecessary (and the target alias "boost" doesn't work at all)
-list(APPEND FIND_BOOST_COMPONENTS system date_time regex)
+list(APPEND FIND_BOOST_COMPONENTS system date_time regex chrono)
 if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux" OR ${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
     if(NOT (CMAKE_CXX_COMPILER_ID MATCHES GNU AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 5.3))
         # add filesystem (for bst/filesystem.h, used by nmos/filesystem_route.cpp)
