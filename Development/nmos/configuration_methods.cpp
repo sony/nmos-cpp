@@ -68,7 +68,7 @@ namespace nmos
 
                     for (const auto& member : members)
                     {
-                        const auto& found = find_resource(resources, utility::s2us(std::to_string(nmos::fields::nc::oid(member))));
+                        const auto found = find_resource(resources, utility::s2us(std::to_string(nmos::fields::nc::oid(member))));
 
                         if (resources.end() != found)
                         {

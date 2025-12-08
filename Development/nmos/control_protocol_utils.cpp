@@ -366,7 +366,7 @@ namespace nmos
                         {
                             // get resource based on the oid
                             const auto& oid = nmos::fields::nc::oid(*member_found);
-                            const auto& found = nmos::find_resource(resources, utility::s2us(std::to_string(oid)));
+                            const auto found = nmos::find_resource(resources, utility::s2us(std::to_string(oid)));
                             if (resources.end() != found)
                             {
                                 return get_nc_block_member_descriptor(resources, *found, role_path_segments);
@@ -411,7 +411,7 @@ namespace nmos
                     auto transition_counter = get_property(resources, oid, status_transition_counter_property_id, get_control_protocol_class_descriptor, gate).as_integer();
                     set_property_and_notify(resources, oid, status_transition_counter_property_id, ++transition_counter, get_control_protocol_class_descriptor, gate);
                 }
-                const auto& found = find_resource(resources, utility::s2us(std::to_string(oid)));
+                const auto found = find_resource(resources, utility::s2us(std::to_string(oid)));
                 if (resources.end() != found)
                 {
                     if (nmos::nc::is_sender_monitor(parse_class_id(nmos::fields::nc::class_id(found->data))))
@@ -721,7 +721,7 @@ namespace nmos
                         {
                             // get resource based on the oid
                             const auto& oid = nmos::fields::nc::oid(member);
-                            const auto& found = find_resource(resources, utility::s2us(std::to_string(oid)));
+                            const auto found = find_resource(resources, utility::s2us(std::to_string(oid)));
                             if (resources.end() != found)
                             {
                                 nc::get_member_descriptors(resources, *found, recurse, descriptors);
@@ -775,7 +775,7 @@ namespace nmos
                         {
                             // get resource based on the oid
                             const auto& oid = nmos::fields::nc::oid(member);
-                            const auto& found = find_resource(resources, utility::s2us(std::to_string(oid)));
+                            const auto found = find_resource(resources, utility::s2us(std::to_string(oid)));
                             if (resources.end() != found)
                             {
                                 nc::find_members_by_role(resources, *found, role, match_whole_string, case_sensitive, recurse, descriptors);
@@ -823,7 +823,7 @@ namespace nmos
                         {
                             // get resource based on the oid
                             const auto& oid = nmos::fields::nc::oid(member);
-                            const auto& found = find_resource(resources, utility::s2us(std::to_string(oid)));
+                            const auto found = find_resource(resources, utility::s2us(std::to_string(oid)));
                             if (resources.end() != found)
                             {
                                 nc::find_members_by_class_id(resources, *found, class_id_, include_derived, recurse, descriptors);
@@ -1025,7 +1025,7 @@ namespace nmos
                         if (!block_member_descriptor.is_null())
                         {
                             const auto& oid = nmos::fields::nc::oid(block_member_descriptor);
-                            const auto& found = nmos::find_resource(resources, utility::s2us(std::to_string(oid)));
+                            const auto found = nmos::find_resource(resources, utility::s2us(std::to_string(oid)));
                             if (resources.end() != found)
                             {
                                 return found;
@@ -1113,7 +1113,7 @@ namespace nmos
         web::json::value get_property(const resources& resources, nc_oid oid, const nc_property_id& property_id, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, slog::base_gate& gate)
         {
             // get resource based on the oid
-            const auto& found = find_resource(resources, utility::s2us(std::to_string(oid)));
+            const auto found = find_resource(resources, utility::s2us(std::to_string(oid)));
             if (resources.end() != found)
             {
                 // find the relevant nc_property_descriptor
@@ -1130,7 +1130,7 @@ namespace nmos
 
         bool set_property_and_notify(resources& resources, nc_oid oid, const nc_property_id& property_id, const web::json::value& value, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, slog::base_gate& gate)
         {
-            const auto& found = find_resource(resources, utility::s2us(std::to_string(oid)));
+            const auto found = find_resource(resources, utility::s2us(std::to_string(oid)));
             if (resources.end() != found)
             {
                 const auto& property = nc::find_property_descriptor(property_id, nc::details::parse_class_id(nmos::fields::nc::class_id(found->data)), get_control_protocol_class_descriptor);
@@ -1184,7 +1184,7 @@ namespace nmos
         web::json::value get_property(const resources& resources, nc_oid oid, const utility::string_t& property_name, slog::base_gate& gate)
         {
             // get resource based on the oid
-            const auto& found = find_resource(resources, utility::s2us(std::to_string(oid)));
+            const auto found = find_resource(resources, utility::s2us(std::to_string(oid)));
             if (resources.end() != found)
             {
                 // find the relevant nc_property_descriptor
@@ -1323,7 +1323,7 @@ namespace nmos
             // domain specific statuses offering an Inactive option MUST transition immediately to the Healthy state.
             // Furthermore, after activation, as long as the monitor isn't being deactivated, it MUST delay the reporting
             // of non Healthy states for the duration specified by statusReportingDelay, and then transition to any other appropriate state.
-            const auto& found = find_resource(resources, utility::s2us(std::to_string(oid)));
+            const auto found = find_resource(resources, utility::s2us(std::to_string(oid)));
             if (resources.end() != found && nc::is_status_monitor(nc::details::parse_class_id(nmos::fields::nc::class_id(found->data))))
             {
                 const auto& class_id = nc::details::parse_class_id(nmos::fields::nc::class_id(found->data));
@@ -1382,7 +1382,7 @@ namespace nmos
 
         bool deactivate_monitor(resources& resources, nc_oid oid, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, slog::base_gate& gate)
         {
-            const auto& found = find_resource(resources, utility::s2us(std::to_string(oid)));
+            const auto found = find_resource(resources, utility::s2us(std::to_string(oid)));
             if (resources.end() != found && nc::is_status_monitor(nc::details::parse_class_id(nmos::fields::nc::class_id(found->data))))
             {
                 const auto& class_id = nc::details::parse_class_id(nmos::fields::nc::class_id(found->data));

@@ -326,7 +326,7 @@ namespace nmos
                     {
                         // If constant oid then check oid from property holder and verify with oid from block member
                         // Is this oid already in use?
-                        const auto& child = find_resource(resources, utility::s2us(std::to_string(oid)));
+                        const auto child = find_resource(resources, utility::s2us(std::to_string(oid)));
 
                         if (resources.end() != child)
                         {
@@ -577,7 +577,7 @@ namespace nmos
 
         while (utility::s2us(std::to_string(nmos::root_block_oid)) != oid.as_string())
         {
-            const auto& found = nmos::find_resource(resources, utility::s2us(std::to_string(nmos::fields::nc::owner(found_resource.data))));
+            const auto found = nmos::find_resource(resources, utility::s2us(std::to_string(nmos::fields::nc::owner(found_resource.data))));
             if (resources.end() == found)
             {
                 break;
