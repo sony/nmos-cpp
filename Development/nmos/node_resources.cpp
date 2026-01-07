@@ -16,6 +16,7 @@
 #include "nmos/is05_versions.h"
 #include "nmos/is07_versions.h"
 #include "nmos/is08_versions.h"
+#include "nmos/is11_versions.h"
 #include "nmos/is12_versions.h"
 #include "nmos/is14_versions.h"
 #include "nmos/media_type.h"
@@ -104,6 +105,27 @@ namespace nmos
                 {
                     web::json::push_back(data[U("controls")], value_of({
                         { U("href"), channelmapping_uri.set_host(host).to_uri().to_string() },
+                        { U("type"), type },
+                        { U("authorization"), nmos::experimental::fields::server_authorization(settings) }
+                    }));
+                }
+            }
+        }
+
+        if (0 <= nmos::fields::streamcompatibility_port(settings))
+        {
+            for (const auto& version : nmos::is11_versions::from_settings(settings))
+            {
+                auto streamcompatibility_uri = web::uri_builder()
+                    .set_scheme(nmos::http_scheme(settings))
+                    .set_port(nmos::fields::streamcompatibility_port(settings))
+                    .set_path(U("/x-nmos/streamcompatibility/") + make_api_version(version));
+                auto type = U("urn:x-nmos:control:stream-compat/") + make_api_version(version);
+
+                for (const auto& host : hosts)
+                {
+                    web::json::push_back(data[U("controls")], value_of({
+                        { U("href"), streamcompatibility_uri.set_host(host).to_uri().to_string() },
                         { U("type"), type },
                         { U("authorization"), nmos::experimental::fields::server_authorization(settings) }
                     }));
