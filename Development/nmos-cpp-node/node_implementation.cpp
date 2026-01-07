@@ -1817,20 +1817,8 @@ nmos::transport_file_parser make_node_implementation_transport_file_parser()
     // this example uses a custom transport file parser to handle video/jxsv in addition to the core media types
     // otherwise, it could simply return &nmos::parse_rtp_transport_file
     // (if this callback is specified, an 'empty' std::function is not allowed)
-    return [](const nmos::resource& receiver, const nmos::resource& connection_receiver, const utility::string_t& transport_file_type, const utility::string_t& transport_file_data, slog::base_gate& gate)
+    return [validate_sdp_parameters = impl::validate_sdp_parameters](const nmos::resource& receiver, const nmos::resource& connection_receiver, const utility::string_t& transport_file_type, const utility::string_t& transport_file_data, slog::base_gate& gate)
     {
-        const auto validate_sdp_parameters = [](const web::json::value& receiver, const nmos::sdp_parameters& sdp_params)
-        {
-            if (nmos::media_types::video_jxsv == nmos::get_media_type(sdp_params))
-            {
-                nmos::validate_video_jxsv_sdp_parameters(receiver, sdp_params);
-            }
-            else
-            {
-                // validate core media types, i.e., "video/raw", "audio/L", "video/smpte291" and "video/SMPTE2022-6"
-                nmos::validate_sdp_parameters(receiver, sdp_params);
-            }
-        };
         return nmos::details::parse_rtp_transport_file(validate_sdp_parameters, receiver, connection_receiver, transport_file_type, transport_file_data, gate);
     };
 }
