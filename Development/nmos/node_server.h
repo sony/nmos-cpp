@@ -153,13 +153,6 @@ namespace nmos
             save_authorization_client_handler save_authorization_client;
             request_authorization_code_handler request_authorization_code;
 
-            // Stream Compatibility Management handlers
-            nmos::experimental::details::streamcompatibility_base_edid_handler validate_base_edid;
-            nmos::experimental::details::streamcompatibility_effective_edid_setter set_effective_edid;
-            nmos::experimental::details::streamcompatibility_active_constraints_handler validate_active_constraints;
-            nmos::experimental::details::streamcompatibility_sender_validator validate_sender_resources;
-            nmos::experimental::details::streamcompatibility_receiver_validator validate_receiver;
-
             nmos::get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor;
             nmos::get_control_protocol_datatype_descriptor_handler get_control_protocol_datatype_descriptor;
             nmos::get_control_protocol_method_descriptor_handler get_control_protocol_method_descriptor;
@@ -177,6 +170,13 @@ namespace nmos
             nmos::get_packet_counters_handler get_lost_packet_counters;
             nmos::get_packet_counters_handler get_late_packet_counters;
             nmos::reset_monitor_handler reset_monitor;
+
+            // Stream Compatibility Management handlers
+            nmos::experimental::details::streamcompatibility_base_edid_handler validate_base_edid;
+            nmos::experimental::details::streamcompatibility_effective_edid_setter set_effective_edid;
+            nmos::experimental::details::streamcompatibility_active_constraints_handler validate_active_constraints;
+            nmos::experimental::details::streamcompatibility_sender_validator validate_sender_resources;
+            nmos::experimental::details::streamcompatibility_receiver_validator validate_receiver;
         };
 
         // Construct a server instance for an NMOS Node, implementing the IS-04 Node API, IS-05 Connection API, IS-07 Events API
