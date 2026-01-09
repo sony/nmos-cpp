@@ -110,6 +110,9 @@ namespace nmos
         // is14_versions [node]: used to specify the enabled API versions for a version-locked configuration
         const web::json::field_as_array is14_versions{ U("is14_versions") }; // when omitted, nmos::is14_versions::all is used
 
+        // est_versions [registry, node]: used to specify the enabled API versions for a version-locked configuration
+        const web::json::field_as_array est_versions{ U("est_versions") }; // when omitted, nmos::est_versions::all is used
+
         // pri [registry, node]: used for the 'pri' TXT record; specifying nmos::service_priorities::no_priority (maximum value) disables advertisement completely
         const web::json::field_as_integer_or pri{ U("pri"), 100 }; // default to highest_development_priority
 
@@ -468,6 +471,46 @@ namespace nmos
             // serial_number [node]: the serial number of the NcDeviceManager used for NMOS Control Protocol
             // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncdevicemanager
             const web::json::field_as_string_or serial_number{ U("serial_number"), U("") };
+
+            // est_services [registry, node]: the discovered list of EST APIs, in the order they should be used
+            // this list is created and maintained by nmos::est_behaviour_thread; each entry is a uri like http://example.api.com/x-nmos/est/{version}
+            const web::json::field_as_value est_services{ U("est_services") };
+
+            // est_address [registry, node]: IP address or host name used to construct request URLs for the EST API (if not discovered via DNS-SD)
+            const web::json::field_as_string est_address{ U("est_address") };
+
+            // est_port [registry, node]: used to construct request URLs for the EST server's EST API (if not discovered via DNS-SD)
+            const web::json::field_as_integer_or est_port{ U("est_port"), 443 };
+
+            // est_selector [registry, node]: used to construct request URLs for the EST API (if not discovered via DNS-SD)
+            const web::json::field_as_string_or est_selector{ U("est_selector"), U("") };
+
+            // est_request_max [registry, node]: timeout for interactions with the EST API
+            const web::json::field_as_integer_or est_request_max{ U("est_request_max"), 30 };
+
+            // est_enabled [registry, node]: allow EST to be disabled, preventing from being automatically provisioned with a TLS Certificate if required by the network's security policy
+            const web::json::field_as_bool_or est_enabled{ U("est_enabled"), true };
+
+            // explicit_trust_est_enabled [registry, node]: allow explicit trust of EST server to be disable, to prevent the EST Client from requesting a TLS Certificate from a rogue server
+            const web::json::field_as_bool_or explicit_trust_est_enabled{ U("explicit_trust_est_enabled"), true };
+
+            // country [registry, node]: two-character abbreviation of country in which organization resides(e.g.GB) for CSR generation
+            const web::json::field_as_string_or country{ U("country"), U("") };
+
+            // state [registry, node]: the full name of your state or province for CSR generation
+            const web::json::field_as_string_or state{ U("state"), U("") };
+
+            // city [registry, node]: the city of your organization's main office, or a main office for your organization for CSR generation
+            const web::json::field_as_string_or city{ U("city"), U("") };
+
+            // organizational_unit [registry, node]: the name of the department or organization unit making the CSR request
+            const web::json::field_as_string_or organizational_unit{ U("organizational_unit"), U("") };
+
+            // email_address [registry, node]: the organization contact, usually of the certificate administrator or IT department for CSR generation
+            const web::json::field_as_string_or email_address{ U("email_address"), U("") };
+
+            // certificate_revocation_interval [registry, node]: the interval to check the revocation status of the TLS Certificates using CRL
+            const web::json::field_as_integer_or certificate_revocation_interval{ U("certificate_revocation_interval"), 600 };
         }
     }
 }

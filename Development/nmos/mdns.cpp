@@ -12,6 +12,7 @@
 #include "cpprest/uri_builder.h"
 #include "mdns/service_advertiser.h"
 #include "mdns/service_discovery.h"
+#include "nmos/est_versions.h"
 #include "nmos/is09_versions.h"
 #include "nmos/is10_versions.h"
 #include "nmos/random.h"
@@ -262,6 +263,16 @@ namespace nmos
                 { txt_record_keys::api_auth, details::make_api_auth_value(api_auth) }
             };
         }
+        else if (service == nmos::service_types::est)
+        {
+            // see https://specs.amwa.tv/bcp-003-03/releases/v1.0.0/docs/1.0._Certificate_Provisioning.html#dns-sd-txt-records
+            // EST API does not use authorization
+            return
+            {
+                { txt_record_keys::pri, details::make_pri_value(pri) },
+                { txt_record_keys::api_selector, details::make_api_selector_value(selector) }
+            };
+        }
         return {};
     }
 
@@ -311,6 +322,7 @@ namespace nmos
                 if (nmos::service_types::register_ == service) return nmos::fields::registration_port(settings);
                 if (nmos::service_types::system == service) return nmos::fields::system_port(settings);
                 if (nmos::service_types::authorization == service) return nmos::experimental::fields::authorization_port(settings);
+                if (nmos::service_types::est == service) return nmos::experimental::fields::est_port(settings);
                 return 0;
             }
 
@@ -322,6 +334,7 @@ namespace nmos
                 if (nmos::service_types::register_ == service) return "registration";
                 if (nmos::service_types::system == service) return "system";
                 if (nmos::service_types::authorization == service) return "auth";
+                if (nmos::service_types::est == service) return "est";
                 return{};
             }
 
@@ -336,6 +349,8 @@ namespace nmos
                 if (nmos::service_types::system == service) return nmos::is09_versions::from_settings(settings);
                 // the Authorization API is defined by IS-10
                 if (nmos::service_types::authorization == service) return nmos::is10_versions::from_settings(settings);
+                // the EST API is defined by BCP-003-03
+                if (nmos::service_types::est == service) return nmos::est_versions::from_settings(settings);
                 // all the other APIs are defined by IS-04, and should advertise consistent versions
                 return nmos::is04_versions::from_settings(settings);
             }
@@ -524,17 +539,28 @@ namespace nmos
                         }
 
                         // check advertisement has a matching 'api_proto' value
-                        auto resolved_proto = nmos::parse_api_proto_record(records);
-                        if (api_proto.end() == api_proto.find(resolved_proto)) return true;
+                        // ignore for EST service, no 'api_proto' in txt records (see nmos::make_txt_records)
+                        auto resolved_proto = service_protocols::https;
+                        if (service != nmos::service_types::est)
+                        {
+                            resolved_proto = nmos::parse_api_proto_record(records);
+                            if (api_proto.end() == api_proto.find(resolved_proto)) return true;
+                        }
 
                         // check advertisement has a matching 'api_auth' value
                         auto resolved_auth = nmos::parse_api_auth_record(records);
                         if (api_auth.end() == api_auth.find(resolved_auth)) return true;
 
                         // check the advertisement includes a version we support
-                        auto resolved_vers = nmos::parse_api_ver_record(records);
-                        auto resolved_ver = std::find_first_of(resolved_vers.rbegin(), resolved_vers.rend(), api_ver.rbegin(), api_ver.rend());
-                        if (resolved_vers.rend() == resolved_ver) return true;
+                        // note: for the EST service, no 'api_ver' in the txt records, so just ignore it (see nmos::make_txt_records)
+                        api_version resolved_ver{};
+                        if (service != nmos::service_types::est)
+                        {
+                            auto resolved_vers = nmos::parse_api_ver_record(records);
+                            auto resolved_ver_ = std::find_first_of(resolved_vers.rbegin(), resolved_vers.rend(), api_ver.rbegin(), api_ver.rend());
+                            if (resolved_vers.rend() == resolved_ver_) return true;
+                            resolved_ver = *resolved_ver_;
+                        }
 
                         // hmm, maybe in the future check for the matching 'api_selector' value
                         auto resolved_selector = nmos::parse_api_selector_record(records);
@@ -546,6 +572,13 @@ namespace nmos
                                 .set_scheme(utility::s2us(resolved_proto))
                                 .set_port(resolved.port)
                                 .set_path(U("/.well-known/oauth-authorization-server")).append_path(!resolved_selector.empty() ? U("/") + resolved_selector : U(""));
+                        }
+                        else if (service == nmos::service_types::est)
+                        {
+                            resolved_uri
+                                .set_scheme(utility::s2us(resolved_proto))
+                                .set_port(resolved.port)
+                                .set_path(U("/.well-known/est")).append_path(!resolved_selector.empty() ? U("/") + resolved_selector : U(""));
                         }
                         else
                         {
@@ -563,7 +596,7 @@ namespace nmos
                         {
                             // sneakily stash the host name for the Host header in user info
                             // cf. nmos::details::make_http_client
-                            results->push_back({ { *resolved_ver, resolved_pri }, resolved_uri
+                            results->push_back({ { resolved_ver, resolved_pri }, resolved_uri
                                 .set_user_info(host_name)
                                 .set_host(utility::s2us(ip_address))
                                 .to_uri()

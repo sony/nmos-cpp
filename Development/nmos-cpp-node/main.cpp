@@ -8,6 +8,7 @@
 #include "nmos/authorization_state.h"
 #include "nmos/control_protocol_state.h"
 #include "nmos/control_protocol_behaviour.h"
+#include "nmos/est_behaviour.h"
 #include "nmos/jwks_uri_api.h"
 #include "nmos/log_gate.h"
 #include "nmos/model.h"
@@ -142,7 +143,7 @@ int main(int argc, char* argv[])
         // only configure the following callbacks if IS-12/BCP-008-01 is required
         // Note:
         // the get_control_class_descriptor, get_control_datatype_descriptor and get_control_protocol_method_descriptor callbacks must be set up before executing the make_node_server
-		nmos::experimental::control_protocol_state control_protocol_state(node_implementation.control_protocol_property_changed, node_implementation.create_validation_fingerprint, node_implementation.validate_validation_fingerprint, node_implementation.get_read_only_modification_allow_list, node_implementation.remove_device_model_object, node_implementation.create_device_model_object, node_implementation.get_lost_packet_counters, node_implementation.get_late_packet_counters, node_implementation.reset_monitor);
+        nmos::experimental::control_protocol_state control_protocol_state(node_implementation.control_protocol_property_changed, node_implementation.create_validation_fingerprint, node_implementation.validate_validation_fingerprint, node_implementation.get_read_only_modification_allow_list, node_implementation.remove_device_model_object, node_implementation.create_device_model_object, node_implementation.get_lost_packet_counters, node_implementation.get_late_packet_counters, node_implementation.reset_monitor);
         if (0 <= nmos::fields::control_protocol_ws_port(node_model.settings))
         {
             node_implementation
@@ -150,6 +151,15 @@ int main(int argc, char* argv[])
                 .on_get_control_datatype_descriptor(nmos::make_get_control_protocol_datatype_descriptor_handler(control_protocol_state))
                 .on_get_control_protocol_method_descriptor(nmos::make_get_control_protocol_method_descriptor_handler(control_protocol_state))
                 .on_monitor_activated(nmos::make_monitor_connection_activation_handler(node_model.control_protocol_resources, control_protocol_state, gate));
+        }
+
+        // only configure communication with EST server if BCP-003-03 is required
+        if (nmos::experimental::fields::est_enabled(node_model.settings))
+        {
+            node_implementation
+                .on_ca_certificate_received(nmos::experimental::make_ca_certificate_received_handler(node_model.settings, gate))
+                .on_rsa_server_certificate_received(nmos::experimental::make_rsa_server_certificate_received_handler(node_model.settings, gate))
+                .on_ecdsa_server_certificate_received(nmos::experimental::make_ecdsa_server_certificate_received_handler(node_model.settings, gate));
         }
 
         // Set up the node server
@@ -258,6 +268,17 @@ int main(int argc, char* argv[])
                 // and https://specs.amwa.tv/is-10/releases/v1.0.0/docs/4.5._Behaviour_-_Resource_Servers.html#public-keys
                 node_server.thread_functions.push_back([&, load_ca_certificates] { nmos::experimental::authorization_token_issuer_thread(node_model, authorization_state, load_ca_certificates, gate); });
             }
+        }
+
+        // only configure communication with EST server if BCP-003-03 is required
+        if (nmos::experimental::fields::est_enabled(node_model.settings))
+        {
+            auto load_ca_certificates = node_implementation.load_ca_certificates;
+            auto load_client_certificate = node_implementation.load_client_certificate;
+            auto ca_certificate_received = node_implementation.ca_certificate_received;
+            auto rsa_server_certificate_received = node_implementation.rsa_server_certificate_received;
+            auto ecdsa_server_certificate_received = node_implementation.ecdsa_server_certificate_received;
+            node_server.thread_functions.push_back([&, load_ca_certificates, load_client_certificate, ca_certificate_received, rsa_server_certificate_received, ecdsa_server_certificate_received] { nmos::experimental::est_behaviour_thread(node_model, load_ca_certificates, load_client_certificate, ca_certificate_received, rsa_server_certificate_received, ecdsa_server_certificate_received, gate); });
         }
 
         // Open the API ports and start up node operation (including the DNS-SD advertisements)
