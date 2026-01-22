@@ -2053,8 +2053,8 @@ nmos::channelmapping_activation_handler make_node_implementation_channelmapping_
 }
 
 // Example Stream Compatibility Management API callback to perform application-specific validation of the Base EDID update during a PUT /edid/base or DEL /edid/base request
-// Note: Since decoding the EDID does not formed part of the IS-11 specification, no validation is implemented for the reference example.
-// i.e. it doesn't reject an invalid EDIDs.
+// Note: Since decoding the EDID is not part of the IS-11 specification, no validation is implemented for the reference example.
+// i.e. it will not reject an invalid EDID.
 nmos::experimental::details::streamcompatibility_base_edid_handler make_node_implementation_streamcompatibility_base_edid_handler(slog::base_gate& gate)
 {
     return [&gate](const nmos::id& input_id, const bst::optional<utility::string_t>& base_edid_binary)
