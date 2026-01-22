@@ -1740,7 +1740,7 @@ void node_implementation_run(nmos::node_model& model, nmos::experimental::contro
                 }
             }
 
-            // example volatiling video sender stream status
+            // example volatile video sender stream status
             if (simulate_sender_volatile_activity)
             {
                 for (int index = 0; index < how_many; ++index)
