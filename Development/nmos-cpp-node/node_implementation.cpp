@@ -1507,7 +1507,7 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
 
                     utility::ostringstream_t role;
                     role << U("sender-control-") << ++count;
-                    const auto& sender = nmos::find_resource(model.node_resources, sender_id);
+                    const auto sender = nmos::find_resource(model.node_resources, sender_id);
                     auto sender_control = impl::make_sender_control(sender_control_class_id,
                         sender->data,
                         ++oid, role.str(),
