@@ -1514,8 +1514,7 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
                         sender->data,
                         ++oid, role.str(),
                         sender_controls_block_oid,
-                        value_of({ { nmos::nc::details::make_touchpoint_nmos({nmos::ncp_touchpoint_resource_types::sender, sender_id}) } }),
-                        gate);
+                        value_of({ { nmos::nc::details::make_touchpoint_nmos({nmos::ncp_touchpoint_resource_types::sender, sender_id}) } }));
                     // add receiver-monitor to receivers-block
                     nmos::nc::push_back(sender_controls_block, sender_control);
                 }
