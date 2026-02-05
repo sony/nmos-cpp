@@ -1495,7 +1495,7 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
         const auto sender_controls_block_oid = ++oid;
         auto sender_controls_block = nmos::make_block(sender_controls_block_oid, nmos::root_block_oid, U("sender-controls"), U("Sender Controls"), U("Sender Controls"));
 
-        // example audio sender control(s)
+        // example sender control(s)
         {
             int count = 0;
             for (int index = 0; index < how_many; ++index)
