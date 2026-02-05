@@ -320,7 +320,7 @@ namespace impl
                                                    role,
                                                    web::json::value(role),
                                                    U("Sender resource data"),
-                                                   touchpoint,
+                                                   touchpoints,
                                                    web::json::value::null(),
                                                    true);
 
