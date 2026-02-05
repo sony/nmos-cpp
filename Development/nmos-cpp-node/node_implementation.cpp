@@ -1502,8 +1502,6 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
             {
                 for (const auto& port : rtp_receiver_ports)
                 {
-                    // only create audio sender controls for audio senders
-                    //if (impl::ports::audio != port) continue;
 
                     const auto sender_id = impl::make_id(seed_id, nmos::types::sender, port, index);
 
