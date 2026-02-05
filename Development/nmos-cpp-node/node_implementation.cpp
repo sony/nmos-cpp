@@ -285,8 +285,7 @@ namespace impl
                                                                const nmos::nc_oid& oid,
                                                                const utility::string_t& role,
                                                                const nmos::nc_oid& parent_oid,
-                                                               const web::json::value touchpoint,
-                                                               slog::base_gate & gate)
+                                                               const web::json::value& touchpoints)
     {
         using web::json::value;
         using web::json::value_of;
