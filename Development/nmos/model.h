@@ -102,6 +102,10 @@ namespace nmos
         // see nmos/channelmapping_resources.h
         nmos::resources channelmapping_resources;
 
+        // IS-11 senders, receivers, inputs and outputs for this node
+        // see nmos/streamcompatibility_resources.h
+        nmos::resources streamcompatibility_resources;
+
         // IS-12 resources for this node
         // see nmos/control_protocol_resources.h
         nmos::resources control_protocol_resources;
