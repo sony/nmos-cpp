@@ -1462,7 +1462,6 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
                     nmos::nc::push_back(root_block, sender_monitor);
                 }
             }
-        }
 
         const auto sender_monitors_block_oid = ++oid;
         auto sender_monitors_block = nmos::make_block(sender_monitors_block_oid, nmos::root_block_oid, U("sender-monitors"), U("Sender Monitors"), U("Sender Monitors"));
