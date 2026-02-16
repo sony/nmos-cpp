@@ -1444,25 +1444,6 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
             }
         }
 
-        // example sender-monitor(s)
-        {
-            int count = 0;
-            for (int index = 0; index < how_many; ++index)
-            {
-                for (const auto& port : rtp_sender_ports)
-                {
-                    const auto sender_id = impl::make_id(seed_id, nmos::types::sender, port, index);
-
-                    utility::ostringstream_t role;
-                    role << U("sender-monitor-") << ++count;
-                    const auto sender = nmos::find_resource(model.node_resources, sender_id);
-                    const auto sender_monitor = nmos::make_sender_monitor(++oid, true, nmos::root_block_oid, role.str(), nmos::fields::label(sender->data), nmos::fields::description(sender->data), value_of({ { nmos::nc::details::make_touchpoint_nmos({nmos::ncp_touchpoint_resource_types::sender, sender_id}) } }));
-
-                    // add sender-monitor to root-block
-                    nmos::nc::push_back(root_block, sender_monitor);
-                }
-            }
-
         const auto sender_monitors_block_oid = ++oid;
         auto sender_monitors_block = nmos::make_block(sender_monitors_block_oid, nmos::root_block_oid, U("sender-monitors"), U("Sender Monitors"), U("Sender Monitors"));
         // making a block rebuildable allows block members to be added or removed by the Configuration API in Rebuild mode
