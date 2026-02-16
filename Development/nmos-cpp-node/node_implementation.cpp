@@ -1486,7 +1486,7 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
                     auto sender_monitor = nmos::make_sender_monitor(++oid, true, sender_monitors_block_oid, role.str(), nmos::fields::label(sender->data), nmos::fields::description(sender->data), value_of({ { nmos::nc::details::make_touchpoint_nmos({nmos::ncp_touchpoint_resource_types::sender, sender_id}) } }));
                     // optionally indicate dependencies within the device model
                     nmos::set_object_dependency_paths(sender_monitor, { {U("root"), U("sender-monitors")} });
-                    // add sender-monitor to root-block
+                    // add sender-monitor to sender-monitors-block
                     nmos::nc::push_back(sender_monitors_block, sender_monitor);
                 }
             }
