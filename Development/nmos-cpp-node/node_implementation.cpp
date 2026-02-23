@@ -2227,10 +2227,10 @@ nmos::experimental::details::streamcompatibility_active_constraints_handler make
             if (!nmos::caps::meta::enabled(constraint_set)) continue;
             for (const auto& sender_caps_constraint_set : sender_capabilities)
             {
-                const auto intersection = nmos::experimental::get_constraint_set_intersection(sender_caps_constraint_set, constraint_set);
-                if (!intersection.is_null())
+                const auto constraint_set_intersection = nmos::experimental::get_constraint_set_intersection(sender_caps_constraint_set, constraint_set);
+                if (!constraint_set_intersection.is_null())
                 {
-                    v.push_back(intersection);
+                    v.push_back(constraint_set_intersection);
                 }
             }
         }
