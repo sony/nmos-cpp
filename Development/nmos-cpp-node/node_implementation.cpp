@@ -352,7 +352,7 @@ namespace impl
         data[transport_property]          = sender_data.has_field(U("transport")) ? sender_data.at(U("transport")) : web::json::value::null();
         return nmos::control_protocol_resource{ nmos::is12_versions::v1_0, nmos::types::nc_worker, std::move(data), true };
     }
-    
+
     const auto validate_sdp_parameters = [](const web::json::value& receiver, const nmos::sdp_parameters& sdp_params)
     {
         if (nmos::media_types::video_jxsv == nmos::get_media_type(sdp_params))
