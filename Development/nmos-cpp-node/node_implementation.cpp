@@ -364,7 +364,7 @@ namespace impl
             // validate core media types, i.e., "video/raw", "audio/L", "video/smpte291" and "video/SMPTE2022-6"
             nmos::validate_sdp_parameters(receiver, sdp_params);
         }
-    }
+    };
 }
 
 // forward declarations for node_implementation_thread
