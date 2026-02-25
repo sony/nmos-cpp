@@ -979,7 +979,7 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
             impl::set_label_description(sender, port, index);
             impl::insert_group_hint(sender, port, index);
 
-            auto connection_sender = nmos::make_connection_mxl_sender(sender_id);
+            auto connection_sender = nmos::make_connection_mxl_sender(sender_id, flow_id);
 
             if (impl::fields::activate_senders(model.settings))
             {

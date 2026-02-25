@@ -626,13 +626,13 @@ namespace nmos
             });
         }
 
-        web::json::value make_connection_mxl_sender_staged_core_parameter_set()
+        web::json::value make_connection_mxl_sender_staged_core_parameter_set(const nmos::id& flow_id)
         {
             using web::json::value;
             using web::json::value_of;
 
             return value_of({
-                { nmos::fields::flow_id, value::null() }
+                { nmos::fields::flow_id, flow_id.empty() ? value::null() : value::string(flow_id) }
             });
         }
 
@@ -658,7 +658,7 @@ namespace nmos
         }
     }
 
-    nmos::resource make_connection_mxl_sender(const nmos::id& id)
+    nmos::resource make_connection_mxl_sender(const nmos::id& id, const nmos::id& flow_id)
     {
         using web::json::value;
         using web::json::value_of;
@@ -670,7 +670,7 @@ namespace nmos
         data[nmos::fields::endpoint_constraints] = details::legs_of(details::make_connection_mxl_sender_core_constraints(), redundant);
 
         data[nmos::fields::endpoint_staged][nmos::fields::receiver_id] = value::null();
-        data[nmos::fields::endpoint_staged][nmos::fields::transport_params] = details::legs_of(details::make_connection_mxl_sender_staged_core_parameter_set(), redundant);
+        data[nmos::fields::endpoint_staged][nmos::fields::transport_params] = details::legs_of(details::make_connection_mxl_sender_staged_core_parameter_set(flow_id), redundant);
 
         data[nmos::fields::endpoint_active] = data[nmos::fields::endpoint_staged];
 
