@@ -250,7 +250,15 @@ namespace nmos
             if (nmos::transports::mqtt == transport_base) return mqtt_auto_constraints();
             //if (nmos::transports::mxl == transport_base) return mxl_auto_constraints();
 
-            static const std::map<nmos::type, std::set<utility::string_t>> no_auto_constraints;
+            static const std::map<nmos::type, std::set<utility::string_t>> no_auto_constraints
+            {
+                {
+                    nmos::types::sender, {}
+                },
+                {
+                    nmos::types::receiver, {}
+                }
+            };
             return no_auto_constraints;
         }
 
