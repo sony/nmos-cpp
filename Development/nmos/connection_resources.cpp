@@ -615,24 +615,28 @@ namespace nmos
 
     namespace details
     {
-        web::json::value make_connection_mxl_sender_core_constraints()
+        web::json::value make_connection_mxl_sender_core_constraints(const nmos::id& flow_id)
         {
             using web::json::value;
             using web::json::value_of;
 
             const auto unconstrained = value::object();
             return value_of({
-                { nmos::fields::flow_id, unconstrained }
+                { nmos::fields::flow_id, flow_id.empty() ? unconstrained : value_of({
+                    { nmos::fields::constraint_enum, value_of({
+                        flow_id
+                    }) }
+                }) }
             });
         }
 
-        web::json::value make_connection_mxl_sender_staged_core_parameter_set(const nmos::id& flow_id)
+        web::json::value make_connection_mxl_sender_staged_core_parameter_set()
         {
             using web::json::value;
             using web::json::value_of;
 
             return value_of({
-                { nmos::fields::flow_id, flow_id.empty() ? value::null() : value::string(flow_id) }
+                { nmos::fields::flow_id, U("auto") }
             });
         }
 
@@ -667,12 +671,13 @@ namespace nmos
 
         auto data = details::make_connection_resource_core(id, redundant);
 
-        data[nmos::fields::endpoint_constraints] = details::legs_of(details::make_connection_mxl_sender_core_constraints(), redundant);
+        data[nmos::fields::endpoint_constraints] = details::legs_of(details::make_connection_mxl_sender_core_constraints(flow_id), redundant);
 
         data[nmos::fields::endpoint_staged][nmos::fields::receiver_id] = value::null();
-        data[nmos::fields::endpoint_staged][nmos::fields::transport_params] = details::legs_of(details::make_connection_mxl_sender_staged_core_parameter_set(flow_id), redundant);
+        data[nmos::fields::endpoint_staged][nmos::fields::transport_params] = details::legs_of(details::make_connection_mxl_sender_staged_core_parameter_set(), redundant);
 
         data[nmos::fields::endpoint_active] = data[nmos::fields::endpoint_staged];
+        // The caller must resolve all instances of "auto" in the /active endpoint into the actual values that will be used!
 
         // Note that the transporttype endpoint is implemented in terms of the matching IS-04 sender
 

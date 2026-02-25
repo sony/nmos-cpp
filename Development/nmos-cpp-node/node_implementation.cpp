@@ -1672,7 +1672,8 @@ void node_implementation_run(nmos::node_model& model, nmos::experimental::contro
     const auto sender_ports = impl::parse_ports(impl::fields::senders(model.settings));
     const auto rtp_sender_ports = boost::copy_range<std::vector<impl::port>>(sender_ports | boost::adaptors::filtered(impl::is_rtp_port));
     const auto ws_sender_ports = boost::copy_range<std::vector<impl::port>>(sender_ports | boost::adaptors::filtered(impl::is_ws_port));
-    const auto rtp_receiver_ports = boost::copy_range<std::vector<impl::port>>(impl::parse_ports(impl::fields::receivers(model.settings)) | boost::adaptors::filtered(impl::is_rtp_port));
+    const auto receiver_ports = impl::parse_ports(impl::fields::receivers(model.settings));
+    const auto rtp_receiver_ports = boost::copy_range<std::vector<impl::port>>(receiver_ports | boost::adaptors::filtered(impl::is_rtp_port));
     const auto simulate_status_monitor_activity = impl::fields::simulate_status_monitor_activity(model.settings);
 
     auto& control_protocol_resources = model.control_protocol_resources;
@@ -2010,19 +2011,23 @@ nmos::connection_resource_auto_resolver make_node_implementation_auto_resolver(c
     const auto seed_id = nmos::experimental::fields::seed_id(settings);
     const auto device_id = impl::make_id(seed_id, nmos::types::device);
     const auto how_many = impl::fields::how_many(settings);
-    const auto rtp_sender_ports = boost::copy_range<std::vector<impl::port>>(impl::parse_ports(impl::fields::senders(settings)) | boost::adaptors::filtered(impl::is_rtp_port));
+    const auto sender_ports = impl::parse_ports(impl::fields::senders(settings));
+    const auto rtp_sender_ports = boost::copy_range<std::vector<impl::port>>(sender_ports | boost::adaptors::filtered(impl::is_rtp_port));
     const auto rtp_sender_ids = impl::make_ids(seed_id, nmos::types::sender, rtp_sender_ports, how_many);
-    const auto ws_sender_ports = boost::copy_range<std::vector<impl::port>>(impl::parse_ports(impl::fields::senders(settings)) | boost::adaptors::filtered(impl::is_ws_port));
+    const auto ws_sender_ports = boost::copy_range<std::vector<impl::port>>(sender_ports | boost::adaptors::filtered(impl::is_ws_port));
     const auto ws_sender_ids = impl::make_ids(seed_id, nmos::types::sender, ws_sender_ports, how_many);
+    const auto mxl_sender_ports = boost::copy_range<std::vector<impl::port>>(sender_ports | boost::adaptors::filtered(impl::is_mxl_port));
+    const auto mxl_sender_ids = impl::make_ids(seed_id, nmos::types::sender, mxl_sender_ports, how_many);
     const auto ws_sender_uri = nmos::make_events_ws_api_connection_uri(device_id, settings);
-    const auto rtp_receiver_ports = boost::copy_range<std::vector<impl::port>>(impl::parse_ports(impl::fields::receivers(settings)) | boost::adaptors::filtered(impl::is_rtp_port));
+    const auto receiver_ports = impl::parse_ports(impl::fields::receivers(settings));
+    const auto rtp_receiver_ports = boost::copy_range<std::vector<impl::port>>(receiver_ports | boost::adaptors::filtered(impl::is_rtp_port));
     const auto rtp_receiver_ids = impl::make_ids(seed_id, nmos::types::receiver, rtp_receiver_ports, how_many);
-    const auto ws_receiver_ports = boost::copy_range<std::vector<impl::port>>(impl::parse_ports(impl::fields::receivers(settings)) | boost::adaptors::filtered(impl::is_ws_port));
+    const auto ws_receiver_ports = boost::copy_range<std::vector<impl::port>>(receiver_ports | boost::adaptors::filtered(impl::is_ws_port));
     const auto ws_receiver_ids = impl::make_ids(seed_id, nmos::types::receiver, ws_receiver_ports, how_many);
 
     // although which properties may need to be defaulted depends on the resource type,
     // the default value will almost always be different for each resource
-    return [rtp_sender_ids, rtp_receiver_ids, ws_sender_ids, ws_sender_uri, ws_receiver_ids](const nmos::resource& resource, const nmos::resource& connection_resource, value& transport_params)
+    return [rtp_sender_ids, rtp_receiver_ids, ws_sender_ids, ws_sender_uri, ws_receiver_ids, mxl_sender_ids](const nmos::resource& resource, const nmos::resource& connection_resource, value& transport_params)
     {
         const std::pair<nmos::id, nmos::type> id_type{ connection_resource.id, connection_resource.type };
         // this code relies on the specific constraints added by node_implementation_thread
@@ -2056,6 +2061,10 @@ nmos::connection_resource_auto_resolver make_node_implementation_auto_resolver(c
         else if (ws_receiver_ids.end() != boost::range::find(ws_receiver_ids, id_type.first))
         {
             nmos::details::resolve_auto(transport_params[0], nmos::fields::connection_authorization, [&] { return value::boolean(false); });
+        }
+        else if (mxl_sender_ids.end() != boost::range::find(mxl_sender_ids, id_type.first))
+        {
+            nmos::details::resolve_auto(transport_params[0], nmos::fields::flow_id, [&] { return web::json::front(nmos::fields::constraint_enum(constraints.at(0).at(nmos::fields::flow_id))); });
         }
     };
 }
