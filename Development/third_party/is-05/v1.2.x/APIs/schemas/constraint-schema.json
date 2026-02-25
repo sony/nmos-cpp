@@ -1,0 +1,62 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "description": "Definition of a single constraint record",
+  "title": "Constraint",
+  "definitions": {
+    "constraint": {
+      "type": "object",
+      "description": "The constraints for a single transport parameter",
+      "properties": {
+        "maximum": {
+          "description": "The inclusive maximum value the parameter can be set to",
+          "type": [
+            "integer",
+            "number"
+          ]
+        },
+        "minimum": {
+          "description": "The inclusive minimum value the parameter can be set to",
+          "type": [
+            "integer",
+            "number"
+          ]
+        },
+        "enum": {
+          "description": "An array of allowed values",
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "pattern": {
+          "description": "A regex pattern that must be satisfied for this parameter",
+          "type": "string",
+          "format": "regex"
+        },
+        "description": {
+          "description": "A human readable string describing the constraint (optional)",
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

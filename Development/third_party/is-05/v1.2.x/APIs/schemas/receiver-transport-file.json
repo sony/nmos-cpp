@@ -1,0 +1,27 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "description": "Transport file parameters. 'data' and 'type' must both be strings or both be null. If 'type' is non-null 'data' is expected to contain a valid instance of the specified media type.",
+  "title": "Transport file",
+  "additionalProperties": false,
+  "required": [
+    "data",
+    "type"
+  ],
+  "properties": {
+    "data": {
+      "description": "Content of the transport file",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "type": {
+      "description": "IANA assigned media type for file (e.g application/sdp)",
+      "type": [
+        "string",
+        "null"
+      ]
+    }
+  }
+}

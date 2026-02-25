@@ -1,0 +1,30 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "description": "Transport-specific parameters. If this parameter is included in a client request it must include the same number of array elements (or 'legs') as specified in the constraints. If no changes are required to a specific leg it must be included as an empty object ({}).",
+  "title": "Receiver Transport Parameters",
+  "anyOf": [{
+      "type": "array",
+      "items": {
+        "$ref": "receiver_transport_params_rtp.json"
+      }
+    },
+    {
+      "type": "array",
+      "items": {
+        "$ref": "receiver_transport_params_dash.json"
+      }
+    },
+    {
+      "type": "array",
+      "items": {
+        "$ref": "receiver_transport_params_websocket.json"
+      }
+    },
+    {
+      "type": "array",
+      "items": {
+        "$ref": "receiver_transport_params_mqtt.json"
+      }
+    }
+  ]
+}

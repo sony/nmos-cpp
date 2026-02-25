@@ -1,0 +1,30 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "description": "Describes a receiver",
+  "title": "Receiver resource",
+  "additionalProperties": false,
+  "properties": {
+    "sender_id": {
+      "description": "ID of the Sender subscribed to by this Receiver. This will be null if the receiver has not been configured to receive anything, or if it is receiving from a non-NMOS sender.",
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+    },
+    "master_enable": {
+      "description": "Master on/off control for receiver",
+      "type": "boolean"
+    },
+    "activation": {
+      "$ref": "activation-schema.json"
+    },
+    "transport_file": {
+      "$ref": "receiver-transport-file.json"
+    },
+    "transport_params": {
+      "$ref": "receiver_transport_params.json"
+    }
+  }
+}

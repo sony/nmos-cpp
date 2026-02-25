@@ -1,0 +1,24 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "array",
+  "description": "Describes a bulk receiver update resource",
+  "title": "Bulk receiver resource",
+  "items": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": [
+      "id",
+      "params"
+    ],
+    "properties": {
+      "id": {
+        "description": "ID of the target receiver to apply parameters to",
+        "type": "string",
+        "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+      },
+      "params": {
+        "$ref": "receiver-stage-schema.json"
+      }
+    }
+  }
+}

@@ -1,0 +1,191 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "description": "Describes RTP Sender transport parameters. The constraints in this schema are minimum constraints, but may be further constrained at the constraints endpoint. As a minimum all senders must support `source_ip`, `destination_ip`, `source_port`, `rtp_enabled` and `destination_port`. Senders supporting FEC and/or RTCP must support parameters prefixed with `fec` and `rtcp` respectively.",
+  "title": "RTP Sender Transport Parameters",
+    "type": "object",
+  "title": "Sender Output",
+  "properties": {
+    "source_ip": {
+      "type": "string",
+      "description": "IP address from which RTP packets will be sent (IP address of interface bound to this output). The sender should provide an enum in the constraints endpoint, which should contain the available interface addresses. If the parameter is set to auto the sender should establish for itself which interface it should use, based on routing rules or its own internal configuration.",
+      "anyOf": [{
+          "format": "ipv4"
+        },
+        {
+          "format": "ipv6"
+        },
+        {
+          "pattern": "^auto$"
+        }
+      ]
+    },
+    "destination_ip": {
+      "type": "string",
+      "description": "IP address to which RTP packets will be sent. If auto is set the sender should select a multicast address to send to itself. For example it may implement MADCAP (RFC 2730), ZMAAP, or be allocated address by some other system responsible for co-ordination multicast address use.",
+      "anyOf": [{
+          "format": "ipv4"
+        },
+        {
+          "format": "ipv6"
+        },
+        {
+          "pattern": "^auto$"
+        }
+      ]
+    },
+    "source_port": {
+      "type": [
+        "integer",
+        "string"
+      ],
+      "description": "source port for RTP packets (auto = 5004 by default)",
+      "minimum": 0,
+      "maximum": 65535,
+      "pattern": "^auto$"
+    },
+    "destination_port": {
+      "type": [
+        "integer",
+        "string"
+      ],
+      "description": "destination port for RTP packets (auto = 5004 by default)",
+      "minimum": 1,
+      "maximum": 65535,
+      "pattern": "^auto$"
+    },
+    "fec_enabled": {
+      "type": "boolean",
+      "description": "FEC on/off"
+    },
+    "fec_destination_ip": {
+      "type": "string",
+      "description": "May be used if NAT is being used at the destination (auto = destination_ip by default)",
+      "anyOf": [{
+          "format": "ipv4"
+        },
+        {
+          "format": "ipv6"
+        },
+        {
+          "pattern": "^auto$"
+        }
+      ]
+    },
+    "fec_type": {
+      "type": "string",
+      "description": "forward error correction mode to apply",
+      "enum": [
+        "XOR",
+        "Reed-Solomon"
+      ]
+    },
+    "fec_mode": {
+      "type": "string",
+      "description": "forward error correction mode to apply",
+      "enum": [
+        "1D",
+        "2D"
+      ]
+    },
+    "fec_block_width": {
+      "type": "integer",
+      "description": "width of block over which FEC is calculated in packets",
+      "minimum": 4,
+      "maximum": 200
+    },
+    "fec_block_height": {
+      "type": "integer",
+      "description": "height of block over which FEC is calculated in packets",
+      "minimum": 4,
+      "maximum": 200
+    },
+    "fec1D_destination_port": {
+      "type": [
+        "integer",
+        "string"
+      ],
+      "description": "destination port for RTP Column FEC packets (auto = RTP destination_port + 2 by default)",
+      "minimum": 1,
+      "maximum": 65535,
+      "pattern": "^auto$"
+    },
+    "fec2D_destination_port": {
+      "type": [
+        "integer",
+        "string"
+      ],
+      "description": "destination port for RTP Row FEC packets (auto = RTP destination_port + 4 by default)",
+      "minimum": 1,
+      "maximum": 65535,
+      "pattern": "^auto$"
+    },
+    "fec1D_source_port": {
+      "type": [
+        "integer",
+        "string"
+      ],
+      "description": "source port for RTP FEC packets (auto = RTP source_port + 2 by default)",
+      "minimum": 0,
+      "maximum": 65535,
+      "pattern": "^auto$"
+    },
+    "fec2D_source_port": {
+      "type": [
+        "integer",
+        "string"
+      ],
+      "description": "source port for RTP FEC packets (auto = RTP source_port + 4 by default)",
+      "minimum": 0,
+      "maximum": 65535,
+      "pattern": "^auto$"
+    },
+    "rtcp_enabled": {
+      "type": "boolean",
+      "description": "rtcp on/off"
+    },
+    "rtcp_destination_ip": {
+      "type": "string",
+      "description": "IP address to which RTCP packets will be sent (auto = same as RTP destination_ip by default)",
+      "anyOf": [{
+          "format": "ipv4"
+        },
+        {
+          "format": "ipv6"
+        },
+        {
+          "pattern": "^auto$"
+        }
+      ]
+    },
+    "rtcp_destination_port": {
+      "type": [
+        "integer",
+        "string"
+      ],
+      "description": "destination port for RTCP packets (auto = RTP destination_port + 1 by default)",
+      "minimum": 1,
+      "maximum": 65535,
+      "pattern": "^auto$"
+    },
+    "rtcp_source_port": {
+      "type": [
+        "integer",
+        "string"
+      ],
+      "description": "source port for RTCP packets (auto = RTP source_port + 1 by default)",
+      "minimum": 0,
+      "maximum": 65535,
+      "pattern": "^auto$"
+    },
+    "rtp_enabled": {
+      "type": "boolean",
+      "description": "RTP transmission active/inactive"
+    }
+  },
+  "patternProperties": {
+    "^ext_[a-zA-Z0-9_]+$": {
+      "$ref": "sender_transport_params_ext.json"
+    }
+  },
+  "additionalProperties": false
+}

@@ -1,0 +1,17 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Transport Type",
+  "description": "Transport type URN base used by the Sender or Receiver (i.e. with any subclassifications or versions removed)",
+  "type": "string",
+  "oneOf": [
+    {
+      "enum": [
+        "urn:x-nmos:transport:rtp",
+        "urn:x-nmos:transport:dash",
+        "urn:x-nmos:transport:websocket",
+        "urn:x-nmos:transport:mqtt"
+      ]
+    }
+  ],
+  "format": "uri"
+}
