@@ -172,6 +172,8 @@ namespace nmos
         const web::json::field_as_value_or broker_authorization{ U("broker_authorization"), {} }; // string or bool
         const web::json::field_as_value_or broker_topic{ U("broker_topic"), {} }; // string or null
         const web::json::field_as_value_or connection_status_broker_topic{ U("connection_status_broker_topic"), {} }; // string or null
+        // for urn:x-nmos:transport:mxl
+        //const web::json::field_as_value flow_id{ U("flow_id") }; // see nmos::id
 
         // IS-07 Event & Tally
 
