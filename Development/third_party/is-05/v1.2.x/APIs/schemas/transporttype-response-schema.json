@@ -9,7 +9,8 @@
         "urn:x-nmos:transport:rtp",
         "urn:x-nmos:transport:dash",
         "urn:x-nmos:transport:websocket",
-        "urn:x-nmos:transport:mqtt"
+        "urn:x-nmos:transport:mqtt",
+        "urn:x-nmos:transport:mxl"
       ]
     }
   ],

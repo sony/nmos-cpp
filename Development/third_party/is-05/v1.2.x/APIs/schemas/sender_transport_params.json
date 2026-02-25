@@ -25,6 +25,12 @@
       "items": {
         "$ref": "sender_transport_params_mqtt.json"
       }
+    },
+    {
+      "type": "array",
+      "items": {
+        "$ref": "sender_transport_params_mxl.json"
+      }
     }
   ]
 }

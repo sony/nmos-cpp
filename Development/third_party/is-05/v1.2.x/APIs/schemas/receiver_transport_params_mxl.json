@@ -1,0 +1,29 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "description": "Describes MXL Receiver transport parameters. The constraints in this schema are minimum constraints, but may be further constrained at the constraints endpoint.",
+  "title": "MXL Receiver Transport Parameters",
+  "type": "object",
+  "properties": {
+    "flow_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "ID of the Flow to read.",
+      "anyOf": [{
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  },
+  "patternProperties": {
+    "^ext_[a-zA-Z0-9_]+$": {
+      "$ref": "receiver_transport_params_ext.json"
+    }
+  },
+  "additionalProperties": false
+}
