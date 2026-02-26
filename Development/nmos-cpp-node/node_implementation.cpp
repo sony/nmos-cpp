@@ -1014,7 +1014,7 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
             }
             else if (impl::ports::mxl_audio == port)
             {
-                receiver = nmos::make_audio_receiver(receiver_id, device_id, nmos::transports::mxl, {}, {}, model.settings);
+                receiver = nmos::make_audio_receiver(receiver_id, device_id, nmos::transports::mxl, {}, std::vector<unsigned int>{}, model.settings);
             }
             else if (impl::ports::mxl_data == port)
             {
