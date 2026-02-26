@@ -9,10 +9,12 @@
         "string",
         "null"
       ],
-      "description": "ID of the Flow to write.",
+      "description": "ID of the Flow to write. If the parameter is set to auto the Sender should use the Flow it is bound to. A null value indicates that the Sender has not yet been configured.",
       "anyOf": [{
-          "type": "string",
           "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        {
+          "pattern": "^auto$"
         },
         {
           "type": "null"
