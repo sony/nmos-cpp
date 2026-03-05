@@ -1,0 +1,31 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "description": "Describes MXL Sender transport parameters. The constraints in this schema are minimum constraints, but may be further constrained at the constraints endpoint.",
+  "title": "MXL Sender Transport Parameters",
+  "type": "object",
+  "properties": {
+    "flow_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "ID of the Flow to write. If the parameter is set to auto the Sender should use the Flow it is bound to. A null value indicates that the Sender has not yet been configured.",
+      "anyOf": [{
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        {
+          "pattern": "^auto$"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  },
+  "patternProperties": {
+    "^ext_[a-zA-Z0-9_]+$": {
+      "$ref": "sender_transport_params_ext.json"
+    }
+  },
+  "additionalProperties": false
+}

@@ -86,6 +86,9 @@ namespace nmos
             },
             {
                 nmos::is05_versions::v1_1, { nmos::transports::websocket, nmos::transports::mqtt }
+            },
+            {
+                nmos::is05_versions::v1_2, { nmos::transports::mxl }
             }
         };
 
@@ -240,13 +243,40 @@ namespace nmos
             return auto_constraints;
         }
 
+        static const std::map<nmos::type, std::set<utility::string_t>>& mxl_auto_constraints()
+        {
+            // These are the constraints that support "auto" in /staged
+            static const std::map<nmos::type, std::set<utility::string_t>> auto_constraints
+            {
+                {
+                    nmos::types::sender,
+                    {
+                        nmos::fields::flow_id
+                    }
+                },
+                {
+                    nmos::types::receiver, {}
+                }
+            };
+            return auto_constraints;
+        }
+
         static const std::map<nmos::type, std::set<utility::string_t>>& auto_constraints(const nmos::transport& transport_base)
         {
             if (nmos::transports::rtp == transport_base) return rtp_auto_constraints();
             if (nmos::transports::websocket == transport_base) return websocket_auto_constraints();
             if (nmos::transports::mqtt == transport_base) return mqtt_auto_constraints();
+            if (nmos::transports::mxl == transport_base) return mxl_auto_constraints();
 
-            static const std::map<nmos::type, std::set<utility::string_t>> no_auto_constraints;
+            static const std::map<nmos::type, std::set<utility::string_t>> no_auto_constraints
+            {
+                {
+                    nmos::types::sender, {}
+                },
+                {
+                    nmos::types::receiver, {}
+                }
+            };
             return no_auto_constraints;
         }
 

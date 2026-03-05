@@ -1,0 +1,152 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "description": "Describes RTP Receiver transport parameters. The constraints in this schema are minimum constraints, but may be further constrained at the constraints endpoint. Receivers must support at least the `source_ip`, `interface_ip`, `rtp_enabled` and `destination_port` parameters, and must support the `multicast_ip` parameter if they are capable of multicast operation. Receivers supporting FEC and/or RTCP must support parameters prefixed with `fec` and `rtcp` respectively.",
+  "title": "RTP Receiver Transport Parameters",
+  "type": "object",
+  "title": "Receiver Input",
+  "properties": {
+    "source_ip": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Source IP address of RTP packets in unicast mode, source filter for source specific multicast. A null value indicates that the source IP address has not been configured in unicast mode, or the Receiver is in any-source multicast mode.",
+      "anyOf": [{
+          "format": "ipv4"
+        },
+        {
+          "format": "ipv6"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "multicast_ip": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "IP multicast group address used in multicast operation only. Should be set to null during unicast operation. A null value indicates the parameter has not been configured, or the receiver is operating in unicast mode.",
+      "anyOf": [{
+          "format": "ipv4"
+        },
+        {
+          "format": "ipv6"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "interface_ip": {
+      "type": "string",
+      "description": "IP address of the network interface the receiver should use. The receiver should provide an enum in the constraints endpoint, which should contain the available interface addresses. If set to auto in multicast mode the receiver should determine which interface to use for itself, for example by using the routing tables. The behaviour of auto is undefined in unicast mode, and controllers should supply a specific interface address.",
+      "anyOf": [{
+          "format": "ipv4"
+        },
+        {
+          "format": "ipv6"
+        },
+        {
+          "pattern": "^auto$"
+        }
+      ]
+    },
+    "destination_port": {
+      "type": [
+        "integer",
+        "string"
+      ],
+      "description": "destination port for RTP packets (auto = 5004 by default)",
+      "minimum": 1,
+      "maximum": 65535,
+      "pattern": "^auto$"
+    },
+    "fec_enabled": {
+      "type": "boolean",
+      "description": "FEC on/off"
+    },
+    "fec_destination_ip": {
+      "type": "string",
+      "description": "May be used if NAT is being used at the destination (auto = multicast_ip (multicast mode) or interface_ip (unicast mode) by default)",
+      "anyOf": [{
+          "format": "ipv4"
+        },
+        {
+          "format": "ipv6"
+        },
+        {
+          "pattern": "^auto$"
+        }
+      ]
+    },
+    "fec_mode": {
+      "type": "string",
+      "description": "forward error correction mode to apply. (auto = highest available number of dimensions by default)",
+      "enum": [
+        "auto",
+        "1D",
+        "2D"
+      ]
+    },
+    "fec1D_destination_port": {
+      "type": [
+        "integer",
+        "string"
+      ],
+      "description": "destination port for RTP Column FEC packets (auto = RTP destination_port + 2 by default)",
+      "minimum": 1,
+      "maximum": 65535,
+      "pattern": "^auto$"
+    },
+    "fec2D_destination_port": {
+      "type": [
+        "integer",
+        "string"
+      ],
+      "description": "destination port for RTP Row FEC packets (auto = RTP destination_port + 4 by default)",
+      "minimum": 1,
+      "maximum": 65535,
+      "pattern": "^auto$"
+    },
+    "rtcp_destination_ip": {
+      "type": "string",
+      "description": "Destination IP address of RTCP packets (auto = multicast_ip (multicast mode) or interface_ip (unicast mode) by default)",
+      "anyOf": [{
+          "format": "ipv4"
+        },
+        {
+          "format": "ipv6"
+        },
+        {
+          "pattern": "^auto$"
+        }
+      ]
+    },
+    "rtcp_enabled": {
+      "type": "boolean",
+      "description": "RTCP on/off"
+    },
+    "rtcp_destination_port": {
+      "type": [
+        "integer",
+        "string"
+      ],
+      "description": "destination port for RTCP packets (auto = RTP destination_port + 1 by default)",
+      "minimum": 1,
+      "maximum": 65535,
+      "pattern": "^auto$"
+    },
+    "rtp_enabled": {
+      "type": "boolean",
+      "description": "RTP reception active/inactive"
+    }
+  },
+  "patternProperties": {
+    "^ext_[a-zA-Z0-9_]+$": {
+      "$ref": "receiver_transport_params_ext.json"
+    }
+  },
+  "additionalProperties": false
+}

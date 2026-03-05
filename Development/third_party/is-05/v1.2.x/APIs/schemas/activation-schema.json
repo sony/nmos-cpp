@@ -1,0 +1,35 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "title": "Activation resource",
+  "description": "Parameters concerned with activation of the transport parameters",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "mode"
+  ],
+  "properties": {
+    "mode": {
+      "description": "Mode of activation: immediate (on message receipt), scheduled_absolute (when internal clock >= requested_time), scheduled_relative (when internal clock >= time of message receipt + requested_time), or null (no activation scheduled)",
+      "anyOf": [{
+        "type": "string",
+        "enum": [
+          "activate_immediate",
+          "activate_scheduled_absolute",
+          "activate_scheduled_relative"
+        ]
+      }, {
+        "type": "null"
+      }]
+    },
+    "requested_time": {
+      "description": "String formatted TAI timestamp (<seconds>:<nanoseconds>) indicating time (absolute or relative) for activation. Should be null or not present if 'mode' is null.",
+      "anyOf": [{
+        "type": "string",
+        "pattern": "^[0-9]+:[0-9]+$"
+      }, {
+        "type": "null"
+      }]
+    }
+  }
+}

@@ -154,13 +154,22 @@ namespace impl
         // example number/enum event
         const port catcall{ U("c") };
 
+        // video/v210, video/v210a, etc.
+        const port mxl_video{ U("xv") };
+        // audio/float32
+        const port mxl_audio{ U("xa") };
+        // video/smpte291
+        const port mxl_data{ U("xd") };
+
         const std::vector<port> rtp{ video, audio, data, mux };
         const std::vector<port> ws{ temperature, burn, nonsense, catcall };
-        const std::vector<port> all{ boost::copy_range<std::vector<port>>(boost::range::join(rtp, ws)) };
+        const std::vector<port> mxl{ mxl_video, mxl_audio, mxl_data };
+        const std::vector<port> all{ boost::copy_range<std::vector<port>>(boost::join(boost::join(rtp, ws), mxl)) };
     }
 
     bool is_rtp_port(const port& port);
     bool is_ws_port(const port& port);
+    bool is_mxl_port(const port& port);
     std::vector<port> parse_ports(const web::json::value& value);
 
     const std::vector<nmos::channel> channels_repeat{
@@ -404,9 +413,11 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
     const auto sender_ports = impl::parse_ports(impl::fields::senders(model.settings));
     const auto rtp_sender_ports = boost::copy_range<std::vector<impl::port>>(sender_ports | boost::adaptors::filtered(impl::is_rtp_port));
     const auto ws_sender_ports = boost::copy_range<std::vector<impl::port>>(sender_ports | boost::adaptors::filtered(impl::is_ws_port));
+    const auto mxl_sender_ports = boost::copy_range<std::vector<impl::port>>(sender_ports | boost::adaptors::filtered(impl::is_mxl_port));
     const auto receiver_ports = impl::parse_ports(impl::fields::receivers(model.settings));
     const auto rtp_receiver_ports = boost::copy_range<std::vector<impl::port>>(receiver_ports | boost::adaptors::filtered(impl::is_rtp_port));
     const auto ws_receiver_ports = boost::copy_range<std::vector<impl::port>>(receiver_ports | boost::adaptors::filtered(impl::is_ws_port));
+    const auto mxl_receiver_ports = boost::copy_range<std::vector<impl::port>>(receiver_ports | boost::adaptors::filtered(impl::is_mxl_port));
     const auto frame_rate = nmos::parse_rational(impl::fields::frame_rate(model.settings));
     const auto frame_width = impl::fields::frame_width(model.settings);
     const auto frame_height = impl::fields::frame_height(model.settings);
@@ -528,13 +539,14 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
     {
         auto sender_ids = impl::make_ids(seed_id, nmos::types::sender, rtp_sender_ports, how_many);
         if (0 <= nmos::fields::events_port(model.settings)) boost::range::push_back(sender_ids, impl::make_ids(seed_id, nmos::types::sender, ws_sender_ports, how_many));
+        boost::range::push_back(sender_ids, impl::make_ids(seed_id, nmos::types::sender, mxl_sender_ports, how_many));
         auto receiver_ids = impl::make_ids(seed_id, nmos::types::receiver, receiver_ports, how_many);
         auto device = nmos::make_device(device_id, node_id, sender_ids, receiver_ids, model.settings);
         device.data[nmos::fields::tags] = impl::fields::device_tags(model.settings);
         if (!insert_resource_after(delay_millis, model.node_resources, std::move(device), gate)) throw node_implementation_init_exception();
     }
 
-    // example sources, flows and senders
+    // example rtp sources, flows and senders
     for (int index = 0; index < how_many; ++index)
     {
         for (const auto& port : rtp_sender_ports)
@@ -672,7 +684,7 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
         }
     }
 
-    // example receivers
+    // example rtp receivers
     for (int index = 0; index < how_many; ++index)
     {
         for (const auto& port : rtp_receiver_ports)
@@ -897,6 +909,121 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
 
             auto connection_receiver = nmos::make_connection_events_websocket_receiver(receiver_id, model.settings);
             resolve_auto(receiver, connection_receiver, connection_receiver.data[nmos::fields::endpoint_active][nmos::fields::transport_params]);
+
+            if (!insert_resource_after(delay_millis, model.node_resources, std::move(receiver), gate)) throw node_implementation_init_exception();
+            if (!insert_resource_after(delay_millis, model.connection_resources, std::move(connection_receiver), gate)) throw node_implementation_init_exception();
+        }
+    }
+
+    // example mxl sources, flows and senders
+    for (int index = 0; index < how_many; ++index)
+    {
+        for (const auto& port : mxl_sender_ports)
+        {
+            const auto source_id = impl::make_id(seed_id, nmos::types::source, port, index);
+            const auto flow_id = impl::make_id(seed_id, nmos::types::flow, port, index);
+            const auto sender_id = impl::make_id(seed_id, nmos::types::sender, port, index);
+
+            nmos::resource source;
+            if (impl::ports::mxl_video == port)
+            {
+                source = nmos::make_video_source(source_id, device_id, nmos::clock_names::clk0, frame_rate, model.settings);
+            }
+            else if (impl::ports::mxl_audio == port)
+            {
+                const auto channels = boost::copy_range<std::vector<nmos::channel>>(boost::irange(0, channel_count) | boost::adaptors::transformed([&](const int& index)
+                {
+                    return impl::channels_repeat[index % (int)impl::channels_repeat.size()];
+                }));
+
+                source = nmos::make_audio_source(source_id, device_id, nmos::clock_names::clk0, frame_rate, channels, model.settings);
+            }
+            else if (impl::ports::mxl_data == port)
+            {
+                source = nmos::make_data_source(source_id, device_id, nmos::clock_names::clk0, frame_rate, model.settings);
+            }
+            impl::insert_parents(source, seed_id, port, index);
+            impl::set_label_description(source, port, index);
+
+            nmos::resource flow;
+
+            if (impl::ports::mxl_video == port)
+            {
+                flow = nmos::make_coded_video_flow(
+                    flow_id, source_id, device_id,
+                    frame_rate,
+                    frame_width, frame_height, interlace_mode,
+                    colorspace, transfer_characteristic, sampling, bit_depth,
+                    video_type,
+                    model.settings
+                );
+            }
+            else if (impl::ports::mxl_audio == port)
+            {
+                flow = nmos::make_raw_audio_flow(flow_id, source_id, device_id, 48000, 32, model.settings);
+                flow.data[nmos::fields::media_type] = value::string(U("audio/float32"));
+                // add optional grain_rate
+                flow.data[nmos::fields::grain_rate] = nmos::make_rational(frame_rate);
+            }
+            else if (impl::ports::mxl_data == port)
+            {
+                nmos::did_sdid timecode{ 0x60, 0x60 };
+                flow = nmos::make_sdianc_data_flow(flow_id, source_id, device_id, { timecode }, model.settings);
+                // add optional grain_rate
+                flow.data[nmos::fields::grain_rate] = nmos::make_rational(frame_rate);
+            }
+            impl::insert_parents(flow, seed_id, port, index);
+            impl::set_label_description(flow, port, index);
+
+            auto sender = nmos::make_sender(sender_id, flow_id, nmos::transports::mxl, device_id, {}, {}, model.settings);
+            impl::set_label_description(sender, port, index);
+            impl::insert_group_hint(sender, port, index);
+
+            auto connection_sender = nmos::make_connection_mxl_sender(sender_id, flow_id);
+
+            if (impl::fields::activate_senders(model.settings))
+            {
+                // initialize this sender with a scheduled activation, e.g. to enable the IS-05-01 test suite to run immediately
+                auto& staged = connection_sender.data[nmos::fields::endpoint_staged];
+                staged[nmos::fields::master_enable] = value::boolean(true);
+                staged[nmos::fields::activation] = value_of({
+                    { nmos::fields::mode, nmos::activation_modes::activate_scheduled_relative.name },
+                    { nmos::fields::requested_time, U("0:0") },
+                    { nmos::fields::activation_time, nmos::make_version() }
+                });
+            }
+
+            if (!insert_resource_after(delay_millis, model.node_resources, std::move(source), gate)) throw node_implementation_init_exception();
+            if (!insert_resource_after(delay_millis, model.node_resources, std::move(flow), gate)) throw node_implementation_init_exception();
+            if (!insert_resource_after(delay_millis, model.node_resources, std::move(sender), gate)) throw node_implementation_init_exception();
+            if (!insert_resource_after(delay_millis, model.connection_resources, std::move(connection_sender), gate)) throw node_implementation_init_exception();
+        }
+    }
+
+    // example mxl receivers
+    for (int index = 0; index < how_many; ++index)
+    {
+        for (const auto& port : mxl_receiver_ports)
+        {
+            const auto receiver_id = impl::make_id(seed_id, nmos::types::receiver, port, index);
+
+            nmos::resource receiver;
+            if (impl::ports::mxl_video == port)
+            {
+                receiver = nmos::make_receiver(receiver_id, device_id, nmos::transports::mxl, {}, nmos::formats::video, { video_type }, model.settings);
+            }
+            else if (impl::ports::mxl_audio == port)
+            {
+                receiver = nmos::make_audio_receiver(receiver_id, device_id, nmos::transports::mxl, {}, std::vector<unsigned int>{}, model.settings);
+            }
+            else if (impl::ports::mxl_data == port)
+            {
+                receiver = nmos::make_sdianc_data_receiver(receiver_id, device_id, nmos::transports::mxl, {}, model.settings);
+            }
+            impl::set_label_description(receiver, port, index);
+            impl::insert_group_hint(receiver, port, index);
+
+            auto connection_receiver = nmos::make_connection_mxl_receiver(receiver_id);
 
             if (!insert_resource_after(delay_millis, model.node_resources, std::move(receiver), gate)) throw node_implementation_init_exception();
             if (!insert_resource_after(delay_millis, model.connection_resources, std::move(connection_receiver), gate)) throw node_implementation_init_exception();
@@ -1545,7 +1672,8 @@ void node_implementation_run(nmos::node_model& model, nmos::experimental::contro
     const auto sender_ports = impl::parse_ports(impl::fields::senders(model.settings));
     const auto rtp_sender_ports = boost::copy_range<std::vector<impl::port>>(sender_ports | boost::adaptors::filtered(impl::is_rtp_port));
     const auto ws_sender_ports = boost::copy_range<std::vector<impl::port>>(sender_ports | boost::adaptors::filtered(impl::is_ws_port));
-    const auto rtp_receiver_ports = boost::copy_range<std::vector<impl::port>>(impl::parse_ports(impl::fields::receivers(model.settings)) | boost::adaptors::filtered(impl::is_rtp_port));
+    const auto receiver_ports = impl::parse_ports(impl::fields::receivers(model.settings));
+    const auto rtp_receiver_ports = boost::copy_range<std::vector<impl::port>>(receiver_ports | boost::adaptors::filtered(impl::is_rtp_port));
     const auto simulate_status_monitor_activity = impl::fields::simulate_status_monitor_activity(model.settings);
 
     auto& control_protocol_resources = model.control_protocol_resources;
@@ -1883,19 +2011,23 @@ nmos::connection_resource_auto_resolver make_node_implementation_auto_resolver(c
     const auto seed_id = nmos::experimental::fields::seed_id(settings);
     const auto device_id = impl::make_id(seed_id, nmos::types::device);
     const auto how_many = impl::fields::how_many(settings);
-    const auto rtp_sender_ports = boost::copy_range<std::vector<impl::port>>(impl::parse_ports(impl::fields::senders(settings)) | boost::adaptors::filtered(impl::is_rtp_port));
+    const auto sender_ports = impl::parse_ports(impl::fields::senders(settings));
+    const auto rtp_sender_ports = boost::copy_range<std::vector<impl::port>>(sender_ports | boost::adaptors::filtered(impl::is_rtp_port));
     const auto rtp_sender_ids = impl::make_ids(seed_id, nmos::types::sender, rtp_sender_ports, how_many);
-    const auto ws_sender_ports = boost::copy_range<std::vector<impl::port>>(impl::parse_ports(impl::fields::senders(settings)) | boost::adaptors::filtered(impl::is_ws_port));
+    const auto ws_sender_ports = boost::copy_range<std::vector<impl::port>>(sender_ports | boost::adaptors::filtered(impl::is_ws_port));
     const auto ws_sender_ids = impl::make_ids(seed_id, nmos::types::sender, ws_sender_ports, how_many);
+    const auto mxl_sender_ports = boost::copy_range<std::vector<impl::port>>(sender_ports | boost::adaptors::filtered(impl::is_mxl_port));
+    const auto mxl_sender_ids = impl::make_ids(seed_id, nmos::types::sender, mxl_sender_ports, how_many);
     const auto ws_sender_uri = nmos::make_events_ws_api_connection_uri(device_id, settings);
-    const auto rtp_receiver_ports = boost::copy_range<std::vector<impl::port>>(impl::parse_ports(impl::fields::receivers(settings)) | boost::adaptors::filtered(impl::is_rtp_port));
+    const auto receiver_ports = impl::parse_ports(impl::fields::receivers(settings));
+    const auto rtp_receiver_ports = boost::copy_range<std::vector<impl::port>>(receiver_ports | boost::adaptors::filtered(impl::is_rtp_port));
     const auto rtp_receiver_ids = impl::make_ids(seed_id, nmos::types::receiver, rtp_receiver_ports, how_many);
-    const auto ws_receiver_ports = boost::copy_range<std::vector<impl::port>>(impl::parse_ports(impl::fields::receivers(settings)) | boost::adaptors::filtered(impl::is_ws_port));
+    const auto ws_receiver_ports = boost::copy_range<std::vector<impl::port>>(receiver_ports | boost::adaptors::filtered(impl::is_ws_port));
     const auto ws_receiver_ids = impl::make_ids(seed_id, nmos::types::receiver, ws_receiver_ports, how_many);
 
     // although which properties may need to be defaulted depends on the resource type,
     // the default value will almost always be different for each resource
-    return [rtp_sender_ids, rtp_receiver_ids, ws_sender_ids, ws_sender_uri, ws_receiver_ids](const nmos::resource& resource, const nmos::resource& connection_resource, value& transport_params)
+    return [rtp_sender_ids, rtp_receiver_ids, ws_sender_ids, ws_sender_uri, ws_receiver_ids, mxl_sender_ids](const nmos::resource& resource, const nmos::resource& connection_resource, value& transport_params)
     {
         const std::pair<nmos::id, nmos::type> id_type{ connection_resource.id, connection_resource.type };
         // this code relies on the specific constraints added by node_implementation_thread
@@ -1929,6 +2061,10 @@ nmos::connection_resource_auto_resolver make_node_implementation_auto_resolver(c
         else if (ws_receiver_ids.end() != boost::range::find(ws_receiver_ids, id_type.first))
         {
             nmos::details::resolve_auto(transport_params[0], nmos::fields::connection_authorization, [&] { return value::boolean(false); });
+        }
+        else if (mxl_sender_ids.end() != boost::range::find(mxl_sender_ids, id_type.first))
+        {
+            nmos::details::resolve_auto(transport_params[0], nmos::fields::flow_id, [&] { return web::json::front(nmos::fields::constraint_enum(constraints.at(0).at(nmos::fields::flow_id))); });
         }
     };
 }
@@ -2261,6 +2397,11 @@ namespace impl
     bool is_ws_port(const impl::port& port)
     {
         return impl::ports::ws.end() != boost::range::find(impl::ports::ws, port);
+    }
+
+    bool is_mxl_port(const impl::port& port)
+    {
+        return impl::ports::mxl.end() != boost::range::find(impl::ports::mxl, port);
     }
 
     std::vector<port> parse_ports(const web::json::value& value)
