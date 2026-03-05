@@ -1019,7 +1019,7 @@ namespace nmos
                         }
                     }
 
-                    request = details::request_registration(*registration_client, events.at(0), gate, token).then([&](pplx::task<void> finally)
+                    request = details::request_registration(*registration_client, events.at(0), gate, token).then([&, id_type, event_type](pplx::task<void> finally)
                     {
                         auto lock = model.write_lock(); // in order to update local state
 
