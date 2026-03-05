@@ -1248,7 +1248,7 @@ namespace nmos
 
                 const std::pair<nmos::id, nmos::type> id_type{ resourceId, nmos::type_from_resourceType(resourceType) };
 
-                slog::log<slog::severities::info>(gate, SLOG_FLF) << "Operation requested for single " << id_type;
+                slog::log<slog::severities::info>(gate, SLOG_FLF) << "Connection staged requested for single " << id_type;
 
                 details::handle_connection_resource_patch(res, model, version, id_type, body, parse_transport_file, validate_merged, gate);
 

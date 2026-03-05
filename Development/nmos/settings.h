@@ -104,6 +104,9 @@ namespace nmos
         // is10_versions [registry, node]: used to specify the enabled API versions for a version-locked configuration
         const web::json::field_as_array is10_versions{ U("is10_versions") }; // when omitted, nmos::is10_versions::all is used
 
+        // is11_versions [node]: used to specify the enabled API versions for a version-locked configuration
+        const web::json::field_as_array is11_versions{ U("is11_versions") }; // when omitted, nmos::is11_versions::all is used
+
         // is12_versions [node]: used to specify the enabled API versions for a version-locked configuration
         const web::json::field_as_array is12_versions{ U("is12_versions") }; // when omitted, nmos::is12_versions::all is used
 
@@ -155,6 +158,7 @@ namespace nmos
         // control_protocol_ws_port [node]: used to construct request URLs for the Control Protocol websocket, or negative to disable the control protocol features
         const web::json::field_as_integer_or control_protocol_ws_port{ U("control_protocol_ws_port"), 3218 };
         const web::json::field_as_integer_or configuration_port{ U("configuration_port"), 3219 };
+        const web::json::field_as_integer_or streamcompatibility_port{ U("streamcompatibility_port"), 3220 };
 
         // listen_backlog [registry, node]: the maximum length of the queue of pending connections, or zero for the implementation default (the implementation may not honour this value)
         const web::json::field_as_integer_or listen_backlog{ U("listen_backlog"), 0 };
