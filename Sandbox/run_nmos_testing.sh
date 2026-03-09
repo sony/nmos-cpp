@@ -234,7 +234,7 @@ do_run_test BCP-008-02-01 $expected_disabled_BCP_008_02_01 --host "${host}" "${h
 "${registry_command}" "{\"pri\":0,\"http_port\":8088 ${common_params} ${registry_params}}" > ${results_dir}/registryoutput 2>&1 &
 REGISTRY_PID=$!
 # short delay to give the Registry a chance to start up and the Node a chance to register before running the Registry test suite
-sleep 2
+sleep 6
 # add a persistent Query WebSocket API subscription before running the Registry test suite
 curl --cacert test_data/BCP00301/ca/certs/ca.cert.pem "${registry_url}/x-nmos/query/v1.3/subscriptions" -H "Content-Type: application/json" -d "{\"max_update_rate_ms\": 100, \"resource_path\": \"/nodes\", \"params\": {\"label\": \"host1\"}, \"persist\": true, \"secure\": ${secure}}" -s > /dev/null || echo "failed to add subscription"
 
