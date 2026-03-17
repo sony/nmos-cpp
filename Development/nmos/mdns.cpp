@@ -503,6 +503,16 @@ namespace nmos
             {
                 return discovery.browse([=, &discovery](const mdns::browse_result& resolving)
                 {
+                    // Skip results from a different discovery domain class
+                    // (prevents mDNS results leaking into unicast DNS queries and vice versa)
+                    if (!browse_domain.empty())
+                    {
+                        if (is_local_domain(browse_domain) != is_local_domain(resolving.domain))
+                        {
+                            return true; // skip this result, keep browsing
+                        }
+                    }
+
                     const bool cancel = pplx::canceled == discovery.resolve([=](const mdns::resolve_result& resolved)
                     {
                         // "The Node [filters] out any APIs which do not support its required API version, protocol and authorization mode (TXT api_ver, api_proto and api_auth)."
@@ -712,26 +722,26 @@ namespace nmos
 
         // helper function for resolving instances of the specified service (API) based on the specified settings
         // with the highest version, highest priority instances at the front, and services with the same priority ordered randomly
+        // TR-10-9 Section 15: supports "both" (unicast DNS first, mDNS fallback), "unicast", and "mdns" browse modes
         pplx::task<std::list<web::uri>> resolve_service(mdns::service_discovery& discovery, const nmos::service_type& service, const nmos::settings& settings, const pplx::cancellation_token& token)
         {
-            const auto browse_domain = utility::us2s(nmos::get_domain(settings));
-            const auto versions = details::service_versions(service, settings);
-            const auto priorities = details::service_priorities(service, settings);
-            const auto protocols = std::set<nmos::service_protocol>{ nmos::get_service_protocol(service, settings) };
-            const auto authorization = std::set<bool>{ nmos::get_service_authorization(service, settings) };
-
-            // use a short timeout that's long enough to ensure the daemon's cache is exhausted
-            // when no cancellation token is specified
-            const auto timeout = token.is_cancelable() ? nmos::fields::discovery_backoff_max(settings) : 1;
-
-            return resolve_service(discovery, service, browse_domain, versions, priorities, protocols, authorization, true, std::chrono::duration_cast<std::chrono::steady_clock::duration>(std::chrono::seconds(timeout)), token);
+            // delegate to resolve_service_ (which has the dual-discovery logic) and transform results
+            return resolve_service_(discovery, service, settings, token).then([](std::list<resolved_service> resolved_services)
+            {
+                return boost::copy_range<std::list<web::uri>>(resolved_services | boost::adaptors::transformed([](const resolved_service& s)
+                {
+                    return web::uri_builder(s.second).append_path(U("/") + make_api_version(s.first.first)).to_uri();
+                }));
+            });
         }
 
         // helper function for resolving instances of the specified service (API) based on the specified settings
         // with the highest version, highest priority instances at the front, and services with the same priority ordered randomly
+        // TR-10-9 Section 15: supports "both" (unicast DNS first, mDNS fallback), "unicast", and "mdns" browse modes
         pplx::task<std::list<resolved_service>> resolve_service_(mdns::service_discovery& discovery, const nmos::service_type& service, const nmos::settings& settings, const pplx::cancellation_token& token)
         {
             const auto browse_domain = utility::us2s(nmos::get_domain(settings));
+            const auto browse_mode = utility::us2s(nmos::fields::dns_sd_browse_mode(settings));
             const auto versions = details::service_versions(service, settings);
             const auto priorities = details::service_priorities(service, settings);
             const auto protocols = std::set<nmos::service_protocol>{ nmos::get_service_protocol(service, settings) };
@@ -740,8 +750,32 @@ namespace nmos
             // use a short timeout that's long enough to ensure the daemon's cache is exhausted
             // when no cancellation token is specified
             const auto timeout = token.is_cancelable() ? nmos::fields::discovery_backoff_max(settings) : 1;
+            const auto timeout_dur = std::chrono::duration_cast<std::chrono::steady_clock::duration>(std::chrono::seconds(timeout));
 
-            return resolve_service_(discovery, service, browse_domain, versions, priorities, protocols, authorization, true, std::chrono::duration_cast<std::chrono::steady_clock::duration>(std::chrono::seconds(timeout)), token);
+            // determine primary browse domain based on mode
+            const auto primary_domain = (browse_mode == "mdns") ? std::string("local.") : browse_domain;
+            const bool has_fallback = (browse_mode == "both") && !is_local_domain(browse_domain);
+
+            // when there's a fallback, give the primary browse half the budget
+            // so the mDNS fallback gets a meaningful allocation
+            const auto primary_timeout = has_fallback ? timeout_dur / 2 : timeout_dur;
+
+            auto primary_task = resolve_service_(discovery, service, primary_domain, versions, priorities, protocols, authorization, true, primary_timeout, token);
+
+            if (has_fallback)
+            {
+                return primary_task.then([&discovery, service, versions, priorities, protocols, authorization, timeout_dur, primary_timeout, token](std::list<resolved_service> results)
+                {
+                    if (!results.empty()) return pplx::task_from_result(std::move(results));
+
+                    // TR-10-9: unicast DNS unsuccessful, fall back to mDNS
+                    // give the fallback at least as much time as the primary browse had
+                    const auto fallback_timeout = timeout_dur - primary_timeout;
+                    return resolve_service_(discovery, service, std::string("local."), versions, priorities, protocols, authorization, true, fallback_timeout, token);
+                });
+            }
+
+            return primary_task;
         }
     }
 }
