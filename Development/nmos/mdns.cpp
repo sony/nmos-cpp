@@ -1,5 +1,7 @@
 #include "nmos/mdns.h"
 
+#include <functional>
+#include <iomanip>
 #include <boost/algorithm/string/erase.hpp>
 #include <boost/algorithm/string/join.hpp>
 #include <boost/algorithm/string/predicate.hpp>
@@ -330,6 +332,13 @@ namespace nmos
                 return utility::us2s(nmos::fields::service_name_prefix(settings)) + "_" + service_api(service);
             }
 
+            inline std::string hash_string(const std::string& s)
+            {
+                std::ostringstream os;
+                os << std::hex << std::setfill('0') << std::setw(8) << (std::hash<std::string>{}(s) & 0xFFFFFFFF);
+                return os.str();
+            }
+
             inline std::set<nmos::api_version> service_versions(const nmos::service_type& service, const nmos::settings& settings)
             {
                 // the System API is defined by IS-09 (having been originally specified in JT-NM TR-1001-1:2018 Annex A)
@@ -341,11 +350,33 @@ namespace nmos
             }
         }
 
+        // generate a stable unique name for the specified service, based on the service type, host and port
         std::string service_name(const nmos::service_type& service, const nmos::settings& settings)
         {
-            // this just serves as an example of a possible service naming strategy
-            // replacing '.' with '-', since although '.' is legal in service names, some DNS-SD implementations just don't like it
-            return boost::algorithm::replace_all_copy(details::service_base_name(service, settings) + "_" + utility::us2s(nmos::get_host(settings)) + ":" + utility::us2s(utility::ostringstreamed(details::service_port(service, settings))), ".", "-");
+            // replace '.' with '-', since although '.' is legal in service names, some DNS-SD implementations just don't like it
+            const auto name = boost::algorithm::replace_all_copy(details::service_base_name(service, settings) + "_" + utility::us2s(nmos::get_host(settings)) + "_" + utility::us2s(utility::ostringstreamed(details::service_port(service, settings))), ".", "-");
+
+            // RFC 6763 Section 4.1.1 specifies that instance names must not exceed 63 bytes
+            // see https://tools.ietf.org/html/rfc6763#section-4.1.1
+            const size_t max_length = 63;
+            if (name.size() <= max_length) return name;
+
+            // truncate over-long names, because Avahi does not automatically truncate like mDNSResponder does,
+            // and include a unique suffix based on the full name, to reduce collisions
+
+            // RFC 6763 explains that DNS-SD names are intended to be user-visible, "short and descriptive",
+            // and avoid "incomprehensible hexadecimal strings"; because this is likely to result in collisions,
+            // RFC 6762 defines a conflict resolution mechanism designed to keep names human-readable,
+            // implemented by Avahi ("<name> #2") and mDNSResponder ("<name> (2)"), and recommends the newly
+            // chosen name is recorded in persistent storage so that the service will use the same name when it
+            // restarts...
+            // because NMOS service names are unlikely to be presented to the user, maximizing the likelihood
+            // of a unique name without the need for persistent storage is higher priority than no hex strings!
+
+            const auto suffix = details::hash_string(name);
+            const auto max_prefix_length = max_length - 1 - suffix.size();
+            const auto prefix_length = name.find_last_not_of("-_", max_prefix_length - 1) + 1;
+            return name.substr(0, prefix_length) + "-" + suffix;
         }
 
         // helper function for registering addresses when the host name is explicitly configured

@@ -148,6 +148,9 @@ namespace nmos
 
     namespace experimental
     {
+        // generate a stable unique name for the specified service, based on the service type, host and port
+        std::string service_name(const nmos::service_type& service, const nmos::settings& settings);
+
         // helper function for registering addresses when the host name is explicitly configured
         void register_addresses(mdns::service_advertiser& advertiser, const nmos::settings& settings);
 
