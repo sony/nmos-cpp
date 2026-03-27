@@ -176,8 +176,8 @@ BST_TEST_CASE(testServiceNameTruncationDistinct)
 {
     using web::json::value_of;
 
-    // even when truncated, names that differ only in the port (which is past the truncation point)
-    // should produce distinct names due to the hash suffix being based on the full untruncated name
+    // settings that produce distinct over-long names before truncation usually result in
+    // distinct names because the hash suffix is based on the full untruncated name
     const auto make_settings = [](int port)
     {
         return value_of({
@@ -189,9 +189,25 @@ BST_TEST_CASE(testServiceNameTruncationDistinct)
 
     const auto name1 = nmos::experimental::service_name(nmos::service_types::node, make_settings(3212));
     const auto name2 = nmos::experimental::service_name(nmos::service_types::node, make_settings(3213));
-    const auto name3 = nmos::experimental::service_name(nmos::service_types::node, make_settings(3214));
 
     BST_CHECK(name1 != name2);
-    BST_CHECK(name1 != name3);
-    BST_CHECK(name2 != name3);
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////
+BST_TEST_CASE(testServiceNameTruncationExample)
+{
+    using web::json::value_of;
+
+    const nmos::settings settings = value_of({
+        { nmos::fields::host_name, U("a-host-name-that-is-itself-valid-but-already-63-characters-long.xz6zx.example.com") },
+        { nmos::experimental::fields::href_mode, 1 }
+    });
+
+    const auto name = nmos::experimental::service_name(nmos::service_types::node, settings);
+    BST_REQUIRE_EQUAL("nmos-cpp_node_a-host-name-that-is-itself-valid-but-alread-", name.substr(0, name.size() - 5));
+#ifdef __GLIBCXX__
+    BST_CHECK_EQUAL("cr4ck", name.substr(name.size() - 5));
+    // ...e4y8q.example.com produces the same hash suffix with this std::hash implementation
+    // but anything could happen on another platform...
+#endif
 }
