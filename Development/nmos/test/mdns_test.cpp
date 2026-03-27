@@ -116,7 +116,7 @@ BST_TEST_CASE(testServiceNameTruncationSuffix)
 
     const size_t max_length = 63;
 
-    // the truncated name should end with a dash followed by an 8-character hex hash
+    // the truncated name should end with a dash followed by a 5-character alphanumeric hash
     const nmos::settings settings = value_of({
         { nmos::fields::host_name, U("a-host-name-that-is-itself-valid-but-already-63-characters-long.example.com") },
         { nmos::experimental::fields::href_mode, 1 }
@@ -128,12 +128,11 @@ BST_TEST_CASE(testServiceNameTruncationSuffix)
     const auto last_dash = name.rfind('-');
     BST_REQUIRE(std::string::npos != last_dash);
 
-    // the suffix after the last dash should be exactly 8 hex characters
     const auto suffix = name.substr(last_dash + 1);
-    BST_CHECK_EQUAL(8, suffix.size());
+    BST_CHECK_EQUAL(5, suffix.size());
     BST_CHECK(suffix.end() == std::find_if(suffix.begin(), suffix.end(), [](char c)
     {
-        return !std::isxdigit(static_cast<unsigned char>(c));
+        return !std::isdigit(static_cast<unsigned char>(c)) && !std::islower(static_cast<unsigned char>(c));
     }));
 }
 

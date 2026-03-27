@@ -1,7 +1,6 @@
 #include "nmos/mdns.h"
 
 #include <functional>
-#include <iomanip>
 #include <boost/algorithm/string/erase.hpp>
 #include <boost/algorithm/string/join.hpp>
 #include <boost/algorithm/string/predicate.hpp>
@@ -332,11 +331,17 @@ namespace nmos
                 return utility::us2s(nmos::fields::service_name_prefix(settings)) + "_" + service_api(service);
             }
 
-            inline std::string hash_string(const std::string& s)
+            // generate a hash string (slightly more compact and possibly slightly more memorable than hex)
+            inline std::string hash_string(const std::string& s, size_t len = 5)
             {
-                std::ostringstream os;
-                os << std::hex << std::setfill('0') << std::setw(8) << (std::hash<std::string>{}(s) & 0xFFFFFFFF);
-                return os.str();
+                auto hash = std::hash<std::string>{}(s);
+                // vowels (and vowel-ish digits) are omitted from the set of available characters
+                // to reduce the chances of "bad words" being formed
+                static const char alphanums[] = "bcdfghjklmnpqrstvwxz2456789";
+                static const size_t base = sizeof(alphanums) - 1;
+                std::string result(len, ' ');
+                for (auto& c : result) { c = alphanums[hash % base]; hash /= base; }
+                return result;
             }
 
             inline std::set<nmos::api_version> service_versions(const nmos::service_type& service, const nmos::settings& settings)
