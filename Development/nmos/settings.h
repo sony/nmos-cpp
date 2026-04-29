@@ -82,10 +82,20 @@ namespace nmos
         // domain [registry, node]: the domain on which to browse for services or an empty string to use the default domain (specify "local." to explictly select mDNS)
         const web::json::field_as_string_or domain{ U("domain"), U("") };
 
-        // dns_sd_browse_mode [node]: controls DNS-SD browse method per TR-10-9 Section 15
-        // "both" (default) = unicast DNS first, mDNS fallback if unsuccessful
-        // "unicast" = unicast DNS only (requires domain to be set to a non-local value)
-        // "mdns" = mDNS only
+        // dns_sd_browse_mode [node]: DNS-SD browse method per TR-10-9 Section 15
+        // (see nmos::dns_sd_browse_modes for valid values)
+        //   "both" (default) = unicast DNS first, mDNS fallback if unsuccessful
+        //   "unicast"        = unicast DNS only
+        //   "mdns"           = mDNS only
+        // Expected resolve behaviour for each (mode, domain) combination:
+        //   mode    | domain      | behaviour
+        //   --------+-------------+--------------------
+        //   both    | example.com | unicast -> mdns
+        //   both    | local.      | mdns
+        //   unicast | example.com | unicast
+        //   unicast | local.      | mdns
+        //   mdns    | example.com | mdns
+        //   mdns    | local.      | mdns
         const web::json::field_as_string_or dns_sd_browse_mode{ U("dns_sd_browse_mode"), U("both") };
 
         // host_address/host_addresses [registry, node]: IP addresses used to construct response headers (e.g. 'Link' or 'Location'), and host and URL fields in the data model

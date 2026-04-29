@@ -1133,6 +1133,7 @@ set(NMOS_CPP_NMOS_HEADERS
     nmos/control_protocol_ws_api.h
     nmos/device_type.h
     nmos/did_sdid.h
+    nmos/dns_sd_browse_mode.h
     nmos/event_type.h
     nmos/events_api.h
     nmos/events_resources.h
