@@ -765,22 +765,16 @@ namespace nmos
             const auto primary_domain = (browse_mode == nmos::dns_sd_browse_modes::mdns) ? std::string("local.") : browse_domain;
             const bool has_fallback = (browse_mode == nmos::dns_sd_browse_modes::both) && !is_local_domain(browse_domain);
 
-            // when there's a fallback, give the primary browse half the budget
-            // so the mDNS fallback gets a meaningful allocation
-            const auto primary_timeout = has_fallback ? timeout_dur / 2 : timeout_dur;
-
-            auto primary_task = resolve_service_(discovery, service, primary_domain, versions, priorities, protocols, authorization, true, primary_timeout, token);
+            auto primary_task = resolve_service_(discovery, service, primary_domain, versions, priorities, protocols, authorization, true, timeout_dur, token);
 
             if (has_fallback)
             {
-                return primary_task.then([&discovery, service, versions, priorities, protocols, authorization, timeout_dur, primary_timeout, token](std::list<resolved_service> results)
+                return primary_task.then([&discovery, service, versions, priorities, protocols, authorization, timeout_dur, token](std::list<resolved_service> results)
                 {
                     if (!results.empty()) return pplx::task_from_result(std::move(results));
 
-                    // TR-10-9: unicast DNS unsuccessful, fall back to mDNS
-                    // give the fallback at least as much time as the primary browse had
-                    const auto fallback_timeout = timeout_dur - primary_timeout;
-                    return resolve_service_(discovery, service, std::string("local."), versions, priorities, protocols, authorization, true, fallback_timeout, token);
+                    // TR-10-9: unicast DNS unsuccessful, fall back to mDNS (full timeout per service)
+                    return resolve_service_(discovery, service, std::string("local."), versions, priorities, protocols, authorization, true, timeout_dur, token);
                 });
             }
 
