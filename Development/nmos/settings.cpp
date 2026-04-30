@@ -76,6 +76,7 @@ namespace nmos
                 if (!registry) web::json::insert(settings, std::make_pair(nmos::fields::connection_port, http_port));
                 if (!registry) web::json::insert(settings, std::make_pair(nmos::fields::events_port, http_port));
                 if (!registry) web::json::insert(settings, std::make_pair(nmos::fields::channelmapping_port, http_port));
+                if (!registry) web::json::insert(settings, std::make_pair(nmos::fields::streamcompatibility_port, http_port));
                 if (!registry) web::json::insert(settings, std::make_pair(nmos::fields::events_ws_port, ws_port));
                 if (!registry) web::json::insert(settings, std::make_pair(nmos::experimental::fields::manifest_port, http_port));
                 web::json::insert(settings, std::make_pair(nmos::experimental::fields::settings_port, http_port));

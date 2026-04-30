@@ -1634,4 +1634,13 @@ namespace nmos
         }
         return s;
     }
+
+    // Check the specified SDP parameters against the specified constraint sets
+    // for "video/raw", "audio/L", "video/smpte291" or "video/SMPTE2022-6"
+    bool match_sdp_parameters_constraint_sets(const web::json::array& constraint_sets, const sdp_parameters& sdp_params)
+    {
+        const auto format_params = nmos::details::get_format_parameters(sdp_params);
+        const auto found = std::find_if(constraint_sets.begin(), constraint_sets.end(), [&](const web::json::value& constraint_set) { return details::match_sdp_parameters_constraint_set(details::format_constraints, sdp_params, format_params, constraint_set); });
+        return constraint_sets.end() != found;
+    }
 }

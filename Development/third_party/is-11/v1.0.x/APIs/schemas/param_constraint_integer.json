@@ -1,0 +1,21 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "description": "Describes an Integer Parameter Constraint",
+  "title": "Integer Parameter Constraint",
+  "type": "object",
+  "properties": {
+    "enum": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "integer"
+      }
+    },
+    "minimum": {
+      "type": "integer"
+    },
+    "maximum": {
+      "type": "integer"
+    }
+  }
+}
