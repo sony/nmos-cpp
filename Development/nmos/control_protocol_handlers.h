@@ -57,8 +57,8 @@ namespace nmos
                 : name(name), value(value), description(description) {}
         };
     }
-    typedef std::function<std::vector<nc::counter>(void)> get_packet_counters_handler;
-    typedef std::function<void(void)> reset_monitor_handler;
+    typedef std::function<std::vector<nc::counter>(const nmos::resource&)> get_packet_counters_handler;
+    typedef std::function<void(const nmos::resource&)> reset_monitor_handler;
 
     namespace experimental
     {

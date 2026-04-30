@@ -160,39 +160,50 @@ namespace nmos
         // helper function for updating the specified service (API) TXT records
         void update_service(mdns::service_advertiser& advertiser, const nmos::service_type& service, const nmos::settings& settings, mdns::structured_txt_records add_records = {});
 
-        // helper function for resolving instances of the specified service (API)
-        // with the highest version, highest priority instances at the front, and (by default) services with the same priority ordered randomly
+        // DEPRECATED: this overload is unused; prefer resolve_service_ which also returns api_ver/priority info.
+        // Helper function for resolving instances of the specified service (API), returning a list of base URIs
+        // (with the API version path appended), highest version and highest priority first, and (by default)
+        // services with the same priority ordered randomly.
         pplx::task<std::list<web::uri>> resolve_service(mdns::service_discovery& discovery, const nmos::service_type& service, const std::string& browse_domain, const std::set<nmos::api_version>& api_ver, const std::pair<nmos::service_priority, nmos::service_priority>& priorities, const std::set<nmos::service_protocol>& api_proto, const std::set<bool>& api_auth, bool randomize, const std::chrono::steady_clock::duration& timeout, const pplx::cancellation_token& token = pplx::cancellation_token::none());
 
-        // helper function for resolving instances of the specified service (API) based on the specified options or defaults
-        // with the highest version, highest priority instances at the front, and (by default) services with the same priority ordered randomly
+        // DEPRECATED: convenience wrapper around the deprecated explicit-args resolve_service overload above.
+        // Same behaviour, with default values for unspecified arguments.
         template <typename Rep = std::chrono::seconds::rep, typename Period = std::chrono::seconds::period>
         inline pplx::task<std::list<web::uri>> resolve_service(mdns::service_discovery& discovery, const nmos::service_type& service, const std::string& browse_domain = {}, const std::set<nmos::api_version>& api_ver = nmos::is04_versions::all, const std::pair<nmos::service_priority, nmos::service_priority>& priorities = { service_priorities::highest_active_priority, service_priorities::no_priority }, const std::set<nmos::service_protocol>& api_proto = nmos::service_protocols::all, const std::set<bool>& api_auth = { false, true }, bool randomize = true, const std::chrono::duration<Rep, Period>& timeout = std::chrono::seconds(mdns::default_timeout_seconds), const pplx::cancellation_token& token = pplx::cancellation_token::none())
         {
             return resolve_service(discovery, service, browse_domain, api_ver, api_proto, api_auth, randomize, std::chrono::duration_cast<std::chrono::steady_clock::duration>(timeout), token);
         }
 
-        // helper function for resolving instances of the specified service (API) based on the specified settings
-        // with the highest version, highest priority instances at the front, and services with the same priority ordered randomly
+        // Helper function for resolving instances of the specified service (API) based on the specified settings,
+        // returning a list of base URIs (with the API version path appended), highest version and highest priority
+        // first, services with the same priority ordered randomly.
+        // The browse method is selected by the dns_sd_browse_mode setting per TR-10-9 Section 15
+        // (delegates to resolve_service_, which carries the dual-discovery logic).
         pplx::task<std::list<web::uri>> resolve_service(mdns::service_discovery& discovery, const nmos::service_type& service, const nmos::settings& settings, const pplx::cancellation_token& token = pplx::cancellation_token::none());
 
         typedef std::pair<api_version, service_priority> api_ver_pri;
         typedef std::pair<api_ver_pri, web::uri> resolved_service;
 
-        // helper function for resolving instances of the specified service (API)
-        // with the highest version, highest priority instances at the front, and (by default) services with the same priority ordered randomly
+        // Helper function for resolving instances of the specified service (API), returning ((api_version, priority), uri)
+        // tuples so callers can inspect the matched version and priority. Highest version and highest priority first,
+        // and (by default) services with the same priority ordered randomly.
         pplx::task<std::list<resolved_service>> resolve_service_(mdns::service_discovery& discovery, const nmos::service_type& service, const std::string& browse_domain, const std::set<nmos::api_version>& api_ver, const std::pair<nmos::service_priority, nmos::service_priority>& priorities, const std::set<nmos::service_protocol>& api_proto, const std::set<bool>& api_auth, bool randomize, const std::chrono::steady_clock::duration& timeout, const pplx::cancellation_token& token = pplx::cancellation_token::none());
 
-        // helper function for resolving instances of the specified service (API) based on the specified options or defaults
-        // with the highest version, highest priority instances at the front, and (by default) services with the same priority ordered randomly
+        // Convenience wrapper around the explicit-args resolve_service_ overload above, with default values
+        // for unspecified arguments.
         template <typename Rep = std::chrono::seconds::rep, typename Period = std::chrono::seconds::period>
         inline pplx::task<std::list<resolved_service>> resolve_service_(mdns::service_discovery& discovery, const nmos::service_type& service, const std::string& browse_domain = {}, const std::set<nmos::api_version>& api_ver = nmos::is04_versions::all, const std::pair<nmos::service_priority, nmos::service_priority>& priorities = { service_priorities::highest_active_priority, service_priorities::no_priority }, const std::set<nmos::service_protocol>& api_proto = nmos::service_protocols::all, const std::set<bool>& api_auth = { false, true }, bool randomize = true, const std::chrono::duration<Rep, Period>& timeout = std::chrono::seconds(mdns::default_timeout_seconds), const pplx::cancellation_token& token = pplx::cancellation_token::none())
         {
             return resolve_service_(discovery, service, browse_domain, api_ver, api_proto, api_auth, randomize, std::chrono::duration_cast<std::chrono::steady_clock::duration>(timeout), token);
         }
 
-        // helper function for resolving instances of the specified service (API) based on the specified settings
-        // with the highest version, highest priority instances at the front, and services with the same priority ordered randomly
+        // Helper function for resolving instances of the specified service (API) based on the specified settings,
+        // returning ((api_version, priority), uri) tuples. Highest version and highest priority first, services
+        // with the same priority ordered randomly.
+        // The browse method is selected by the dns_sd_browse_mode setting per TR-10-9 Section 15:
+        //  - both (default): unicast DNS first, mDNS fallback if unsuccessful
+        //  - unicast       : unicast DNS only
+        //  - mdns          : mDNS only
         pplx::task<std::list<resolved_service>> resolve_service_(mdns::service_discovery& discovery, const nmos::service_type& service, const nmos::settings& settings, const pplx::cancellation_token& token = pplx::cancellation_token::none());
     }
 }

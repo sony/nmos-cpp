@@ -85,6 +85,21 @@
     // domain [registry, node]: the domain on which to browse for services or an empty string to use the default domain (specify "local." to explictly select mDNS)
     //"domain": "",
 
+    // dns_sd_browse_mode [node]: DNS-SD browse method per TR-10-9 Section 15
+    //   both(0) (default) = unicast DNS first, mDNS fallback if unsuccessful
+    //   unicast(1)        = unicast DNS only
+    //   mdns(2)           = mDNS only
+    // Expected resolve behaviour for each (mode, domain) combination:
+    //   mode    | domain      | behaviour
+    //   --------+-------------+--------------------
+    //   both    | example.com | unicast -> mdns
+    //   both    | local.      | mdns
+    //   unicast | example.com | unicast
+    //   unicast | local.      | mdns
+    //   mdns    | example.com | mdns
+    //   mdns    | local.      | mdns
+    //"dns_sd_browse_mode": 0,
+
     // host_address/host_addresses [registry, node]: IP addresses used to construct response headers (e.g. 'Link' or 'Location'), and host and URL fields in the data model
     //"host_address": "127.0.0.1",
     //"host_addresses": array-of-ip-address-strings,
