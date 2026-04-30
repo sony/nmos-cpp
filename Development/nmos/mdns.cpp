@@ -12,7 +12,6 @@
 #include "cpprest/uri_builder.h"
 #include "mdns/service_advertiser.h"
 #include "mdns/service_discovery.h"
-#include "nmos/dns_sd_browse_mode.h"
 #include "nmos/is09_versions.h"
 #include "nmos/is10_versions.h"
 #include "nmos/random.h"
@@ -299,6 +298,14 @@ namespace nmos
         // see nmos::service_types::registration, nmos::experimental::register_service, etc.
         const service_type register_{ "_nmos-register._tcp" };
     }
+
+    // DNS-SD browse method per TR-10-9 Section 15; selected via the dns_sd_browse_mode setting
+    enum dns_sd_browse_mode
+    {
+        dns_sd_browse_mode_both    = 0, // unicast DNS first, mDNS fallback if unsuccessful
+        dns_sd_browse_mode_unicast = 1, // unicast DNS only
+        dns_sd_browse_mode_mdns    = 2  // mDNS only
+    };
 
     namespace experimental
     {
@@ -744,13 +751,13 @@ namespace nmos
         // returning ((api_version, priority), uri) tuples. Highest version and highest priority first, services
         // with the same priority ordered randomly.
         // The browse method is selected by the dns_sd_browse_mode setting per TR-10-9 Section 15:
-        //  - "both" (default): unicast DNS first, mDNS fallback if unsuccessful
-        //  - "unicast"       : unicast DNS only
-        //  - "mdns"          : mDNS only
+        //  - both (default): unicast DNS first, mDNS fallback if unsuccessful
+        //  - unicast       : unicast DNS only
+        //  - mdns          : mDNS only
         pplx::task<std::list<resolved_service>> resolve_service_(mdns::service_discovery& discovery, const nmos::service_type& service, const nmos::settings& settings, const pplx::cancellation_token& token)
         {
             const auto browse_domain = utility::us2s(nmos::get_domain(settings));
-            const auto browse_mode = nmos::dns_sd_browse_mode(nmos::fields::dns_sd_browse_mode(settings));
+            const auto browse_mode = dns_sd_browse_mode(nmos::fields::dns_sd_browse_mode(settings));
             const auto versions = details::service_versions(service, settings);
             const auto priorities = details::service_priorities(service, settings);
             const auto protocols = std::set<nmos::service_protocol>{ nmos::get_service_protocol(service, settings) };
@@ -762,8 +769,8 @@ namespace nmos
             const auto timeout_dur = std::chrono::duration_cast<std::chrono::steady_clock::duration>(std::chrono::seconds(timeout));
 
             // determine primary browse domain based on mode
-            const auto primary_domain = (browse_mode == nmos::dns_sd_browse_modes::mdns) ? std::string("local.") : browse_domain;
-            const bool has_fallback = (browse_mode == nmos::dns_sd_browse_modes::both) && !is_local_domain(browse_domain);
+            const auto primary_domain = (browse_mode == dns_sd_browse_mode_mdns) ? std::string("local.") : browse_domain;
+            const bool has_fallback = (browse_mode == dns_sd_browse_mode_both) && !is_local_domain(browse_domain);
 
             auto primary_task = resolve_service_(discovery, service, primary_domain, versions, priorities, protocols, authorization, true, timeout_dur, token);
 

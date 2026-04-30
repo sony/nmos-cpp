@@ -198,9 +198,9 @@ namespace nmos
         // returning ((api_version, priority), uri) tuples. Highest version and highest priority first, services
         // with the same priority ordered randomly.
         // The browse method is selected by the dns_sd_browse_mode setting per TR-10-9 Section 15:
-        //  - "both" (default): unicast DNS first, mDNS fallback if unsuccessful
-        //  - "unicast"       : unicast DNS only
-        //  - "mdns"          : mDNS only
+        //  - both (default): unicast DNS first, mDNS fallback if unsuccessful
+        //  - unicast       : unicast DNS only
+        //  - mdns          : mDNS only
         pplx::task<std::list<resolved_service>> resolve_service_(mdns::service_discovery& discovery, const nmos::service_type& service, const nmos::settings& settings, const pplx::cancellation_token& token = pplx::cancellation_token::none());
     }
 }
