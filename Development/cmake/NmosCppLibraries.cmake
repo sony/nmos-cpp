@@ -1030,6 +1030,9 @@ set(NMOS_CPP_NMOS_SOURCES
     nmos/control_protocol_utils.cpp
     nmos/control_protocol_ws_api.cpp
     nmos/did_sdid.cpp
+    nmos/est_behaviour.cpp
+    nmos/est_certificate_handlers.cpp
+    nmos/est_utils.cpp
     nmos/events_api.cpp
     nmos/events_resources.cpp
     nmos/events_ws_api.cpp
@@ -1133,6 +1136,10 @@ set(NMOS_CPP_NMOS_HEADERS
     nmos/control_protocol_ws_api.h
     nmos/device_type.h
     nmos/did_sdid.h
+    nmos/est_behaviour.h
+    nmos/est_certificate_handlers.h
+    nmos/est_utils.h
+    nmos/est_versions.h
     nmos/event_type.h
     nmos/events_api.h
     nmos/events_resources.h

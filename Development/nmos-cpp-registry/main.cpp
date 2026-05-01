@@ -2,6 +2,7 @@
 #include <iostream>
 #include "nmos/authorization_behaviour.h"
 #include "nmos/authorization_state.h"
+#include "nmos/est_behaviour.h"
 #include "nmos/log_gate.h"
 #include "nmos/model.h"
 #include "nmos/ocsp_behaviour.h"
@@ -123,6 +124,15 @@ int main(int argc, char* argv[])
                 .on_ws_validate_authorization(nmos::experimental::make_ws_validate_authorization_handler(registry_model, authorization_state, nmos::experimental::make_validate_authorization_token_handler(authorization_state, gate),  gate));
         }
 
+        // only configure communication with EST server if BCP-003-03 is required
+        if (nmos::experimental::fields::est_enabled(registry_model.settings))
+        {
+            registry_implementation
+                .on_ca_certificate_received(nmos::experimental::make_ca_certificate_received_handler(registry_model.settings, gate))
+                .on_rsa_server_certificate_received(nmos::experimental::make_rsa_server_certificate_received_handler(registry_model.settings, gate))
+                .on_ecdsa_server_certificate_received(nmos::experimental::make_ecdsa_server_certificate_received_handler(registry_model.settings, gate));
+        }
+
         // Set up the registry server
 
         auto registry_server = nmos::experimental::make_registry_server(registry_model, registry_implementation, log_model, gate);
@@ -156,6 +166,17 @@ int main(int argc, char* argv[])
             auto load_ca_certificates = registry_implementation.load_ca_certificates;
             registry_server.thread_functions.push_back([&, load_ca_certificates] { authorization_behaviour_thread(registry_model, authorization_state, load_ca_certificates, {}, {}, {}, {}, gate); });
             registry_server.thread_functions.push_back([&, load_ca_certificates] { authorization_token_issuer_thread(registry_model, authorization_state, load_ca_certificates, gate); });
+        }
+
+        // only configure communication with EST server if BCP-003-03 is required
+        if (nmos::experimental::fields::est_enabled(registry_model.settings))
+        {
+            auto load_ca_certificates = registry_implementation.load_ca_certificates;
+            auto load_client_certificate = registry_implementation.load_client_certificate;
+            auto ca_certificate_received = registry_implementation.ca_certificate_received;
+            auto rsa_server_certificate_received = registry_implementation.rsa_server_certificate_received;
+            auto ecdsa_server_certificate_received = registry_implementation.ecdsa_server_certificate_received;
+            registry_server.thread_functions.push_back([&, load_ca_certificates, load_client_certificate, ca_certificate_received, rsa_server_certificate_received, ecdsa_server_certificate_received] { nmos::experimental::est_behaviour_thread(registry_model, load_ca_certificates, load_client_certificate, ca_certificate_received, rsa_server_certificate_received, ecdsa_server_certificate_received, gate); });
         }
 
         // Open the API ports and start up registry management
