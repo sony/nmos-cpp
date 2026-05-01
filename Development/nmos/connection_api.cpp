@@ -555,9 +555,9 @@ namespace nmos
 
                 // Finally, update the staged endpoint
 
-                modify_resource(resources, id_type.first, [&merged](nmos::resource& resource)
+                modify_resource(resources, id_type.first, [&resources, &merged](nmos::resource& resource)
                 {
-                    resource.data[nmos::fields::version] = web::json::value::string(nmos::make_version());
+                    resource.data[nmos::fields::version] = value::string(nmos::make_version(nmos::strictly_increasing_update(resources)));
 
                     nmos::fields::endpoint_staged(resource.data) = merged;
                     // In the case of an immediate activation, this is not yet a valid response
@@ -709,7 +709,7 @@ namespace nmos
     }
 
     // Activate an IS-05 sender or receiver by transitioning the 'staged' settings into the 'active' resource
-    void set_connection_resource_active(nmos::resource& connection_resource, std::function<void(web::json::value& endpoint_active)> resolve_auto, const nmos::tai& activation_time)
+    void set_connection_resource_active(const nmos::resources& connection_resources, nmos::resource& connection_resource, std::function<void(web::json::value& endpoint_active)> resolve_auto, const nmos::tai& activation_time)
     {
         using web::json::value;
         using web::json::value_of;
@@ -717,7 +717,7 @@ namespace nmos
         auto& resource = connection_resource;
         const auto at = value::string(nmos::make_version(activation_time));
 
-        resource.data[nmos::fields::version] = at;
+        resource.data[nmos::fields::version] = value::string(nmos::make_version(nmos::strictly_increasing_update(connection_resources, activation_time)));
 
         auto& staged = nmos::fields::endpoint_staged(resource.data);
         auto& staged_activation = staged[nmos::fields::activation];
@@ -776,13 +776,12 @@ namespace nmos
 
     // Update the IS-04 sender or receiver after the active connection is changed in any way
     // (This function should be called after nmos::set_connection_resource_active.)
-    void set_resource_subscription(nmos::resource& node_resource, bool active, const nmos::id& connected_id, const nmos::tai& activation_time)
+    void set_resource_subscription(const nmos::resources& node_resources, nmos::resource& node_resource, bool active, const nmos::id& connected_id, const nmos::tai& activation_time)
     {
         using web::json::value;
         using web::json::value_of;
 
         auto& resource = node_resource;
-        const auto at = value::string(nmos::make_version(activation_time));
 
         // "The 'receiver_id' key MUST be set to `null` in all cases except where a unicast push-based Sender is configured to transmit to an NMOS Receiver, and the 'active' key is set to 'true'."
         // "The 'sender_id' key MUST be set to `null` in all cases except where the Receiver is currently configured to receive from an NMOS Sender, and the 'active' key is set to 'true'.
@@ -792,7 +791,7 @@ namespace nmos
         // "When the 'active' parameters of a Sender or Receiver are modified, or when a re-activation of the same parameters
         // is performed, the 'version' attribute of the relevant IS-04 Sender or Receiver must be incremented."
         // See https://specs.amwa.tv/is-05/releases/v1.0.0/docs/3.1._Interoperability_-_NMOS_IS-04.html#version-increments
-        resource.data[nmos::fields::version] = at;
+        resource.data[nmos::fields::version] = value::string(nmos::make_version(nmos::strictly_increasing_update(node_resources, activation_time)));
 
         // Senders indicate the connected receiver_id, receivers indicate the connected sender_id
         // (depending on the API version)
