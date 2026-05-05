@@ -251,11 +251,16 @@ namespace nmos
                 {
                     nmos::types::sender,
                     {
-                        nmos::fields::flow_id
+                        nmos::fields::mxl_flow_id,
+                        nmos::fields::mxl_domain_id
                     }
                 },
                 {
-                    nmos::types::receiver, {}
+                    nmos::types::receiver,
+                    {
+                        nmos::fields::mxl_domain_id,
+                        nmos::fields::mxl_flow_id
+                    }
                 }
             };
             return auto_constraints;

@@ -409,6 +409,7 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
     const auto seed_id = nmos::experimental::fields::seed_id(model.settings);
     const auto node_id = impl::make_id(seed_id, nmos::types::node);
     const auto device_id = impl::make_id(seed_id, nmos::types::device);
+    const auto mxl_domain_id = nmos::make_repeatable_id(seed_id, U("/x-nmos/mxl/domain"));
     const auto how_many = impl::fields::how_many(model.settings);
     const auto sender_ports = impl::parse_ports(impl::fields::senders(model.settings));
     const auto rtp_sender_ports = boost::copy_range<std::vector<impl::port>>(sender_ports | boost::adaptors::filtered(impl::is_rtp_port));
@@ -979,7 +980,7 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
             impl::set_label_description(sender, port, index);
             impl::insert_group_hint(sender, port, index);
 
-            auto connection_sender = nmos::make_connection_mxl_sender(sender_id, flow_id);
+            auto connection_sender = nmos::make_connection_mxl_sender(sender_id, flow_id, mxl_domain_id);
 
             if (impl::fields::activate_senders(model.settings))
             {
@@ -1014,7 +1015,7 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
             }
             else if (impl::ports::mxl_audio == port)
             {
-                receiver = nmos::make_audio_receiver(receiver_id, device_id, nmos::transports::mxl, {}, std::vector<unsigned int>{}, model.settings);
+                receiver = nmos::make_receiver(receiver_id, device_id, nmos::transports::mxl, {}, nmos::formats::audio, { nmos::media_type{ U("audio/float32") } }, model.settings);
             }
             else if (impl::ports::mxl_data == port)
             {
@@ -1023,7 +1024,7 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
             impl::set_label_description(receiver, port, index);
             impl::insert_group_hint(receiver, port, index);
 
-            auto connection_receiver = nmos::make_connection_mxl_receiver(receiver_id);
+            auto connection_receiver = nmos::make_connection_mxl_receiver(receiver_id, mxl_domain_id);
 
             if (!insert_resource_after(delay_millis, model.node_resources, std::move(receiver), gate)) throw node_implementation_init_exception();
             if (!insert_resource_after(delay_millis, model.connection_resources, std::move(connection_receiver), gate)) throw node_implementation_init_exception();
@@ -2024,10 +2025,12 @@ nmos::connection_resource_auto_resolver make_node_implementation_auto_resolver(c
     const auto rtp_receiver_ids = impl::make_ids(seed_id, nmos::types::receiver, rtp_receiver_ports, how_many);
     const auto ws_receiver_ports = boost::copy_range<std::vector<impl::port>>(receiver_ports | boost::adaptors::filtered(impl::is_ws_port));
     const auto ws_receiver_ids = impl::make_ids(seed_id, nmos::types::receiver, ws_receiver_ports, how_many);
+    const auto mxl_receiver_ports = boost::copy_range<std::vector<impl::port>>(receiver_ports | boost::adaptors::filtered(impl::is_mxl_port));
+    const auto mxl_receiver_ids = impl::make_ids(seed_id, nmos::types::receiver, mxl_receiver_ports, how_many);
 
     // although which properties may need to be defaulted depends on the resource type,
     // the default value will almost always be different for each resource
-    return [rtp_sender_ids, rtp_receiver_ids, ws_sender_ids, ws_sender_uri, ws_receiver_ids, mxl_sender_ids](const nmos::resource& resource, const nmos::resource& connection_resource, value& transport_params)
+    return [rtp_sender_ids, rtp_receiver_ids, ws_sender_ids, ws_sender_uri, ws_receiver_ids, mxl_sender_ids, mxl_receiver_ids](const nmos::resource& resource, const nmos::resource& connection_resource, value& transport_params)
     {
         const std::pair<nmos::id, nmos::type> id_type{ connection_resource.id, connection_resource.type };
         // this code relies on the specific constraints added by node_implementation_thread
@@ -2064,7 +2067,26 @@ nmos::connection_resource_auto_resolver make_node_implementation_auto_resolver(c
         }
         else if (mxl_sender_ids.end() != boost::range::find(mxl_sender_ids, id_type.first))
         {
-            nmos::details::resolve_auto(transport_params[0], nmos::fields::flow_id, [&] { return web::json::front(nmos::fields::constraint_enum(constraints.at(0).at(nmos::fields::flow_id))); });
+            nmos::details::resolve_auto(transport_params[0], nmos::fields::mxl_flow_id, [&] { return web::json::front(nmos::fields::constraint_enum(constraints.at(0).at(nmos::fields::mxl_flow_id))); });
+            nmos::details::resolve_auto(transport_params[0], nmos::fields::mxl_domain_id, [&] { return web::json::front(nmos::fields::constraint_enum(constraints.at(0).at(nmos::fields::mxl_domain_id))); });
+        }
+        else if (mxl_receiver_ids.end() != boost::range::find(mxl_receiver_ids, id_type.first))
+        {
+            nmos::details::resolve_auto(transport_params[0], nmos::fields::mxl_domain_id, [&] { return web::json::front(nmos::fields::constraint_enum(constraints.at(0).at(nmos::fields::mxl_domain_id))); });
+            // mxl_flow_id may be unconstrained on receivers; resolve auto only when constraints enumerate values
+            nmos::details::resolve_auto(transport_params[0], nmos::fields::mxl_flow_id, [&]
+            {
+                const auto& fc = constraints.at(0).at(nmos::fields::mxl_flow_id);
+                if (fc.is_object() && fc.has_field(nmos::fields::constraint_enum))
+                {
+                    const auto& en = nmos::fields::constraint_enum(fc);
+                    if (en.is_array() && 0 != en.as_array().size())
+                    {
+                        return web::json::front(en);
+                    }
+                }
+                return web::json::value::null();
+            });
         }
     };
 }

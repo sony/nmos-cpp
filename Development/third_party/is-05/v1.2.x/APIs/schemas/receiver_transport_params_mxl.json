@@ -4,14 +4,34 @@
   "title": "MXL Receiver Transport Parameters",
   "type": "object",
   "properties": {
-    "flow_id": {
+    "mxl_domain_id": {
       "type": [
         "string",
         "null"
       ],
-      "description": "ID of the Flow to read.",
+      "description": "MXL domain identity (UUID). Use auto to select from constraints.",
       "anyOf": [{
           "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        {
+          "pattern": "^auto$"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "mxl_flow_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "MXL flow identity for the read operation. Need not match the IS-04 Flow id. Use auto to select from constraints.",
+      "anyOf": [{
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        {
+          "pattern": "^auto$"
         },
         {
           "type": "null"
