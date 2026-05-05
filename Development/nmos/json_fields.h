@@ -172,8 +172,9 @@ namespace nmos
         const web::json::field_as_value_or broker_authorization{ U("broker_authorization"), {} }; // string or bool
         const web::json::field_as_value_or broker_topic{ U("broker_topic"), {} }; // string or null
         const web::json::field_as_value_or connection_status_broker_topic{ U("connection_status_broker_topic"), {} }; // string or null
-        // for urn:x-nmos:transport:mxl
-        //const web::json::field_as_value flow_id{ U("flow_id") }; // see nmos::id
+        // for urn:x-nmos:transport:mxl (see AMWA BCP-007-03 NMOS With MXL)
+        const web::json::field_as_value_or mxl_domain_id{ U("mxl_domain_id"), {} }; // UUID string, auto, or null
+        const web::json::field_as_value_or mxl_flow_id{ U("mxl_flow_id"), {} }; // UUID string, auto, or null
 
         // IS-07 Event & Tally
 
