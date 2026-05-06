@@ -251,8 +251,8 @@ namespace nmos
                 {
                     nmos::types::sender,
                     {
-                        nmos::fields::mxl_flow_id,
-                        nmos::fields::mxl_domain_id
+                        nmos::fields::mxl_domain_id,
+                        nmos::fields::mxl_flow_id
                     }
                 },
                 {

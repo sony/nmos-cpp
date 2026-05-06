@@ -615,21 +615,21 @@ namespace nmos
 
     namespace details
     {
-        web::json::value make_connection_mxl_sender_core_constraints(const nmos::id& mxl_flow_id, const nmos::id& mxl_domain_id)
+        web::json::value make_connection_mxl_sender_core_constraints(const nmos::id& mxl_domain_id, const nmos::id& mxl_flow_id)
         {
             using web::json::value;
             using web::json::value_of;
 
             const auto unconstrained = value::object();
             return value_of({
-                { nmos::fields::mxl_flow_id, mxl_flow_id.empty() ? unconstrained : value_of({
-                    { nmos::fields::constraint_enum, value_of({
-                        mxl_flow_id
-                    }) }
-                }) },
                 { nmos::fields::mxl_domain_id, mxl_domain_id.empty() ? unconstrained : value_of({
                     { nmos::fields::constraint_enum, value_of({
                         mxl_domain_id
+                    }) }
+                }) },
+                { nmos::fields::mxl_flow_id, mxl_flow_id.empty() ? unconstrained : value_of({
+                    { nmos::fields::constraint_enum, value_of({
+                        mxl_flow_id
                     }) }
                 }) }
             });
@@ -641,8 +641,8 @@ namespace nmos
             using web::json::value_of;
 
             return value_of({
-                { nmos::fields::mxl_flow_id, U("auto") },
-                { nmos::fields::mxl_domain_id, U("auto") }
+                { nmos::fields::mxl_domain_id, U("auto") },
+                { nmos::fields::mxl_flow_id, U("auto") }
             });
         }
 
@@ -653,12 +653,12 @@ namespace nmos
 
             const auto unconstrained = value::object();
             return value_of({
-                { nmos::fields::mxl_flow_id, unconstrained },
                 { nmos::fields::mxl_domain_id, mxl_domain_id.empty() ? unconstrained : value_of({
                     { nmos::fields::constraint_enum, value_of({
                         mxl_domain_id
                     }) }
-                }) }
+                }) },
+                { nmos::fields::mxl_flow_id, unconstrained }
             });
         }
 
@@ -668,13 +668,13 @@ namespace nmos
             using web::json::value_of;
 
             return value_of({
-                { nmos::fields::mxl_flow_id, value::null() },
-                { nmos::fields::mxl_domain_id, U("auto") }
+                { nmos::fields::mxl_domain_id, U("auto") },
+                { nmos::fields::mxl_flow_id, value::null() }
             });
         }
     }
 
-    nmos::resource make_connection_mxl_sender(const nmos::id& id, const nmos::id& mxl_flow_id, const nmos::id& mxl_domain_id)
+    nmos::resource make_connection_mxl_sender(const nmos::id& id, const nmos::id& mxl_domain_id, const nmos::id& mxl_flow_id)
     {
         using web::json::value;
         using web::json::value_of;
@@ -683,7 +683,7 @@ namespace nmos
 
         auto data = details::make_connection_resource_core(id, redundant);
 
-        data[nmos::fields::endpoint_constraints] = details::legs_of(details::make_connection_mxl_sender_core_constraints(mxl_flow_id, mxl_domain_id), redundant);
+        data[nmos::fields::endpoint_constraints] = details::legs_of(details::make_connection_mxl_sender_core_constraints(mxl_domain_id, mxl_flow_id), redundant);
 
         data[nmos::fields::endpoint_staged][nmos::fields::receiver_id] = value::null();
         data[nmos::fields::endpoint_staged][nmos::fields::transport_params] = details::legs_of(details::make_connection_mxl_sender_staged_core_parameter_set(), redundant);
