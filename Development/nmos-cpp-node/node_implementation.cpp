@@ -127,6 +127,9 @@ namespace impl
 
         // simulate_status_monitor_activity: when true status monitor statuses will change randomly after activation
         const web::json::field_as_bool_or simulate_status_monitor_activity{U("simulate_status_monitor_activity"), true};
+
+        // mxl_domain_id: optional, used to override the generated MXL domain id
+        const web::json::field_as_string_or mxl_domain_id{ U("mxl_domain_id"), {} };
     }
 
     nmos::interlace_mode get_interlace_mode(const nmos::settings& settings);
@@ -409,7 +412,9 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
     const auto seed_id = nmos::experimental::fields::seed_id(model.settings);
     const auto node_id = impl::make_id(seed_id, nmos::types::node);
     const auto device_id = impl::make_id(seed_id, nmos::types::device);
-    const auto mxl_domain_id = nmos::make_repeatable_id(seed_id, U("/x-nmos/mxl/domain"));
+    const nmos::id mxl_domain_id = model.settings.has_field(impl::fields::mxl_domain_id)
+        ? impl::fields::mxl_domain_id(model.settings)
+        : nmos::make_repeatable_id(seed_id, U("/x-nmos/mxl/domain"));
     const auto how_many = impl::fields::how_many(model.settings);
     const auto sender_ports = impl::parse_ports(impl::fields::senders(model.settings));
     const auto rtp_sender_ports = boost::copy_range<std::vector<impl::port>>(sender_ports | boost::adaptors::filtered(impl::is_rtp_port));
