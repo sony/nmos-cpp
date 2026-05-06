@@ -198,6 +198,9 @@
     // seed id [registry, node]: optional, used to generate repeatable id values when running with the same configuration
     //"seed_id": uuid-string,
 
+    // mxl_domain_id [node]: optional, overrides the generated MXL domain id used by MXL sender/receiver transport params
+    //"mxl_domain_id": uuid-string,
+
     // label [registry, node]: used in resource label field
     //"label": "",
 
