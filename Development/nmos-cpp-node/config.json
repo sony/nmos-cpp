@@ -22,9 +22,10 @@
 
     // senders, receivers: controls which kinds of sender and receiver are instantiated by the example node
     // the values must be an array of unique strings identifying the kinds of 'port', like ["v", "a", "d"], see impl::ports
+    // for MXL Senders and Receivers, the values must be ["xv", "xa", "xd"]
     // when omitted, all ports are instantiated
-    "senders": ["xv", "xa", "xd"],
-    "receivers": ["xv", "xa", "xd"],
+    //"senders": ["v", "a", "d"],
+    //"receivers": ["v", "a", "d"],
 
     // frame_rate: controls the grain_rate of video, audio and ancillary data sources and flows
     // and the equivalent parameter constraint on video receivers
@@ -51,8 +52,8 @@
     // component_depth: controls the bits per component sample of video flows
     //"component_depth": 10,
 
-    // video_type: media type of video flows, e.g. "video/raw" or "video/jxsv", see nmos::media_types
-    "video_type": "video/v210",
+    // video_type: media type of video flows, e.g. "video/raw", "video/jxsv", or "video/v210" for MXL Senders and Receivers, see nmos::media_types
+    //"video_type": "video/raw",
 
     // channel_count: controls the number of channels in audio sources
     //"channel_count": 8,

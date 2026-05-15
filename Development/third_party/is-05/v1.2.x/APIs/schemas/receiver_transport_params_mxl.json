@@ -26,12 +26,9 @@
         "string",
         "null"
       ],
-      "description": "MXL flow identity for the read operation. Need not match the IS-04 Flow id. Use auto to select from constraints.",
+      "description": "MXL flow identity for the read operation. Need not match the IS-04 Flow id. BCP-007-03: null or UUID only; the literal auto is not used for receivers.",
       "anyOf": [{
           "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
-        },
-        {
-          "pattern": "^auto$"
         },
         {
           "type": "null"

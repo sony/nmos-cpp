@@ -174,7 +174,7 @@ namespace nmos
         const web::json::field_as_value_or connection_status_broker_topic{ U("connection_status_broker_topic"), {} }; // string or null
         // for urn:x-nmos:transport:mxl (see AMWA BCP-007-03 NMOS With MXL)
         const web::json::field_as_value_or mxl_domain_id{ U("mxl_domain_id"), {} }; // UUID string, auto, or null
-        const web::json::field_as_value_or mxl_flow_id{ U("mxl_flow_id"), {} }; // UUID string, auto, or null
+        const web::json::field_as_value_or mxl_flow_id{ U("mxl_flow_id"), {} }; // senders: UUID, auto, or null; receivers: UUID or null (BCP-007-03)
 
         // IS-07 Event & Tally
 

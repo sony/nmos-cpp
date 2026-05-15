@@ -985,7 +985,7 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
             impl::set_label_description(sender, port, index);
             impl::insert_group_hint(sender, port, index);
 
-            auto connection_sender = nmos::make_connection_mxl_sender(sender_id, flow_id, mxl_domain_id);
+            auto connection_sender = nmos::make_connection_mxl_sender(sender_id, mxl_domain_id, flow_id);
 
             if (impl::fields::activate_senders(model.settings))
             {
@@ -1017,14 +1017,61 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
             if (impl::ports::mxl_video == port)
             {
                 receiver = nmos::make_receiver(receiver_id, device_id, nmos::transports::mxl, {}, nmos::formats::video, { video_type }, model.settings);
+                if (nmos::media_types::video_raw == video_type)
+                {
+                    const auto interlace_modes = nmos::interlace_modes::progressive != interlace_mode
+                        ? std::vector<utility::string_t>{ nmos::interlace_modes::interlaced_bff.name, nmos::interlace_modes::interlaced_tff.name, nmos::interlace_modes::interlaced_psf.name }
+                        : std::vector<utility::string_t>{ nmos::interlace_modes::progressive.name };
+                    receiver.data[nmos::fields::caps][nmos::fields::constraint_sets] = value_of({
+                        value_of({
+                            { nmos::caps::format::grain_rate, nmos::make_caps_rational_constraint({ frame_rate }) },
+                            { nmos::caps::format::frame_width, nmos::make_caps_integer_constraint({ frame_width }) },
+                            { nmos::caps::format::frame_height, nmos::make_caps_integer_constraint({ frame_height }) },
+                            { nmos::caps::format::interlace_mode, nmos::make_caps_string_constraint(interlace_modes) },
+                            { nmos::caps::format::color_sampling, nmos::make_caps_string_constraint({ sampling.name }) }
+                        })
+                    });
+                }
+                else if (nmos::media_types::video_jxsv == video_type)
+                {
+                    const auto max_format_bit_rate = nmos::get_video_jxsv_bit_rate(frame_rate, frame_width, frame_height, max_bits_per_pixel);
+                    const auto max_transport_bit_rate = uint64_t(transport_bit_rate_factor * max_format_bit_rate / 1e3 + 0.5) * 1000;
+
+                    receiver.data[nmos::fields::caps][nmos::fields::constraint_sets] = value_of({
+                        value_of({
+                            { nmos::caps::format::profile, nmos::make_caps_string_constraint({ profile.name }) },
+                            { nmos::caps::format::level, nmos::make_caps_string_constraint({ level.name }) },
+                            { nmos::caps::format::sublevel, nmos::make_caps_string_constraint({ nmos::sublevels::Sublev3bpp.name, nmos::sublevels::Sublev4bpp.name }) },
+                            { nmos::caps::format::bit_rate, nmos::make_caps_integer_constraint({}, nmos::no_minimum<int64_t>(), (int64_t)max_format_bit_rate) },
+                            { nmos::caps::transport::bit_rate, nmos::make_caps_integer_constraint({}, nmos::no_minimum<int64_t>(), (int64_t)max_transport_bit_rate) },
+                            { nmos::caps::transport::packet_transmission_mode, nmos::make_caps_string_constraint({ nmos::packet_transmission_modes::codestream.name }) }
+                        })
+                    });
+                }
+                receiver.data[nmos::fields::version] = receiver.data[nmos::fields::caps][nmos::fields::version] = value(nmos::make_version());
             }
             else if (impl::ports::mxl_audio == port)
             {
                 receiver = nmos::make_receiver(receiver_id, device_id, nmos::transports::mxl, {}, nmos::formats::audio, { nmos::media_type{ U("audio/float32") } }, model.settings);
+                receiver.data[nmos::fields::caps][nmos::fields::constraint_sets] = value_of({
+                    value_of({
+                        { nmos::caps::format::media_type, nmos::make_caps_string_constraint({ U("audio/float32") }) },
+                        { nmos::caps::format::channel_count, nmos::make_caps_integer_constraint({}, 1, channel_count) },
+                        { nmos::caps::format::sample_rate, nmos::make_caps_rational_constraint({ { 48000, 1 } }) },
+                        { nmos::caps::format::sample_depth, nmos::make_caps_integer_constraint({ 32 }) }
+                    })
+                });
+                receiver.data[nmos::fields::version] = receiver.data[nmos::fields::caps][nmos::fields::version] = value(nmos::make_version());
             }
             else if (impl::ports::mxl_data == port)
             {
                 receiver = nmos::make_sdianc_data_receiver(receiver_id, device_id, nmos::transports::mxl, {}, model.settings);
+                receiver.data[nmos::fields::caps][nmos::fields::constraint_sets] = value_of({
+                    value_of({
+                        { nmos::caps::format::grain_rate, nmos::make_caps_rational_constraint({ frame_rate }) }
+                    })
+                });
+                receiver.data[nmos::fields::version] = receiver.data[nmos::fields::caps][nmos::fields::version] = value(nmos::make_version());
             }
             impl::set_label_description(receiver, port, index);
             impl::insert_group_hint(receiver, port, index);
@@ -2072,26 +2119,13 @@ nmos::connection_resource_auto_resolver make_node_implementation_auto_resolver(c
         }
         else if (mxl_sender_ids.end() != boost::range::find(mxl_sender_ids, id_type.first))
         {
-            nmos::details::resolve_auto(transport_params[0], nmos::fields::mxl_flow_id, [&] { return web::json::front(nmos::fields::constraint_enum(constraints.at(0).at(nmos::fields::mxl_flow_id))); });
             nmos::details::resolve_auto(transport_params[0], nmos::fields::mxl_domain_id, [&] { return web::json::front(nmos::fields::constraint_enum(constraints.at(0).at(nmos::fields::mxl_domain_id))); });
+            nmos::details::resolve_auto(transport_params[0], nmos::fields::mxl_flow_id, [&] { return web::json::front(nmos::fields::constraint_enum(constraints.at(0).at(nmos::fields::mxl_flow_id))); });
         }
         else if (mxl_receiver_ids.end() != boost::range::find(mxl_receiver_ids, id_type.first))
         {
+            // BCP-007-03: mxl_flow_id does not use "auto" on receivers (UUID or null only).
             nmos::details::resolve_auto(transport_params[0], nmos::fields::mxl_domain_id, [&] { return web::json::front(nmos::fields::constraint_enum(constraints.at(0).at(nmos::fields::mxl_domain_id))); });
-            // mxl_flow_id may be unconstrained on receivers; resolve auto only when constraints enumerate values
-            nmos::details::resolve_auto(transport_params[0], nmos::fields::mxl_flow_id, [&]
-            {
-                const auto& fc = constraints.at(0).at(nmos::fields::mxl_flow_id);
-                if (fc.is_object() && fc.has_field(nmos::fields::constraint_enum))
-                {
-                    const auto& en = nmos::fields::constraint_enum(fc);
-                    if (en.is_array() && 0 != en.as_array().size())
-                    {
-                        return web::json::front(en);
-                    }
-                }
-                return web::json::value::null();
-            });
         }
     };
 }
