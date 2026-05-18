@@ -407,7 +407,7 @@ set(NMOS_IS05_SCHEMAS_HEADERS
     nmos/is05_schemas/is05_schemas.h
     )
 
-set(NMOS_IS05_V1_2_TAG v1.2.x)
+set(NMOS_IS05_V1_2_TAG v1.2-dev)
 set(NMOS_IS05_V1_1_TAG v1.1.x)
 set(NMOS_IS05_V1_0_TAG v1.0.x)
 
