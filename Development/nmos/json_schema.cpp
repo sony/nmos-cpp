@@ -77,11 +77,11 @@ namespace nmos
             return{ _XPLATSTR("https://github.com/AMWA-TV/is-05/raw/") + tag + _XPLATSTR("/APIs/schemas/") + ref };
         }
 
-        // See https://github.com/AMWA-TV/is-05/blob/v1.2.x/APIs/schemas/
+        // See https://github.com/AMWA-TV/is-05/blob/v1.2-dev/APIs/schemas/
         namespace v1_2
         {
-            using namespace nmos::is05_schemas::v1_2_x;
-            const utility::string_t tag(_XPLATSTR("v1.2.x"));
+            using namespace nmos::is05_schemas::v1_2_dev;
+            const utility::string_t tag(_XPLATSTR("v1.2-dev"));
 
             const web::uri connectionapi_sender_staged_patch_request_uri = make_schema_uri(tag, _XPLATSTR("sender-stage-schema.json"));
             const web::uri connectionapi_receiver_staged_patch_request_uri = make_schema_uri(tag, _XPLATSTR("receiver-stage-schema.json"));

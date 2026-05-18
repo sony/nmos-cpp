@@ -22,7 +22,7 @@
 
     // senders, receivers: controls which kinds of sender and receiver are instantiated by the example node
     // the values must be an array of unique strings identifying the kinds of 'port', like ["v", "a", "d"], see impl::ports
-    // for MXL Senders and Receivers, the values must be ["xv", "xa", "xd"]
+    // for MXL senders and receivers, the values must be like ["xv", "xa", "xd"]
     // when omitted, all ports are instantiated
     //"senders": ["v", "a", "d"],
     //"receivers": ["v", "a", "d"],
@@ -52,7 +52,8 @@
     // component_depth: controls the bits per component sample of video flows
     //"component_depth": 10,
 
-    // video_type: media type of video flows, e.g. "video/raw", "video/jxsv", or "video/v210" for MXL Senders and Receivers, see nmos::media_types
+    // video_type: media type of video flows, e.g. "video/raw", "video/jxsv" for ST 2110 senders and receivers
+    // or "video/v210" for MXL senders and receivers, see nmos::media_types
     //"video_type": "video/raw",
 
     // channel_count: controls the number of channels in audio sources
