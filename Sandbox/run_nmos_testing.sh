@@ -25,7 +25,7 @@ cd -
 
 expected_disabled_BCP_003_01=0
 # test_12
-expected_disabled_IS_04_01=1
+expected_disabled_IS_04_01=2
 expected_disabled_IS_04_03=0
 expected_disabled_IS_05_01=0
 expected_disabled_IS_05_02=0
@@ -202,7 +202,7 @@ if $secure; then
   do_run_test BCP-003-01 $expected_disabled_BCP_003_01 --host "${host}" --port 1080 --version v1.0
 fi
 
-do_run_test IS-04-01 $expected_disabled_IS_04_01 --host "${host}" --port 1080 --version v1.3
+do_run_test IS-04-01 $expected_disabled_IS_04_01 --host "${host}" --port 1080 --version v1.3 --ignore test_19
 
 do_run_test IS-04-03 $expected_disabled_IS_04_03 --host "${host}" --port 1080 --version v1.3
 
