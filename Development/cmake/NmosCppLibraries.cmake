@@ -1214,6 +1214,7 @@ set(NMOS_CPP_NMOS_HEADERS
     nmos/mdns_api.h
     nmos/mdns_versions.h
     nmos/media_type.h
+    nmos/mxl.h
     nmos/model.h
     nmos/mutex.h
     nmos/node_api.h

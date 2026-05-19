@@ -38,6 +38,7 @@
 #include "nmos/lldp_manager.h"
 #endif
 #include "nmos/media_type.h"
+#include "nmos/mxl.h"
 #include "nmos/model.h"
 #include "nmos/node_interfaces.h"
 #include "nmos/node_resource.h"
@@ -118,6 +119,9 @@ namespace impl
 
         // video_type: media type of video flows, e.g. "video/raw" or "video/jxsv", see nmos::media_types
         const web::json::field_as_string_or video_type{ U("video_type"), U("video/raw") };
+
+        // mxl_video_type: media type of MXL video flows and receivers, e.g. "video/v210" or "video/v210a", see nmos/mxl.h
+        const web::json::field_as_string_or mxl_video_type{ U("mxl_video_type"), nmos::media_types::video_v210.name };
 
         // channel_count: controls the number of channels in audio sources
         const web::json::field_as_integer_or channel_count{ U("channel_count"), 4 };
@@ -412,9 +416,7 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
     const auto seed_id = nmos::experimental::fields::seed_id(model.settings);
     const auto node_id = impl::make_id(seed_id, nmos::types::node);
     const auto device_id = impl::make_id(seed_id, nmos::types::device);
-    const nmos::id mxl_domain_id = model.settings.has_field(impl::fields::mxl_domain_id)
-        ? impl::fields::mxl_domain_id(model.settings)
-        : nmos::make_repeatable_id(seed_id, U("/x-nmos/mxl/domain"));
+    const auto mxl_domain_id = impl::fields::mxl_domain_id(model.settings);
     const auto how_many = impl::fields::how_many(model.settings);
     const auto sender_ports = impl::parse_ports(impl::fields::senders(model.settings));
     const auto rtp_sender_ports = boost::copy_range<std::vector<impl::port>>(sender_ports | boost::adaptors::filtered(impl::is_rtp_port));
@@ -433,6 +435,7 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
     const auto sampling = sdp::sampling{ impl::fields::color_sampling(model.settings) };
     const auto bit_depth = impl::fields::component_depth(model.settings);
     const auto video_type = nmos::media_type{ impl::fields::video_type(model.settings) };
+    const auto mxl_video_type = nmos::media_type{ impl::fields::mxl_video_type(model.settings) };
     const auto channel_count = impl::fields::channel_count(model.settings);
     const auto smpte2022_7 = impl::fields::smpte2022_7(model.settings);
 
@@ -960,16 +963,14 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
                     frame_rate,
                     frame_width, frame_height, interlace_mode,
                     colorspace, transfer_characteristic, sampling, bit_depth,
-                    video_type,
+                    mxl_video_type,
                     model.settings
                 );
             }
             else if (impl::ports::mxl_audio == port)
             {
                 flow = nmos::make_raw_audio_flow(flow_id, source_id, device_id, 48000, 32, model.settings);
-                flow.data[nmos::fields::media_type] = value::string(U("audio/float32"));
-                // add optional grain_rate
-                flow.data[nmos::fields::grain_rate] = nmos::make_rational(frame_rate);
+                flow.data[nmos::fields::media_type] = value::string(nmos::media_types::audio_float32.name);
             }
             else if (impl::ports::mxl_data == port)
             {
@@ -1016,46 +1017,29 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
             nmos::resource receiver;
             if (impl::ports::mxl_video == port)
             {
-                receiver = nmos::make_receiver(receiver_id, device_id, nmos::transports::mxl, {}, nmos::formats::video, { video_type }, model.settings);
-                if (nmos::media_types::video_raw == video_type)
-                {
-                    const auto interlace_modes = nmos::interlace_modes::progressive != interlace_mode
-                        ? std::vector<utility::string_t>{ nmos::interlace_modes::interlaced_bff.name, nmos::interlace_modes::interlaced_tff.name, nmos::interlace_modes::interlaced_psf.name }
-                        : std::vector<utility::string_t>{ nmos::interlace_modes::progressive.name };
-                    receiver.data[nmos::fields::caps][nmos::fields::constraint_sets] = value_of({
-                        value_of({
-                            { nmos::caps::format::grain_rate, nmos::make_caps_rational_constraint({ frame_rate }) },
-                            { nmos::caps::format::frame_width, nmos::make_caps_integer_constraint({ frame_width }) },
-                            { nmos::caps::format::frame_height, nmos::make_caps_integer_constraint({ frame_height }) },
-                            { nmos::caps::format::interlace_mode, nmos::make_caps_string_constraint(interlace_modes) },
-                            { nmos::caps::format::color_sampling, nmos::make_caps_string_constraint({ sampling.name }) }
-                        })
-                    });
-                }
-                else if (nmos::media_types::video_jxsv == video_type)
-                {
-                    const auto max_format_bit_rate = nmos::get_video_jxsv_bit_rate(frame_rate, frame_width, frame_height, max_bits_per_pixel);
-                    const auto max_transport_bit_rate = uint64_t(transport_bit_rate_factor * max_format_bit_rate / 1e3 + 0.5) * 1000;
-
-                    receiver.data[nmos::fields::caps][nmos::fields::constraint_sets] = value_of({
-                        value_of({
-                            { nmos::caps::format::profile, nmos::make_caps_string_constraint({ profile.name }) },
-                            { nmos::caps::format::level, nmos::make_caps_string_constraint({ level.name }) },
-                            { nmos::caps::format::sublevel, nmos::make_caps_string_constraint({ nmos::sublevels::Sublev3bpp.name, nmos::sublevels::Sublev4bpp.name }) },
-                            { nmos::caps::format::bit_rate, nmos::make_caps_integer_constraint({}, nmos::no_minimum<int64_t>(), (int64_t)max_format_bit_rate) },
-                            { nmos::caps::transport::bit_rate, nmos::make_caps_integer_constraint({}, nmos::no_minimum<int64_t>(), (int64_t)max_transport_bit_rate) },
-                            { nmos::caps::transport::packet_transmission_mode, nmos::make_caps_string_constraint({ nmos::packet_transmission_modes::codestream.name }) }
-                        })
-                    });
-                }
+                receiver = nmos::make_receiver(receiver_id, device_id, nmos::transports::mxl, {}, nmos::formats::video, { mxl_video_type }, model.settings);
+                const auto interlace_modes = nmos::interlace_modes::progressive != interlace_mode
+                    ? std::vector<utility::string_t>{ nmos::interlace_modes::interlaced_bff.name, nmos::interlace_modes::interlaced_tff.name, nmos::interlace_modes::interlaced_psf.name }
+                    : std::vector<utility::string_t>{ nmos::interlace_modes::progressive.name };
+                receiver.data[nmos::fields::caps][nmos::fields::constraint_sets] = value_of({
+                    value_of({
+                        { nmos::caps::format::media_type, nmos::make_caps_string_constraint({ mxl_video_type.name }) },
+                        { nmos::caps::format::grain_rate, nmos::make_caps_rational_constraint({ frame_rate }) },
+                        { nmos::caps::format::frame_width, nmos::make_caps_integer_constraint({ frame_width }) },
+                        { nmos::caps::format::frame_height, nmos::make_caps_integer_constraint({ frame_height }) },
+                        { nmos::caps::format::interlace_mode, nmos::make_caps_string_constraint(interlace_modes) },
+                        { nmos::caps::format::color_sampling, nmos::make_caps_string_constraint({ sampling.name }) },
+                        { nmos::caps::format::component_depth, nmos::make_caps_integer_constraint({ bit_depth }) }
+                    })
+                });
                 receiver.data[nmos::fields::version] = receiver.data[nmos::fields::caps][nmos::fields::version] = value(nmos::make_version());
             }
             else if (impl::ports::mxl_audio == port)
             {
-                receiver = nmos::make_receiver(receiver_id, device_id, nmos::transports::mxl, {}, nmos::formats::audio, { nmos::media_type{ U("audio/float32") } }, model.settings);
+                receiver = nmos::make_receiver(receiver_id, device_id, nmos::transports::mxl, {}, nmos::formats::audio, { nmos::media_types::audio_float32 }, model.settings);
                 receiver.data[nmos::fields::caps][nmos::fields::constraint_sets] = value_of({
                     value_of({
-                        { nmos::caps::format::media_type, nmos::make_caps_string_constraint({ U("audio/float32") }) },
+                        { nmos::caps::format::media_type, nmos::make_caps_string_constraint({ nmos::media_types::audio_float32.name }) },
                         { nmos::caps::format::channel_count, nmos::make_caps_integer_constraint({}, 1, channel_count) },
                         { nmos::caps::format::sample_rate, nmos::make_caps_rational_constraint({ { 48000, 1 } }) },
                         { nmos::caps::format::sample_depth, nmos::make_caps_integer_constraint({ 32 }) }
