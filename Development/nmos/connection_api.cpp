@@ -86,6 +86,9 @@ namespace nmos
             },
             {
                 nmos::is05_versions::v1_1, { nmos::transports::websocket, nmos::transports::mqtt }
+            },
+            {
+                nmos::is05_versions::v1_2, { nmos::transports::mxl }
             }
         };
 
@@ -240,13 +243,46 @@ namespace nmos
             return auto_constraints;
         }
 
+        static const std::map<nmos::type, std::set<utility::string_t>>& mxl_auto_constraints()
+        {
+            // These are the constraints that support "auto" in /staged
+            // BCP-007-03: MXL Receivers MUST NOT use "auto" for mxl_flow_id (domain only).
+            // See https://specs.amwa.tv/bcp-007-03/branches/publish-auto-null/docs/NMOS-With-MXL.html
+            static const std::map<nmos::type, std::set<utility::string_t>> auto_constraints
+            {
+                {
+                    nmos::types::sender,
+                    {
+                        nmos::fields::mxl_domain_id,
+                        nmos::fields::mxl_flow_id
+                    }
+                },
+                {
+                    nmos::types::receiver,
+                    {
+                        nmos::fields::mxl_domain_id
+                    }
+                }
+            };
+            return auto_constraints;
+        }
+
         static const std::map<nmos::type, std::set<utility::string_t>>& auto_constraints(const nmos::transport& transport_base)
         {
             if (nmos::transports::rtp == transport_base) return rtp_auto_constraints();
             if (nmos::transports::websocket == transport_base) return websocket_auto_constraints();
             if (nmos::transports::mqtt == transport_base) return mqtt_auto_constraints();
+            if (nmos::transports::mxl == transport_base) return mxl_auto_constraints();
 
-            static const std::map<nmos::type, std::set<utility::string_t>> no_auto_constraints;
+            static const std::map<nmos::type, std::set<utility::string_t>> no_auto_constraints
+            {
+                {
+                    nmos::types::sender, {}
+                },
+                {
+                    nmos::types::receiver, {}
+                }
+            };
             return no_auto_constraints;
         }
 
@@ -483,6 +519,20 @@ namespace nmos
                     throw std::logic_error("matching IS-04 and IS-05 resources not found");
                 }
 
+                const nmos::transport transport_subclassification(nmos::fields::transport(matching_resource->data));
+
+                // BCP-007-03: PATCH /staged for MXL receivers must not contain transport_file.
+                // See https://specs.amwa.tv/bcp-007-03/branches/publish-auto-null/docs/NMOS-With-MXL.html
+                if (nmos::types::receiver == id_type.second && nmos::transports::mxl == nmos::transport_base(transport_subclassification))
+                {
+                    if (patch.has_field(nmos::fields::transport_file.key))
+                    {
+                        slog::log<slog::severities::warning>(gate, SLOG_FLF) << "Rejecting PATCH for MXL receiver with transport_file";
+
+                        return details::make_connection_resource_patch_error_response(status_codes::BadRequest, U("transport_file must not be used with MXL receivers"));
+                    }
+                }
+
                 // Merge this patch request into a *copy* of the current staged endpoint
                 // so that the merged parameters can be validated against the constraints
                 // before the current values are overwritten.
@@ -543,7 +593,6 @@ namespace nmos
 
                 slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Validating staged transport parameters against constraints";
 
-                const nmos::transport transport_subclassification(nmos::fields::transport(matching_resource->data));
                 details::validate_staged_constraints(resource->type, nmos::fields::endpoint_constraints(resource->data), nmos::transport_base(transport_subclassification), merged);
 
                 // Perform any final validation

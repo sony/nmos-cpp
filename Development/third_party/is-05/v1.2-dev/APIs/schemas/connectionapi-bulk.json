@@ -1,0 +1,16 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "array",
+  "description": "Describes the Connection API /bulk base resource",
+  "title": "Connection API /bulk base resource",
+  "items": {
+    "type": "string",
+    "enum": [
+      "senders/",
+      "receivers/"
+    ]
+  },
+  "minItems": 2,
+  "maxItems": 2,
+  "uniqueItems": true
+}

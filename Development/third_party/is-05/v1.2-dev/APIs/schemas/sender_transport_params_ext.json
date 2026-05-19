@@ -1,0 +1,11 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "description": "Describes external Sender transport parameters defined in other AMWA specifications. The constraints in this schema are minimum constraints, but may be further constrained at the constraints endpoint.",
+  "title": "External Sender Transport Parameters",
+  "type":[
+    "string",
+    "boolean",
+    "null",
+    "number"
+  ]
+}
