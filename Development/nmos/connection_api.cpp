@@ -149,6 +149,51 @@ namespace nmos
             });
         }
 
+        // BCP-007-03: MXL staged transport parameters accept null (unconfigured) as well as constraint values (and auto where applicable)
+        // See https://specs.amwa.tv/bcp-007-03/branches/publish-auto-null/docs/NMOS-With-MXL.html
+        // and sender_transport_params_mxl.json / receiver_transport_params_mxl.json
+        web::json::value make_mxl_staged_param_schema(const web::json::value& schema, bool auto_value)
+        {
+            using web::json::value;
+            using web::json::value_of;
+
+            const bool keep_order = true;
+
+            static const utility::string_t mxl_uuid_pattern{
+                U("^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$")
+            };
+
+            auto any_of = value::array();
+
+            if (auto_value)
+            {
+                web::json::push_back(any_of, value_of({
+                    { U("type"), U("string") },
+                    { U("pattern"), U("^auto$") }
+                }, keep_order));
+            }
+
+            if (!schema.as_object().empty())
+            {
+                web::json::push_back(any_of, schema);
+            }
+            else
+            {
+                web::json::push_back(any_of, value_of({
+                    { U("type"), U("string") },
+                    { U("pattern"), mxl_uuid_pattern }
+                }, keep_order));
+            }
+
+            web::json::push_back(any_of, value_of({
+                { U("type"), U("null") }
+            }, keep_order));
+
+            return value_of({
+                { U("anyOf"), any_of }
+            }, keep_order);
+        }
+
         static const std::map<nmos::type, std::set<utility::string_t>>& rtp_auto_constraints()
         {
             // These are the constraints that support "auto" in /staged; cf. resolve_rtp_auto
@@ -304,7 +349,12 @@ namespace nmos
 
                 for (const auto& constraint : leg.as_object())
                 {
-                    if (type_auto_constraints.end() != type_auto_constraints.find(constraint.first))
+                    if (nmos::transports::mxl == transport_base)
+                    {
+                        const bool auto_value = type_auto_constraints.end() != type_auto_constraints.find(constraint.first);
+                        properties[constraint.first] = make_mxl_staged_param_schema(constraint.second, auto_value);
+                    }
+                    else if (type_auto_constraints.end() != type_auto_constraints.find(constraint.first))
                     {
                         properties[constraint.first] = make_auto_schema(constraint.second);
                     }
