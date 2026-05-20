@@ -999,6 +999,8 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
                 });
             }
 
+            resolve_auto(sender, connection_sender, connection_sender.data[nmos::fields::endpoint_active][nmos::fields::transport_params]);
+
             if (!insert_resource_after(delay_millis, model.node_resources, std::move(source), gate)) throw node_implementation_init_exception();
             if (!insert_resource_after(delay_millis, model.node_resources, std::move(flow), gate)) throw node_implementation_init_exception();
             if (!insert_resource_after(delay_millis, model.node_resources, std::move(sender), gate)) throw node_implementation_init_exception();
@@ -1060,6 +1062,8 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
             impl::insert_group_hint(receiver, port, index);
 
             auto connection_receiver = nmos::make_connection_mxl_receiver(receiver_id, mxl_domain_id);
+
+            resolve_auto(receiver, connection_receiver, connection_receiver.data[nmos::fields::endpoint_active][nmos::fields::transport_params]);
 
             if (!insert_resource_after(delay_millis, model.node_resources, std::move(receiver), gate)) throw node_implementation_init_exception();
             if (!insert_resource_after(delay_millis, model.connection_resources, std::move(connection_receiver), gate)) throw node_implementation_init_exception();
