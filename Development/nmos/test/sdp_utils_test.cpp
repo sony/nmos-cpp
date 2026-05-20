@@ -10,6 +10,7 @@
 #include "nmos/media_type.h"
 #include "nmos/random.h"
 #include "nmos/test/sdp_test_utils.h"
+#include "sdp/ntp.h"
 #include "sdp/sdp.h"
 
 ////////////////////////////////////////////////////////////////////////////////////////////
@@ -215,6 +216,63 @@ BST_TEST_CASE(testValidateSdpParameters)
         params.bit_depth = 24;
         sdp_params = nmos::make_audio_L_sdp_parameters(U("-"), params, nmos::details::payload_type_audio_default);
         BST_REQUIRE_NO_THROW(nmos::validate_sdp_parameters(receiver, sdp_params));
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////
+BST_TEST_CASE(testNumericString)
+{
+    // Default-constructed value matches uint64_t{}, i.e. the string "0",
+    // so a default-constructed origin_t still produces a well-formed SDP o= line
+    {
+        nmos::numeric_string ns;
+        BST_REQUIRE_EQUAL(U("0"), static_cast<const utility::string_t&>(ns));
+    }
+
+    // Integer assignment produces the corresponding minimal-width decimal string.
+    // Other integer-ish right-hand sides (signed int, char, bool, etc.) implicitly
+    // convert to uint64_t (the only operator= overload that takes a number) and
+    // therefore produce a decimal string in the same way; we don't enumerate them
+    // here because that would trigger any implicit-conversion compiler warnings
+    // (the same as a uint64_t member would produce).
+    {
+        nmos::numeric_string ns;
+        ns = uint64_t{ 0 };
+        BST_REQUIRE_EQUAL(U("0"), static_cast<const utility::string_t&>(ns));
+        ns = uint64_t{ 1779263096 };
+        BST_REQUIRE_EQUAL(U("1779263096"), static_cast<const utility::string_t&>(ns));
+        ns = (std::numeric_limits<uint64_t>::max)();
+        BST_REQUIRE_EQUAL(U("18446744073709551615"), static_cast<const utility::string_t&>(ns));
+    }
+
+    // String assignment preserves any leading zeros from the input
+    {
+        nmos::numeric_string ns;
+        ns = U("0001779263096");
+        BST_REQUIRE_EQUAL(U("0001779263096"), static_cast<const utility::string_t&>(ns));
+    }
+
+    // Empty and non-numeric strings are rejected
+    {
+        nmos::numeric_string ns;
+        BST_REQUIRE_THROW(ns = U(""), std::invalid_argument);
+        BST_REQUIRE_THROW(ns = U("abc"), std::invalid_argument);
+        BST_REQUIRE_THROW(ns = U("12a"), std::invalid_argument);
+        BST_REQUIRE_THROW(ns = U("-1"), std::invalid_argument);
+        BST_REQUIRE_THROW(ns = U(" 1"), std::invalid_argument);
+        BST_REQUIRE_THROW(ns = U("1.0"), std::invalid_argument);
+        BST_REQUIRE_THROW(nmos::numeric_string{ U("") }, std::invalid_argument);
+        BST_REQUIRE_THROW(nmos::numeric_string{ U("abc") }, std::invalid_argument);
+    }
+
+    // The historic footgun: assigning an integer to an origin_t numeric
+    // string member must produce a multi-digit decimal string
+    {
+        nmos::sdp_parameters::origin_t o;
+        o.session_version = sdp::ntp_now() >> 32;
+        const utility::string_t& sv = o.session_version;
+        BST_REQUIRE(sv.size() > 1);
+        BST_REQUIRE(std::all_of(sv.begin(), sv.end(), [](utility::char_t c) { return std::isdigit(c, std::locale::classic()); }));
     }
 }
 

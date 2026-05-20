@@ -68,6 +68,30 @@ namespace nmos
     // Validate the numeric string
     const utility::string_t& valid_numeric_string(const utility::string_t& s);
 
+    // A non-negative integer represented as a numeric string.
+    // Behaves as a utility::string_t for read access. On assignment it
+    // accepts either a validated numeric string (preserving any leading
+    // zeros) or a uint64_t (rendered as a minimal-width decimal string),
+    // and produces the same implicit-conversion diagnostics on integer
+    // assignment that a uint64_t member would produce (e.g. -Wsign-conversion
+    // when the right-hand side is int/int64_t/etc.).
+    // Introduced to prevent the silent narrowing footgun that
+    // utility::string_t::operator=(char) would otherwise allow on a plain
+    // string member, e.g. for sdp_parameters::origin_t::session_version.
+    struct numeric_string
+    {
+        utility::string_t value;
+
+        numeric_string() : numeric_string(uint64_t{}) {}
+        numeric_string(const utility::string_t& s) : value(valid_numeric_string(s)) {}
+        numeric_string(uint64_t n) : value(utility::conversions::details::to_string_t(n)) {}
+
+        numeric_string& operator=(const utility::string_t& s) { return value = valid_numeric_string(s), *this; }
+        numeric_string& operator=(uint64_t n) { return value = utility::conversions::details::to_string_t(n), *this; }
+
+        operator const utility::string_t&() const { return value; }
+    };
+
     // Format-specific types
 
     struct video_raw_parameters;
@@ -87,19 +111,19 @@ namespace nmos
         struct origin_t
         {
             utility::string_t user_name;
-            utility::string_t session_id;
-            utility::string_t session_version;
+            numeric_string session_id;
+            numeric_string session_version;
 
             origin_t() {}
             origin_t(const utility::string_t& user_name, uint64_t session_id, uint64_t session_version)
                 : user_name(user_name)
-                , session_id(utility::conversions::details::to_string_t(session_id))
-                , session_version(utility::conversions::details::to_string_t(session_version))
+                , session_id(session_id)
+                , session_version(session_version)
             {}
             origin_t(const utility::string_t& user_name, const utility::string_t& session_id, const utility::string_t& session_version)
                 : user_name(user_name)
-                , session_id(valid_numeric_string(session_id))
-                , session_version(valid_numeric_string(session_version))
+                , session_id(session_id)
+                , session_version(session_version)
             {}
             origin_t(const utility::string_t& user_name, uint64_t session_id_version)
                 : origin_t{ user_name, session_id_version, session_id_version }
