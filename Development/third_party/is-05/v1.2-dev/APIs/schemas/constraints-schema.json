@@ -19,6 +19,12 @@
       "items": {
         "$ref": "constraints-schema-mqtt.json"
       }
+    },
+    {
+      "type": "array",
+      "items": {
+        "$ref": "constraints-schema-mxl.json"
+      }
     }
   ]
 }
