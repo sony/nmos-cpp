@@ -969,7 +969,7 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
             }
             else if (impl::ports::mxl_audio == port)
             {
-                flow = nmos::make_coded_audio_flow(flow_id, source_id, device_id, 48000, nmos::media_types::audio_float32, model.settings);
+                flow = nmos::make_raw_audio_flow(flow_id, source_id, device_id, 48000, nmos::media_types::audio_float32, 32, model.settings);
             }
             else if (impl::ports::mxl_data == port)
             {
