@@ -121,7 +121,7 @@ namespace impl
         const web::json::field_as_string_or video_type{ U("video_type"), U("video/raw") };
 
         // mxl_video_type: media type of MXL video flows and receivers, e.g. "video/v210" or "video/v210a", see nmos/mxl.h
-        const web::json::field_as_string_or mxl_video_type{ U("mxl_video_type"), nmos::media_types::video_v210.name };
+        const web::json::field_as_string_or mxl_video_type{ U("mxl_video_type"), U("video/v210") };
 
         // channel_count: controls the number of channels in audio sources
         const web::json::field_as_integer_or channel_count{ U("channel_count"), 4 };
@@ -2019,6 +2019,13 @@ nmos::transport_file_parser make_node_implementation_transport_file_parser()
     // (if this callback is specified, an 'empty' std::function is not allowed)
     return [](const nmos::resource& receiver, const nmos::resource& connection_receiver, const utility::string_t& transport_file_type, const utility::string_t& transport_file_data, slog::base_gate& gate)
     {
+        // BCP-007-03: MXL receivers do not use transport_file (non-null data is rejected here when parsed)
+        const nmos::transport transport_subclassification(nmos::fields::transport(receiver.data));
+        if (nmos::transports::mxl == nmos::transport_base(transport_subclassification))
+        {
+            throw std::runtime_error("MXL does not use a transport_file");
+        }
+
         const auto validate_sdp_parameters = [](const web::json::value& receiver, const nmos::sdp_parameters& sdp_params)
         {
             if (nmos::media_types::video_jxsv == nmos::get_media_type(sdp_params))
