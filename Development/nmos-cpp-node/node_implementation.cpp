@@ -138,11 +138,6 @@ namespace impl
 
     nmos::interlace_mode get_interlace_mode(const nmos::settings& settings);
 
-    // Effective MXL domain id from settings, or a repeatable default when omitted (used by resolve_auto)
-    nmos::id get_mxl_domain_id(const nmos::settings& settings);
-
-    web::json::value resolve_mxl_auto_value(const web::json::value& constraint, const nmos::id& fallback);
-
     // the different kinds of 'port' (standing for the format/media type/event type) implemented by the example node
     // each 'port' of the example node has a source, flow, sender and/or compatible receiver
     DEFINE_STRING_ENUM(port)
@@ -421,7 +416,10 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
     const auto seed_id = nmos::experimental::fields::seed_id(model.settings);
     const auto node_id = impl::make_id(seed_id, nmos::types::node);
     const auto device_id = impl::make_id(seed_id, nmos::types::device);
-    const auto mxl_domain_id = impl::fields::mxl_domain_id(model.settings);
+    // If mxl_domain_id is not set, generate a random UUID for the MXL domain
+    const auto mxl_domain_id = impl::fields::mxl_domain_id(model.settings).empty()
+        ? nmos::make_repeatable_id(seed_id, U("/x-nmos/mxl/domain"))
+        : impl::fields::mxl_domain_id(model.settings);
     const auto how_many = impl::fields::how_many(model.settings);
     const auto sender_ports = impl::parse_ports(impl::fields::senders(model.settings));
     const auto rtp_sender_ports = boost::copy_range<std::vector<impl::port>>(sender_ports | boost::adaptors::filtered(impl::is_rtp_port));
@@ -2078,11 +2076,10 @@ nmos::connection_resource_auto_resolver make_node_implementation_auto_resolver(c
     const auto ws_receiver_ids = impl::make_ids(seed_id, nmos::types::receiver, ws_receiver_ports, how_many);
     const auto mxl_receiver_ports = boost::copy_range<std::vector<impl::port>>(receiver_ports | boost::adaptors::filtered(impl::is_mxl_port));
     const auto mxl_receiver_ids = impl::make_ids(seed_id, nmos::types::receiver, mxl_receiver_ports, how_many);
-    const auto mxl_domain_id = impl::get_mxl_domain_id(settings);
 
     // although which properties may need to be defaulted depends on the resource type,
     // the default value will almost always be different for each resource
-    return [rtp_sender_ids, rtp_receiver_ids, ws_sender_ids, ws_sender_uri, ws_receiver_ids, mxl_sender_ids, mxl_receiver_ids, mxl_domain_id](const nmos::resource& resource, const nmos::resource& connection_resource, value& transport_params)
+    return [rtp_sender_ids, rtp_receiver_ids, ws_sender_ids, ws_sender_uri, ws_receiver_ids, mxl_sender_ids, mxl_receiver_ids](const nmos::resource& resource, const nmos::resource& connection_resource, value& transport_params)
     {
         const std::pair<nmos::id, nmos::type> id_type{ connection_resource.id, connection_resource.type };
         // this code relies on the specific constraints added by node_implementation_thread
@@ -2117,24 +2114,15 @@ nmos::connection_resource_auto_resolver make_node_implementation_auto_resolver(c
         {
             nmos::details::resolve_auto(transport_params[0], nmos::fields::connection_authorization, [&] { return value::boolean(false); });
         }
-        else if (mxl_sender_ids.end() != boost::range::find(mxl_sender_ids, id_type.first))
+        else if (mxl_sender_ids.end() != boost::range::find(mxl_sender_ids, id_type.first)
+            || mxl_receiver_ids.end() != boost::range::find(mxl_receiver_ids, id_type.first))
         {
-            nmos::details::resolve_auto(transport_params[0], nmos::fields::mxl_domain_id, [&]
+            nmos::details::resolve_auto(transport_params[0], nmos::fields::mxl_domain_id, [&] { return web::json::front(nmos::fields::constraint_enum(constraints.at(0).at(nmos::fields::mxl_domain_id))); });
+            if (nmos::types::sender == id_type.second)
             {
-                return impl::resolve_mxl_auto_value(constraints.at(0).at(nmos::fields::mxl_domain_id), mxl_domain_id);
-            });
-            nmos::details::resolve_auto(transport_params[0], nmos::fields::mxl_flow_id, [&]
-            {
-                return impl::resolve_mxl_auto_value(constraints.at(0).at(nmos::fields::mxl_flow_id), nmos::fields::flow_id(resource.data).as_string());
-            });
-        }
-        else if (mxl_receiver_ids.end() != boost::range::find(mxl_receiver_ids, id_type.first))
-        {
-            // BCP-007-03: mxl_flow_id does not use "auto" on receivers (UUID or null only).
-            nmos::details::resolve_auto(transport_params[0], nmos::fields::mxl_domain_id, [&]
-            {
-                return impl::resolve_mxl_auto_value(constraints.at(0).at(nmos::fields::mxl_domain_id), mxl_domain_id);
-            });
+                // BCP-007-03: mxl_flow_id does not use "auto" on receivers (UUID or null only).
+                nmos::details::resolve_auto(transport_params[0], nmos::fields::mxl_flow_id, [&] { return web::json::front(nmos::fields::constraint_enum(constraints.at(0).at(nmos::fields::mxl_flow_id))); });
+            }
         }
     };
 }
@@ -2442,28 +2430,6 @@ nmos::create_device_model_object_handler make_create_device_model_object_handler
 
 namespace impl
 {
-    nmos::id get_mxl_domain_id(const nmos::settings& settings)
-    {
-        const auto seed_id = nmos::experimental::fields::seed_id(settings);
-        return fields::mxl_domain_id(settings).empty()
-            ? nmos::make_repeatable_id(seed_id, U("/x-nmos/mxl/domain"))
-            : fields::mxl_domain_id(settings);
-    }
-
-    web::json::value resolve_mxl_auto_value(const web::json::value& constraint, const nmos::id& fallback)
-    {
-        using web::json::value;
-        if (constraint.has_field(nmos::fields::constraint_enum))
-        {
-            const auto& en = nmos::fields::constraint_enum(constraint);
-            if (en.is_array() && 0 != en.as_array().size())
-            {
-                return web::json::front(en);
-            }
-        }
-        return value::string(fallback);
-    }
-
     nmos::interlace_mode get_interlace_mode(const nmos::settings& settings)
     {
         if (settings.has_field(impl::fields::interlace_mode))
