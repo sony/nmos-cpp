@@ -67,6 +67,7 @@ namespace nmos
 
     // Validate the numeric string
     const utility::string_t& valid_numeric_string(const utility::string_t& s);
+    inline utility::string_t&& valid_numeric_string(utility::string_t&& s) { return valid_numeric_string(s), std::move(s); }
 
     // A non-negative integer represented as a numeric string.
     // Behaves as a utility::string_t for read access. On assignment it
@@ -84,9 +85,11 @@ namespace nmos
 
         numeric_string() : numeric_string(uint64_t{}) {}
         numeric_string(const utility::string_t& s) : value(valid_numeric_string(s)) {}
+        numeric_string(utility::string_t&& s) : value(valid_numeric_string(std::move(s))) {}
         numeric_string(uint64_t n) : value(utility::conversions::details::to_string_t(n)) {}
 
         numeric_string& operator=(const utility::string_t& s) { return value = valid_numeric_string(s), *this; }
+        numeric_string& operator=(utility::string_t&& s) { return value = valid_numeric_string(std::move(s)), *this; }
         numeric_string& operator=(uint64_t n) { return value = utility::conversions::details::to_string_t(n), *this; }
 
         operator const utility::string_t&() const { return value; }
