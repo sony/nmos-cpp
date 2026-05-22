@@ -206,13 +206,14 @@ if $secure; then
   do_run_test BCP-003-01 $expected_disabled_BCP_003_01 --host "${host}" --port 1080 --version v1.0
 fi
 
-do_run_test IS-04-01 $expected_disabled_IS_04_01 --host "${host}" --port 1080 --version v1.3 --ignore test_19
+do_run_test IS-04-01 $expected_disabled_IS_04_01 --host "${host}" --port 1080 --version v1.3
 
 do_run_test IS-04-03 $expected_disabled_IS_04_03 --host "${host}" --port 1080 --version v1.3
 
 do_run_test IS-05-01 $expected_disabled_IS_05_01 --host "${host}" --port 1080 --version v1.1
 
-do_run_test IS-05-02 $expected_disabled_IS_05_02 --host "${host}" "${host}" --port 1080 1080 --version v1.3 v1.1
+# Connection API v1.2+ is required so MXL senders/receivers appear in IS-05 (see IS-05 upgrade path)
+do_run_test IS-05-02 $expected_disabled_IS_05_02 --host "${host}" "${host}" --port 1080 1080 --version v1.3 v1.2
 
 do_run_test IS-07-01 $expected_disabled_IS_07_01 --host "${host}" --port 1080 --version v1.0
 
