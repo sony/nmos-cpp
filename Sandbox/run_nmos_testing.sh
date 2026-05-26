@@ -25,7 +25,7 @@ cd -
 
 expected_disabled_BCP_003_01=0
 # test_12
-expected_disabled_IS_04_01=2
+expected_disabled_IS_04_01=1
 expected_disabled_IS_04_03=0
 expected_disabled_IS_05_01=0
 expected_disabled_IS_05_02=0

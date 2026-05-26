@@ -76,9 +76,7 @@
       run_python="python"
     fi
     pip install -r utilities/run-test-suites/gsheetsImport/requirements.txt
-    # PyOpenSSL 26.2+ removed OpenSSL.crypto.X509Extension; nmos-testing still uses it for certificate tests.
-    $run_python -m pip install 'pyOpenSSL<26.2'
-
+    
     if [[ "${{ runner.os }}" == "Windows" ]]; then
       # install certificates
       certutil -enterprise -addstore -user root test_data\\BCP00301\\ca\\certs\\ca.cert.pem
