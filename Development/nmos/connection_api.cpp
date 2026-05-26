@@ -131,37 +131,15 @@ namespace nmos
             staged_core_validator().validate(staged, experimental::make_connectionapi_staged_patch_request_schema_uri(version, type));
         }
 
-        // Extend an existing schema with "auto" as a valid value
-        web::json::value make_auto_schema(const web::json::value& schema)
-        {
-            using web::json::value_of;
-
-            const bool keep_order = true;
-
-            return value_of({
-                { U("anyOf"), value_of({
-                    value_of({
-                        { U("type"), U("string") },
-                        { U("pattern"), U("^auto$") }
-                    }, keep_order),
-                    schema
-                }) }
-            });
-        }
-
-        // BCP-007-03: MXL staged transport parameters accept null (unconfigured) as well as constraint values (and auto where applicable)
-        // See https://specs.amwa.tv/bcp-007-03/branches/publish-auto-null/docs/NMOS-With-MXL.html
-        // and sender_transport_params_mxl.json / receiver_transport_params_mxl.json
-        web::json::value make_mxl_staged_param_schema(const web::json::value& schema, bool auto_value)
+        // Extend an existing schema with "auto" and/or null as valid values
+        web::json::value make_staged_param_schema(const web::json::value& schema, bool auto_value, bool null_value)
         {
             using web::json::value;
             using web::json::value_of;
 
-            const bool keep_order = true;
+            if (!auto_value && !null_value) return schema;
 
-            static const utility::string_t mxl_uuid_pattern{
-                U("^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$")
-            };
+            const bool keep_order = true;
 
             auto any_of = value::array();
 
@@ -173,21 +151,14 @@ namespace nmos
                 }, keep_order));
             }
 
-            if (!schema.as_object().empty())
-            {
-                web::json::push_back(any_of, schema);
-            }
-            else
+            web::json::push_back(any_of, schema);
+
+            if (null_value)
             {
                 web::json::push_back(any_of, value_of({
-                    { U("type"), U("string") },
-                    { U("pattern"), mxl_uuid_pattern }
+                    { U("type"), U("null") }
                 }, keep_order));
             }
-
-            web::json::push_back(any_of, value_of({
-                { U("type"), U("null") }
-            }, keep_order));
 
             return value_of({
                 { U("anyOf"), any_of }
@@ -312,6 +283,31 @@ namespace nmos
             return auto_constraints;
         }
 
+        static const std::map<nmos::type, std::set<utility::string_t>>& mxl_null_constraints()
+        {
+            // These are the constraints that support null (unconfigured) in /staged
+            // See https://specs.amwa.tv/bcp-007-03/branches/publish-auto-null/docs/NMOS-With-MXL.html
+            // and sender_transport_params_mxl.json / receiver_transport_params_mxl.json
+            static const std::map<nmos::type, std::set<utility::string_t>> null_constraints
+            {
+                {
+                    nmos::types::sender,
+                    {
+                        nmos::fields::mxl_domain_id,
+                        nmos::fields::mxl_flow_id
+                    }
+                },
+                {
+                    nmos::types::receiver,
+                    {
+                        nmos::fields::mxl_domain_id,
+                        nmos::fields::mxl_flow_id
+                    }
+                }
+            };
+            return null_constraints;
+        }
+
         static const std::map<nmos::type, std::set<utility::string_t>>& auto_constraints(const nmos::transport& transport_base)
         {
             if (nmos::transports::rtp == transport_base) return rtp_auto_constraints();
@@ -331,6 +327,22 @@ namespace nmos
             return no_auto_constraints;
         }
 
+        static const std::map<nmos::type, std::set<utility::string_t>>& null_constraints(const nmos::transport& transport_base)
+        {
+            if (nmos::transports::mxl == transport_base) return mxl_null_constraints();
+
+            static const std::map<nmos::type, std::set<utility::string_t>> no_null_constraints
+            {
+                {
+                    nmos::types::sender, {}
+                },
+                {
+                    nmos::types::receiver, {}
+                }
+            };
+            return no_null_constraints;
+        }
+
         // Make a json schema from /constraints and /transporttype
         web::json::value make_constraints_schema(const nmos::type& type, const web::json::value& constraints, const nmos::transport& transport_base)
         {
@@ -342,6 +354,7 @@ namespace nmos
             auto items = value::array();
 
             auto& type_auto_constraints = auto_constraints(transport_base).at(type);
+            auto& type_null_constraints = null_constraints(transport_base).at(type);
 
             for (const auto& leg : constraints.as_array())
             {
@@ -349,14 +362,12 @@ namespace nmos
 
                 for (const auto& constraint : leg.as_object())
                 {
-                    if (nmos::transports::mxl == transport_base)
+                    const bool auto_value = type_auto_constraints.end() != type_auto_constraints.find(constraint.first);
+                    const bool null_value = type_null_constraints.end() != type_null_constraints.find(constraint.first);
+
+                    if (auto_value || null_value)
                     {
-                        const bool auto_value = type_auto_constraints.end() != type_auto_constraints.find(constraint.first);
-                        properties[constraint.first] = make_mxl_staged_param_schema(constraint.second, auto_value);
-                    }
-                    else if (type_auto_constraints.end() != type_auto_constraints.find(constraint.first))
-                    {
-                        properties[constraint.first] = make_auto_schema(constraint.second);
+                        properties[constraint.first] = make_staged_param_schema(constraint.second, auto_value, null_value);
                     }
                     else
                     {
