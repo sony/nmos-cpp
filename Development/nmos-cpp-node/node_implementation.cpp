@@ -2023,7 +2023,7 @@ nmos::transport_file_parser make_node_implementation_transport_file_parser()
     return [](const nmos::resource& receiver, const nmos::resource& connection_receiver, const utility::string_t& transport_file_type, const utility::string_t& transport_file_data, slog::base_gate& gate)
     {
         // BCP-007-03: MXL receivers do not use transport_file (non-null data is rejected here when parsed)
-        const nmos::transport transport_subclassification(nmos::fields::transport(receiver.data));
+        const nmos::transport transport_subclassification{nmos::fields::transport(receiver.data)};
         if (nmos::transports::mxl == nmos::transport_base(transport_subclassification))
         {
             throw std::runtime_error("MXL does not use a transport_file");
