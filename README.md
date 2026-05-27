@@ -11,8 +11,9 @@ This repository contains an implementation of the [AMWA Networked Media Open Spe
 - [AMWA IS-08 NMOS Audio Channel Mapping Specification](https://specs.amwa.tv/is-08/)
 - [AMWA IS-09 NMOS System Parameters Specification](https://specs.amwa.tv/is-09/) (originally defined in JT-NM TR-1001-1:2018 Annex A)
 - [AMWA IS-10 NMOS Authorization Specification](https://specs.amwa.tv/is-10/)
-- [AMWA IS-12 AMWA IS-12 NMOS Control Protocol](https://specs.amwa.tv/is-12/)
-- [AMWA IS-14 AMWA IS-14 NMOS Device Configuration Specification](https://specs.amwa.tv/is-14/)
+- [AMWA IS-11 NMOS Stream Compatibility Management](https://specs.amwa.tv/is-11/)
+- [AMWA IS-12 NMOS Control Protocol](https://specs.amwa.tv/is-12/)
+- [AMWA IS-14 NMOS Device Configuration Specification](https://specs.amwa.tv/is-14/)
 - [AMWA BCP-002-01 NMOS Grouping Recommendations - Natural Grouping](https://specs.amwa.tv/bcp-002-01/)
 - [AMWA BCP-002-02 NMOS Asset Distinguishing Information](https://specs.amwa.tv/bcp-002-02/)
 - [AMWA BCP-003-01 Secure Communication in NMOS Systems](https://specs.amwa.tv/bcp-003-01/)
@@ -95,6 +96,7 @@ The [AMWA NMOS API Testing Tool](https://github.com/AMWA-TV/nmos-testing) is aut
 [![IS-08-02][IS-08-02-badge]][IS-08-02-sheet]
 [![IS-09-01][IS-09-01-badge]][IS-09-01-sheet]
 [![IS-09-02][IS-09-02-badge]][IS-09-02-sheet]
+[![IS-11-01][IS-11-01-badge]][IS-11-01-sheet]
 [![IS-12-01][IS-12-01-badge]][IS-12-01-sheet]
 [![IS-14-01][IS-14-01-badge]][IS-14-01-sheet]
 
@@ -113,6 +115,7 @@ The [AMWA NMOS API Testing Tool](https://github.com/AMWA-TV/nmos-testing) is aut
 [IS-08-02-badge]: https://raw.githubusercontent.com/sony/nmos-cpp/badges/IS-08-02.svg
 [IS-09-01-badge]: https://raw.githubusercontent.com/sony/nmos-cpp/badges/IS-09-01.svg
 [IS-09-02-badge]: https://raw.githubusercontent.com/sony/nmos-cpp/badges/IS-09-02.svg
+[IS-11-01-badge]: https://raw.githubusercontent.com/sony/nmos-cpp/badges/IS-11-01.svg
 [IS-12-01-badge]: https://raw.githubusercontent.com/sony/nmos-cpp/badges/IS-12-01.svg
 [IS-14-01-badge]: https://raw.githubusercontent.com/sony/nmos-cpp/badges/IS-14-01.svg
 [BCP-003-01-sheet]: https://docs.google.com/spreadsheets/d/1UgZoI0lGCMDn9-zssccf2Azil3WN6jogroMT8Wh6H64/edit#gid=468090822
@@ -130,6 +133,7 @@ The [AMWA NMOS API Testing Tool](https://github.com/AMWA-TV/nmos-testing) is aut
 [IS-08-02-sheet]: https://docs.google.com/spreadsheets/d/1UgZoI0lGCMDn9-zssccf2Azil3WN6jogroMT8Wh6H64/edit#gid=1558470201
 [IS-09-01-sheet]: https://docs.google.com/spreadsheets/d/1UgZoI0lGCMDn9-zssccf2Azil3WN6jogroMT8Wh6H64/edit#gid=919453974
 [IS-09-02-sheet]: https://docs.google.com/spreadsheets/d/1UgZoI0lGCMDn9-zssccf2Azil3WN6jogroMT8Wh6H64/edit#gid=2135469955
+[IS-11-01-sheet]: https://docs.google.com/spreadsheets/d/1UgZoI0lGCMDn9-zssccf2Azil3WN6jogroMT8Wh6H64/edit?gid=1390547567
 [IS-12-01-sheet]: https://docs.google.com/spreadsheets/d/1UgZoI0lGCMDn9-zssccf2Azil3WN6jogroMT8Wh6H64/edit?gid=1026699230
 [IS-14-01-sheet]: https://docs.google.com/spreadsheets/d/1UgZoI0lGCMDn9-zssccf2Azil3WN6jogroMT8Wh6H64/edit?gid=342707873
 
@@ -139,6 +143,7 @@ The implementation is designed to be extended. Development is ongoing, following
 
 Recent activity on the project (newest first):
 
+- Added support for IS-11 NMOS Stream Compatibility Management
 - Added support for IS-14 NMOS Device Configuration
 - Added support for BCP-008-01 Receiver Status Monitoring
 - Added support for BCP-008-02 Sender Status Monitoring

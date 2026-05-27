@@ -57,6 +57,8 @@ namespace nmos
         const route_pattern channelmapping_api = make_route_pattern(U("api"), U("channelmapping"));
         // IS-09 System API (originally specified in JT-NM TR-1001-1:2018 Annex A)
         const route_pattern system_api = make_route_pattern(U("api"), U("system"));
+        // IS-11 Stream Compatibility Management API
+        const route_pattern streamcompatibility_api = make_route_pattern(U("api"), U("streamcompatibility"));
         // IS-14 Configuration API
         const route_pattern configuration_api = make_route_pattern(U("api"), U("configuration"));
 
@@ -93,6 +95,12 @@ namespace nmos
         const route_pattern rolePath = make_route_pattern(U("rolePath"), U("root|root\\.[a-zA-Z0-9\\-_\\.]+"));
         const route_pattern propertyId = make_route_pattern(U("propertyId"), U("[0-9]+p[0-9]+"));
         const route_pattern methodId = make_route_pattern(U("methodId"), U("[0-9]+m[0-9]+"));
+
+        // Stream Compatibility Management API
+        const route_pattern streamCompatibilityResourceType = make_route_pattern(U("resourceType"), U("senders|receivers|inputs|outputs"));
+        const route_pattern streamCompatibilityInputOutputType = make_route_pattern(U("inputOutputType"), U("inputs|outputs"));
+        const route_pattern constraintsType = make_route_pattern(U("constraintsType"), U("active|supported"));
+        const route_pattern edidType = make_route_pattern(U("edidType"), U("base|effective"));
 
         // Common patterns
         const route_pattern resourceId = make_route_pattern(U("resourceId"), U("[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}"));
@@ -192,6 +200,12 @@ namespace nmos
 
         // extract JSON after checking the Content-Type header
         pplx::task<web::json::value> extract_json(const web::http::http_response& res, slog::base_gate& gate);
+
+        // extract istream into vector of bytes after checking the Content-Type header
+        pplx::task<std::vector<unsigned char>> extract_istream_vector(const web::http::http_request& req, slog::base_gate& gate);
+
+        // extract istream into vector of bytes after checking the Content-Type header
+        pplx::task<std::vector<unsigned char>> extract_istream_vector(const web::http::http_response& res, slog::base_gate& gate);
 
         // add the NMOS-specified CORS response headers
         web::http::http_response& add_cors_preflight_headers(const web::http::http_request& req, web::http::http_response& res);

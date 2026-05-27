@@ -230,6 +230,38 @@ namespace nmos
         const web::json::field_as_string hostname{ U("hostname") }; // hostname, ipv4 or ipv6
         const web::json::field_as_integer port{ U("port") }; // 1..65535
 
+        // IS-11 Stream Compatibility Management
+
+        // for streamcompatibility_api
+        const web::json::field_as_array inputs{ U("inputs") };
+        const web::json::field_as_array outputs{ U("outputs") };
+        const web::json::field_as_bool temporarily_locked{ U("temporarily_locked") };
+
+        // for input/output properties
+        const web::json::field_as_bool connected{ U("connected") };
+        const web::json::field_as_bool edid_support{ U("edid_support") };
+        const web::json::field_as_bool base_edid_support{ U("base_edid_support") };
+        const web::json::field_as_bool adjust_to_caps{ U("adjust_to_caps") };
+
+        // for sender
+        const web::json::field_as_value endpoint_active_constraints{ U("endpoint_active_constraints") }; // object
+        const web::json::field_as_value active_constraint_sets{ U("active_constraint_sets") }; // object
+        const web::json::field_as_value supported_param_constraints{ U("supported_param_constraints") }; // object
+        const web::json::field_as_array parameter_constraints{ U("parameter_constraints") };
+        const web::json::field_as_value intersection_of_caps_and_constraints{ U("intersection_of_caps_and_constraints") }; // array
+
+        // for status
+        const web::json::field_as_value status{ U("status") }; // object
+        const web::json::field_as_string state{ U("state") };
+        const web::json::field_as_string debug{ U("debug") };
+
+        // for EDID endpoints
+        const web::json::field_as_value_or endpoint_base_edid{ U("endpoint_base_edid"), {} }; // object
+        const web::json::field_as_value_or endpoint_effective_edid{ U("endpoint_effective_edid"), {} }; // object
+        const web::json::field_as_value_or endpoint_edid{ U("endpoint_edid"), {} }; // object
+        const web::json::field_as_value_or edid_binary{ U("edid_binary"), {} }; // string
+        const web::json::field_as_value_or edid_href{ U("edid_href"), {} }; // string
+
         // IS-12 Control Protocol and MS-05 model definitions
         namespace nc
         {

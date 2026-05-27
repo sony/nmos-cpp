@@ -24,6 +24,8 @@ namespace nmos
             const scope events{ U("events") };
             // IS-08
             const scope channelmapping{ U("channelmapping") };
+            // IS-11
+            const scope streamcompatibility{ U("streamcompatibility") };
             // IS-12
             const scope ncp{ U("ncp") };
             // IS-14
@@ -44,6 +46,7 @@ namespace nmos
             if (scopes::netctrl.name == scope) { return scopes::netctrl; }
             if (scopes::events.name == scope) { return scopes::events; }
             if (scopes::channelmapping.name == scope) { return scopes::channelmapping; }
+            if (scopes::streamcompatibility.name == scope) { return scopes::streamcompatibility; }
             if (scopes::ncp.name == scope) { return scopes::ncp; }
             if (scopes::configuration.name == scope) { return scopes::configuration; }
             return{};

@@ -6,6 +6,7 @@
 #include "nmos/interlace_mode.h"
 #include "nmos/json_fields.h"
 #include "nmos/resource.h"
+#include "nmos/streamcompatibility_validation.h"
 
 namespace sdp
 {
@@ -345,6 +346,32 @@ namespace nmos
         if (nmos::media_types::video_jxsv != media_type) throw std::invalid_argument("unexpected media type/encoding name");
 
         nmos::details::validate_sdp_parameters(details::jxsv_constraints, sdp_params, nmos::formats::video, get_video_jxsv_parameters(sdp_params), receiver);
+    }
+
+    // Check the specified SDP parameters against the specified constraint sets
+    // for "video/jxsv"
+    bool match_video_jxsv_sdp_parameters_constraint_sets(const web::json::array& constraint_sets, const sdp_parameters& sdp_params)
+    {
+        const auto format_params = get_video_jxsv_parameters(sdp_params);
+        const auto found = std::find_if(constraint_sets.begin(), constraint_sets.end(), [&](const web::json::value& constraint_set) { return details::match_sdp_parameters_constraint_set(details::jxsv_constraints, sdp_params, format_params, constraint_set); });
+        return constraint_sets.end() != found;
+    }
+
+    bool experimental::match_video_jxsv_resource_parameters_constraint_set(const nmos::resource& resource, const web::json::value& constraint_set)
+    {
+        const std::map<nmos::type, nmos::experimental::parameter_constraints> resource_parameter_constraints
+        {
+            { nmos::types::source,  nmos::experimental::source_parameter_constraints },
+            { nmos::types::flow,    nmos::experimental::video_jxsv_flow_parameter_constraints },
+            { nmos::types::sender,  nmos::experimental::video_jxsv_sender_parameter_constraints }
+        };
+
+        if (0 == resource_parameter_constraints.count(resource.type))
+        {
+            throw std::logic_error("wrong resource type");
+        }
+
+        return nmos::experimental::detail::match_resource_parameters_constraint_set(resource_parameter_constraints.at(resource.type), resource.data, constraint_set);
     }
 
     // See https://specs.amwa.tv/bcp-006-01/branches/v1.0-dev/docs/NMOS_With_JPEG_XS.html#flows
