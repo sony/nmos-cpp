@@ -323,7 +323,7 @@ BST_TEST_CASE(testActivateDeactivateReceiverMonitor)
 
     bool reset_monitor_called = false;
 
-    nmos::reset_monitor_handler reset_monitor = [&reset_monitor_called]()
+    nmos::reset_monitor_handler reset_monitor = [&reset_monitor_called](const nmos::resource&)
     {
         // check that the property changed handler gets called
         reset_monitor_called = true;
@@ -685,7 +685,7 @@ BST_TEST_CASE(testActivateDeactivateSenderMonitor)
 
     bool reset_monitor_called = false;
 
-    nmos::reset_monitor_handler reset_monitor = [&reset_monitor_called]()
+    nmos::reset_monitor_handler reset_monitor = [&reset_monitor_called](const nmos::resource&)
     {
         // check that the property changed handler gets called
         reset_monitor_called = true;
@@ -825,7 +825,7 @@ BST_TEST_CASE(testSetMonitorStatusWithDelay)
     bool reset_monitor_called = false;
     bool monitor_status_pending_called = false;
 
-    nmos::reset_monitor_handler reset_monitor = [&reset_monitor_called]()
+    nmos::reset_monitor_handler reset_monitor = [&reset_monitor_called](const nmos::resource&)
     {
         // check that the property changed handler gets called
         reset_monitor_called = true;

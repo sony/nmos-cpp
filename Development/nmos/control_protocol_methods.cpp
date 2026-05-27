@@ -677,17 +677,17 @@ namespace nmos
             return details::make_method_result_error({nc_method_status::parameter_error}, U("name not found"));
         }
 
-        // NcReceiverMonitor methods implementation
+        // NcReceiverMonitor and NcSenderMonitor methods implementation
         namespace details
         {
-            web::json::value get_packet_counters(bool is_deprecated, get_packet_counters_handler get_packet_counters)
+            web::json::value get_packet_counters(const nmos::resource& resource, bool is_deprecated, get_packet_counters_handler get_packet_counters)
             {
                 using web::json::value;
                 using web::json::value_from_elements;
 
                 if (get_packet_counters)
                 {
-                    const auto counters = get_packet_counters();
+                    const auto counters = get_packet_counters(resource);
                     auto nc_counter_sequence = value_from_elements(counters | boost::adaptors::transformed([](const nc::counter& counter)
                     {
                         return web::json::value_of({
@@ -705,19 +705,19 @@ namespace nmos
         }
 
         // Gets the lost packet counters
-        web::json::value get_lost_packet_counters(nmos::resources& /*resources*/, const nmos::resource& /*resource*/, const web::json::value& /*arguments*/, bool is_deprecated, get_packet_counters_handler get_lost_packet_counters, slog::base_gate& gate)
+        web::json::value get_lost_packet_counters(nmos::resources& /*resources*/, const nmos::resource& resource, const web::json::value& /*arguments*/, bool is_deprecated, get_packet_counters_handler get_lost_packet_counters, slog::base_gate& gate)
         {
             slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Gets the lost packet counters";
 
-            return details::get_packet_counters(is_deprecated, get_lost_packet_counters);
+            return details::get_packet_counters(resource, is_deprecated, get_lost_packet_counters);
         }
 
         // Gets the late packet counters
-        web::json::value get_late_packet_counters(nmos::resources& /*resources*/, const nmos::resource& /*resource*/, const web::json::value& /*arguments*/, bool is_deprecated, get_packet_counters_handler get_late_packet_counters, slog::base_gate& gate)
+        web::json::value get_late_packet_counters(nmos::resources& /*resources*/, const nmos::resource& resource, const web::json::value& /*arguments*/, bool is_deprecated, get_packet_counters_handler get_late_packet_counters, slog::base_gate& gate)
         {
             slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Gets the late packet counters";
 
-            return details::get_packet_counters(is_deprecated, get_late_packet_counters);
+            return details::get_packet_counters(resource, is_deprecated, get_late_packet_counters);
         }
 
         // Resets the packet counters and messages
@@ -786,7 +786,7 @@ namespace nmos
 
             if (reset_monitor)
             {
-                reset_monitor();
+                reset_monitor(resource);
             }
 
             return details::make_method_result({is_deprecated ? nmos::nc_method_status::method_deprecated : nc_method_status::ok});

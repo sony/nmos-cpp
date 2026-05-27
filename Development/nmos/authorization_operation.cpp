@@ -1271,10 +1271,8 @@ namespace nmos
 
                             authorization_service_error = true;
                         }
-                    });
-                    request.then([&]
-                    {
-                        condition.notify_all();
+
+                        model.notify();
                     });
 
                     // wait for the request because interactions with the Authorization API endpoint must be sequential
@@ -1853,10 +1851,8 @@ namespace nmos
 
                         authorization_service_error = true;
                     }
-                });
-                request.then([&]
-                {
-                    condition.notify_all();
+
+                    model.notify();
                 });
 
                 // wait for the request because interactions with the Authorization API endpoint must be sequential
@@ -1998,10 +1994,8 @@ namespace nmos
 
                         authorization_service_error = true;
                     }
-                });
-                request.then([&]
-                {
-                    condition.notify_all();
+
+                    model.notify();
                 });
 
                 // wait for the request because interactions with the Authorization API endpoint must be sequential
