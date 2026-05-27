@@ -421,6 +421,7 @@ namespace nmos
     }
 
     // See https://specs.amwa.tv/is-04/releases/v1.2.0/APIs/schemas/with-refs/flow_audio_coded.html
+    // (media_type must *not* be nmos::media_types::audio_L(bit_depth); cf. nmos::make_raw_audio_flow)
     nmos::resource make_coded_audio_flow(const nmos::id& id, const nmos::id& source_id, const nmos::id& device_id, const nmos::rational& sample_rate, const nmos::media_type& media_type, const nmos::settings& settings)
     {
         using web::json::value;

@@ -580,8 +580,6 @@ namespace nmos
                     throw std::logic_error("matching IS-04 and IS-05 resources not found");
                 }
 
-                const nmos::transport transport_subclassification(nmos::fields::transport(matching_resource->data));
-
                 // Merge this patch request into a *copy* of the current staged endpoint
                 // so that the merged parameters can be validated against the constraints
                 // before the current values are overwritten.
@@ -642,6 +640,7 @@ namespace nmos
 
                 slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Validating staged transport parameters against constraints";
 
+                const nmos::transport transport_subclassification(nmos::fields::transport(matching_resource->data));
                 details::validate_staged_constraints(resource->type, nmos::fields::endpoint_constraints(resource->data), nmos::transport_base(transport_subclassification), merged);
 
                 // Perform any final validation
