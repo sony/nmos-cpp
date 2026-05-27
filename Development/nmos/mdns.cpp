@@ -299,6 +299,14 @@ namespace nmos
         const service_type register_{ "_nmos-register._tcp" };
     }
 
+    // DNS-SD browse method per TR-10-9 Section 15; selected via the dns_sd_browse_mode setting
+    enum dns_sd_browse_mode
+    {
+        dns_sd_browse_mode_both    = 0, // unicast DNS first, mDNS fallback if unsuccessful
+        dns_sd_browse_mode_unicast = 1, // unicast DNS only
+        dns_sd_browse_mode_mdns    = 2  // mDNS only
+    };
+
     namespace experimental
     {
         namespace details
@@ -330,6 +338,19 @@ namespace nmos
                 return utility::us2s(nmos::fields::service_name_prefix(settings)) + "_" + service_api(service);
             }
 
+            // generate a hash string (slightly more compact and possibly slightly more memorable than hex)
+            inline std::string hash_string(const std::string& s, size_t len = 5)
+            {
+                auto hash = std::hash<std::string>{}(s);
+                // vowels (and vowel-ish digits) are omitted from the set of available characters
+                // to reduce the chances of "bad words" being formed
+                static const char alphanums[] = "bcdfghjklmnpqrstvwxz2456789";
+                static const size_t base = sizeof(alphanums) - 1;
+                std::string result(len, ' ');
+                for (auto& c : result) { c = alphanums[hash % base]; hash /= base; }
+                return result;
+            }
+
             inline std::set<nmos::api_version> service_versions(const nmos::service_type& service, const nmos::settings& settings)
             {
                 // the System API is defined by IS-09 (having been originally specified in JT-NM TR-1001-1:2018 Annex A)
@@ -341,11 +362,33 @@ namespace nmos
             }
         }
 
+        // generate a stable unique name for the specified service, based on the service type, host and port
         std::string service_name(const nmos::service_type& service, const nmos::settings& settings)
         {
-            // this just serves as an example of a possible service naming strategy
-            // replacing '.' with '-', since although '.' is legal in service names, some DNS-SD implementations just don't like it
-            return boost::algorithm::replace_all_copy(details::service_base_name(service, settings) + "_" + utility::us2s(nmos::get_host(settings)) + ":" + utility::us2s(utility::ostringstreamed(details::service_port(service, settings))), ".", "-");
+            // replace '.' with '-', since although '.' is legal in service names, some DNS-SD implementations just don't like it
+            const auto name = boost::algorithm::replace_all_copy(details::service_base_name(service, settings) + "_" + utility::us2s(nmos::get_host(settings)) + "_" + utility::us2s(utility::ostringstreamed(details::service_port(service, settings))), ".", "-");
+
+            // RFC 6763 Section 4.1.1 specifies that instance names must not exceed 63 bytes
+            // see https://tools.ietf.org/html/rfc6763#section-4.1.1
+            const size_t max_length = 63;
+            if (name.size() <= max_length) return name;
+
+            // truncate over-long names, because Avahi does not automatically truncate like mDNSResponder does,
+            // and include a unique suffix based on the full name, to reduce collisions
+
+            // RFC 6763 explains that DNS-SD names are intended to be user-visible, "short and descriptive",
+            // and avoid "incomprehensible hexadecimal strings"; because this is likely to result in collisions,
+            // RFC 6762 defines a conflict resolution mechanism designed to keep names human-readable,
+            // implemented by Avahi ("<name> #2") and mDNSResponder ("<name> (2)"), and recommends the newly
+            // chosen name is recorded in persistent storage so that the service will use the same name when it
+            // restarts...
+            // because NMOS service names are unlikely to be presented to the user, maximizing the likelihood
+            // of a unique name without the need for persistent storage is higher priority than no hex strings!
+
+            const auto suffix = details::hash_string(name);
+            const auto max_prefix_length = max_length - 1 - suffix.size();
+            const auto prefix_length = name.find_last_not_of("-_", max_prefix_length - 1) + 1;
+            return name.substr(0, prefix_length) + "-" + suffix;
         }
 
         // helper function for registering addresses when the host name is explicitly configured
@@ -503,6 +546,16 @@ namespace nmos
             {
                 return discovery.browse([=, &discovery](const mdns::browse_result& resolving)
                 {
+                    // Skip results from a different discovery domain class
+                    // (prevents mDNS results leaking into unicast DNS queries and vice versa)
+                    if (!browse_domain.empty())
+                    {
+                        if (is_local_domain(browse_domain) != is_local_domain(resolving.domain))
+                        {
+                            return true; // skip this result, keep browsing
+                        }
+                    }
+
                     const bool cancel = pplx::canceled == discovery.resolve([=](const mdns::resolve_result& resolved)
                     {
                         // "The Node [filters] out any APIs which do not support its required API version, protocol and authorization mode (TXT api_ver, api_proto and api_auth)."
@@ -590,8 +643,9 @@ namespace nmos
             }
         }
 
-        // helper function for resolving instances of the specified service (API)
-        // with the highest version, highest priority instances at the front, and optionally services with the same priority ordered randomly
+        // Helper function for resolving instances of the specified service (API), returning ((api_version, priority), uri)
+        // tuples so callers can inspect the matched version and priority. Highest version and highest priority first,
+        // and optionally services with the same priority ordered randomly.
         pplx::task<std::list<resolved_service>> resolve_service_(mdns::service_discovery& discovery, const nmos::service_type& service, const std::string& browse_domain, const std::set<nmos::api_version>& api_ver, const std::pair<nmos::service_priority, nmos::service_priority>& priorities, const std::set<nmos::service_protocol>& api_proto, const std::set<bool>& api_auth, bool randomize, const std::chrono::steady_clock::duration& timeout, const pplx::cancellation_token& token)
         {
             const auto absolute_timeout = std::chrono::steady_clock::now() + timeout;
@@ -696,8 +750,10 @@ namespace nmos
             });
         }
 
-        // helper function for resolving instances of the specified service (API)
-        // with the highest version, highest priority instances at the front, and optionally services with the same priority ordered randomly
+        // DEPRECATED: this overload is unused; prefer resolve_service_ which also returns api_ver/priority info.
+        // Helper function for resolving instances of the specified service (API), returning a list of base URIs
+        // (with the API version path appended), highest version and highest priority first, and optionally
+        // services with the same priority ordered randomly.
         pplx::task<std::list<web::uri>> resolve_service(mdns::service_discovery& discovery, const nmos::service_type& service, const std::string& browse_domain, const std::set<nmos::api_version>& api_ver, const std::pair<nmos::service_priority, nmos::service_priority>& priorities, const std::set<nmos::service_protocol>& api_proto, const std::set<bool>& api_auth, bool randomize, const std::chrono::steady_clock::duration& timeout, const pplx::cancellation_token& token)
         {
             return resolve_service_(discovery, service, browse_domain, api_ver, priorities, api_proto, api_auth, randomize, timeout, token).then([](std::list<resolved_service> resolved_services)
@@ -710,28 +766,33 @@ namespace nmos
             });
         }
 
-        // helper function for resolving instances of the specified service (API) based on the specified settings
-        // with the highest version, highest priority instances at the front, and services with the same priority ordered randomly
+        // Helper function for resolving instances of the specified service (API) based on the specified settings,
+        // returning a list of base URIs (with the API version path appended), highest version and highest priority
+        // first, services with the same priority ordered randomly.
+        // The browse method is selected by the dns_sd_browse_mode setting per TR-10-9 Section 15
+        // (delegates to resolve_service_, which carries the dual-discovery logic).
         pplx::task<std::list<web::uri>> resolve_service(mdns::service_discovery& discovery, const nmos::service_type& service, const nmos::settings& settings, const pplx::cancellation_token& token)
         {
-            const auto browse_domain = utility::us2s(nmos::get_domain(settings));
-            const auto versions = details::service_versions(service, settings);
-            const auto priorities = details::service_priorities(service, settings);
-            const auto protocols = std::set<nmos::service_protocol>{ nmos::get_service_protocol(service, settings) };
-            const auto authorization = std::set<bool>{ nmos::get_service_authorization(service, settings) };
-
-            // use a short timeout that's long enough to ensure the daemon's cache is exhausted
-            // when no cancellation token is specified
-            const auto timeout = token.is_cancelable() ? nmos::fields::discovery_backoff_max(settings) : 1;
-
-            return resolve_service(discovery, service, browse_domain, versions, priorities, protocols, authorization, true, std::chrono::duration_cast<std::chrono::steady_clock::duration>(std::chrono::seconds(timeout)), token);
+            return resolve_service_(discovery, service, settings, token).then([](std::list<resolved_service> resolved_services)
+            {
+                return boost::copy_range<std::list<web::uri>>(resolved_services | boost::adaptors::transformed([](const resolved_service& s)
+                {
+                    return web::uri_builder(s.second).append_path(U("/") + make_api_version(s.first.first)).to_uri();
+                }));
+            });
         }
 
-        // helper function for resolving instances of the specified service (API) based on the specified settings
-        // with the highest version, highest priority instances at the front, and services with the same priority ordered randomly
+        // Helper function for resolving instances of the specified service (API) based on the specified settings,
+        // returning ((api_version, priority), uri) tuples. Highest version and highest priority first, services
+        // with the same priority ordered randomly.
+        // The browse method is selected by the dns_sd_browse_mode setting per TR-10-9 Section 15:
+        //  - both (default): unicast DNS first, mDNS fallback if unsuccessful
+        //  - unicast       : unicast DNS only
+        //  - mdns          : mDNS only
         pplx::task<std::list<resolved_service>> resolve_service_(mdns::service_discovery& discovery, const nmos::service_type& service, const nmos::settings& settings, const pplx::cancellation_token& token)
         {
             const auto browse_domain = utility::us2s(nmos::get_domain(settings));
+            const auto browse_mode = dns_sd_browse_mode(nmos::fields::dns_sd_browse_mode(settings));
             const auto versions = details::service_versions(service, settings);
             const auto priorities = details::service_priorities(service, settings);
             const auto protocols = std::set<nmos::service_protocol>{ nmos::get_service_protocol(service, settings) };
@@ -740,8 +801,26 @@ namespace nmos
             // use a short timeout that's long enough to ensure the daemon's cache is exhausted
             // when no cancellation token is specified
             const auto timeout = token.is_cancelable() ? nmos::fields::discovery_backoff_max(settings) : 1;
+            const auto timeout_dur = std::chrono::duration_cast<std::chrono::steady_clock::duration>(std::chrono::seconds(timeout));
 
-            return resolve_service_(discovery, service, browse_domain, versions, priorities, protocols, authorization, true, std::chrono::duration_cast<std::chrono::steady_clock::duration>(std::chrono::seconds(timeout)), token);
+            // determine primary browse domain based on mode
+            const auto primary_domain = (browse_mode == dns_sd_browse_mode_mdns) ? std::string("local.") : browse_domain;
+            const bool has_fallback = (browse_mode == dns_sd_browse_mode_both) && !is_local_domain(browse_domain);
+
+            auto primary_task = resolve_service_(discovery, service, primary_domain, versions, priorities, protocols, authorization, true, timeout_dur, token);
+
+            if (has_fallback)
+            {
+                return primary_task.then([&discovery, service, versions, priorities, protocols, authorization, timeout_dur, token](std::list<resolved_service> results)
+                {
+                    if (!results.empty()) return pplx::task_from_result(std::move(results));
+
+                    // TR-10-9: unicast DNS unsuccessful, fall back to mDNS (full timeout per service)
+                    return resolve_service_(discovery, service, std::string("local."), versions, priorities, protocols, authorization, true, timeout_dur, token);
+                });
+            }
+
+            return primary_task;
         }
     }
 }
