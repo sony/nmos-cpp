@@ -558,14 +558,13 @@ namespace nmos
 
    // Update the IS-04 source or device after the active map is changed in any way
    // (This function should be called after nmos::set_channelmapping_output_active.)
-   void set_resource_version(nmos::resource& node_resource, const nmos::tai& activation_time)
+   void set_resource_version(const nmos::resources& node_resources, nmos::resource& node_resource, const nmos::tai& activation_time)
    {
        using web::json::value;
 
        auto& resource = node_resource;
-       const auto at = value::string(nmos::make_version(activation_time));
 
-       resource.data[nmos::fields::version] = at;
+       resource.data[nmos::fields::version] = value::string(nmos::make_version(nmos::strictly_increasing_update(node_resources, activation_time)));
    }
 
     web::http::experimental::listener::api_router make_unmounted_channelmapping_api(nmos::node_model& model, details::channelmapping_output_map_validator validate_merged, slog::base_gate& gate_)

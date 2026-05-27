@@ -226,12 +226,12 @@ namespace nmos
                 }
             }
 
-            modify_resource(resources, id_type.first, [&response_activation](nmos::resource& resource)
+            modify_resource(resources, id_type.first, [&resources, &response_activation](nmos::resource& resource)
             {
                 auto& staged = nmos::fields::endpoint_staged(resource.data);
                 auto& staged_activation = staged[nmos::fields::activation];
 
-                resource.data[nmos::fields::version] = web::json::value::string(nmos::make_version());
+                resource.data[nmos::fields::version] = value::string(nmos::make_version(nmos::strictly_increasing_update(resources)));
 
                 // "For immediate activations, [the `mode` field] will be null in response to any subsequent GET requests."
                 staged_activation[nmos::fields::mode] = value::null();
