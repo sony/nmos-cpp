@@ -15,8 +15,8 @@
     set -x
     root_dir=`pwd`
 
-    # Install NMOS Testing Tool (fork with BCP-007-03 suite)
-    git clone --branch bcp-007-03 --depth 1 https://github.com/jonathan-r-thorpe/nmos-testing.git
+    # Install AMWA NMOS Testing Tool
+    git clone https://github.com/AMWA-TV/nmos-testing.git
     cd nmos-testing
 
     # Configure the Testing Tool so all APIs are tested with TLS and authorization
@@ -76,7 +76,7 @@
       run_python="python"
     fi
     pip install -r utilities/run-test-suites/gsheetsImport/requirements.txt
-    
+
     if [[ "${{ runner.os }}" == "Windows" ]]; then
       # install certificates
       certutil -enterprise -addstore -user root test_data\\BCP00301\\ca\\certs\\ca.cert.pem
