@@ -365,14 +365,7 @@ namespace nmos
                     const bool auto_value = type_auto_constraints.end() != type_auto_constraints.find(constraint.first);
                     const bool null_value = type_null_constraints.end() != type_null_constraints.find(constraint.first);
 
-                    if (auto_value || null_value)
-                    {
-                        properties[constraint.first] = make_staged_param_schema(constraint.second, auto_value, null_value);
-                    }
-                    else
-                    {
-                        properties[constraint.first] = constraint.second;
-                    }
+                    properties[constraint.first] = make_staged_param_schema(constraint.second, auto_value, null_value);
                 }
 
                 web::json::push_back(items, value_of({

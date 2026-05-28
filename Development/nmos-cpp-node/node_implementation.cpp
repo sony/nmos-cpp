@@ -38,8 +38,8 @@
 #include "nmos/lldp_manager.h"
 #endif
 #include "nmos/media_type.h"
-#include "nmos/mxl.h"
 #include "nmos/model.h"
+#include "nmos/mxl.h"
 #include "nmos/node_interfaces.h"
 #include "nmos/node_resource.h"
 #include "nmos/node_resources.h"
