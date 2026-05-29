@@ -67,6 +67,12 @@ int main(int argc, char* argv[])
             }
         }
 
+        // Validate the standard and example-node-specific settings (before inserting
+        // run-time defaults, so that errors in user-provided settings are reported with
+        // the offending key rather than as a bare json_exception via the field accessors)
+        // (throws web::json::json_exception with the offending key in the message)
+        validate_node_implementation_settings(node_model.settings);
+
         // Prepare run-time default settings (different than header defaults)
 
         nmos::insert_node_default_settings(node_model.settings);

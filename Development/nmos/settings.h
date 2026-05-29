@@ -1,7 +1,9 @@
 #ifndef NMOS_SETTINGS_H
 #define NMOS_SETTINGS_H
 
+#include <utility>
 #include "bst/optional.h"
+#include "cpprest/base_uri.h"
 #include "cpprest/json_utils.h"
 
 namespace web
@@ -26,6 +28,32 @@ namespace web
 namespace nmos
 {
     typedef web::json::value settings;
+
+    // Validates the known properties (declared in nmos/settings.h and nmos/certificate_settings.h)
+    // against an embedded JSON schema. Unknown properties are silently ignored. Throws
+    // web::json::json_exception on failure.
+    void validate_node_settings(const settings& settings);
+    void validate_registry_settings(const settings& settings);
+
+    namespace details
+    {
+        // The library's settings schema (used by validate_node_settings and
+        // validate_registry_settings). Exposed in the same form as
+        // settings_definitions_schema() so downstream code wanting to compose
+        // its own validator from the library's schemas can register both without
+        // re-parsing the schema text at every validator construction.
+        const std::pair<web::uri, web::json::value>& settings_schema();
+
+        // Useful value-type definitions (positiveInteger, nonNegativeInteger,
+        // stringArray, uuid, tags, rational, interlaceMode, colorspace,
+        // transferCharacteristic, colorSampling) for application code that wants
+        // to compose its own settings JSON schema via cross-schema $refs of the form
+        //   { "$ref": "urn:x-nmos-cpp:schemas:defs#/definitions/<name>" }
+        // The first member is the URI under which the fragment is registered; the second
+        // is the parsed schema. Pass `.first` to the json_validator's known-schemas list
+        // and return `.second` from the loader callback when it is invoked with that URI.
+        const std::pair<web::uri, web::json::value>& settings_definitions_schema();
+    }
 
     // Inserts run-time default settings for those which are impossible to determine at compile-time
     // if not already present in the specified settings
