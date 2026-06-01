@@ -60,6 +60,12 @@ int main(int argc, char* argv[])
             }
         }
 
+        // Validate the standard settings (before inserting run-time defaults, so that
+        // errors in user-provided settings are reported with the offending key rather
+        // than as a bare json_exception via the field accessors)
+        // (throws web::json::json_exception with the offending key in the message)
+        nmos::validate_registry_settings(registry_model.settings);
+
         // Prepare run-time default settings (different than header defaults)
 
         nmos::insert_registry_default_settings(registry_model.settings);

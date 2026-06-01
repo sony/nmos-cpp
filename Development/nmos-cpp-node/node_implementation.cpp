@@ -1,6 +1,8 @@
 #include "node_implementation.h"
 
+#include <map>
 #include <boost/range/adaptor/filtered.hpp>
+#include <boost/range/adaptor/map.hpp>
 #include <boost/range/adaptor/transformed.hpp>
 #include <boost/range/algorithm/find.hpp>
 #include <boost/range/algorithm/find_first_of.hpp>
@@ -10,6 +12,7 @@
 #include <boost/range/join.hpp>
 #include "pplx/pplx_utils.h" // for pplx::complete_after, etc.
 #include "cpprest/host_utils.h"
+#include "cpprest/json_validator.h"
 #ifdef HAVE_LLDP
 #include "lldp/lldp_manager.h"
 #endif
@@ -2574,6 +2577,88 @@ namespace impl
     {
         web::json::push_back(resource.data[nmos::fields::tags][nmos::fields::group_hint], nmos::make_group_hint({ U("example"), resource.type.name + U(' ') + port.name + utility::conversions::details::to_string_t(index) }));
     }
+
+    // JSON schema covering the example-node-specific impl::fields::* settings; combined with
+    // nmos::validate_node_settings, this covers all the properties this example reads from the
+    // settings JSON. additionalProperties is not set to false, so all other (standard) settings
+    // pass through unchecked, allowing the two validators to be composed.
+    // definitions: aliases (in nmos::details::settings_definitions_schema() source order) first, then local
+    static const char* node_settings_schema_text = R"-schema-(
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "type": "object",
+    "definitions": {
+        "nonNegativeInteger":     { "$ref": "urn:x-nmos-cpp:schemas:defs#/definitions/nonNegativeInteger" },
+        "positiveInteger":        { "$ref": "urn:x-nmos-cpp:schemas:defs#/definitions/positiveInteger" },
+        "rational":               { "$ref": "urn:x-nmos-cpp:schemas:defs#/definitions/rational" },
+        "tags":                   { "$ref": "urn:x-nmos-cpp:schemas:defs#/definitions/tags" },
+        "uuid":                   { "$ref": "urn:x-nmos-cpp:schemas:defs#/definitions/uuid" },
+        "interlaceMode":          { "$ref": "urn:x-nmos-cpp:schemas:defs#/definitions/interlaceMode" },
+        "colorspace":             { "$ref": "urn:x-nmos-cpp:schemas:defs#/definitions/colorspace" },
+        "transferCharacteristic": { "$ref": "urn:x-nmos-cpp:schemas:defs#/definitions/transferCharacteristic" },
+        "colorSampling":          { "$ref": "urn:x-nmos-cpp:schemas:defs#/definitions/colorSampling" },
+        "portKind": { "type": "string", "enum": ["v", "a", "d", "m", "t", "b", "s", "c", "xv", "xa", "xd"] }
+    },
+    "properties": {
+        "node_tags":   { "$ref": "#/definitions/tags" },
+        "device_tags": { "$ref": "#/definitions/tags" },
+
+        "how_many":         { "$ref": "#/definitions/nonNegativeInteger" },
+        "activate_senders": { "type": "boolean" },
+
+        "senders":   { "type": "array", "items": { "$ref": "#/definitions/portKind" } },
+        "receivers": { "type": "array", "items": { "$ref": "#/definitions/portKind" } },
+
+        "frame_rate":   { "$ref": "#/definitions/rational" },
+        "frame_width":  { "$ref": "#/definitions/positiveInteger" },
+        "frame_height": { "$ref": "#/definitions/positiveInteger" },
+
+        "interlace_mode":          { "$ref": "#/definitions/interlaceMode" },
+
+        "colorspace":              { "$ref": "#/definitions/colorspace" },
+        "transfer_characteristic": { "$ref": "#/definitions/transferCharacteristic" },
+        "color_sampling":          { "$ref": "#/definitions/colorSampling" },
+        "component_depth":         { "$ref": "#/definitions/positiveInteger" },
+        "video_type":              { "type": "string", "pattern": "^video\\/[^\\s\\/]+$" },
+        "mxl_video_type":          { "type": "string", "enum": ["video/v210", "video/v210a"] },
+
+        "channel_count": { "$ref": "#/definitions/positiveInteger" },
+
+        "smpte2022_7":                      { "type": "boolean" },
+        "simulate_status_monitor_activity": { "type": "boolean" },
+
+        "mxl_domain_id": { "$ref": "#/definitions/uuid" }
+    }
+}
+    )-schema-";
+
+    const std::pair<web::uri, web::json::value>& node_settings_schema()
+    {
+        static const std::pair<web::uri, web::json::value> instance{
+            web::uri{ U("urn:x-nmos-cpp:schemas:node-settings") },
+            web::json::value::parse(node_settings_schema_text)
+        };
+        return instance;
+    }
+
+}
+
+void validate_node_implementation_settings(const nmos::settings& settings)
+{
+    // delegate validation of the standard properties (see nmos/settings.h)
+    nmos::validate_node_settings(settings);
+
+    // validate the example node-specific impl::fields::* properties
+    static const std::map<web::uri, web::json::value> known{
+        impl::node_settings_schema(),
+        nmos::details::settings_definitions_schema()
+    };
+    static const web::json::experimental::json_validator validator
+    {
+        [](const web::uri& wanted) { return known.at(wanted); },
+        boost::copy_range<std::vector<web::uri>>(known | boost::adaptors::map_keys)
+    };
+    validator.validate(settings, impl::node_settings_schema().first);
 }
 
 // This constructs all the callbacks used to integrate the example device-specific underlying implementation
