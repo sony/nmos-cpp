@@ -1,0 +1,19 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "array",
+  "description": "Describes the Connection API /single/senders/{senderId} base resource",
+  "title": "Connection API /single/senders/{senderId} base resource",
+  "items": {
+    "type": "string",
+    "enum": [
+      "constraints/",
+      "staged/",
+      "active/",
+      "transportfile/",
+      "transporttype/"
+    ]
+  },
+  "minItems": 5,
+  "maxItems": 5,
+  "uniqueItems": true
+}
