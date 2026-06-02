@@ -1375,7 +1375,7 @@ namespace nmos
             else
             {
                 // should never happen
-                slog::log<slog::severities::fatal>(gate, SLOG_FLF) << "Invalid logic found in activate monitor oid: " << oid;
+                slog::log<slog::severities::severe>(gate, SLOG_FLF) << "Invalid logic found in activate monitor oid: " << oid;
             }
             return false;
         }
@@ -1404,7 +1404,7 @@ namespace nmos
             else
             {
                 // should never happen
-                slog::log<slog::severities::fatal>(gate, SLOG_FLF) << "Invalid logic found in deactivate monitor oid: " << oid;
+                slog::log<slog::severities::severe>(gate, SLOG_FLF) << "Invalid logic found in deactivate monitor oid: " << oid;
             }
             return false;
         }
