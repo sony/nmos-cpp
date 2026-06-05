@@ -1653,7 +1653,7 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
             int count = 0;
             for (int index = 0; index < how_many; ++index)
             {
-                for (const auto& port : rtp_receiver_ports)
+                for (const auto& port : rtp_sender_ports)
                 {
 
                     const auto sender_id = impl::make_id(seed_id, nmos::types::sender, port, index);
