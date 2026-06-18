@@ -55,12 +55,12 @@ namespace nmos
                         const auto key = utility::us2s(server_certificate.private_key);
                         if (0 == key.size())
                         {
-                            throw ExceptionType({}, "Missing private key");
+                            throw ExceptionType({}, "Missing server private key");
                         }
                         const auto cert_chain = utility::us2s(server_certificate.certificate_chain);
                         if (0 == cert_chain.size())
                         {
-                            throw ExceptionType({}, "Missing certificate chain");
+                            throw ExceptionType({}, "Missing server certificate chain");
                         }
                         ctx.use_private_key(boost::asio::buffer(key.data(), key.size()), boost::asio::ssl::context_base::pem);
                         ctx.use_certificate_chain(boost::asio::buffer(cert_chain.data(), cert_chain.size()));

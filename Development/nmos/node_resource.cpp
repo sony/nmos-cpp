@@ -4,6 +4,7 @@
 #include "nmos/api_utils.h" // for nmos::http_scheme
 #include "nmos/clock_name.h"
 #include "nmos/clock_ref_type.h"
+#include "nmos/est_versions.h"
 #include "nmos/is04_versions.h"
 #include "nmos/resource.h"
 
@@ -47,6 +48,9 @@ namespace nmos
         data[U("clocks")] = !web::json::empty(clocks) ? clocks : value::array();
 
         data[U("interfaces")] = !web::json::empty(interfaces) ? interfaces : value::array();
+
+        // See https://specs.amwa.tv/nmos-parameter-registers/branches/main/tags/certprov.html#certificate-provisioning-urn
+        data[U("tags")][U("urn:x-nmos:tag:certprov")] = nmos::experimental::fields::est_enabled(settings) ? value_from_elements(nmos::est_versions::from_settings(settings) | boost::adaptors::transformed(make_api_version)) : value::array();
 
         return{ is04_versions::v1_3, types::node, std::move(data), false };
     }
