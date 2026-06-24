@@ -15,7 +15,12 @@
 
 #elif defined(_MSC_VER)
 
-#if _MSC_VER >= 1910
+#if _MSC_VER >= 1951
+// From VS2026, or more precisely, MSVC Build Tools v14.51, <experimental/filesystem> is finally removed
+// See https://learn.microsoft.com/en-us/visualstudio/releases/2026/release-notes
+// and https://github.com/microsoft/STL/pull/5765
+#define BST_FILESYSTEM_STD
+#elif _MSC_VER >= 1910
 // From VS2017, /std:c++17 switch is introduced, but this is only indicated in __cplusplus if /Zc:__cplusplus is also specified
 #if __cplusplus >= 201703L
 #define BST_FILESYSTEM_STD
