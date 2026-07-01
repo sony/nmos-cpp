@@ -2,6 +2,8 @@
 
 #include <algorithm>
 #include <cctype>
+#include <cstdint>
+#include <limits>
 #include <map>
 #include <set>
 #include <boost/algorithm/string/predicate.hpp>
@@ -519,8 +521,13 @@ namespace web
                 // required
                 const auto max_age = find_directive(directives, U("max-age"));
                 if (directives.end() == max_age) throw std::invalid_argument("invalid Strict-Transport-Security header, missing max-age");
-                // hm, invalid value is treated as 0
-                result.max_age = utility::istringstreamed(max_age->second, 0u);
+                if (max_age->second.empty() || !std::all_of(max_age->second.begin(), max_age->second.end(), [](utility::char_t c) { return U('0') <= c && c <= U('9'); }))
+                {
+                    throw std::invalid_argument("invalid Strict-Transport-Security header, invalid max-age");
+                }
+                const auto parsed_max_age = utility::istringstreamed<std::uint64_t>(max_age->second, (std::numeric_limits<std::uint64_t>::max)());
+                if (parsed_max_age > (std::numeric_limits<decltype(result.max_age)>::max)()) throw std::invalid_argument("invalid Strict-Transport-Security header, invalid max-age");
+                result.max_age = static_cast<decltype(result.max_age)>(parsed_max_age);
 
                 // optional
                 const auto include_sub_domains = find_directive(directives, U("includeSubDomains"));
