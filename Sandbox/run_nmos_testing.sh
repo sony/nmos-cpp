@@ -39,6 +39,7 @@ expected_disabled_IS_09_01=0
 expected_disabled_IS_12_01=0
 expected_disabled_IS_14_01=1
 expected_disabled_BCP_006_01_01=0
+expected_disabled_BCP_007_03_01=0
 expected_disabled_BCP_008_01_01=0
 expected_disabled_BCP_008_02_01=0
 
@@ -70,7 +71,9 @@ registry_params=",\
 node_params=",\
   \"label\":\"nmos-cpp-node\",\
   \"video_type\": \"video/jxsv\",\
-  \"simulate_status_monitor_activity\":false\
+  \"simulate_status_monitor_activity\":false,\
+  \"senders\":[\"v\",\"a\",\"d\",\"m\",\"t\",\"b\",\"s\",\"c\",\"xv\",\"xa\",\"xd\"],\
+  \"receivers\":[\"v\",\"a\",\"d\",\"m\",\"t\",\"b\",\"s\",\"c\",\"xv\",\"xa\",\"xd\"]\
   "
   
 if [[ "${config_secure}" == "True" ]]; then
@@ -152,6 +155,7 @@ else
   (( expected_disabled_IS_09_01+=7 ))
   (( expected_disabled_IS_14_01+=7 ))
   (( expected_disabled_BCP_006_01_01+=7 ))
+  (( expected_disabled_BCP_007_03_01+=14 ))
 fi
 
 "${node_command}" "{\"how_many\":6,\"http_port\":1080 ${common_params} ${node_params}}" > ${results_dir}/nodeoutput 2>&1 &
@@ -225,6 +229,8 @@ do_run_test IS-12-01 $expected_disabled_IS_12_01 --host "${host}" "${host}" null
 do_run_test IS-14-01 $expected_disabled_IS_14_01 --host "${host}" "${host}" null null --port 1080 1080 0 0 --version v1.3 v1.0 v1.0 v1.0 --selector null null null null --ignore test_ms05_05
 
 do_run_test BCP-006-01-01 $expected_disabled_BCP_006_01_01 --host "${host}" --port 1080 --version v1.3
+
+do_run_test BCP-007-03-01 $expected_disabled_BCP_007_03_01 --host "${host}" "${host}" --port 1080 1080 --version v1.3 v1.2
 
 do_run_test BCP-008-01-01 $expected_disabled_BCP_008_01_01 --host "${host}" "${host}" "${host}" null --port 1080 1080 1082 0 --version v1.3 v1.1 v1.0 v1.0 --urlpath null null x-nmos/ncp/v1.0 null
 
