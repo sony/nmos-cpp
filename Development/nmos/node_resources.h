@@ -84,6 +84,7 @@ namespace nmos
 
     // See https://specs.amwa.tv/is-04/releases/v1.2.0/APIs/schemas/with-refs/flow_audio_raw.html
     nmos::resource make_raw_audio_flow(const nmos::id& id, const nmos::id& source_id, const nmos::id& device_id, const nmos::rational& sample_rate, unsigned int bit_depth, const nmos::settings& settings);
+    nmos::resource make_raw_audio_flow(const nmos::id& id, const nmos::id& source_id, const nmos::id& device_id, const nmos::rational& sample_rate, const nmos::media_type& media_type, unsigned int bit_depth, const nmos::settings& settings);
     nmos::resource make_raw_audio_flow(const nmos::id& id, const nmos::id& source_id, const nmos::id& device_id, const nmos::settings& settings);
 
     // See https://specs.amwa.tv/is-04/releases/v1.2.0/APIs/schemas/with-refs/flow_audio_coded.html

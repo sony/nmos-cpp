@@ -22,6 +22,7 @@
 
     // senders, receivers: controls which kinds of sender and receiver are instantiated by the example node
     // the values must be an array of unique strings identifying the kinds of 'port', like ["v", "a", "d"], see impl::ports
+    // for MXL senders and receivers, the values must be like ["xv", "xa", "xd"]
     // when omitted, all ports are instantiated
     //"senders": ["v", "a"],
     //"receivers": [],
@@ -51,8 +52,11 @@
     // component_depth: controls the bits per component sample of video flows
     //"component_depth": 10,
 
-    // video_type: media type of video flows, e.g. "video/raw" or "video/jxsv", see nmos::media_types
-    //"video_type": "video/jxsv",
+    // video_type: media type of video flows, e.g. "video/raw", "video/jxsv" for ST 2110 senders and receivers, see nmos::media_types
+    //"video_type": "video/raw",
+
+    // mxl_video_type: media type of MXL video flows and receivers, e.g. "video/v210" or "video/v210a", see nmos/mxl.h
+    //"mxl_video_type": "video/v210",
 
     // channel_count: controls the number of channels in audio sources
     //"channel_count": 8,
@@ -212,6 +216,9 @@
 
     // seed id [registry, node]: optional, used to generate repeatable id values when running with the same configuration
     //"seed_id": uuid-string,
+
+    // mxl_domain_id [node]: optional, overrides the generated MXL domain id used by MXL sender/receiver transport params
+    //"mxl_domain_id": uuid-string,
 
     // label [registry, node]: used in resource label field
     //"label": "",

@@ -1,0 +1,33 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "description": "Describes a sender",
+  "title": "Sender resource",
+  "additionalProperties": false,
+  "required": [
+    "receiver_id",
+    "master_enable",
+    "activation",
+    "transport_params"
+  ],
+  "properties": {
+    "receiver_id": {
+      "description": "ID of the target Receiver of this Sender. This will be null if the sender is operating in multicast mode, or has not been assigned a receiver in unicast mode, or is sending to a non-NMOS receiver in unicast mode.",
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+    },
+    "master_enable": {
+      "description": "Master on/off control for sender",
+      "type": "boolean"
+    },
+    "activation": {
+      "$ref": "activation-response-schema.json"
+    },
+    "transport_params": {
+      "$ref": "sender_transport_params.json"
+    }
+  }
+}

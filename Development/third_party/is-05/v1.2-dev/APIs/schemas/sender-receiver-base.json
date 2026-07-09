@@ -1,0 +1,11 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "array",
+  "description": "Describes the Connection API sender/receiver base resource",
+  "title": "Connection API sender/receiver base resource",
+  "items": {
+    "type": "string",
+    "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}/$"
+  },
+  "uniqueItems": true
+}

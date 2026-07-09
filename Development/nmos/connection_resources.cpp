@@ -612,4 +612,108 @@ namespace nmos
         // See https://specs.amwa.tv/is-07/releases/v1.0.1/docs/5.1._Transport_-_MQTT.html#33-connection_status_broker_topic
         return U("x-nmos/events/") + make_api_version(version) + U("/connections/") + connection_id;
     }
+
+    namespace details
+    {
+        web::json::value make_connection_mxl_sender_core_constraints(const nmos::id& mxl_domain_id, const nmos::id& mxl_flow_id)
+        {
+            using web::json::value;
+            using web::json::value_of;
+
+            const auto unconstrained = value::object();
+            return value_of({
+                { nmos::fields::mxl_domain_id, mxl_domain_id.empty() ? unconstrained : value_of({
+                    { nmos::fields::constraint_enum, value_of({
+                        mxl_domain_id
+                    }) }
+                }) },
+                { nmos::fields::mxl_flow_id, mxl_flow_id.empty() ? unconstrained : value_of({
+                    { nmos::fields::constraint_enum, value_of({
+                        mxl_flow_id
+                    }) }
+                }) }
+            });
+        }
+
+        web::json::value make_connection_mxl_sender_staged_core_parameter_set()
+        {
+            using web::json::value;
+            using web::json::value_of;
+
+            return value_of({
+                { nmos::fields::mxl_domain_id, U("auto") },
+                { nmos::fields::mxl_flow_id, U("auto") }
+            });
+        }
+
+        web::json::value make_connection_mxl_receiver_core_constraints(const nmos::id& mxl_domain_id)
+        {
+            using web::json::value;
+            using web::json::value_of;
+
+            const auto unconstrained = value::object();
+            return value_of({
+                { nmos::fields::mxl_domain_id, mxl_domain_id.empty() ? unconstrained : value_of({
+                    { nmos::fields::constraint_enum, value_of({
+                        mxl_domain_id
+                    }) }
+                }) },
+                { nmos::fields::mxl_flow_id, unconstrained }
+            });
+        }
+
+        web::json::value make_connection_mxl_receiver_staged_core_parameter_set()
+        {
+            using web::json::value;
+            using web::json::value_of;
+
+            return value_of({
+                { nmos::fields::mxl_domain_id, U("auto") },
+                { nmos::fields::mxl_flow_id, value::null() }
+            });
+        }
+    }
+
+    nmos::resource make_connection_mxl_sender(const nmos::id& id, const nmos::id& mxl_domain_id, const nmos::id& mxl_flow_id)
+    {
+        using web::json::value;
+        using web::json::value_of;
+
+        const auto redundant = false;
+
+        auto data = details::make_connection_resource_core(id, redundant);
+
+        data[nmos::fields::endpoint_constraints] = details::legs_of(details::make_connection_mxl_sender_core_constraints(mxl_domain_id, mxl_flow_id), redundant);
+
+        data[nmos::fields::endpoint_staged][nmos::fields::receiver_id] = value::null();
+        data[nmos::fields::endpoint_staged][nmos::fields::transport_params] = details::legs_of(details::make_connection_mxl_sender_staged_core_parameter_set(), redundant);
+
+        data[nmos::fields::endpoint_active] = data[nmos::fields::endpoint_staged];
+        // The caller must resolve all instances of "auto" in the /active endpoint into the actual values that will be used!
+
+        // Note that the transporttype endpoint is implemented in terms of the matching IS-04 sender
+
+        return{ is05_versions::v1_2, types::sender, std::move(data), false };
+    }
+
+    nmos::resource make_connection_mxl_receiver(const nmos::id& id, const nmos::id& mxl_domain_id)
+    {
+        using web::json::value;
+
+        const auto redundant = false;
+
+        auto data = details::make_connection_resource_core(id, redundant);
+
+        data[nmos::fields::endpoint_constraints] = details::legs_of(details::make_connection_mxl_receiver_core_constraints(mxl_domain_id), redundant);
+
+        data[nmos::fields::endpoint_staged][nmos::fields::sender_id] = value::null();
+        data[nmos::fields::endpoint_staged][nmos::fields::transport_file] = details::make_connection_receiver_staging_transport_file();
+        data[nmos::fields::endpoint_staged][nmos::fields::transport_params] = details::legs_of(details::make_connection_mxl_receiver_staged_core_parameter_set(), redundant);
+
+        data[nmos::fields::endpoint_active] = data[nmos::fields::endpoint_staged];
+
+        // Note that the transporttype endpoint is implemented in terms of the matching IS-04 receiver
+
+        return{ is05_versions::v1_2, types::receiver, std::move(data), false };
+    }
 }

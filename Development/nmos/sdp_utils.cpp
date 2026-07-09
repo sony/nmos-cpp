@@ -480,8 +480,8 @@ namespace nmos
             // See https://tools.ietf.org/html/rfc4566#section-5.2
             { sdp::fields::origin, value_of({
                 { sdp::fields::user_name, sdp_params.origin.user_name },
-                { sdp::fields::session_id, sdp_params.origin.session_id },
-                { sdp::fields::session_version, sdp_params.origin.session_version },
+                { sdp::fields::session_id, sdp_params.origin.session_id.value },
+                { sdp::fields::session_version, sdp_params.origin.session_version.value },
                 { sdp::fields::network_type, sdp::network_types::internet.name },
                 { sdp::fields::address_type, details::get_address_type_multicast(origin_address).first.name },
                 { sdp::fields::unicast_address, origin_address }
@@ -1626,9 +1626,10 @@ namespace nmos
     }
 
     // Validate the numeric string
+    // i.e. a non-empty sequence of decimal digits (leading zeros allowed)
     const utility::string_t& valid_numeric_string(const utility::string_t& s)
     {
-        if (!std::all_of(s.begin(), s.end(), [](utility::char_t c) { return std::isdigit(c); }))
+        if (s.empty() || !std::all_of(s.begin(), s.end(), [](utility::char_t c) { return std::isdigit(c, std::locale::classic()); }))
         {
             throw std::invalid_argument("not a numeric string");
         }
