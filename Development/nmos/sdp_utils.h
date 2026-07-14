@@ -107,6 +107,7 @@ namespace nmos
     // with each RTP sender and receiver.
     // When redundancy is being used, the media description and media-level attributes for each stream are assumed
     // to be identical except for the values corresponding to the IS-05 transport parameters for each leg.
+    // SSRC-multiplexed temporal redundancy is represented by one media description and two transport parameter legs.
     struct sdp_parameters
     {
         // Origin ("o=")
@@ -169,6 +170,31 @@ namespace nmos
             group_t() {}
             group_t(const sdp::group_semantics_type& semantics, const std::vector<utility::string_t>& media_stream_ids) : semantics(semantics), media_stream_ids(media_stream_ids) {}
         } group;
+
+        // SSRC-level duplication for SMPTE ST 2022-7 temporal redundancy.
+        // See https://tools.ietf.org/html/rfc5576 and https://tools.ietf.org/html/rfc7104
+        struct temporal_redundancy_t
+        {
+            struct synchronization_source_t
+            {
+                uint32_t id;
+                utility::string_t cname;
+
+                synchronization_source_t() : id() {}
+                synchronization_source_t(uint32_t id, const utility::string_t& cname) : id(id), cname(cname) {}
+            };
+
+            std::vector<synchronization_source_t> synchronization_sources;
+            bst::optional<uint32_t> duplication_delay;
+            utility::string_t media_stream_id;
+
+            temporal_redundancy_t() {}
+            temporal_redundancy_t(const std::vector<synchronization_source_t>& synchronization_sources, bst::optional<uint32_t> duplication_delay, const utility::string_t& media_stream_id)
+                : synchronization_sources(synchronization_sources)
+                , duplication_delay(duplication_delay)
+                , media_stream_id(media_stream_id)
+            {}
+        } temporal_redundancy;
 
         // Media ("m=")
         // See https://tools.ietf.org/html/rfc4566#section-5.14

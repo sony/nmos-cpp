@@ -203,6 +203,7 @@ namespace sdp
         }
 
         const converter strings_converter = array_converter(string_converter, " ");
+        const converter digits_array_converter = array_converter(digits_converter, " ");
 
         // ST 2110-20:2022 says "the <format specific parameters> section shall consist of a sequence of
         // media type parameter entries, separated by the semicolon (";") character followed by whitespace"
@@ -676,6 +677,50 @@ namespace sdp
                     }
                 },
                 { sdp::attributes::mid, string_converter },
+                // See https://tools.ietf.org/html/rfc5576
+                {
+                    sdp::attributes::ssrc, // <ssrc-id> <attribute>[:<value>]
+                    {
+                        [](const web::json::value& v) {
+                            std::string s;
+                            s += digits_converter.format(v.at(sdp::fields::ssrc_id));
+                            s += " " + string_converter.format(v.at(sdp::fields::ssrc_attribute));
+                            const auto& attribute_value = sdp::fields::ssrc_attribute_value(v);
+                            if (!attribute_value.is_null()) s += ":" + string_converter.format(attribute_value);
+                            return s;
+                        },
+                        [](const std::string& s) {
+                            auto v = web::json::value::object(keep_order);
+                            size_t pos = 0;
+                            v[sdp::fields::ssrc_id] = digits_converter.parse(substr_find(s, pos, " "));
+                            if (std::string::npos == pos) throw sdp_parse_error("expected a value for " + utility::us2s(sdp::fields::ssrc_attribute));
+                            const auto attribute = substr_find(s, pos);
+                            const auto colon = attribute.find(':');
+                            v[sdp::fields::ssrc_attribute] = string_converter.parse(attribute.substr(0, colon));
+                            if (std::string::npos != colon) v[sdp::fields::ssrc_attribute_value] = string_converter.parse(attribute.substr(colon + 1));
+                            return v;
+                        },
+                    }
+                },
+                // See https://tools.ietf.org/html/rfc5576 and https://tools.ietf.org/html/rfc7104
+                {
+                    sdp::attributes::ssrc_group, // <semantics> <ssrc-id>...
+                    {
+                        [](const web::json::value& v) {
+                            return string_converter.format(v.at(sdp::fields::semantics)) + " " + digits_array_converter.format(v.at(sdp::fields::ssrc_ids));
+                        },
+                        [](const std::string& s) {
+                            auto v = web::json::value::object(keep_order);
+                            size_t pos = 0;
+                            v[sdp::fields::semantics] = string_converter.parse(substr_find(s, pos, " "));
+                            if (std::string::npos == pos) throw sdp_parse_error("expected a value for " + utility::us2s(sdp::fields::ssrc_ids));
+                            v[sdp::fields::ssrc_ids] = digits_array_converter.parse(substr_find(s, pos));
+                            return v;
+                        },
+                    }
+                },
+                // See https://datatracker.ietf.org/doc/html/draft-ietf-mmusic-delayed-duplication
+                { sdp::attributes::duplication_delay, digits_converter },
                 // See https://tools.ietf.org/html/rfc7273
                 {
                     sdp::attributes::ts_refclk,
