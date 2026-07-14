@@ -110,6 +110,70 @@ namespace nmos
             });
         }
 
+        web::json::value make_connection_rtp_sender_fec_constraints()
+        {
+            using web::json::value;
+            using web::json::value_of;
+
+            const auto unconstrained = value::object();
+            return value_of({
+                { nmos::fields::fec_enabled, unconstrained },
+                { nmos::fields::fec_destination_ip, unconstrained },
+                { nmos::fields::fec_type, unconstrained },
+                { nmos::fields::fec_mode, unconstrained },
+                { nmos::fields::fec_block_width, unconstrained },
+                { nmos::fields::fec_block_height, unconstrained },
+                { nmos::fields::fec1D_destination_port, unconstrained },
+                { nmos::fields::fec2D_destination_port, unconstrained },
+                { nmos::fields::fec1D_source_port, unconstrained },
+                { nmos::fields::fec2D_source_port, unconstrained }
+            });
+        }
+
+        web::json::value make_connection_rtp_sender_staged_fec_parameter_set()
+        {
+            using web::json::value_of;
+
+            return value_of({
+                { nmos::fields::fec_enabled, false },
+                { nmos::fields::fec_destination_ip, U("auto") },
+                { nmos::fields::fec_type, U("XOR") },
+                { nmos::fields::fec_mode, U("1D") },
+                { nmos::fields::fec_block_width, 4 },
+                { nmos::fields::fec_block_height, 4 },
+                { nmos::fields::fec1D_destination_port, U("auto") },
+                { nmos::fields::fec2D_destination_port, U("auto") },
+                { nmos::fields::fec1D_source_port, U("auto") },
+                { nmos::fields::fec2D_source_port, U("auto") }
+            });
+        }
+
+        web::json::value make_connection_rtp_sender_rtcp_constraints()
+        {
+            using web::json::value;
+            using web::json::value_of;
+
+            const auto unconstrained = value::object();
+            return value_of({
+                { nmos::fields::rtcp_enabled, unconstrained },
+                { nmos::fields::rtcp_destination_ip, unconstrained },
+                { nmos::fields::rtcp_destination_port, unconstrained },
+                { nmos::fields::rtcp_source_port, unconstrained }
+            });
+        }
+
+        web::json::value make_connection_rtp_sender_staged_rtcp_parameter_set()
+        {
+            using web::json::value_of;
+
+            return value_of({
+                { nmos::fields::rtcp_enabled, false },
+                { nmos::fields::rtcp_destination_ip, U("auto") },
+                { nmos::fields::rtcp_destination_port, U("auto") },
+                { nmos::fields::rtcp_source_port, U("auto") }
+            });
+        }
+
         // See https://specs.amwa.tv/is-05/releases/v1.1.0/docs/4.1._Behaviour_-_RTP_Transport_Type.html#receiver-parameter-sets
         // and https://specs.amwa.tv/is-05/releases/v1.1.0/APIs/schemas/with-refs/constraints-schema-rtp.html
         web::json::value make_connection_rtp_receiver_core_constraints()
@@ -122,8 +186,7 @@ namespace nmos
                 { nmos::fields::source_ip, unconstrained },
                 { nmos::fields::interface_ip, unconstrained },
                 { nmos::fields::destination_port, unconstrained },
-                { nmos::fields::rtp_enabled, unconstrained },
-                { nmos::fields::multicast_ip, unconstrained }
+                { nmos::fields::rtp_enabled, unconstrained }
             });
         }
 
@@ -138,23 +201,109 @@ namespace nmos
                 { nmos::fields::source_ip, value::null() },
                 { nmos::fields::interface_ip, U("auto") },
                 { nmos::fields::destination_port, U("auto") },
-                { nmos::fields::rtp_enabled, true },
+                { nmos::fields::rtp_enabled, true }
+            });
+        }
+
+        web::json::value make_connection_rtp_receiver_multicast_constraints()
+        {
+            using web::json::value;
+            using web::json::value_of;
+
+            return value_of({
+                { nmos::fields::multicast_ip, value::object() }
+            });
+        }
+
+        web::json::value make_connection_rtp_receiver_staged_multicast_parameter_set()
+        {
+            using web::json::value;
+            using web::json::value_of;
+
+            return value_of({
                 { nmos::fields::multicast_ip, value::null() }
             });
+        }
+
+        web::json::value make_connection_rtp_receiver_fec_constraints()
+        {
+            using web::json::value;
+            using web::json::value_of;
+
+            const auto unconstrained = value::object();
+            return value_of({
+                { nmos::fields::fec_enabled, unconstrained },
+                { nmos::fields::fec_destination_ip, unconstrained },
+                { nmos::fields::fec_mode, unconstrained },
+                { nmos::fields::fec1D_destination_port, unconstrained },
+                { nmos::fields::fec2D_destination_port, unconstrained }
+            });
+        }
+
+        web::json::value make_connection_rtp_receiver_staged_fec_parameter_set()
+        {
+            using web::json::value_of;
+
+            return value_of({
+                { nmos::fields::fec_enabled, false },
+                { nmos::fields::fec_destination_ip, U("auto") },
+                { nmos::fields::fec_mode, U("auto") },
+                { nmos::fields::fec1D_destination_port, U("auto") },
+                { nmos::fields::fec2D_destination_port, U("auto") }
+            });
+        }
+
+        web::json::value make_connection_rtp_receiver_rtcp_constraints()
+        {
+            using web::json::value;
+            using web::json::value_of;
+
+            const auto unconstrained = value::object();
+            return value_of({
+                { nmos::fields::rtcp_enabled, unconstrained },
+                { nmos::fields::rtcp_destination_ip, unconstrained },
+                { nmos::fields::rtcp_destination_port, unconstrained }
+            });
+        }
+
+        web::json::value make_connection_rtp_receiver_staged_rtcp_parameter_set()
+        {
+            using web::json::value_of;
+
+            return value_of({
+                { nmos::fields::rtcp_enabled, false },
+                { nmos::fields::rtcp_destination_ip, U("auto") },
+                { nmos::fields::rtcp_destination_port, U("auto") }
+            });
+        }
+
+        void insert_parameter_set(web::json::value& parameters, const web::json::value& parameter_set)
+        {
+            web::json::insert(parameters, parameter_set.as_object().begin(), parameter_set.as_object().end());
         }
     }
 
     nmos::resource make_connection_rtp_sender(const nmos::id& id, bool smpte2022_7)
     {
+        return make_connection_rtp_sender(id, smpte2022_7, rtp_sender_parameter_sets{});
+    }
+
+    nmos::resource make_connection_rtp_sender(const nmos::id& id, bool smpte2022_7, const rtp_sender_parameter_sets& parameter_sets)
+    {
         using web::json::value;
-        using web::json::value_of;
 
         auto data = details::make_connection_resource_core(id, smpte2022_7);
 
-        data[nmos::fields::endpoint_constraints] = details::legs_of(details::make_connection_rtp_sender_core_constraints(), smpte2022_7);
+        auto constraints = details::make_connection_rtp_sender_core_constraints();
+        if (parameter_sets.fec) details::insert_parameter_set(constraints, details::make_connection_rtp_sender_fec_constraints());
+        if (parameter_sets.rtcp) details::insert_parameter_set(constraints, details::make_connection_rtp_sender_rtcp_constraints());
+        data[nmos::fields::endpoint_constraints] = details::legs_of(constraints, smpte2022_7);
 
         data[nmos::fields::endpoint_staged][nmos::fields::receiver_id] = value::null();
-        data[nmos::fields::endpoint_staged][nmos::fields::transport_params] = details::legs_of(details::make_connection_rtp_sender_staged_core_parameter_set(), smpte2022_7);
+        auto transport_params = details::make_connection_rtp_sender_staged_core_parameter_set();
+        if (parameter_sets.fec) details::insert_parameter_set(transport_params, details::make_connection_rtp_sender_staged_fec_parameter_set());
+        if (parameter_sets.rtcp) details::insert_parameter_set(transport_params, details::make_connection_rtp_sender_staged_rtcp_parameter_set());
+        data[nmos::fields::endpoint_staged][nmos::fields::transport_params] = details::legs_of(transport_params, smpte2022_7);
 
         data[nmos::fields::endpoint_active] = data[nmos::fields::endpoint_staged];
         // The caller must resolve all instances of "auto" in the /active endpoint into the actual values that will be used!
@@ -188,7 +337,12 @@ namespace nmos
 
     nmos::resource make_connection_rtp_sender(const nmos::id& id, bool smpte2022_7, const utility::string_t& transportfile)
     {
-        auto resource = make_connection_rtp_sender(id, smpte2022_7);
+        return make_connection_rtp_sender(id, smpte2022_7, rtp_sender_parameter_sets{}, transportfile);
+    }
+
+    nmos::resource make_connection_rtp_sender(const nmos::id& id, bool smpte2022_7, const rtp_sender_parameter_sets& parameter_sets, const utility::string_t& transportfile)
+    {
+        auto resource = make_connection_rtp_sender(id, smpte2022_7, parameter_sets);
 
         const utility::string_t sdp_magic(U("v=0"));
 
@@ -205,15 +359,28 @@ namespace nmos
 
     nmos::resource make_connection_rtp_receiver(const nmos::id& id, bool smpte2022_7)
     {
+        return make_connection_rtp_receiver(id, smpte2022_7, rtp_receiver_parameter_sets{});
+    }
+
+    nmos::resource make_connection_rtp_receiver(const nmos::id& id, bool smpte2022_7, const rtp_receiver_parameter_sets& parameter_sets)
+    {
         using web::json::value;
 
         auto data = details::make_connection_resource_core(id, smpte2022_7);
 
-        data[nmos::fields::endpoint_constraints] = details::legs_of(details::make_connection_rtp_receiver_core_constraints(), smpte2022_7);
+        auto constraints = details::make_connection_rtp_receiver_core_constraints();
+        if (parameter_sets.multicast) details::insert_parameter_set(constraints, details::make_connection_rtp_receiver_multicast_constraints());
+        if (parameter_sets.fec) details::insert_parameter_set(constraints, details::make_connection_rtp_receiver_fec_constraints());
+        if (parameter_sets.rtcp) details::insert_parameter_set(constraints, details::make_connection_rtp_receiver_rtcp_constraints());
+        data[nmos::fields::endpoint_constraints] = details::legs_of(constraints, smpte2022_7);
 
         data[nmos::fields::endpoint_staged][nmos::fields::sender_id] = value::null();
         data[nmos::fields::endpoint_staged][nmos::fields::transport_file] = details::make_connection_receiver_staging_transport_file();
-        data[nmos::fields::endpoint_staged][nmos::fields::transport_params] = details::legs_of(details::make_connection_rtp_receiver_staged_core_parameter_set(), smpte2022_7);
+        auto transport_params = details::make_connection_rtp_receiver_staged_core_parameter_set();
+        if (parameter_sets.multicast) details::insert_parameter_set(transport_params, details::make_connection_rtp_receiver_staged_multicast_parameter_set());
+        if (parameter_sets.fec) details::insert_parameter_set(transport_params, details::make_connection_rtp_receiver_staged_fec_parameter_set());
+        if (parameter_sets.rtcp) details::insert_parameter_set(transport_params, details::make_connection_rtp_receiver_staged_rtcp_parameter_set());
+        data[nmos::fields::endpoint_staged][nmos::fields::transport_params] = details::legs_of(transport_params, smpte2022_7);
 
         data[nmos::fields::endpoint_active] = data[nmos::fields::endpoint_staged];
         // The caller must resolve all instances of "auto" in the /active endpoint into the actual values that will be used!
