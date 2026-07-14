@@ -203,6 +203,7 @@ namespace sdp
         }
 
         const converter strings_converter = array_converter(string_converter, " ");
+        const converter whitespace_strings_converter = array_converter(string_converter, " ", "[ \\t]+");
 
         // ST 2110-20:2022 says "the <format specific parameters> section shall consist of a sequence of
         // media type parameter entries, separated by the semicolon (";") character followed by whitespace"
@@ -670,17 +671,16 @@ namespace sdp
                             return s;
                         },
                         [](const std::string& s) {
+                            const auto parts = whitespace_strings_converter.parse(s);
+                            if (1 != parts.size() && 4 != parts.size()) throw sdp_parse_error("expected <port> [<nettype> <addrtype> <connection-address>]");
+
                             auto v = web::json::value::object(keep_order);
-                            size_t pos = 0;
-                            const bst::regex whitespace{ "[ \\t]+" };
-                            v[sdp::fields::port] = digits_converter.parse(substr_find(s, pos, whitespace));
-                            if (std::string::npos != pos)
+                            v[sdp::fields::port] = digits_converter.parse(utility::us2s(parts.at(0).as_string()));
+                            if (4 == parts.size())
                             {
-                                v[sdp::fields::network_type] = string_converter.parse(substr_find(s, pos, whitespace));
-                                if (std::string::npos == pos) throw sdp_parse_error("expected a value for " + utility::us2s(sdp::fields::address_type));
-                                v[sdp::fields::address_type] = string_converter.parse(substr_find(s, pos, whitespace));
-                                if (std::string::npos == pos) throw sdp_parse_error("expected a value for " + utility::us2s(sdp::fields::unicast_address));
-                                v[sdp::fields::unicast_address] = string_converter.parse(substr_find(s, pos));
+                                v[sdp::fields::network_type] = parts.at(1);
+                                v[sdp::fields::address_type] = parts.at(2);
+                                v[sdp::fields::unicast_address] = parts.at(3);
                             }
                             return v;
                         },
