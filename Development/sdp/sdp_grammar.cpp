@@ -654,6 +654,38 @@ namespace sdp
                         },
                     }
                 },
+                // See https://tools.ietf.org/html/rfc3605
+                {
+                    sdp::attributes::rtcp, // <port> [<nettype> <addrtype> <connection-address>]
+                    {
+                        [](const web::json::value& v) {
+                            std::string s;
+                            s += digits_converter.format(v.at(sdp::fields::port));
+                            if (v.has_field(sdp::fields::unicast_address))
+                            {
+                                s += " " + string_converter.format(v.at(sdp::fields::network_type));
+                                s += " " + string_converter.format(v.at(sdp::fields::address_type));
+                                s += " " + string_converter.format(v.at(sdp::fields::unicast_address));
+                            }
+                            return s;
+                        },
+                        [](const std::string& s) {
+                            auto v = web::json::value::object(keep_order);
+                            size_t pos = 0;
+                            const bst::regex whitespace{ "[ \\t]+" };
+                            v[sdp::fields::port] = digits_converter.parse(substr_find(s, pos, whitespace));
+                            if (std::string::npos != pos)
+                            {
+                                v[sdp::fields::network_type] = string_converter.parse(substr_find(s, pos, whitespace));
+                                if (std::string::npos == pos) throw sdp_parse_error("expected a value for " + utility::us2s(sdp::fields::address_type));
+                                v[sdp::fields::address_type] = string_converter.parse(substr_find(s, pos, whitespace));
+                                if (std::string::npos == pos) throw sdp_parse_error("expected a value for " + utility::us2s(sdp::fields::unicast_address));
+                                v[sdp::fields::unicast_address] = string_converter.parse(substr_find(s, pos));
+                            }
+                            return v;
+                        },
+                    }
+                },
                 // See https://tools.ietf.org/html/rfc5888
                 {
                     sdp::attributes::group, // <semantics>[ <identification-tag>]*

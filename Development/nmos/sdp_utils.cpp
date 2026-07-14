@@ -631,6 +631,29 @@ namespace nmos
                 );
             }
 
+            if (nmos::fields::rtcp_enabled(transport_param))
+            {
+                // a=rtcp:<port> [<nettype> <addrtype> <connection-address>]
+                // See https://tools.ietf.org/html/rfc3605
+                auto rtcp = value_of({
+                    { sdp::fields::port, transport_param.at(nmos::fields::rtcp_destination_port) }
+                }, keep_order);
+                const auto& rtcp_destination_ip = nmos::fields::rtcp_destination_ip(transport_param);
+                if (!rtcp_destination_ip.is_null())
+                {
+                    const auto& rtcp_address = rtcp_destination_ip.as_string();
+                    rtcp[sdp::fields::network_type] = value::string(sdp::network_types::internet.name);
+                    rtcp[sdp::fields::address_type] = value::string(details::get_address_type_multicast(rtcp_address).first.name);
+                    rtcp[sdp::fields::unicast_address] = value::string(rtcp_address);
+                }
+                web::json::push_back(
+                    media_attributes, value_of({
+                        { sdp::fields::name, sdp::attributes::rtcp },
+                        { sdp::fields::value, std::move(rtcp) }
+                    }, keep_order)
+                );
+            }
+
             if (0 != sdp_params.packet_time)
             {
                 // a=ptime:<packet time>
@@ -954,11 +977,11 @@ namespace nmos
         // * Any Source Multicast
         // * Operation with SMPTE 2022-7 - Separate Source Addresses
         // * Operation with SMPTE 2022-7 - Separate Destination Addresses
+        // * Operation with RTCP
 
         // The following cases are not yet handled:
         // * Operation with SMPTE 2022-5
         // * Operation with SMPTE 2022-7 - Temporal Redundancy
-        // * Operation with RTCP
 
         auto& media_descriptions = sdp::fields::media_descriptions(session_description);
 
@@ -1045,6 +1068,23 @@ namespace nmos
                 }
 
                 params[nmos::fields::destination_port] = value::number(sdp::fields::port(media));
+
+                if (!media_attributes.is_null())
+                {
+                    auto& ma = media_attributes.as_array();
+                    auto rtcp = sdp::find_name(ma, sdp::attributes::rtcp);
+                    if (ma.end() != rtcp)
+                    {
+                        const auto& rtcp_value = sdp::fields::value(*rtcp);
+                        params[nmos::fields::rtcp_enabled] = value::boolean(true);
+                        params[nmos::fields::rtcp_destination_port] = value::number(sdp::fields::port(rtcp_value));
+                        params[nmos::fields::rtcp_destination_ip] = rtcp_value.has_field(sdp::fields::unicast_address)
+                            ? rtcp_value.at(sdp::fields::unicast_address)
+                            : !params[nmos::fields::multicast_ip].is_null()
+                                ? params[nmos::fields::multicast_ip]
+                                : params[nmos::fields::interface_ip];
+                    }
+                }
 
                 params[nmos::fields::rtp_enabled] = value::boolean(true);
 
