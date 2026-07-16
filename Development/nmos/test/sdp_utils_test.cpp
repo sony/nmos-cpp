@@ -470,14 +470,9 @@ a=mid:S1b
     BST_REQUIRE(test_params == transport_params);
 }
 
-////////////////////////////////////////////////////////////////////////////////////////////
-BST_TEST_CASE(testInterpretationOfSdpFilesRtcp)
+namespace
 {
-    using web::json::value_of;
-
-    // See https://specs.amwa.tv/is-05/releases/v1.1.1/docs/4.1._Behaviour_-_RTP_Transport_Type.html#operation-with-rtcp
-
-    const std::string test_sdp = R"(v=0
+    const std::string rtcp_test_sdp = R"(v=0
 o=- 1497010742 1497010742 IN IP4 172.29.26.24
 s=SDP Example
 t=2873397496 2873404696
@@ -488,36 +483,63 @@ a=rtpmap:103 raw/90000
 a=rtcp:5001 IN IP4 232.21.21.133
 )";
 
-    const auto test_params = value_of({
-        value_of({
-            { nmos::fields::source_ip, U("172.29.226.24") },
-            { nmos::fields::multicast_ip, U("232.21.21.133") },
-            { nmos::fields::interface_ip, U("auto") },
-            { nmos::fields::destination_port, 5000 },
-            { nmos::fields::rtcp_enabled, true },
-            { nmos::fields::rtcp_destination_ip, U("232.21.21.133") },
-            { nmos::fields::rtcp_destination_port, 5001 },
-            { nmos::fields::rtp_enabled, true }
-        })
-    });
+    web::json::value make_rtcp_test_params()
+    {
+        using web::json::value_of;
 
-    const auto session_description = sdp::parse_session_description(test_sdp);
+        return value_of({
+            value_of({
+                { nmos::fields::source_ip, U("172.29.226.24") },
+                { nmos::fields::multicast_ip, U("232.21.21.133") },
+                { nmos::fields::interface_ip, U("auto") },
+                { nmos::fields::destination_port, 5000 },
+                { nmos::fields::rtcp_enabled, true },
+                { nmos::fields::rtcp_destination_ip, U("232.21.21.133") },
+                { nmos::fields::rtcp_destination_port, 5001 },
+                { nmos::fields::rtp_enabled, true }
+            })
+        });
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////
+BST_TEST_CASE(testInterpretationOfSdpFilesRtcp)
+{
+    // See https://specs.amwa.tv/is-05/releases/v1.1.1/docs/4.1._Behaviour_-_RTP_Transport_Type.html#operation-with-rtcp
+
+    const auto session_description = sdp::parse_session_description(rtcp_test_sdp);
     const auto transport_params = nmos::get_session_description_transport_params(session_description);
 
-    BST_REQUIRE(test_params == transport_params);
+    BST_REQUIRE(make_rtcp_test_params() == transport_params);
+}
 
+////////////////////////////////////////////////////////////////////////////////////////////
+BST_TEST_CASE(testInterpretationOfSdpFilesRtcpPortOnly)
+{
     // RFC 3605 permits the address to be omitted, in which case the RTP connection address is used.
-    const std::string rtcp_attribute = "a=rtcp:5001 IN IP4 232.21.21.133";
-    auto default_address_sdp = test_sdp;
-    default_address_sdp.replace(default_address_sdp.find(rtcp_attribute), rtcp_attribute.size(), "a=rtcp:5001");
-    BST_REQUIRE(test_params == nmos::get_session_description_transport_params(sdp::parse_session_description(default_address_sdp)));
 
-    auto invalid_sdp = test_sdp;
-    invalid_sdp.replace(invalid_sdp.find(rtcp_attribute), rtcp_attribute.size(), "a=rtcp:5001 IN IP4");
+    const std::string rtcp_attribute = "a=rtcp:5001 IN IP4 232.21.21.133";
+    auto test_sdp = rtcp_test_sdp;
+    const auto rtcp_attribute_pos = test_sdp.find(rtcp_attribute);
+    BST_REQUIRE(std::string::npos != rtcp_attribute_pos);
+    test_sdp.replace(rtcp_attribute_pos, rtcp_attribute.size(), "a=rtcp:5001");
+
+    BST_REQUIRE(make_rtcp_test_params() == nmos::get_session_description_transport_params(sdp::parse_session_description(test_sdp)));
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////
+BST_TEST_CASE(testInterpretationOfSdpFilesRtcpMalformed)
+{
+    const std::string rtcp_attribute = "a=rtcp:5001 IN IP4 232.21.21.133";
+    const auto rtcp_attribute_pos = rtcp_test_sdp.find(rtcp_attribute);
+    BST_REQUIRE(std::string::npos != rtcp_attribute_pos);
+
+    auto invalid_sdp = rtcp_test_sdp;
+    invalid_sdp.replace(rtcp_attribute_pos, rtcp_attribute.size(), "a=rtcp:5001 IN IP4");
     BST_REQUIRE_THROW(sdp::parse_session_description(invalid_sdp), std::runtime_error);
 
-    invalid_sdp = test_sdp;
-    invalid_sdp.replace(invalid_sdp.find(rtcp_attribute), rtcp_attribute.size(), "a=rtcp:5001 IN");
+    invalid_sdp = rtcp_test_sdp;
+    invalid_sdp.replace(rtcp_attribute_pos, rtcp_attribute.size(), "a=rtcp:5001 IN");
     BST_REQUIRE_THROW(sdp::parse_session_description(invalid_sdp), std::runtime_error);
 }
 
