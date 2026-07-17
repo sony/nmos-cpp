@@ -41,6 +41,7 @@ set(NMOS_CPP_TEST_MDNS_TEST_HEADERS
 
 set(NMOS_CPP_TEST_NMOS_TEST_SOURCES
     nmos/test/api_utils_test.cpp
+    nmos/test/bcp_008_test.cpp
     nmos/test/capabilities_test.cpp
     nmos/test/channels_test.cpp
     nmos/test/condition_variable_test.cpp
