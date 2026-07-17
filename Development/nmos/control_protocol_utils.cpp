@@ -444,9 +444,12 @@ namespace nmos
                     return false;
                 }
 
-                // check whether the the status message changed when the status is unchanged
+                // check whether the status message changed when the status is unchanged
                 if (status == current_status.as_integer())
                 {
+                    // cancel any pending status updates if any
+                    set_property(resources, oid, status_pending_received_time_field_name, web::json::value::number(0), gate);
+
                     // has status message changed?
                     const auto& current_status_message = get_property(resources, oid, status_message_property_id, get_control_protocol_class_descriptor, gate);
                     if ((current_status_message.is_null() && status_message.size()) || (!current_status_message.is_null() && current_status_message.as_string() != status_message))
