@@ -2105,6 +2105,13 @@ nmos::connection_resource_auto_resolver make_node_implementation_auto_resolver(c
             const bool smpte2022_7 = 1 < transport_params.size();
             nmos::details::resolve_auto(transport_params[0], nmos::fields::interface_ip, [&] { return web::json::front(nmos::fields::constraint_enum(constraints.at(0).at(nmos::fields::interface_ip))); });
             if (smpte2022_7) nmos::details::resolve_auto(transport_params[1], nmos::fields::interface_ip, [&] { return web::json::back(nmos::fields::constraint_enum(constraints.at(1).at(nmos::fields::interface_ip))); });
+            for (auto& params : transport_params.as_array())
+            {
+                // The IS-05 receiver schema defines "auto" as the highest available number of dimensions.
+                nmos::details::resolve_auto(params, nmos::fields::fec_mode, [&] {
+                    return value::string(!nmos::fields::fec2D_destination_port(params).is_null() ? U("2D") : U("1D"));
+                });
+            }
             // lastly, apply the specification defaults for any properties not handled above
             nmos::resolve_rtp_auto(id_type.second, transport_params);
         }

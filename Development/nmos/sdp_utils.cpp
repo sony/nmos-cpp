@@ -521,6 +521,28 @@ namespace nmos
         size_t leg = 0;
         for (const auto& transport_param : transport_params.as_array())
         {
+            const sdp_parameters::fec_t* fec = nullptr;
+            size_t fec_repair_flow_count = 0;
+            if (nmos::fields::fec_enabled(transport_param))
+            {
+                const auto fec_parameters = 1 < transport_params.size()
+                    ? std::find_if(sdp_params.fec.begin(), sdp_params.fec.end(), [&](const sdp_parameters::fec_t& parameters)
+                        { return sdp_params.group.media_stream_ids[leg] == parameters.media_stream_id; })
+                    : sdp_params.fec.begin();
+                if (sdp_params.fec.end() == fec_parameters) throw details::sdp_creation_error("missing explicit RFC 6364 FEC parameters for transport leg");
+                fec = &*fec_parameters;
+
+                const auto& fec_mode = nmos::fields::fec_mode(transport_param);
+                const auto& fec2D_destination_port = nmos::fields::fec2D_destination_port(transport_param);
+                if (fec_mode.is_null() || U("1D") == fec_mode.as_string()) fec_repair_flow_count = 1;
+                else if (U("2D") == fec_mode.as_string()) fec_repair_flow_count = 2;
+                else if (U("auto") == fec_mode.as_string()) fec_repair_flow_count = !fec2D_destination_port.is_null() ? 2 : 1;
+                else throw details::sdp_creation_error("unsupported fec_mode");
+
+                if (fec->repair_flows.size() < fec_repair_flow_count) throw details::sdp_creation_error("not enough explicit RFC 6364 repair-flow parameters");
+                if (fec->media_stream_id.empty()) throw details::sdp_creation_error("missing FEC source media stream id");
+            }
+
             const auto& connection_address = details::get_connection_address(transport_param);
             const auto& address_type_multicast = details::get_address_type_multicast(connection_address);
 
@@ -684,25 +706,124 @@ namespace nmos
                 web::json::push_back(media_attributes, fmtp);
             }
 
-            // insert "media stream identification" if there is more than 1 leg
-            if (transport_params.size() > 1)
+            utility::string_t source_media_stream_id;
+            if (transport_params.size() > 1) source_media_stream_id = sdp_params.group.media_stream_ids[leg];
+            if (fec)
+            {
+                if (!source_media_stream_id.empty() && source_media_stream_id != fec->media_stream_id)
+                    throw details::sdp_creation_error("FEC and redundancy media stream ids differ for transport leg");
+                source_media_stream_id = fec->media_stream_id;
+
+                auto source_flow = value_of({
+                    { sdp::fields::source_id, fec->source_id },
+                    { fec->tag_length ? sdp::fields::tag_length.key : U(""), fec->tag_length ? *fec->tag_length : 0 }
+                }, keep_order);
+                web::json::push_back(media_attributes, value_of({
+                    { sdp::fields::name, sdp::attributes::fec_source_flow },
+                    { sdp::fields::value, std::move(source_flow) }
+                }, keep_order));
+            }
+
+            if (!source_media_stream_id.empty())
             {
                 // a=mid:<identification-tag>
                 // See https://tools.ietf.org/html/rfc5888
-                const auto& mid = sdp_params.group.media_stream_ids[leg];
+                if (transport_params.size() > 1) web::json::push_back(mids, source_media_stream_id);
 
-                // build up mids based on group::media_stream_ids
-                web::json::push_back(mids, mid);
-
-                web::json::push_back(
-                    media_attributes, value_of({
-                        { sdp::fields::name, sdp::attributes::mid },
-                        { sdp::fields::value, mid }
-                    }, keep_order)
-                );
+                web::json::push_back(media_attributes, value_of({
+                    { sdp::fields::name, sdp::attributes::mid },
+                    { sdp::fields::value, source_media_stream_id }
+                }, keep_order));
             }
 
             web::json::push_back(media_descriptions, std::move(media_description));
+
+            if (fec)
+            {
+                const auto& fec_destination_ip = nmos::fields::fec_destination_ip(transport_param);
+                if (fec_destination_ip.is_null() || !fec_destination_ip.is_string() || U("auto") == fec_destination_ip.as_string())
+                    throw details::sdp_creation_error("fec_destination_ip must be resolved before creating SDP");
+                const auto& repair_connection_address = fec_destination_ip.as_string();
+                const auto& repair_address_type_multicast = details::get_address_type_multicast(repair_connection_address);
+
+                for (size_t repair = 0; repair < fec_repair_flow_count; ++repair)
+                {
+                    const auto& repair_parameters = fec->repair_flows[repair];
+                    if (repair_parameters.media_stream_id.empty()) throw details::sdp_creation_error("missing FEC repair media stream id");
+                    const auto& destination_port = 0 == repair
+                        ? nmos::fields::fec1D_destination_port(transport_param)
+                        : nmos::fields::fec2D_destination_port(transport_param);
+                    if (!destination_port.is_number()) throw details::sdp_creation_error("FEC repair destination port must be resolved before creating SDP");
+
+                    auto repair_flow = value_of({
+                        { sdp::fields::encoding_id, repair_parameters.encoding_id }
+                    }, keep_order);
+                    if (repair_parameters.preference_level) repair_flow[sdp::fields::preference_level] = value::number(*repair_parameters.preference_level);
+
+                    const auto make_scheme_specific = [&](const sdp_parameters::fec_t::scheme_specific_t& elements)
+                    {
+                        auto result = value::array();
+                        for (const auto& element : elements)
+                        {
+                            web::json::push_back(result, value_of({
+                                { sdp::fields::name, element.first },
+                                { sdp::fields::value, element.second }
+                            }, keep_order));
+                        }
+                        return result;
+                    };
+                    if (!repair_parameters.sender_side_scheme_specific.empty()) repair_flow[sdp::fields::sender_side_scheme_specific] = make_scheme_specific(repair_parameters.sender_side_scheme_specific);
+                    if (!repair_parameters.scheme_specific.empty()) repair_flow[sdp::fields::scheme_specific] = make_scheme_specific(repair_parameters.scheme_specific);
+
+                    auto repair_attributes = value_of({
+                        value_of({
+                            { sdp::fields::name, sdp::attributes::fec_repair_flow },
+                            { sdp::fields::value, std::move(repair_flow) }
+                        }, keep_order)
+                    });
+                    if (repair_parameters.repair_window)
+                    {
+                        web::json::push_back(repair_attributes, value_of({
+                            { sdp::fields::name, sdp::attributes::repair_window },
+                            { sdp::fields::value, value_of({
+                                { sdp::fields::window_size, repair_parameters.repair_window->size },
+                                { sdp::fields::window_unit, repair_parameters.repair_window->unit.name }
+                            }, keep_order) }
+                        }, keep_order));
+                    }
+                    web::json::push_back(repair_attributes, value_of({
+                        { sdp::fields::name, sdp::attributes::mid },
+                        { sdp::fields::value, repair_parameters.media_stream_id }
+                    }, keep_order));
+
+                    web::json::push_back(media_descriptions, value_of({
+                        { sdp::fields::media, value_of({
+                            { sdp::fields::media_type, sdp::media_types::application.name },
+                            { sdp::fields::port, destination_port },
+                            { sdp::fields::protocol, sdp::protocols::UDP_FEC.name },
+                            { sdp::fields::formats, value::array() }
+                        }, keep_order) },
+                        { sdp::fields::connection_data, value_of({
+                            value_of({
+                                { sdp::fields::network_type, sdp::network_types::internet.name },
+                                { sdp::fields::address_type, repair_address_type_multicast.first.name },
+                                { sdp::fields::connection_address, sdp::address_types::IP4 == repair_address_type_multicast.first && repair_address_type_multicast.second
+                                    ? repair_connection_address + U("/") + utility::ostringstreamed(sdp_params.connection_data.ttl)
+                                    : repair_connection_address }
+                            }, keep_order)
+                        }) },
+                        { sdp::fields::attributes, std::move(repair_attributes) }
+                    }, keep_order));
+
+                    web::json::push_back(session_attributes, value_of({
+                        { sdp::fields::name, sdp::attributes::group },
+                        { sdp::fields::value, value_of({
+                            { sdp::fields::semantics, sdp::group_semantics::fec_fr.name },
+                            { sdp::fields::mids, value_of({ source_media_stream_id, repair_parameters.media_stream_id }) }
+                        }, keep_order) }
+                    }, keep_order));
+                }
+            }
 
             ++leg;
         }
@@ -935,6 +1056,155 @@ namespace nmos
                 params[nmos::fields::interface_ip] = value::string(address);
             }
         }
+
+        struct is05_fec_repair_flow
+        {
+            sdp_parameters::fec_t::repair_flow_t parameters;
+            utility::string_t destination_ip;
+            uint64_t destination_port;
+
+            is05_fec_repair_flow(const sdp_parameters::fec_t::repair_flow_t& parameters, const utility::string_t& destination_ip, uint64_t destination_port)
+                : parameters(parameters)
+                , destination_ip(destination_ip)
+                , destination_port(destination_port)
+            {}
+        };
+
+        struct is05_fec_source_flow
+        {
+            sdp_parameters::fec_t parameters;
+            std::vector<is05_fec_repair_flow> repair_flows;
+        };
+
+        utility::string_t get_media_stream_id(const web::json::value& media_description)
+        {
+            const auto& attributes = sdp::fields::attributes(media_description).as_array();
+            const auto mid = sdp::find_name(attributes, sdp::attributes::mid);
+            return attributes.end() != mid ? sdp::fields::value(*mid).as_string() : utility::string_t{};
+        }
+
+        sdp_parameters::fec_t::scheme_specific_t get_fec_scheme_specific(const web::json::array& elements)
+        {
+            return boost::copy_range<sdp_parameters::fec_t::scheme_specific_t>(elements | boost::adaptors::transformed([](const web::json::value& element)
+            {
+                return sdp_parameters::fec_t::scheme_specific_t::value_type{ sdp::fields::name(element), sdp::fields::value(element).as_string() };
+            }));
+        }
+
+        utility::string_t get_media_connection_address(const web::json::value& session_description, const web::json::value& media_description)
+        {
+            const web::json::value* connection_data = &sdp::fields::connection_data(media_description);
+            if (connection_data->is_null() || 0 == connection_data->size()) connection_data = &sdp::fields::connection_data(session_description);
+            if (connection_data->is_null() || 0 == connection_data->size()) throw sdp_processing_error("missing FEC repair-flow connection data");
+
+            const auto& connection = connection_data->is_array() ? connection_data->at(0) : *connection_data;
+            const auto address_type = sdp::address_type{ sdp::fields::address_type(connection) };
+            return parse_connection_address(address_type, sdp::fields::connection_address(connection)).base_address;
+        }
+
+        std::vector<is05_fec_source_flow> get_is05_fec_source_flows(const web::json::value& session_description)
+        {
+            const auto& session_attributes = sdp::fields::attributes(session_description).as_array();
+            const auto has_fec_group = session_attributes.end() != std::find_if(session_attributes.begin(), session_attributes.end(), [](const web::json::value& attribute)
+            {
+                return sdp::attributes::group == sdp::fields::name(attribute)
+                    && sdp::group_semantics::fec_fr == sdp::group_semantics_type{ sdp::fields::semantics(sdp::fields::value(attribute)) };
+            });
+            if (!has_fec_group) return{};
+
+            const auto& media_descriptions = sdp::fields::media_descriptions(session_description).as_array();
+            std::map<utility::string_t, const web::json::value*> media_by_mid;
+            for (const auto& media_description : media_descriptions)
+            {
+                const auto mid = get_media_stream_id(media_description);
+                if (mid.empty()) continue;
+                const auto inserted = media_by_mid.insert({ mid, &media_description });
+                if (!inserted.second) inserted.first->second = nullptr;
+            }
+
+            std::map<utility::string_t, is05_fec_source_flow> source_flows;
+            for (const auto& attribute : session_attributes)
+            {
+                if (sdp::attributes::group != sdp::fields::name(attribute)) continue;
+                const auto& group = sdp::fields::value(attribute);
+                if (sdp::group_semantics::fec_fr != sdp::group_semantics_type{ sdp::fields::semantics(group) }) continue;
+
+                const auto& mids = sdp::fields::mids(group);
+                // Other RFC 6364 topologies are intentionally left to the generic sdp/ representation.
+                if (2 != mids.size()) continue;
+
+                const auto source_mid = mids.at(0).as_string();
+                const auto repair_mid = mids.at(1).as_string();
+                const auto source = media_by_mid.find(source_mid);
+                const auto repair = media_by_mid.find(repair_mid);
+                if (media_by_mid.end() == source || media_by_mid.end() == repair) throw sdp_processing_error("FEC group references a missing media description");
+                if (!source->second || !repair->second) throw sdp_processing_error("FEC group references a duplicate media stream id");
+
+                const auto& source_media = sdp::fields::media(*source->second);
+                const auto source_protocol = sdp::protocol{ sdp::fields::protocol(source_media) };
+                const auto source_media_type = sdp::media_type{ sdp::fields::media_type(source_media) };
+                if (sdp::protocols::RTP_AVP != source_protocol || !(sdp::media_types::video == source_media_type || sdp::media_types::audio == source_media_type)) continue;
+
+                const auto& repair_media = sdp::fields::media(*repair->second);
+                if (sdp::protocols::UDP_FEC != sdp::protocol{ sdp::fields::protocol(repair_media) }
+                    || sdp::media_types::application != sdp::media_type{ sdp::fields::media_type(repair_media) })
+                {
+                    throw sdp_processing_error("IS-05 FEC repair flow must use application UDP/FEC");
+                }
+
+                const auto& source_attributes = sdp::fields::attributes(*source->second).as_array();
+                const auto source_flow_attribute = sdp::find_name(source_attributes, sdp::attributes::fec_source_flow);
+                if (source_attributes.end() == source_flow_attribute) throw sdp_processing_error("missing fec-source-flow attribute");
+                const auto& source_flow_value = sdp::fields::value(*source_flow_attribute);
+
+                auto source_flow = source_flows.find(source_mid);
+                if (source_flows.end() == source_flow)
+                {
+                    is05_fec_source_flow value;
+                    value.parameters.source_id = (uint32_t)sdp::fields::source_id(source_flow_value);
+                    if (source_flow_value.has_field(sdp::fields::tag_length)) value.parameters.tag_length = sdp::fields::tag_length(source_flow_value);
+                    value.parameters.media_stream_id = source_mid;
+                    source_flow = source_flows.insert({ source_mid, std::move(value) }).first;
+                }
+
+                if (2 <= source_flow->second.repair_flows.size()) throw sdp_processing_error("IS-05 supports at most two FEC repair flows per RTP leg");
+                if (source_flow->second.repair_flows.end() != std::find_if(source_flow->second.repair_flows.begin(), source_flow->second.repair_flows.end(), [&](const is05_fec_repair_flow& flow)
+                    { return repair_mid == flow.parameters.media_stream_id; })) throw sdp_processing_error("duplicate FEC repair flow");
+
+                const auto& repair_attributes = sdp::fields::attributes(*repair->second).as_array();
+                const auto repair_flow_attribute = sdp::find_name(repair_attributes, sdp::attributes::fec_repair_flow);
+                if (repair_attributes.end() == repair_flow_attribute) throw sdp_processing_error("missing fec-repair-flow attribute");
+                const auto& repair_flow_value = sdp::fields::value(*repair_flow_attribute);
+
+                sdp_parameters::fec_t::repair_flow_t repair_parameters;
+                repair_parameters.encoding_id = sdp::fields::encoding_id(repair_flow_value);
+                if (repair_flow_value.has_field(sdp::fields::preference_level)) repair_parameters.preference_level = sdp::fields::preference_level(repair_flow_value);
+                if (repair_flow_value.has_field(sdp::fields::sender_side_scheme_specific)) repair_parameters.sender_side_scheme_specific = get_fec_scheme_specific(sdp::fields::sender_side_scheme_specific(repair_flow_value));
+                if (repair_flow_value.has_field(sdp::fields::scheme_specific)) repair_parameters.scheme_specific = get_fec_scheme_specific(sdp::fields::scheme_specific(repair_flow_value));
+                repair_parameters.media_stream_id = repair_mid;
+
+                const auto repair_window = sdp::find_name(repair_attributes, sdp::attributes::repair_window);
+                if (repair_attributes.end() != repair_window)
+                {
+                    const auto& repair_window_value = sdp::fields::value(*repair_window);
+                    repair_parameters.repair_window = sdp_parameters::fec_t::repair_window_t{
+                        (uint32_t)sdp::fields::window_size(repair_window_value),
+                        sdp::repair_window_unit{ sdp::fields::window_unit(repair_window_value) }
+                    };
+                }
+
+                source_flow->second.parameters.repair_flows.push_back(repair_parameters);
+                source_flow->second.repair_flows.push_back({ repair_parameters, get_media_connection_address(session_description, *repair->second), sdp::fields::port(repair_media) });
+            }
+
+            std::vector<is05_fec_source_flow> result;
+            for (const auto& media_description : media_descriptions)
+            {
+                const auto source = source_flows.find(get_media_stream_id(media_description));
+                if (source_flows.end() != source) result.push_back(source->second);
+            }
+            return result;
+        }
     }
 
     // Get IS-05 transport parameters from the json representation of an SDP file, e.g. from sdp::parse_session_description
@@ -952,15 +1222,16 @@ namespace nmos
         // * Unicast
         // * Source Specific Multicast
         // * Any Source Multicast
+        // * Operation with SMPTE 2022-5
         // * Operation with SMPTE 2022-7 - Separate Source Addresses
         // * Operation with SMPTE 2022-7 - Separate Destination Addresses
 
         // The following cases are not yet handled:
-        // * Operation with SMPTE 2022-5
         // * Operation with SMPTE 2022-7 - Temporal Redundancy
         // * Operation with RTCP
 
         auto& media_descriptions = sdp::fields::media_descriptions(session_description);
+        const auto fec_source_flows = details::get_is05_fec_source_flows(session_description);
 
         for (size_t leg = 0; leg < 2; ++leg)
         {
@@ -1048,6 +1319,28 @@ namespace nmos
 
                 params[nmos::fields::rtp_enabled] = value::boolean(true);
 
+                const auto media_stream_id = details::get_media_stream_id(media_description);
+                const auto fec_source_flow = std::find_if(fec_source_flows.begin(), fec_source_flows.end(), [&](const details::is05_fec_source_flow& flow)
+                    { return media_stream_id == flow.parameters.media_stream_id; });
+                if (fec_source_flows.end() != fec_source_flow)
+                {
+                    if (fec_source_flow->repair_flows.empty()) throw details::sdp_processing_error("FEC source flow has no repair flow");
+                    const auto& fec_destination_ip = fec_source_flow->repair_flows.front().destination_ip;
+                    if (fec_source_flow->repair_flows.end() != std::find_if(fec_source_flow->repair_flows.begin(), fec_source_flow->repair_flows.end(), [&](const details::is05_fec_repair_flow& flow)
+                        { return fec_destination_ip != flow.destination_ip; }))
+                    {
+                        throw details::sdp_processing_error("IS-05 cannot represent FEC repair flows with different destination addresses");
+                    }
+
+                    params[nmos::fields::fec_enabled] = value::boolean(true);
+                    params[nmos::fields::fec_mode] = value::string(U("auto"));
+                    params[nmos::fields::fec_destination_ip] = value::string(fec_destination_ip);
+                    params[nmos::fields::fec1D_destination_port] = value::number(fec_source_flow->repair_flows.at(0).destination_port);
+                    params[nmos::fields::fec2D_destination_port] = 1 < fec_source_flow->repair_flows.size()
+                        ? value::number(fec_source_flow->repair_flows.at(1).destination_port)
+                        : value::null();
+                }
+
                 web::json::push_back(transport_params, params);
 
                 break;
@@ -1109,7 +1402,13 @@ namespace nmos
         // a=group:<semantics>[ <identification-tag>]*
         // See https://tools.ietf.org/html/rfc5888
         auto& session_attributes = sdp::fields::attributes(sdp).as_array();
-        auto group = sdp::find_name(session_attributes, sdp::attributes::group);
+        // RFC 6364 FEC groups are represented separately below; retain the non-FEC
+        // grouping (normally DUP for ST 2022-7) in the existing group member.
+        auto group = std::find_if(session_attributes.begin(), session_attributes.end(), [](const value& attribute)
+        {
+            return sdp::attributes::group == sdp::fields::name(attribute)
+                && sdp::group_semantics::fec_fr != sdp::group_semantics_type{ sdp::fields::semantics(sdp::fields::value(attribute)) };
+        });
         if (session_attributes.end() != group)
         {
             const auto& value = sdp::fields::value(*group);
@@ -1125,9 +1424,21 @@ namespace nmos
         // See https://tools.ietf.org/html/rfc4566#section-5
         const auto& media_descriptions = sdp::fields::media_descriptions(sdp);
 
+        // IS-05-compatible RFC 6364 FEC source and repair flows
+        const auto fec_source_flows = details::get_is05_fec_source_flows(sdp);
+        sdp_params.fec = boost::copy_range<std::vector<sdp_parameters::fec_t>>(fec_source_flows | boost::adaptors::transformed([](const details::is05_fec_source_flow& flow)
+        {
+            return flow.parameters;
+        }));
+
         // ts-refclk attributes
         // See https://tools.ietf.org/html/rfc7273
-        sdp_params.ts_refclk = boost::copy_range<std::vector<sdp_parameters::ts_refclk_t>>(media_descriptions.as_array() | boost::adaptors::transformed([&sdp](const value& media_description) -> sdp_parameters::ts_refclk_t
+        sdp_params.ts_refclk = boost::copy_range<std::vector<sdp_parameters::ts_refclk_t>>(media_descriptions.as_array()
+            | boost::adaptors::filtered([](const value& media_description)
+            {
+                return sdp::protocols::RTP_AVP == sdp::protocol{ sdp::fields::protocol(sdp::fields::media(media_description)) };
+            })
+            | boost::adaptors::transformed([&sdp](const value& media_description) -> sdp_parameters::ts_refclk_t
         {
             auto& media_attributes = sdp::fields::attributes(media_description).as_array();
             auto ts_refclk = sdp::find_name(media_attributes, sdp::attributes::ts_refclk);
@@ -1158,8 +1469,12 @@ namespace nmos
 
         // hmm, for simplicity, the remainder of this code assumes that format-related information must be the same
         // in every media description, so reads it only from the first one!
-        if (0 == media_descriptions.size()) throw details::sdp_processing_error("missing media descriptions");
-        const auto& media_description = media_descriptions.at(0);
+        const auto media_description_ = std::find_if(media_descriptions.as_array().begin(), media_descriptions.as_array().end(), [](const value& media_description)
+        {
+            return sdp::protocols::RTP_AVP == sdp::protocol{ sdp::fields::protocol(sdp::fields::media(media_description)) };
+        });
+        if (media_descriptions.as_array().end() == media_description_) throw details::sdp_processing_error("missing RTP media description");
+        const auto& media_description = *media_description_;
 
         // Connection Data
         // get default multicast_ip via Connection Data
