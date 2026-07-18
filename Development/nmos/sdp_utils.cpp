@@ -447,21 +447,6 @@ namespace nmos
             return destination_ip.as_string();
         }
 
-        size_t get_ssrc_duplication_count(const web::json::value& media_description)
-        {
-            const auto& attributes = sdp::fields::attributes(media_description);
-            if (attributes.is_null()) return 0;
-
-            const auto& media_attributes = attributes.as_array();
-            const auto ssrc_group = sdp::find_name(media_attributes, sdp::attributes::ssrc_group);
-            if (media_attributes.end() == ssrc_group) return 0;
-
-            const auto& value = sdp::fields::value(*ssrc_group);
-            return sdp::group_semantics::duplication == sdp::group_semantics_type{ sdp::fields::semantics(value) }
-                && 2 == sdp::fields::ssrc_ids(value).size()
-                ? 2
-                : 0;
-        }
     }
 
     // Make a json representation of an SDP file, e.g. for sdp::make_session_description, from the specified parameters; explicitly specify whether 'source-filter' attributes are included to override the default behaviour
@@ -729,8 +714,10 @@ namespace nmos
                             { sdp::fields::name, sdp::attributes::ssrc },
                             { sdp::fields::value, value_of({
                                 { sdp::fields::ssrc_id, synchronization_source.id },
-                                { sdp::fields::ssrc_attribute, U("cname") },
-                                { sdp::fields::ssrc_attribute_value, synchronization_source.cname }
+                                { sdp::fields::attribute, value_of({
+                                    { sdp::fields::name, U("cname") },
+                                    { sdp::fields::value, synchronization_source.cname }
+                                }, keep_order) }
                             }, keep_order) }
                         }, keep_order)
                     );
@@ -1094,10 +1081,20 @@ namespace nmos
                 // take account of the number of source addresses (cf. Operation with SMPTE 2022-7 - Separate Source Addresses)
 
                 auto& media_attributes = sdp::fields::attributes(media_description);
-                const auto ssrc_duplication_count = details::get_ssrc_duplication_count(media_description);
+                size_t ssrc_duplication_count = 0;
                 if (!media_attributes.is_null())
                 {
                     auto& ma = media_attributes.as_array();
+
+                    const auto ssrc_group = sdp::find_name(ma, sdp::attributes::ssrc_group);
+                    if (ma.end() != ssrc_group)
+                    {
+                        const auto& value = sdp::fields::value(*ssrc_group);
+                        if (sdp::group_semantics::duplication == sdp::group_semantics_type{ sdp::fields::semantics(value) })
+                        {
+                            ssrc_duplication_count = sdp::fields::ssrc_ids(value).size();
+                        }
+                    }
 
                     // hmm, this code assumes that <filter-mode> is 'incl' and ought to check that <nettype>, <address-types> and <dest-address>
                     // match the connection address, and fall back to any "session-level" source-filter values if they don't match
@@ -1237,11 +1234,12 @@ namespace nmos
                 {
                     if (sdp::attributes::ssrc != sdp::fields::name(attribute)) continue;
                     const auto& value = sdp::fields::value(attribute);
+                    const auto& source_attribute = sdp::fields::attribute(value);
                     if (id_value == sdp::fields::ssrc_id(value)
-                        && U("cname") == sdp::fields::ssrc_attribute(value)
-                        && !sdp::fields::ssrc_attribute_value(value).is_null())
+                        && U("cname") == sdp::fields::name(source_attribute)
+                        && !sdp::fields::value(source_attribute).is_null())
                     {
-                        cname = sdp::fields::ssrc_attribute_value(value).as_string();
+                        cname = sdp::fields::value(source_attribute).as_string();
                         break;
                     }
                 }

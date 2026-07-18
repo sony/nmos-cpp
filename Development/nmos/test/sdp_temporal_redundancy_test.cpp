@@ -38,6 +38,14 @@ a=mid:Ch1
     const auto session_description = sdp::parse_session_description(test_sdp);
     BST_REQUIRE(test_params == nmos::get_session_description_transport_params(session_description));
 
+    const auto& media_description = sdp::fields::media_descriptions(session_description).at(0);
+    const auto& attributes = sdp::fields::attributes(media_description).as_array();
+    const auto synchronization_source = sdp::find_name(attributes, sdp::attributes::ssrc);
+    BST_REQUIRE(attributes.end() != synchronization_source);
+    const auto& source_attribute = sdp::fields::attribute(sdp::fields::value(*synchronization_source));
+    BST_REQUIRE_EQUAL(U("cname"), sdp::fields::name(source_attribute));
+    BST_REQUIRE_EQUAL(U("ch1a@example.com"), sdp::fields::value(source_attribute).as_string());
+
     const auto sdp_params = nmos::get_session_description_sdp_parameters(session_description);
     BST_REQUIRE_EQUAL(2, sdp_params.temporal_redundancy.synchronization_sources.size());
     BST_REQUIRE_EQUAL(1000, sdp_params.temporal_redundancy.synchronization_sources.at(0).id);

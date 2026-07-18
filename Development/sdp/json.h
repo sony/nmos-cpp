@@ -182,8 +182,7 @@ namespace sdp
         // a=ssrc-group:<semantics> <ssrc-id>...
         // See https://tools.ietf.org/html/rfc5576 and https://tools.ietf.org/html/rfc7104
         const web::json::field<uint64_t> ssrc_id{ U("ssrc_id") };
-        const web::json::field_as_string ssrc_attribute{ U("ssrc_attribute") };
-        const web::json::field_as_value_or ssrc_attribute_value{ U("ssrc_attribute_value"), {} };
+        const web::json::field_as_value attribute{ U("attribute") };
         const web::json::field_as_array ssrc_ids{ U("ssrc_ids") };
         const web::json::field<uint64_t> duplication_delay{ U("duplication_delay") };
 

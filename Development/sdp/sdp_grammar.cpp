@@ -684,8 +684,9 @@ namespace sdp
                         [](const web::json::value& v) {
                             std::string s;
                             s += digits_converter.format(v.at(sdp::fields::ssrc_id));
-                            s += " " + string_converter.format(v.at(sdp::fields::ssrc_attribute));
-                            const auto& attribute_value = sdp::fields::ssrc_attribute_value(v);
+                            const auto& attribute = sdp::fields::attribute(v);
+                            s += " " + string_converter.format(attribute.at(sdp::fields::name));
+                            const auto& attribute_value = sdp::fields::value(attribute);
                             if (!attribute_value.is_null()) s += ":" + string_converter.format(attribute_value);
                             return s;
                         },
@@ -693,11 +694,14 @@ namespace sdp
                             auto v = web::json::value::object(keep_order);
                             size_t pos = 0;
                             v[sdp::fields::ssrc_id] = digits_converter.parse(substr_find(s, pos, " "));
-                            if (std::string::npos == pos) throw sdp_parse_error("expected a value for " + utility::us2s(sdp::fields::ssrc_attribute));
-                            const auto attribute = substr_find(s, pos);
-                            const auto colon = attribute.find(':');
-                            v[sdp::fields::ssrc_attribute] = string_converter.parse(attribute.substr(0, colon));
-                            if (std::string::npos != colon) v[sdp::fields::ssrc_attribute_value] = string_converter.parse(attribute.substr(colon + 1));
+                            if (std::string::npos == pos) throw sdp_parse_error("expected a value for " + utility::us2s(sdp::fields::attribute));
+                            const auto attribute_text = substr_find(s, pos);
+                            const auto colon = attribute_text.find(':');
+                            auto attribute = web::json::value_of({
+                                { sdp::fields::name, string_converter.parse(attribute_text.substr(0, colon)) }
+                            }, keep_order);
+                            if (std::string::npos != colon) attribute[sdp::fields::value] = string_converter.parse(attribute_text.substr(colon + 1));
+                            v[sdp::fields::attribute] = std::move(attribute);
                             return v;
                         },
                     }
