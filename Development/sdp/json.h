@@ -140,6 +140,11 @@ namespace sdp
         const utility::string_t group{ U("group") };
         const utility::string_t mid{ U("mid") };
 
+        // See https://tools.ietf.org/html/rfc6364
+        const utility::string_t fec_source_flow{ U("fec-source-flow") };
+        const utility::string_t fec_repair_flow{ U("fec-repair-flow") };
+        const utility::string_t repair_window{ U("repair-window") };
+
         // See https://tools.ietf.org/html/rfc7273
         const utility::string_t ts_refclk{ U("ts-refclk") };
         const utility::string_t mediaclk{ U("mediaclk") };
@@ -172,6 +177,19 @@ namespace sdp
         // See https://tools.ietf.org/html/rfc5888
         const web::json::field_as_string semantics{ U("semantics") }; // see sdp::group_semantics
         const web::json::field_as_array mids{ U("mids") };
+
+        // a=fec-source-flow: id=<source id>[; tag-len=<tag length>]
+        // a=fec-repair-flow: encoding-id=<encoding id>[; preference-lvl=<preference>][; ss-fssi=<elements>][; fssi=<elements>]
+        // a=repair-window:<window size><unit>
+        // See https://tools.ietf.org/html/rfc6364
+        const web::json::field<uint64_t> source_id{ U("source_id") };
+        const web::json::field<uint64_t> tag_length{ U("tag_length") };
+        const web::json::field<uint64_t> encoding_id{ U("encoding_id") };
+        const web::json::field<uint64_t> preference_level{ U("preference_level") };
+        const web::json::field_as_array sender_side_scheme_specific{ U("sender_side_scheme_specific") };
+        const web::json::field_as_array scheme_specific{ U("scheme_specific") };
+        const web::json::field<uint64_t> window_size{ U("window_size") };
+        const web::json::field_as_string window_unit{ U("window_unit") }; // see sdp::repair_window_units
 
         // a=source-filter: <filter-mode> <nettype> <address-types> <dest-address> <src-list>
         // See https://tools.ietf.org/html/rfc4570
@@ -283,6 +301,10 @@ namespace sdp
         const protocol RTP_SAVP{ U("RTP/SAVP") };
         // unspecified protocol running over UDP
         const protocol udp{ U("udp") };
+        // FEC Framework input and repair packet formats
+        // See https://tools.ietf.org/html/rfc6364#section-4.1
+        const protocol FEC_UDP{ U("FEC/UDP") };
+        const protocol UDP_FEC{ U("UDP/FEC") };
     }
 
     // Bandwidth Specifiers
@@ -364,6 +386,20 @@ namespace sdp
     {
         // See https://tools.ietf.org/html/rfc7104
         const group_semantics_type duplication{ U("DUP") };
+        // See https://tools.ietf.org/html/rfc5956 and https://tools.ietf.org/html/rfc6364
+        const group_semantics_type fec_fr{ U("FEC-FR") };
+    }
+}
+
+// Forward Error Correction (FEC) Framework Repair Window Units
+// See https://tools.ietf.org/html/rfc6364#section-4.6
+namespace sdp
+{
+    DEFINE_STRING_ENUM(repair_window_unit)
+    namespace repair_window_units
+    {
+        const repair_window_unit milliseconds{ U("ms") };
+        const repair_window_unit microseconds{ U("us") };
     }
 }
 
