@@ -75,10 +75,12 @@ If using Conan, this section can be skipped.
 
 1. Download a [recent release](http://www.boost.org/users/download/)
    Notes:
-   - Several Boost releases have been tested, including Version 1.91.0 (latest release at the time) and Version 1.54.0
+   - Several Boost releases have been tested, including Version 1.86.0 and Version 1.54.0
+   - Boost 1.87+ is not yet supported: it removes deprecated Asio APIs still required by
+     WebSocket++ 0.8.2 (and some nmos-cpp Asio usage)
    - On Linux distributions, a Boost libraries package may already be installed, e.g. Ubuntu 14.04 LTS has Version 1.54.0
      (Ubuntu 14.04 is no longer exercised in CI)
-2. Expand the archive so that, for example, the boost\_1\_91\_0 directory is at the same level as the nmos-cpp directory
+2. Expand the archive so that, for example, the boost\_1\_86\_0 directory is at the same level as the nmos-cpp directory
 3. Build and stage (or install) the following Boost libraries for your platform/toolset:
    - atomic
    - chrono
