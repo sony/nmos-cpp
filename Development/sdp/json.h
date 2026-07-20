@@ -140,6 +140,11 @@ namespace sdp
         const utility::string_t group{ U("group") };
         const utility::string_t mid{ U("mid") };
 
+        // See https://tools.ietf.org/html/rfc5576 and https://tools.ietf.org/html/rfc7104
+        const utility::string_t ssrc{ U("ssrc") };
+        const utility::string_t ssrc_group{ U("ssrc-group") };
+        const utility::string_t duplication_delay{ U("duplication-delay") };
+
         // See https://tools.ietf.org/html/rfc7273
         const utility::string_t ts_refclk{ U("ts-refclk") };
         const utility::string_t mediaclk{ U("mediaclk") };
@@ -172,6 +177,14 @@ namespace sdp
         // See https://tools.ietf.org/html/rfc5888
         const web::json::field_as_string semantics{ U("semantics") }; // see sdp::group_semantics
         const web::json::field_as_array mids{ U("mids") };
+
+        // a=ssrc:<ssrc-id> <attribute>[:<value>]
+        // a=ssrc-group:<semantics> <ssrc-id>...
+        // See https://tools.ietf.org/html/rfc5576 and https://tools.ietf.org/html/rfc7104
+        const web::json::field<uint64_t> ssrc_id{ U("ssrc_id") };
+        const web::json::field_as_value attribute{ U("attribute") };
+        const web::json::field_as_array ssrc_ids{ U("ssrc_ids") };
+        const web::json::field<uint64_t> duplication_delay{ U("duplication_delay") };
 
         // a=source-filter: <filter-mode> <nettype> <address-types> <dest-address> <src-list>
         // See https://tools.ietf.org/html/rfc4570
