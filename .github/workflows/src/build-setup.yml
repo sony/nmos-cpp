@@ -183,12 +183,14 @@
 # windows-2025 uses VS 2026 (MSVC 195). Conan Center prebuilts are built for
 # MSVC 193/194; pin 194 so conan install downloads packages instead of building
 # from source. Command-line -s overrides cmake-conan's auto-cmake profile (which
-# would otherwise report 195). See actions/runner-images#14017.
+# would otherwise report 195). vs_version=18 is required when a package still
+# builds from source: Conan maps compiler.version=194 → VS 17, which is not
+# installed on this image. See actions/runner-images#14017.
 - name: pin conan msvc 194 (windows-2025)
   if: matrix.os == 'windows-2025' && matrix.use_conan == true
   shell: bash
   run: |
-    echo "CONAN_INSTALL_EXTRA_ARGS=${CONAN_INSTALL_EXTRA_ARGS:+$CONAN_INSTALL_EXTRA_ARGS\;}-s\;compiler.version=194" >> $GITHUB_ENV
+    echo "CONAN_INSTALL_EXTRA_ARGS=${CONAN_INSTALL_EXTRA_ARGS:+$CONAN_INSTALL_EXTRA_ARGS\;}-s\;compiler.version=194\;-c\;tools.microsoft.msbuild:vs_version=18" >> $GITHUB_ENV
 
 - name: enable conan
   if: matrix.use_conan == true
