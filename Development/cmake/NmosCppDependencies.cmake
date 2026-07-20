@@ -1,7 +1,7 @@
 # Boost
 
 set(BOOST_VERSION_MIN "1.54.0")
-set(BOOST_VERSION_CUR "1.83.0")
+set(BOOST_VERSION_CUR "1.91.0")
 # note: 1.57.0 doesn't work due to https://svn.boost.org/trac10/ticket/10754
 # note: some components are only required for one platform or other
 # so find_package(Boost) is called after adding those components
@@ -16,8 +16,10 @@ endif()
 # since std::shared_mutex is not available until C++17
 # see bst/shared_mutex.h
 list(APPEND FIND_BOOST_COMPONENTS thread)
-find_package(Boost ${BOOST_VERSION_MIN} REQUIRED COMPONENTS ${FIND_BOOST_COMPONENTS})
-# cope with historical versions of FindBoost.cmake
+# Prefer BoostConfig.cmake (CMake 3.30+ / CMP0167). Legacy FindBoost is removed
+# there; Config mode is what Conan CMakeDeps and modern Boost installs provide.
+find_package(Boost ${BOOST_VERSION_MIN} CONFIG REQUIRED COMPONENTS ${FIND_BOOST_COMPONENTS})
+# cope with historical versions of FindBoost.cmake / BoostConfig.cmake
 if(DEFINED Boost_VERSION_STRING)
     set(Boost_VERSION_COMPONENTS "${Boost_VERSION_STRING}")
 elseif(DEFINED Boost_VERSION_MAJOR)

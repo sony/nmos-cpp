@@ -17,7 +17,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-22.04, ubuntu-24.04, windows-2022]
+        os: [ubuntu-22.04, ubuntu-24.04, windows-2025]
         install_mdns: [false, true]
         use_conan: [true]
         force_cpprest_asio: [false, true]
@@ -25,10 +25,10 @@ jobs:
         enable_authorization: [false, true]
         exclude:
           # install_mdns is only meaningful on Linux
-          - os: windows-2022
+          - os: windows-2025
             install_mdns: true
           # for now, unicast DNS-SD tests are only implemented on Linux
-          - os: windows-2022
+          - os: windows-2025
             dns_sd_mode: unicast
           - os: ubuntu-22.04
             enable_authorization: false
@@ -45,12 +45,20 @@ jobs:
             install_mdns: true
           - os: ubuntu-24.04
             dns_sd_mode: unicast
-            # don't force ASIO for ubuntu platforms
+          # don't force ASIO for ubuntu platforms
           - os: ubuntu-24.04
             force_cpprest_asio: true
-          
+        include:
+          # keep one VS 2022 job while validating VS 2026 on windows-2025
+          - os: windows-2022
+            install_mdns: false
+            use_conan: true
+            force_cpprest_asio: false
+            dns_sd_mode: multicast
+            enable_authorization: true
+
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v6
 
     - name: set environment variables
       shell: bash
@@ -101,13 +109,8 @@ jobs:
       run: |
         pip install conan~=2.20
 
-    - name: 'ubuntu-14.04: install cmake'
-      if: matrix.os == 'ubuntu-14.04'
-      uses: lukka/get-cmake@v3.24.2
-
     - name: install cmake
-      if: matrix.os != 'ubuntu-14.04'
-      uses: lukka/get-cmake@v3.28.3
+      uses: lukka/get-cmake@v4.4.0
 
     - name: setup bash path
       working-directory: ${{ env.GITHUB_WORKSPACE }}
@@ -122,7 +125,7 @@ jobs:
       run: |
         # set compiler to cl.exe to avoid building with gcc.
         echo "CMAKE_COMPILER_ARGS=-DCMAKE_C_COMPILER=cl.exe -DCMAKE_CXX_COMPILER=cl.exe" >> $env:GITHUB_ENV
-        # disable unused network interface (may not exist on windows-2022 runners)
+        # disable unused network interface (may not exist on Windows runners)
         $nat = Get-NetAdapter -Name 'vEthernet (nat)' -ErrorAction SilentlyContinue
         if ($nat) {
           netsh interface set interface name="vEthernet (nat)" admin=DISABLED
@@ -283,6 +286,16 @@ jobs:
       run: |
         echo "CONAN_INSTALL_EXTRA_ARGS=--options\;cpprestsdk/*:http_client_impl=asio\;--options\;cpprestsdk/*:http_listener_impl=asio" >> $GITHUB_ENV
 
+    # windows-2025 uses VS 2026 (MSVC 195). Conan Center prebuilts are built for
+    # MSVC 193/194; pin 194 so conan install downloads packages instead of building
+    # from source. Command-line -s overrides cmake-conan's auto-cmake profile (which
+    # would otherwise report 195). See actions/runner-images#14017.
+    - name: pin conan msvc 194 (windows-2025)
+      if: matrix.os == 'windows-2025' && matrix.use_conan == true
+      shell: bash
+      run: |
+        echo "CONAN_INSTALL_EXTRA_ARGS=${CONAN_INSTALL_EXTRA_ARGS:+$CONAN_INSTALL_EXTRA_ARGS\;}-s\;compiler.version=194" >> $GITHUB_ENV
+
     - name: enable conan
       if: matrix.use_conan == true
       shell: bash
@@ -298,12 +311,16 @@ jobs:
       uses: ilammy/msvc-dev-cmd@v1
 
     - name: build
-      uses: lukka/run-cmake@v3.4
-      with:
-        cmakeListsOrSettingsJson: CMakeListsTxtAdvanced
-        cmakeListsTxtPath: '${{ env.GITHUB_WORKSPACE }}/Development/CMakeLists.txt'
-        buildDirectory: '${{ env.RUNNER_WORKSPACE }}/build/'
-        cmakeAppendedArgs: '-GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="${{ env.RUNNER_WORKSPACE }}/install" ${{ env.CMAKE_COMPILER_ARGS }} ${{ env.CMAKE_EXTRA_ARGS }}'
+      shell: bash
+      run: |
+        cmake -S "${{ env.GITHUB_WORKSPACE }}/Development" \
+          -B "${{ env.RUNNER_WORKSPACE }}/build" \
+          -GNinja \
+          -DCMAKE_BUILD_TYPE=Release \
+          -DCMAKE_INSTALL_PREFIX="${{ env.RUNNER_WORKSPACE }}/install" \
+          ${{ env.CMAKE_COMPILER_ARGS }} \
+          ${{ env.CMAKE_EXTRA_ARGS }}
+        cmake --build "${{ env.RUNNER_WORKSPACE }}/build"
 
     - name: dump conan lockfile
       if: matrix.use_conan == true
@@ -323,12 +340,9 @@ jobs:
         ctest --output-on-failure ${{ env.CTEST_EXPECTED_FAILURES }}
 
     - name: install
-      uses: lukka/run-cmake@v3.4
-      with:
-        cmakeListsOrSettingsJson: CMakeListsTxtAdvanced
-        cmakeListsTxtPath: '${{ env.GITHUB_WORKSPACE }}/Development/CMakeLists.txt'
-        buildDirectory: '${{ env.RUNNER_WORKSPACE }}/build/'
-        buildWithCMakeArgs: '--target install'
+      shell: bash
+      run: |
+        cmake --build "${{ env.RUNNER_WORKSPACE }}/build" --target install
 
     - name: set install test environment variable
       shell: bash
@@ -338,18 +352,18 @@ jobs:
 
     - name: install test
       if: runner.os != 'macOS'
-      uses: lukka/run-cmake@v3.4
-      with:
-        cmakeListsOrSettingsJson: CMakeListsTxtAdvanced
-        cmakeListsTxtPath: '${{ env.GITHUB_WORKSPACE }}/Sandbox/my-nmos-node/CMakeLists.txt'
-        buildDirectory: '${{ env.RUNNER_WORKSPACE }}/build-my-nmos-node/'
-        cmakeAppendedArgs: '-GNinja
-            -DCMAKE_BUILD_TYPE=Release
-            -DCMAKE_FIND_PACKAGE_PREFER_CONFIG="1"
-            -DCMAKE_MODULE_PATH="${{ env.CMAKE_WORKSPACE }}/build/conan"
-            -DCMAKE_PREFIX_PATH="${{ env.CMAKE_WORKSPACE }}/install"
-            -DCMAKE_INSTALL_PREFIX="${{ env.CMAKE_WORKSPACE }}/build/conan"
-            ${{ env.CMAKE_COMPILER_ARGS }}'
+      shell: bash
+      run: |
+        cmake -S "${{ env.GITHUB_WORKSPACE }}/Sandbox/my-nmos-node" \
+          -B "${{ env.RUNNER_WORKSPACE }}/build-my-nmos-node" \
+          -GNinja \
+          -DCMAKE_BUILD_TYPE=Release \
+          -DCMAKE_FIND_PACKAGE_PREFER_CONFIG=1 \
+          -DCMAKE_MODULE_PATH="${{ env.CMAKE_WORKSPACE }}/build/conan" \
+          -DCMAKE_PREFIX_PATH="${{ env.CMAKE_WORKSPACE }}/install" \
+          -DCMAKE_INSTALL_PREFIX="${{ env.CMAKE_WORKSPACE }}/build/conan" \
+          ${{ env.CMAKE_COMPILER_ARGS }}
+        cmake --build "${{ env.RUNNER_WORKSPACE }}/build-my-nmos-node"
 
     - name: install test log
       if: runner.os != 'macOS'
@@ -574,12 +588,12 @@ jobs:
         export SHEET=https://docs.google.com/spreadsheets/d/${{ env.SECRET_RESULTS_SHEET_ID }}
         python nmos-testing/utilities/run-test-suites/gsheetsImport/resultsImporter.py --credentials ${{ env.GDRIVE_CREDENTIALS }} --sheet "$SHEET" --insert --json nmos-testing/results/${{ env.GITHUB_COMMIT }}-*.json || echo "upload failed"
 
-    - uses: actions/upload-artifact@v4
+    - uses: actions/upload-artifact@v7
       with:
         name: ${{ env.BUILD_NAME }}_badges
         path: ${{ runner.workspace }}/nmos-testing/badges
 
-    - uses: actions/upload-artifact@v4
+    - uses: actions/upload-artifact@v7
       with:
         name: ${{ env.BUILD_NAME }}_results
         path: ${{ runner.workspace }}/nmos-testing/results
@@ -590,7 +604,7 @@ jobs:
     needs: [build_and_test]
     runs-on: ubuntu-22.04
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v6
 
     - name: set environment variables
       shell: bash
@@ -600,7 +614,7 @@ jobs:
         echo "GITHUB_WORKSPACE=${{ github.workspace }}" >> $GITHUB_ENV
         echo "RUNNER_WORKSPACE=${{ runner.workspace }}" >> $GITHUB_ENV
 
-    - uses: actions/download-artifact@v4
+    - uses: actions/download-artifact@v7
       with:
         path: ${{ runner.workspace }}/artifacts
 
