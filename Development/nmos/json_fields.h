@@ -151,15 +151,20 @@ namespace nmos
         const web::json::field_as_value_or destination_ip{ U("destination_ip"), {} }; // string
         const web::json::field_as_value_or source_port{ U("source_port"), {} }; // string or integer
         const web::json::field_as_bool_or rtp_enabled{ U("rtp_enabled"), false };
+        const web::json::field_as_bool_or fec_enabled{ U("fec_enabled"), false };
         const web::json::field_as_value_or fec_destination_ip{ U("fec_destination_ip"), {} }; // string
+        const web::json::field_as_string fec_type{ U("fec_type") };
+        const web::json::field_as_value_or fec_mode{ U("fec_mode"), {} }; // string
+        const web::json::field_as_integer fec_block_width{ U("fec_block_width") };
+        const web::json::field_as_integer fec_block_height{ U("fec_block_height") };
         const web::json::field_as_value_or fec1D_destination_port{ U("fec1D_destination_port"), {} }; // string or integer
         const web::json::field_as_value_or fec2D_destination_port{ U("fec2D_destination_port"), {} }; // string or integer
         const web::json::field_as_value_or fec1D_source_port{ U("fec1D_source_port"), {} }; // string or integer
         const web::json::field_as_value_or fec2D_source_port{ U("fec2D_source_port"), {} }; // string or integer
+        const web::json::field_as_bool_or rtcp_enabled{ U("rtcp_enabled"), false };
         const web::json::field_as_value_or rtcp_destination_ip{ U("rtcp_destination_ip"), {} }; // string
         const web::json::field_as_value_or rtcp_destination_port{ U("rtcp_destination_port"), {} }; // string or integer
         const web::json::field_as_value_or rtcp_source_port{ U("rtcp_source_port"), {} }; // string or integer
-        const web::json::field_as_value_or fec_mode{ U("fec_mode"), {} }; // string
         // for urn:x-nmos:transport:websocket
         const web::json::field_as_value_or connection_uri{ U("connection_uri"), {} }; // string or null
         const web::json::field_as_value_or connection_authorization{ U("connection_authorization"), {} }; // string or bool
