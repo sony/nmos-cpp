@@ -9,9 +9,9 @@
         "string",
         "null"
       ],
-      "description": "MXL domain identity (UUID). Use auto to select from constraints.",
+      "description": "Specifies the MXL Domain ID where the MXL Flow will be located. The Sender lists allowed Domain IDs in the constraints endpoint. Where the Domain is not yet determined, implementations use null. MXL Senders accept null where the MXL Domain is unknown a priori in a multi-domain system. MXL Senders support `auto` where the Sender can resolve the Domain without a Controller-supplied Domain ID. Where `auto` cannot be resolved to a valid value for /active in the current operating context, the Sender may reject the request or activation. The constraints endpoint does not list `auto` as an available option.",
       "anyOf": [{
-          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-9a-f][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
         },
         {
           "pattern": "^auto$"
@@ -26,9 +26,9 @@
         "string",
         "null"
       ],
-      "description": "MXL flow identity for the write operation. Need not match the IS-04 Flow id. Use auto to select from constraints.",
+      "description": "Specifies the MXL Flow ID for the MXL write operation. The Sender lists allowed Flow IDs in the constraints endpoint. Where the flow is not yet determined, implementations use null. MXL Senders accept null including where the MXL Flow is not yet configured. MXL Senders support `auto` where the Sender resolves the MXL Flow ID (for example when only one MXL Flow applies). Where `auto` cannot be resolved to a valid value for /active in the current operating context, the Sender may reject the request or activation. The constraints endpoint does not list auto as an available option.",
       "anyOf": [{
-          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-9a-f][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
         },
         {
           "pattern": "^auto$"
