@@ -1,7 +1,7 @@
 # Boost
 
 set(BOOST_VERSION_MIN "1.54.0")
-set(BOOST_VERSION_CUR "1.83.0")
+set(BOOST_VERSION_CUR "1.91.0")
 # note: 1.57.0 doesn't work due to https://svn.boost.org/trac10/ticket/10754
 # note: some components are only required for one platform or other
 # so find_package(Boost) is called after adding those components
@@ -24,8 +24,10 @@ endif()
 # since std::shared_mutex is not available until C++17
 # see bst/shared_mutex.h
 list(APPEND FIND_BOOST_COMPONENTS thread)
-find_package(Boost ${BOOST_VERSION_MIN} REQUIRED COMPONENTS ${FIND_BOOST_COMPONENTS})
-# cope with historical versions of FindBoost.cmake
+# Prefer BoostConfig.cmake (CMake 3.30+ / CMP0167). Legacy FindBoost is removed
+# there; Config mode is what Conan CMakeDeps and modern Boost installs provide.
+find_package(Boost ${BOOST_VERSION_MIN} CONFIG REQUIRED COMPONENTS ${FIND_BOOST_COMPONENTS})
+# cope with historical versions of FindBoost.cmake / BoostConfig.cmake
 if(DEFINED Boost_VERSION_STRING)
     set(Boost_VERSION_COMPONENTS "${Boost_VERSION_STRING}")
 elseif(DEFINED Boost_VERSION_MAJOR)
@@ -198,7 +200,7 @@ add_library(nmos-cpp::OpenSSL ALIAS OpenSSL)
 set(NMOS_CPP_USE_SUPPLIED_JSON_SCHEMA_VALIDATOR OFF CACHE BOOL "Use supplied third_party/nlohmann")
 if(NOT NMOS_CPP_USE_SUPPLIED_JSON_SCHEMA_VALIDATOR)
     set(JSON_SCHEMA_VALIDATOR_VERSION_MIN "2.1.0")
-    set(JSON_SCHEMA_VALIDATOR_VERSION_CUR "2.3.0")
+    set(JSON_SCHEMA_VALIDATOR_VERSION_CUR "2.4.0")
     find_package(nlohmann_json_schema_validator REQUIRED)
     if(NOT nlohmann_json_schema_validator_VERSION)
         message(STATUS "Found nlohmann_json_schema_validator unknown version; minimum version: " ${JSON_SCHEMA_VALIDATOR_VERSION_MIN})
@@ -211,7 +213,7 @@ if(NOT NMOS_CPP_USE_SUPPLIED_JSON_SCHEMA_VALIDATOR)
     endif()
 
     set(NLOHMANN_JSON_VERSION_MIN "3.6.0")
-    set(NLOHMANN_JSON_VERSION_CUR "3.11.3")
+    set(NLOHMANN_JSON_VERSION_CUR "3.12.0")
     find_package(nlohmann_json REQUIRED)
     if(NOT nlohmann_json_VERSION)
         message(STATUS "Found nlohmann_json unknown version; minimum version: " ${NLOHMANN_JSON_VERSION_MIN})
@@ -471,7 +473,7 @@ endif()
 set(NMOS_CPP_USE_SUPPLIED_JWT_CPP OFF CACHE BOOL "Use supplied third_party/jwt-cpp")
 if(NOT NMOS_CPP_USE_SUPPLIED_JWT_CPP)
     set(JWT_VERSION_MIN "0.5.1")
-    set(JWT_VERSION_CUR "0.7.0")
+    set(JWT_VERSION_CUR "0.7.2")
     find_package(jwt-cpp REQUIRED)
     if(NOT jwt-cpp_VERSION)
         message(STATUS "Found jwt-cpp unknown version; minimum version: " ${JWT_VERSION_MIN})

@@ -34,7 +34,8 @@ Specific instructions for [cross-compiling for Raspberry Pi](Raspberry-Pi.md) ar
 
 1. Download and install a recent [CMake stable release](https://cmake.org/download/#latest) for your platform
    Notes:
-   - Currently, CMake 3.24 or higher is required in order to use the Conan package manager; version 4.1.0 (latest release at the time) has been tested
+   - Currently, CMake 3.24 or higher is required in order to use the Conan package manager; version 4.4.0 has been tested
+     (CMake 4.2 or higher is required for the Visual Studio 18 2026 generator, but is not a hard project requirement)
    - Pre-built binary distributions are available for many platforms
    - On Linux distributions, e.g. Ubuntu 14.04 LTS (long-term support), the pre-built binary version available via ``apt-get`` may be too out-of-date
      Fetch, build and install a suitable version:
@@ -74,9 +75,10 @@ If using Conan, this section can be skipped.
 
 1. Download a [recent release](http://www.boost.org/users/download/)
    Notes:
-   - Several Boost releases have been tested, including Version 1.83.0 (latest release at the time) and Version 1.54.0
+   - Several Boost releases have been tested, including Version 1.91.0 (latest release at the time) and Version 1.54.0
    - On Linux distributions, a Boost libraries package may already be installed, e.g. Ubuntu 14.04 LTS has Version 1.54.0
-2. Expand the archive so that, for example, the boost\_1\_83\_0 directory is at the same level as the nmos-cpp directory
+     (Ubuntu 14.04 is no longer exercised in CI)
+2. Expand the archive so that, for example, the boost\_1\_91\_0 directory is at the same level as the nmos-cpp directory
 3. Build and stage (or install) the following Boost libraries for your platform/toolset:
    - atomic
    - chrono
@@ -230,13 +232,13 @@ If using Conan, this section can be skipped.
 The C++ REST SDK depends on [OpenSSL](https://www.openssl.org/) (to implement secure HTTP and/or secure WebSockets).
 The nmos-cpp codebase also uses OpenSSL directly to implement the specific requirements of [AMWA BCP-003-01 Secure Communication in NMOS Systems](https://specs.amwa.tv/bcp-003-01/) and [AMWA BCP-003-02 Authorization in NMOS Systems](https://specs.amwa.tv/bcp-003-02/).
 
-OpenSSL version 3 is recommended, and version 3.5.2 (latest release at the time) has been tested.
+OpenSSL version 3 is recommended, and version 3.5.7 (latest 3.5 LTS release at the time) has been tested.
 It is currently also possible to use OpenSSL v1.1.1, although [this OpenSSL release is now end of life](https://www.openssl.org/blog/blog/2023/09/11/eol-111/index.html).
 
 1. Download and install a recent release
    Notes:
    - On Windows, an installer can be downloaded from [Shining Light Productions - Win32 OpenSSL](https://slproweb.com/products/Win32OpenSSL.html)
-     The Win64 OpenSSL v3.5.2 installer (latest release at the time) has been tested
+     The Win64 OpenSSL v3.5.7 installer (latest 3.5 LTS release at the time) has been tested
    - On Linux distributions, an OpenSSL package may already be available
      For example, Ubuntu 22.04 LTS includes OpenSSL v3.0.2
 
