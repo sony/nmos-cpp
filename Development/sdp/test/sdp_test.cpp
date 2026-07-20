@@ -314,6 +314,111 @@ a=mid:SECONDARY
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////
+BST_TEST_CASE(testSdpRfc6364Roundtrip)
+{
+    const std::string test_sdp = R"(v=0
+o=ali 1122334455 1122334466 IN IP4 fec.example.com
+s=FEC Framework Examples
+t=0 0
+a=group:FEC-FR S6 R5
+a=group:FEC-FR S6 R6
+m=video 30000 RTP/AVP 100
+c=IN IP4 233.252.0.1/127
+a=rtpmap:100 MP2T/90000
+a=fec-source-flow: id=0; tag-len=4
+a=mid:S6
+m=application 30000 UDP/FEC
+c=IN IP4 233.252.0.3/127
+a=fec-repair-flow: encoding-id=0; preference-lvl=0; ss-fssi=n:7,k:5; fssi=note:
+a=repair-window:200ms
+a=mid:R5
+m=application 30000 UDP/FEC
+c=IN IP4 233.252.0.4/127
+a=fec-repair-flow: encoding-id=1; preference-lvl=1; ss-fssi=t:3
+a=repair-window:150500us
+a=mid:R6
+)";
+
+    const auto session_description = sdp::parse_session_description(test_sdp);
+    const auto& session_attributes = sdp::fields::attributes(session_description).as_array();
+    const auto group = sdp::find_name(session_attributes, sdp::attributes::group);
+    BST_REQUIRE(session_attributes.end() != group);
+    BST_CHECK_EQUAL(sdp::group_semantics::fec_fr, sdp::group_semantics_type{ sdp::fields::semantics(sdp::fields::value(*group)) });
+
+    const auto& media_descriptions = sdp::fields::media_descriptions(session_description).as_array();
+    BST_REQUIRE_EQUAL(3, media_descriptions.size());
+
+    const auto& source_attributes = sdp::fields::attributes(media_descriptions.at(0)).as_array();
+    const auto source_flow = sdp::find_name(source_attributes, sdp::attributes::fec_source_flow);
+    BST_REQUIRE(source_attributes.end() != source_flow);
+    const auto& source_flow_value = sdp::fields::value(*source_flow);
+    BST_CHECK_EQUAL(0, sdp::fields::source_id(source_flow_value));
+    BST_CHECK_EQUAL(4, sdp::fields::tag_length(source_flow_value));
+
+    const auto& first_repair_media = sdp::fields::media(media_descriptions.at(1));
+    BST_CHECK_EQUAL(sdp::protocols::UDP_FEC, sdp::protocol{ sdp::fields::protocol(first_repair_media) });
+    BST_CHECK_EQUAL(0, sdp::fields::formats(first_repair_media).size());
+
+    const auto& first_repair_attributes = sdp::fields::attributes(media_descriptions.at(1)).as_array();
+    const auto repair_flow = sdp::find_name(first_repair_attributes, sdp::attributes::fec_repair_flow);
+    BST_REQUIRE(first_repair_attributes.end() != repair_flow);
+    const auto& repair_flow_value = sdp::fields::value(*repair_flow);
+    BST_CHECK_EQUAL(0, sdp::fields::encoding_id(repair_flow_value));
+    BST_CHECK_EQUAL(0, sdp::fields::preference_level(repair_flow_value));
+    const auto& sender_side_elements = sdp::fields::sender_side_scheme_specific(repair_flow_value);
+    BST_REQUIRE_EQUAL(2, sender_side_elements.size());
+    BST_CHECK_EQUAL(U("n"), sdp::fields::name(sender_side_elements.at(0)));
+    BST_CHECK_EQUAL(U("7"), sdp::fields::value(sender_side_elements.at(0)).as_string());
+    const auto& scheme_elements = sdp::fields::scheme_specific(repair_flow_value);
+    BST_REQUIRE_EQUAL(1, scheme_elements.size());
+    BST_CHECK_EQUAL(U(""), sdp::fields::value(scheme_elements.at(0)).as_string());
+
+    const auto repair_window = sdp::find_name(first_repair_attributes, sdp::attributes::repair_window);
+    BST_REQUIRE(first_repair_attributes.end() != repair_window);
+    const auto& repair_window_value = sdp::fields::value(*repair_window);
+    BST_CHECK_EQUAL(200, sdp::fields::window_size(repair_window_value));
+    BST_CHECK_EQUAL(sdp::repair_window_units::milliseconds, sdp::repair_window_unit{ sdp::fields::window_unit(repair_window_value) });
+
+    BST_CHECK_EQUAL(U("FEC/UDP"), sdp::protocols::FEC_UDP.name);
+
+    std::istringstream expected(test_sdp), actual(sdp::make_session_description(session_description));
+    do
+    {
+        std::string expected_line, actual_line;
+        std::getline(expected, expected_line);
+        std::getline(actual, actual_line);
+        if (!actual_line.empty() && '\r' == actual_line.back()) actual_line.pop_back();
+        BST_CHECK_EQUAL(expected_line, actual_line);
+    } while (!expected.fail() && !actual.fail());
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////
+BST_TEST_CASE(testSdpRfc6364RejectsMalformedAttributes)
+{
+    const std::string before = "v=0\r\no=- 0 0 IN IP4 192.0.2.1\r\ns=FEC\r\nt=0 0\r\nm=application 30000 UDP/FEC\r\n";
+
+    const std::vector<std::string> malformed = {
+        "a=fec-source-flow:id=0\r\n",
+        "a=fec-source-flow: id=4294967296\r\n",
+        "a=fec-source-flow: id=0; tag-len=0\r\n",
+        "a=fec-source-flow: id=0; tag-len=4; extra=1\r\n",
+        "a=fec-repair-flow: encoding-id=256\r\n",
+        "a=fec-repair-flow: encoding-id=0; ss-fssi=n:7; preference-lvl=1\r\n",
+        "a=fec-repair-flow: encoding-id=0; ss-fssi=\r\n",
+        "a=fec-repair-flow: encoding-id=0; ss-fssi=n:7/bad\r\n",
+        "a=repair-window:0ms\r\n",
+        "a=repair-window:4294967296ms\r\n",
+        "a=repair-window:1s\r\n",
+        "a=repair-window:+1ms\r\n"
+    };
+
+    for (const auto& attribute : malformed)
+    {
+        BST_CHECK_THROW(sdp::parse_session_description(before + attribute), std::runtime_error);
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////
 BST_TEST_CASE(testSdpNumbers)
 {
     const bool keep_order = true;

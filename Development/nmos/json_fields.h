@@ -151,6 +151,7 @@ namespace nmos
         const web::json::field_as_value_or destination_ip{ U("destination_ip"), {} }; // string
         const web::json::field_as_value_or source_port{ U("source_port"), {} }; // string or integer
         const web::json::field_as_bool_or rtp_enabled{ U("rtp_enabled"), false };
+        const web::json::field_as_bool_or fec_enabled{ U("fec_enabled"), false };
         const web::json::field_as_value_or fec_destination_ip{ U("fec_destination_ip"), {} }; // string
         const web::json::field_as_value_or fec1D_destination_port{ U("fec1D_destination_port"), {} }; // string or integer
         const web::json::field_as_value_or fec2D_destination_port{ U("fec2D_destination_port"), {} }; // string or integer

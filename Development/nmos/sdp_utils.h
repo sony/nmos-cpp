@@ -170,6 +170,61 @@ namespace nmos
             group_t(const sdp::group_semantics_type& semantics, const std::vector<utility::string_t>& media_stream_ids) : semantics(semantics), media_stream_ids(media_stream_ids) {}
         } group;
 
+        // Forward Error Correction (FEC) Framework parameters for the IS-05-compatible
+        // topology of one source flow and one or two repair flows per RTP leg.
+        // RFC-only values are explicit because they cannot be derived from IS-05 transport parameters.
+        // See https://tools.ietf.org/html/rfc6364
+        struct fec_t
+        {
+            typedef std::vector<std::pair<utility::string_t, utility::string_t>> scheme_specific_t;
+
+            struct repair_window_t
+            {
+                uint32_t size;
+                sdp::repair_window_unit unit;
+
+                repair_window_t() : size() {}
+                repair_window_t(uint32_t size, const sdp::repair_window_unit& unit) : size(size), unit(unit) {}
+            };
+
+            struct repair_flow_t
+            {
+                uint64_t encoding_id;
+                bst::optional<uint64_t> preference_level;
+                scheme_specific_t sender_side_scheme_specific;
+                scheme_specific_t scheme_specific;
+                bst::optional<repair_window_t> repair_window;
+                utility::string_t media_stream_id;
+
+                repair_flow_t() : encoding_id() {}
+                repair_flow_t(uint64_t encoding_id, const utility::string_t& media_stream_id,
+                    const scheme_specific_t& sender_side_scheme_specific = {}, const scheme_specific_t& scheme_specific = {},
+                    bst::optional<uint64_t> preference_level = bst::nullopt, bst::optional<repair_window_t> repair_window = bst::nullopt)
+                    : encoding_id(encoding_id)
+                    , preference_level(preference_level)
+                    , sender_side_scheme_specific(sender_side_scheme_specific)
+                    , scheme_specific(scheme_specific)
+                    , repair_window(repair_window)
+                    , media_stream_id(media_stream_id)
+                {}
+            };
+
+            uint32_t source_id;
+            bst::optional<uint64_t> tag_length;
+            utility::string_t media_stream_id;
+            std::vector<repair_flow_t> repair_flows;
+
+            fec_t() : source_id() {}
+            fec_t(uint32_t source_id, const utility::string_t& media_stream_id, const std::vector<repair_flow_t>& repair_flows,
+                bst::optional<uint64_t> tag_length = bst::nullopt)
+                : source_id(source_id)
+                , tag_length(tag_length)
+                , media_stream_id(media_stream_id)
+                , repair_flows(repair_flows)
+            {}
+        };
+        std::vector<fec_t> fec;
+
         // Media ("m=")
         // See https://tools.ietf.org/html/rfc4566#section-5.14
         sdp::media_type media_type;

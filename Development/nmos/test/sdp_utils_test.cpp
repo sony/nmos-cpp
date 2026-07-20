@@ -378,6 +378,156 @@ a=rtpmap:103 raw/90000
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////
+BST_TEST_CASE(testInterpretationOfSdpFilesFec)
+{
+    using web::json::value;
+    using web::json::value_of;
+
+    // See https://specs.amwa.tv/is-05/releases/v1.1.1/docs/4.1._Behaviour_-_RTP_Transport_Type.html#operation-with-smpte-2022-5
+    const std::string test_sdp = R"(v=0
+o=ali 1122334455 1122334466 IN IP4 172.29.26.24
+s=FEC Framework Examples
+t=0 0
+a=group:FEC-FR S1 R1
+m=video 30000 RTP/AVP 100
+c=IN IP4 233.252.0.1/127
+a=rtpmap:100 MP2T/90000
+a=fec-source-flow: id=0
+a=mid:S1
+m=application 30000 UDP/FEC
+c=IN IP4 233.252.0.2/127
+a=fec-repair-flow: encoding-id=10; ss-fssi=n:7,k:5
+a=mid:R1
+)";
+
+    const auto expected_transport_params = value_of({
+        value_of({
+            { nmos::fields::source_ip, value::null() },
+            { nmos::fields::multicast_ip, U("233.252.0.1") },
+            { nmos::fields::interface_ip, U("auto") },
+            { nmos::fields::destination_port, 30000 },
+            { nmos::fields::rtp_enabled, true },
+            { nmos::fields::fec_enabled, true },
+            { nmos::fields::fec_mode, U("auto") },
+            { nmos::fields::fec_destination_ip, U("233.252.0.2") },
+            { nmos::fields::fec1D_destination_port, 30000 },
+            { nmos::fields::fec2D_destination_port, value::null() }
+        })
+    });
+
+    const auto session_description = sdp::parse_session_description(test_sdp);
+    auto parsed = nmos::parse_session_description(session_description);
+    BST_REQUIRE(expected_transport_params == parsed.second);
+
+    BST_REQUIRE_EQUAL(1, parsed.first.fec.size());
+    const auto& fec = parsed.first.fec.at(0);
+    BST_CHECK_EQUAL(0, fec.source_id);
+    BST_CHECK_EQUAL(U("S1"), fec.media_stream_id);
+    BST_REQUIRE_EQUAL(1, fec.repair_flows.size());
+    BST_CHECK_EQUAL(10, fec.repair_flows.at(0).encoding_id);
+    BST_CHECK_EQUAL(U("R1"), fec.repair_flows.at(0).media_stream_id);
+    BST_REQUIRE_EQUAL(2, fec.repair_flows.at(0).sender_side_scheme_specific.size());
+    BST_CHECK_EQUAL(U("n"), fec.repair_flows.at(0).sender_side_scheme_specific.at(0).first);
+    BST_CHECK_EQUAL(U("7"), fec.repair_flows.at(0).sender_side_scheme_specific.at(0).second);
+
+    // A Receiver must resolve interface_ip before using the parsed parameters to create SDP.
+    parsed.second[0][nmos::fields::interface_ip] = value::string(U("172.29.26.24"));
+    const auto made_sdp = nmos::make_session_description(parsed.first, parsed.second);
+    const auto roundtripped = nmos::parse_session_description(sdp::parse_session_description(sdp::make_session_description(made_sdp)));
+    BST_REQUIRE(expected_transport_params == roundtripped.second);
+    BST_REQUIRE_EQUAL(1, roundtripped.first.fec.size());
+    BST_CHECK_EQUAL(U("R1"), roundtripped.first.fec.at(0).repair_flows.at(0).media_stream_id);
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////
+BST_TEST_CASE(testSdpTransportParamsFec2D)
+{
+    using web::json::value_of;
+
+    nmos::sdp_parameters sdp_params{
+        U("FEC 2D"),
+        sdp::media_types::video,
+        { 100, U("MP2T"), 90000 }
+    };
+    sdp_params.connection_data.ttl = 127;
+    nmos::sdp_parameters::fec_t::repair_flow_t first_repair{ 10, U("R1"), { { U("n"), U("7") }, { U("k"), U("5") } } };
+    first_repair.repair_window = nmos::sdp_parameters::fec_t::repair_window_t{ 200, sdp::repair_window_units::milliseconds };
+    nmos::sdp_parameters::fec_t::repair_flow_t second_repair{ 11, U("R2"), { { U("t"), U("3") } }, {}, 1 };
+    second_repair.repair_window = nmos::sdp_parameters::fec_t::repair_window_t{ 150500, sdp::repair_window_units::microseconds };
+    sdp_params.fec.push_back({ 0, U("S1"), { first_repair, second_repair } });
+
+    const auto sender_transport_params = value_of({
+        value_of({
+            { nmos::fields::source_ip, U("192.0.2.1") },
+            { nmos::fields::destination_ip, U("233.252.0.1") },
+            { nmos::fields::source_port, 5004 },
+            { nmos::fields::destination_port, 30000 },
+            { nmos::fields::rtp_enabled, true },
+            { nmos::fields::fec_enabled, true },
+            { nmos::fields::fec_mode, U("2D") },
+            { nmos::fields::fec_destination_ip, U("233.252.0.2") },
+            { nmos::fields::fec1D_destination_port, 30002 },
+            { nmos::fields::fec2D_destination_port, 30004 }
+        })
+    });
+
+    const auto session_description = sdp::parse_session_description(sdp::make_session_description(nmos::make_session_description(sdp_params, sender_transport_params)));
+    const auto& media_descriptions = sdp::fields::media_descriptions(session_description);
+    BST_REQUIRE_EQUAL(3, media_descriptions.size());
+
+    const auto parsed = nmos::parse_session_description(session_description);
+    BST_REQUIRE_EQUAL(1, parsed.second.size());
+    BST_CHECK(nmos::fields::fec_enabled(parsed.second.at(0)));
+    BST_CHECK_EQUAL(U("233.252.0.2"), nmos::fields::fec_destination_ip(parsed.second.at(0)).as_string());
+    BST_CHECK_EQUAL(30002, nmos::fields::fec1D_destination_port(parsed.second.at(0)).as_integer());
+    BST_CHECK_EQUAL(30004, nmos::fields::fec2D_destination_port(parsed.second.at(0)).as_integer());
+    BST_REQUIRE_EQUAL(2, parsed.first.fec.at(0).repair_flows.size());
+    BST_REQUIRE((bool)parsed.first.fec.at(0).repair_flows.at(1).repair_window);
+    BST_CHECK_EQUAL(150500, parsed.first.fec.at(0).repair_flows.at(1).repair_window->size);
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////
+BST_TEST_CASE(testSdpTransportParamsFecUnsupportedAndMalformedGroups)
+{
+    const std::string before = R"(v=0
+o=- 0 0 IN IP4 192.0.2.1
+s=FEC
+t=0 0
+)";
+    const std::string source = R"(m=video 30000 RTP/AVP 100
+c=IN IP4 233.252.0.1/127
+a=rtpmap:100 MP2T/90000
+a=fec-source-flow: id=0
+a=mid:S1
+)";
+    const std::string repair1 = R"(m=application 30002 UDP/FEC
+c=IN IP4 233.252.0.2/127
+a=fec-repair-flow: encoding-id=10
+a=mid:R1
+)";
+    const std::string repair2_different_address = R"(m=application 30004 UDP/FEC
+c=IN IP4 233.252.0.3/127
+a=fec-repair-flow: encoding-id=11
+a=mid:R2
+)";
+
+    // Multiple-source RFC 6364 groups are valid at the sdp/ layer but cannot be represented by IS-05 transport parameters.
+    const auto unsupported = sdp::parse_session_description(before + "a=group:FEC-FR S1 S2 R1\n" + source + repair1);
+    const auto unsupported_transport_params = nmos::get_session_description_transport_params(unsupported);
+    BST_REQUIRE_EQUAL(1, unsupported_transport_params.size());
+    BST_CHECK(!unsupported_transport_params.at(0).has_field(nmos::fields::fec_enabled));
+
+    const auto missing_media = sdp::parse_session_description(before + "a=group:FEC-FR S1 MISSING\n" + source);
+    BST_REQUIRE_THROW(nmos::get_session_description_transport_params(missing_media), std::runtime_error);
+
+    const auto different_addresses = sdp::parse_session_description(before
+        + "a=group:FEC-FR S1 R1\n"
+        + "a=group:FEC-FR S1 R2\n"
+        + source + repair1 + repair2_different_address);
+    BST_REQUIRE_THROW(nmos::get_session_description_transport_params(different_addresses), std::runtime_error);
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////
 BST_TEST_CASE(testInterpretationOfSdpFilesSeparateSourceAddresses)
 {
     using web::json::value;
