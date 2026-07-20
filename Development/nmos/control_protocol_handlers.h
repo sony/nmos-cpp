@@ -87,6 +87,9 @@ namespace nmos
     // construct callback to retrieve a specific method
     get_control_protocol_method_descriptor_handler make_get_control_protocol_method_descriptor_handler(experimental::control_protocol_state& control_protocol_state);
 
+    // Set monitor status to pending
+    monitor_status_pending_handler make_monitor_status_pending_handler(experimental::control_protocol_state& control_protocol_state);
+
     // control_protocol_connection_activation_handler notifies that the active parameters for the specified (IS-05) sender/connection_sender or receiver/connection_receiver have changed
     control_protocol_connection_activation_handler make_monitor_connection_activation_handler(resources& resources, experimental::control_protocol_state& control_protocol_state, slog::base_gate& gate);
 
