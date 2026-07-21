@@ -12,12 +12,12 @@ env:
   SECRET_RESULTS_SHEET_ID: ${{ secrets.RESULTS_SHEET_ID }}
 jobs:
   build_and_test:
-    name: '${{ matrix.os }}: build and test (install mdns: ${{ matrix.install_mdns }}, use conan: ${{ matrix.use_conan }}, force cpprest asio: ${{ matrix.force_cpprest_asio }}, dns-sd mode: ${{ matrix.dns_sd_mode}}, enable_authorization: ${{ matrix.enable_authorization }})'
+    name: "${{ matrix.os }}: build and test (C++ standard: ${{ matrix.cxx_standard || 'minimum' }}, install mdns: ${{ matrix.install_mdns }}, use conan: ${{ matrix.use_conan }}, force cpprest asio: ${{ matrix.force_cpprest_asio }}, dns-sd mode: ${{ matrix.dns_sd_mode}}, enable_authorization: ${{ matrix.enable_authorization }})"
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-22.04, ubuntu-24.04, windows-2022]
+        os: [ubuntu-22.04, ubuntu-24.04, windows-2025]
         install_mdns: [false, true]
         use_conan: [true]
         force_cpprest_asio: [false, true]
@@ -25,10 +25,10 @@ jobs:
         enable_authorization: [false, true]
         exclude:
           # install_mdns is only meaningful on Linux
-          - os: windows-2022
+          - os: windows-2025
             install_mdns: true
           # for now, unicast DNS-SD tests are only implemented on Linux
-          - os: windows-2022
+          - os: windows-2025
             dns_sd_mode: unicast
           - os: ubuntu-22.04
             enable_authorization: false
@@ -45,12 +45,28 @@ jobs:
             install_mdns: true
           - os: ubuntu-24.04
             dns_sd_mode: unicast
-            # don't force ASIO for ubuntu platforms
+          # don't force ASIO for ubuntu platforms
           - os: ubuntu-24.04
             force_cpprest_asio: true
-          
+        include:
+          # exercise std::filesystem on VS 2026; regular windows-2025 jobs use the minimum standard
+          - os: windows-2025
+            install_mdns: false
+            use_conan: true
+            force_cpprest_asio: false
+            dns_sd_mode: multicast
+            enable_authorization: true
+            cxx_standard: 17
+          # keep one VS 2022 job while validating VS 2026 on windows-2025
+          - os: windows-2022
+            install_mdns: false
+            use_conan: true
+            force_cpprest_asio: false
+            dns_sd_mode: multicast
+            enable_authorization: true
+
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v6
 
     - name: set environment variables
       shell: bash
@@ -61,16 +77,21 @@ jobs:
           authorization_mode=noauth
         fi
 
+        if [[ -n "${{ matrix.cxx_standard }}" ]]; then
+          cxx_standard_suffix="_cxx${{ matrix.cxx_standard }}"
+          echo "CMAKE_EXTRA_ARGS=${{ env.CMAKE_EXTRA_ARGS }} -DCMAKE_CXX_STANDARD=${{ matrix.cxx_standard }}" >> $GITHUB_ENV
+        fi
+
         if [[ "${{ runner.os }}"  == "Linux" ]]; then
           if [[ "${{ matrix.install_mdns }}" == "true" ]]; then
-            echo "BUILD_NAME=${{ matrix.os }}_mdns_${{ matrix.dns_sd_mode }}_$authorization_mode" >> $GITHUB_ENV
+            echo "BUILD_NAME=${{ matrix.os }}_mdns_${{ matrix.dns_sd_mode }}_$authorization_mode$cxx_standard_suffix" >> $GITHUB_ENV
           else
-            echo "BUILD_NAME=${{ matrix.os }}_avahi_${{ matrix.dns_sd_mode }}_$authorization_mode" >> $GITHUB_ENV
+            echo "BUILD_NAME=${{ matrix.os }}_avahi_${{ matrix.dns_sd_mode }}_$authorization_mode$cxx_standard_suffix" >> $GITHUB_ENV
           fi
         elif [[ "${{ matrix.force_cpprest_asio }}" == "true" ]]; then
-          echo "BUILD_NAME=${{ matrix.os }}_asio_$authorization_mode" >> $GITHUB_ENV
+          echo "BUILD_NAME=${{ matrix.os }}_asio_$authorization_mode$cxx_standard_suffix" >> $GITHUB_ENV
         else
-          echo "BUILD_NAME=${{ matrix.os }}_$authorization_mode" >> $GITHUB_ENV
+          echo "BUILD_NAME=${{ matrix.os }}_$authorization_mode$cxx_standard_suffix" >> $GITHUB_ENV
         fi
         GITHUB_COMMIT=`echo "${{ github.sha }}" | cut -c1-7`
         echo "GITHUB_COMMIT=$GITHUB_COMMIT" >> $GITHUB_ENV
@@ -93,7 +114,7 @@ jobs:
     needs: [build_and_test]
     runs-on: ubuntu-22.04
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v6
 
     - name: set environment variables
       shell: bash
@@ -103,7 +124,7 @@ jobs:
         echo "GITHUB_WORKSPACE=${{ github.workspace }}" >> $GITHUB_ENV
         echo "RUNNER_WORKSPACE=${{ runner.workspace }}" >> $GITHUB_ENV
 
-    - uses: actions/download-artifact@v4
+    - uses: actions/download-artifact@v7
       with:
         path: ${{ runner.workspace }}/artifacts
 

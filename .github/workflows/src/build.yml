@@ -3,12 +3,16 @@
   uses: ilammy/msvc-dev-cmd@v1
 
 - name: build
-  uses: lukka/run-cmake@v3.4
-  with:
-    cmakeListsOrSettingsJson: CMakeListsTxtAdvanced
-    cmakeListsTxtPath: '${{ env.GITHUB_WORKSPACE }}/Development/CMakeLists.txt'
-    buildDirectory: '${{ env.RUNNER_WORKSPACE }}/build/'
-    cmakeAppendedArgs: '-GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="${{ env.RUNNER_WORKSPACE }}/install" ${{ env.CMAKE_COMPILER_ARGS }} ${{ env.CMAKE_EXTRA_ARGS }}'
+  shell: bash
+  run: |
+    cmake -S "${{ env.GITHUB_WORKSPACE }}/Development" \
+      -B "${{ env.RUNNER_WORKSPACE }}/build" \
+      -GNinja \
+      -DCMAKE_BUILD_TYPE=Release \
+      -DCMAKE_INSTALL_PREFIX="${{ env.RUNNER_WORKSPACE }}/install" \
+      ${{ env.CMAKE_COMPILER_ARGS }} \
+      ${{ env.CMAKE_EXTRA_ARGS }}
+    cmake --build "${{ env.RUNNER_WORKSPACE }}/build"
 
 - name: dump conan lockfile
   if: matrix.use_conan == true
