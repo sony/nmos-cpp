@@ -143,7 +143,7 @@ The implementation is designed to be extended. Development is ongoing, following
 
 Recent activity on the project (newest first):
 
-- Added Network Time Protocol (NTP) support
+- Added support for making existing timing/version semantics safe in environments where NTP rewinds system time.
 - Added support for BCP-007-03 NMOS With MXL
 - Added support for IS-14 NMOS Device Configuration
 - Added support for BCP-008-01 Receiver Status Monitoring
