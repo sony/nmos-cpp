@@ -12,6 +12,9 @@ if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux" OR ${CMAKE_SYSTEM_NAME} STREQUAL "Darwi
         # add filesystem (for bst/filesystem.h, used by nmos/filesystem_route.cpp)
         list(APPEND FIND_BOOST_COMPONENTS filesystem)
     endif()
+elseif(MSVC AND MSVC_VERSION GREATER_EQUAL 1951 AND (NOT CMAKE_CXX_STANDARD OR CMAKE_CXX_STANDARD LESS 17))
+    # MSVC 14.51 removed <experimental/filesystem>, so C++11/14 builds use Boost.Filesystem
+    list(APPEND FIND_BOOST_COMPONENTS filesystem)
 endif()
 # since std::shared_mutex is not available until C++17
 # see bst/shared_mutex.h
