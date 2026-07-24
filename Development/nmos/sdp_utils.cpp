@@ -1078,11 +1078,12 @@ namespace nmos
                         const auto& rtcp_value = sdp::fields::value(*rtcp);
                         params[nmos::fields::rtcp_enabled] = value::boolean(true);
                         params[nmos::fields::rtcp_destination_port] = value::number(sdp::fields::port(rtcp_value));
-                        params[nmos::fields::rtcp_destination_ip] = rtcp_value.has_field(sdp::fields::unicast_address)
+                        auto rtcp_destination_ip = rtcp_value.has_field(sdp::fields::unicast_address)
                             ? rtcp_value.at(sdp::fields::unicast_address)
                             : !params[nmos::fields::multicast_ip].is_null()
                                 ? params[nmos::fields::multicast_ip]
                                 : params[nmos::fields::interface_ip];
+                        params[nmos::fields::rtcp_destination_ip] = std::move(rtcp_destination_ip);
                     }
                 }
 
