@@ -393,6 +393,33 @@ a=mid:R6
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////
+BST_TEST_CASE(testSdpMediaDescriptionOptionalFormats)
+{
+    const std::string test_sdp = "v=0\r\n"
+        "o=- 0 0 IN IP4 192.0.2.1\r\n"
+        "s=Media formats\r\n"
+        "t=0 0\r\n"
+        "m=video 5004 RTP/AVP 96 97\r\n"
+        "m=application 5006 UDP/FEC\r\n";
+
+    const auto session_description = sdp::parse_session_description(test_sdp);
+    const auto& media_descriptions = sdp::fields::media_descriptions(session_description).as_array();
+    BST_REQUIRE_EQUAL(2, media_descriptions.size());
+
+    const auto& video_media = sdp::fields::media(media_descriptions.at(0));
+    const auto& video_formats = sdp::fields::formats(video_media).as_array();
+    BST_REQUIRE_EQUAL(2, video_formats.size());
+    BST_CHECK_EQUAL(U("96"), video_formats.at(0).as_string());
+    BST_CHECK_EQUAL(U("97"), video_formats.at(1).as_string());
+
+    const auto& repair_media = sdp::fields::media(media_descriptions.at(1));
+    BST_CHECK(!repair_media.has_field(sdp::fields::formats));
+    BST_CHECK_EQUAL(0, sdp::fields::formats(repair_media).size());
+
+    BST_CHECK_EQUAL(test_sdp, sdp::make_session_description(session_description));
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////
 BST_TEST_CASE(testSdpRfc6364RejectsMalformedAttributes)
 {
     const std::string before = "v=0\r\no=- 0 0 IN IP4 192.0.2.1\r\ns=FEC\r\nt=0 0\r\nm=application 30000 UDP/FEC\r\n";

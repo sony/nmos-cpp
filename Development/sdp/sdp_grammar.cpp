@@ -388,25 +388,39 @@ namespace sdp
             }
         };
 
-        converter object_converter(const std::vector<std::pair<utility::string_t, converter>>& field_converters, const std::string& delimiter = " ")
+        converter object_converter_impl(const std::vector<std::pair<utility::string_t, converter>>& field_converters, size_t required_field_count, const std::string& delimiter)
         {
             return{
                 [=](const web::json::value& v) {
                     std::string s;
-                    for (auto& field : field_converters)
+                    for (size_t index = 0; index < field_converters.size(); ++index)
                     {
+                        const auto& field = field_converters[index];
+                        if (required_field_count <= index && !field.first.empty() && !v.has_field(field.first)) continue;
+
+                        const auto formatted = field.second.format(!field.first.empty() ? v.at(field.first) : v);
+                        if (required_field_count <= index && formatted.empty()) continue;
+
                         if (!s.empty()) s += delimiter;
-                        s += field.second.format(!field.first.empty() ? v.at(field.first) : v);
+                        s += formatted;
                     }
                     return s;
                 },
                 [=](const std::string& s) {
                     auto v = web::json::value::object(keep_order);
                     size_t pos = 0;
-                    for (auto& field : field_converters)
+                    for (size_t index = 0; index < field_converters.size(); ++index)
                     {
-                        if (std::string::npos == pos) throw sdp_parse_error("expected a value for " + utility::us2s(field.first));
-                        auto each = substr_find(s, pos, delimiter);
+                        const auto& field = field_converters[index];
+                        if (std::string::npos == pos)
+                        {
+                            if (required_field_count <= index) break;
+                            throw sdp_parse_error("expected a value for " + utility::us2s(field.first));
+                        }
+
+                        auto each = required_field_count <= index
+                            ? substr_find(s, pos)
+                            : substr_find(s, pos, delimiter);
                         // leading or repeated delimiters are an error
                         if (each.empty()) throw sdp_parse_error("unexpected delimiter");
 
@@ -417,6 +431,19 @@ namespace sdp
                     return v;
                 }
             };
+        }
+
+        converter object_converter(const std::vector<std::pair<utility::string_t, converter>>& field_converters, const std::string& delimiter = " ")
+        {
+            return object_converter_impl(field_converters, field_converters.size(), delimiter);
+        }
+
+        // The optional trailing field receives all remaining input, rather than one delimiter-separated value
+        converter object_converter(const std::vector<std::pair<utility::string_t, converter>>& required_field_converters, const std::pair<utility::string_t, converter>& optional_trailing_field_converter, const std::string& delimiter = " ")
+        {
+            auto field_converters = required_field_converters;
+            field_converters.push_back(optional_trailing_field_converter);
+            return object_converter_impl(field_converters, required_field_converters.size(), delimiter);
         }
 
         const std::string time_units{ 'd', 'h', 'm', 's' }; // days, hours, minutes, seconds
@@ -685,30 +712,6 @@ namespace sdp
         // See https://tools.ietf.org/html/rfc4566#section-5
         description media_descriptions(const attribute_converters& converters, const converter& default_converter)
         {
-            const converter media_converter{
-                [](const web::json::value& v) {
-                    const auto port_converter = key_value_converter('/', { sdp::fields::port, digits_converter }, { sdp::fields::port_count, number_converter });
-                    std::string s = string_converter.format(v.at(sdp::fields::media_type));
-                    s += " " + port_converter.format(v);
-                    s += " " + string_converter.format(v.at(sdp::fields::protocol));
-                    if (v.has_field(sdp::fields::formats) && 0 != sdp::fields::formats(v).size()) s += " " + strings_converter.format(v.at(sdp::fields::formats));
-                    return s;
-                },
-                [](const std::string& s) {
-                    const auto port_converter = key_value_converter('/', { sdp::fields::port, digits_converter }, { sdp::fields::port_count, number_converter });
-                    auto v = web::json::value::object(keep_order);
-                    size_t pos = 0;
-                    v[sdp::fields::media_type] = string_converter.parse(substr_find(s, pos, " "));
-                    if (std::string::npos == pos) throw sdp_parse_error("expected a media port");
-                    const auto port = port_converter.parse(substr_find(s, pos, " "));
-                    web::json::insert(v, port.as_object().begin(), port.as_object().end());
-                    if (std::string::npos == pos) throw sdp_parse_error("expected a media protocol");
-                    v[sdp::fields::protocol] = string_converter.parse(substr_find(s, pos, " "));
-                    v[sdp::fields::formats] = strings_converter.parse(std::string::npos != pos ? substr_find(s, pos) : "");
-                    return v;
-                }
-            };
-
             return optional_descriptions(
                 sdp::fields::media_descriptions,
                 {
@@ -716,7 +719,11 @@ namespace sdp
                     required_line(
                         sdp::fields::media,
                         'm',
-                        media_converter
+                        object_converter({
+                            { sdp::fields::media_type, string_converter },
+                            { {}, key_value_converter('/', { sdp::fields::port, digits_converter }, { sdp::fields::port_count, number_converter }) },
+                            { sdp::fields::protocol, string_converter }
+                        }, { sdp::fields::formats, strings_converter })
                     ),
                     information,
                     optional_lines(
