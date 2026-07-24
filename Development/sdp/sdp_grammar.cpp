@@ -670,21 +670,16 @@ namespace sdp
                             return s;
                         },
                         [](const std::string& s) {
-                            std::istringstream is(s);
-                            std::vector<std::string> parts;
-                            for (std::string part; is >> part;)
-                            {
-                                parts.push_back(std::move(part));
-                            }
+                            const auto parts = strings_converter.parse(s);
                             if (1 != parts.size() && 4 != parts.size()) throw sdp_parse_error("expected <port> [<nettype> <addrtype> <connection-address>]");
 
                             auto v = web::json::value::object(keep_order);
-                            v[sdp::fields::port] = digits_converter.parse(parts.at(0));
+                            v[sdp::fields::port] = digits_converter.parse(utility::us2s(parts.at(0).as_string()));
                             if (4 == parts.size())
                             {
-                                v[sdp::fields::network_type] = string_converter.parse(parts.at(1));
-                                v[sdp::fields::address_type] = string_converter.parse(parts.at(2));
-                                v[sdp::fields::unicast_address] = string_converter.parse(parts.at(3));
+                                v[sdp::fields::network_type] = parts.at(1);
+                                v[sdp::fields::address_type] = parts.at(2);
+                                v[sdp::fields::unicast_address] = parts.at(3);
                             }
                             return v;
                         },
