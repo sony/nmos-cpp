@@ -63,14 +63,36 @@ namespace nmos
 
                 const auto& pertinent_categories = nmos::fields::logging_categories(model.settings);
 
+                // categories prefixed with '!' specify messages that should not be logged;
+                // a negative match takes precedence over any positive match, and when only
+                // negative categories are specified, all other messages are pertinent
+                const auto is_negative = [](const web::json::value& category)
+                {
+                    const auto& s = category.as_string();
+                    return !s.empty() && U('!') == s.front();
+                };
+                const bool default_pertinent = 0 != pertinent_categories.size()
+                    && pertinent_categories.end() == boost::range::find_if(pertinent_categories, [&](const web::json::value& category)
+                    {
+                        return !is_negative(category);
+                    });
+
                 if (categories.empty())
                 {
                     static const auto no_category = web::json::value::string(utility::string_t());
-                    return pertinent_categories.end() != boost::range::find(pertinent_categories, no_category);
+                    return default_pertinent || pertinent_categories.end() != boost::range::find(pertinent_categories, no_category);
                 }
 
                 // this could be made more efficient if there may be many pertinent categories
-                return categories.end() != boost::range::find_if(categories, [&](const nmos::category& c)
+                if (categories.end() != boost::range::find_if(categories, [&](const nmos::category& c)
+                {
+                    return pertinent_categories.end() != boost::range::find(pertinent_categories, web::json::value::string(utility::s2us("!" + c)));
+                }))
+                {
+                    return false;
+                }
+
+                return default_pertinent || categories.end() != boost::range::find_if(categories, [&](const nmos::category& c)
                 {
                     return pertinent_categories.end() != boost::range::find(pertinent_categories, web::json::value::string(utility::s2us(c)));
                 });
