@@ -56,6 +56,7 @@ set(NMOS_CPP_TEST_NMOS_TEST_SOURCES
     nmos/test/json_validator_test.cpp
     nmos/test/jwt_generator_test.cpp
     nmos/test/jwt_validation_test.cpp
+    nmos/test/log_gate_test.cpp
     nmos/test/mdns_test.cpp
     nmos/test/node_interfaces_test.cpp
     nmos/test/paging_utils_test.cpp
