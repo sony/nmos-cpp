@@ -131,47 +131,62 @@ namespace nmos
         return result;
     }
 
+    namespace details
+    {
+        // as nmos::erase_resource, but with protection against cyclic sub-resource relationships
+        static resources::size_type erase_resource(nmos::resources& resources, const nmos::id& id, bool forget_now, std::set<nmos::id>& erasing)
+        {
+            // also erase all sub-resources of this resource, i.e.
+            // for a node, all devices with matching node_id
+            // for a device, all sources, senders and receivers with matching device_id
+            // for a sender, all flows with matching source_id
+            // it won't be a very deep recursion...
+            resources::size_type count = 0;
+
+            // a resource that is directly or indirectly listed as a sub-resource of itself
+            // would otherwise cause unbounded recursion (see nmos-cpp issue #403)
+            if (!erasing.insert(id).second) return count;
+
+            auto found = resources.find(id);
+            if (resources.end() != found && found->has_data())
+            {
+                for (auto& sub_resource : found->sub_resources)
+                {
+                    count += details::erase_resource(resources, sub_resource, forget_now, erasing);
+                }
+
+                const auto pre = found->data;
+
+                auto resource_updated = nmos::strictly_increasing_update(resources);
+                resources.modify(found, [&resource_updated](resource& resource)
+                {
+                    resource.data = web::json::value::null();
+
+                    // set the update timestamp when a resource is deleted
+                    resource.updated = resource_updated;
+                });
+
+                auto& erased = *found;
+                insert_resource_events(resources, erased.version, erased.downgrade_version, erased.type, pre, erased.data);
+
+                if (forget_now)
+                {
+                    resources.erase(found);
+                }
+
+                ++count;
+            }
+            return count;
+        }
+    }
+
     // erase the resource with the specified id from the specified resources (if present)
     // and return the count of the number of resources erased (including sub-resources)
     // resources may optionally be initially "erased" by setting data to null, and remain in this non-extant state until they are explicitly forgotten (or reinserted)
     resources::size_type erase_resource(resources& resources, const id& id, bool forget_now)
     {
-        // also erase all sub-resources of this resource, i.e.
-        // for a node, all devices with matching node_id
-        // for a device, all sources, senders and receivers with matching device_id
-        // for a sender, all flows with matching source_id
-        // it won't be a very deep recursion...
-        resources::size_type count = 0;
-        auto found = resources.find(id);
-        if (resources.end() != found && found->has_data())
-        {
-            for (auto& sub_resource : found->sub_resources)
-            {
-                count += erase_resource(resources, sub_resource, forget_now);
-            }
-
-            const auto pre = found->data;
-
-            auto resource_updated = nmos::strictly_increasing_update(resources);
-            resources.modify(found, [&resource_updated](resource& resource)
-            {
-                resource.data = web::json::value::null();
-
-                // set the update timestamp when a resource is deleted
-                resource.updated = resource_updated;
-            });
-
-            auto& erased = *found;
-            insert_resource_events(resources, erased.version, erased.downgrade_version, erased.type, pre, erased.data);
-
-            if (forget_now)
-            {
-                resources.erase(found);
-            }
-
-            ++count;
-        }
-        return count;
+        std::set<nmos::id> erasing;
+        return details::erase_resource(resources, id, forget_now, erasing);
     }
 
     // forget all erased resources which expired *before* the specified time from the specified resources
@@ -266,20 +281,34 @@ namespace nmos
     // find the resource with the specified id in the specified resources (if present) and
     // set the health of the resource and all of its sub-resources, to prevent them expiring
     // note, since health is mutable, no need for the resources parameter to be non-const
+    namespace details
+    {
+        // as nmos::set_resource_health, but with protection against cyclic sub-resource relationships
+        static void set_resource_health(const nmos::resources& resources, const nmos::id& id, health health, std::set<nmos::id>& setting)
+        {
+            // a resource that is directly or indirectly listed as a sub-resource of itself
+            // would otherwise cause unbounded recursion (see nmos-cpp issue #403)
+            if (!setting.insert(id).second) return;
+
+            auto found = resources.find(id);
+            if (resources.end() != found && found->has_data())
+            {
+                for (auto& sub_resource : found->sub_resources)
+                {
+                    details::set_resource_health(resources, sub_resource, health, setting);
+                }
+
+                // since health is mutable, no need for:
+                // resources.modify(found, [&health](nmos::resource& resource){ resource.health = health; });
+                found->health = health;
+            }
+        }
+    }
+
     void set_resource_health(const resources& resources, const id& id, health health)
     {
-        auto found = resources.find(id);
-        if (resources.end() != found && found->has_data())
-        {
-            for (auto& sub_resource : found->sub_resources)
-            {
-                set_resource_health(resources, sub_resource, health);
-            }
-
-            // since health is mutable, no need for:
-            // resources.modify(found, [&health](nmos::resource& resource){ resource.health = health; });
-            found->health = health;
-        }
+        std::set<nmos::id> setting;
+        details::set_resource_health(resources, id, health, setting);
     }
 
     static inline std::pair<id, type> no_resource() { return{}; }
