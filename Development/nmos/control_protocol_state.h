@@ -2,6 +2,7 @@
 #define NMOS_CONTROL_PROTOCOL_STATE_H
 
 #include <map>
+#include "bst/optional.h"
 #include "cpprest/json_utils.h"
 #include "nmos/configuration_handlers.h"
 #include "nmos/control_protocol_handlers.h"
@@ -14,6 +15,46 @@ namespace nmos
 {
     namespace experimental
     {
+        // Library-only metadata describing a status domain.
+        // This is not included in the NcClassDescriptor exposed by the control protocol.
+        struct monitor_domain
+        {
+            // Status values which contribute to overall status must use NcOverallStatus-compatible values.
+            nc_property_id status_property_id;
+            nc_property_id status_message_property_id;
+            nc_property_id status_transition_counter_property_id;
+            utility::string_t status_pending_field_name;
+            utility::string_t status_message_pending_field_name;
+            utility::string_t status_pending_received_time_field_name;
+            // A matching inactive status forces the overall status to Inactive.
+            bst::optional<int32_t> inactive_status;
+            // A matching ignored status is neutral and is omitted from the overall status calculation.
+            bst::optional<int32_t> ignored_status;
+            bst::optional<int32_t> activation_status;
+            utility::string_t activation_message;
+            bst::optional<int32_t> deactivation_status;
+            utility::string_t deactivation_message;
+
+            monitor_domain(const nc_property_id& status_property_id, const nc_property_id& status_message_property_id, const nc_property_id& status_transition_counter_property_id,
+                const utility::string_t& status_pending_field_name, const utility::string_t& status_message_pending_field_name, const utility::string_t& status_pending_received_time_field_name,
+                const bst::optional<int32_t>& inactive_status = {}, const bst::optional<int32_t>& ignored_status = {},
+                const bst::optional<int32_t>& activation_status = {}, const utility::string_t& activation_message = {},
+                const bst::optional<int32_t>& deactivation_status = {}, const utility::string_t& deactivation_message = {})
+                : status_property_id(status_property_id)
+                , status_message_property_id(status_message_property_id)
+                , status_transition_counter_property_id(status_transition_counter_property_id)
+                , status_pending_field_name(status_pending_field_name)
+                , status_message_pending_field_name(status_message_pending_field_name)
+                , status_pending_received_time_field_name(status_pending_received_time_field_name)
+                , inactive_status(inactive_status)
+                , ignored_status(ignored_status)
+                , activation_status(activation_status)
+                , activation_message(activation_message)
+                , deactivation_status(deactivation_status)
+                , deactivation_message(deactivation_message)
+            {}
+        };
+
         struct control_class_descriptor // NcClassDescriptor
         {
             utility::string_t description;
@@ -47,6 +88,7 @@ namespace nmos
 
         typedef std::map<nmos::nc_class_id, control_class_descriptor> control_class_descriptors;
         typedef std::map<nmos::nc_name, datatype_descriptor> datatype_descriptors;
+        typedef std::map<nmos::nc_class_id, std::vector<monitor_domain>> monitor_domain_profiles;
 
         struct control_protocol_state
         {
@@ -59,6 +101,7 @@ namespace nmos
 
             experimental::control_class_descriptors control_class_descriptors;
             experimental::datatype_descriptors datatype_descriptors;
+            experimental::monitor_domain_profiles monitor_domain_profiles;
 
             nmos::read_lock read_lock() const { return nmos::read_lock{ mutex }; }
             nmos::write_lock write_lock() const { return nmos::write_lock{ mutex }; }
@@ -73,7 +116,15 @@ namespace nmos
             bool insert(const experimental::datatype_descriptor& datatype_descriptor);
             // erase datatype descriptor of the given datatype name, false if the required datatype descriptor not found
             bool erase(const utility::string_t& datatype_name);
+
+            // insert monitor domains for the given class id, false if a profile already exists
+            bool insert(const nc_class_id& class_id, const std::vector<monitor_domain>& monitor_domains);
+            // erase monitor domains for the given class id, false if a profile was not found
+            bool erase_monitor_domains(const nc_class_id& class_id);
         };
+
+        std::vector<monitor_domain> make_receiver_monitor_domains();
+        std::vector<monitor_domain> make_sender_monitor_domains();
 
         // helper functions to create non-standard control class
         //
@@ -98,6 +149,11 @@ namespace nmos
         web::json::value make_control_class_event_descriptor(const utility::string_t& description, const nc_event_id& id, const nc_name& name, const utility::string_t& event_datatype,
             bool is_deprecated = false);
     }
+
+    typedef std::function<std::vector<experimental::monitor_domain>(const nc_class_id& class_id)> get_monitor_domains_handler;
+
+    // construct callback to retrieve monitor domains declared by a class and its ancestors
+    get_monitor_domains_handler make_get_monitor_domains_handler(experimental::control_protocol_state& control_protocol_state);
 }
 
 #endif

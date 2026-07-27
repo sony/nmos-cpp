@@ -87,6 +87,42 @@ namespace nmos
             return nc::details::make_event_descriptor(description, id, name, event_datatype, is_deprecated);
         }
 
+        std::vector<monitor_domain> make_receiver_monitor_domains()
+        {
+            return
+            {
+                { nc_receiver_monitor_external_synchronization_status_property_id, nc_receiver_monitor_external_synchronization_status_message_property_id, nc_receiver_monitor_external_synchronization_status_transition_counter_property_id,
+                    nmos::fields::nc::external_synchronization_status_pending, nmos::fields::nc::external_synchronization_status_message_pending, nmos::fields::nc::external_synchronization_status_pending_received_time,
+                    {}, nc_synchronization_status::status::not_used },
+                { nc_receiver_monitor_stream_status_property_id, nc_receiver_monitor_stream_status_message_property_id, nc_receiver_monitor_stream_status_transition_counter_property_id,
+                    nmos::fields::nc::stream_status_pending, nmos::fields::nc::stream_status_message_pending, nmos::fields::nc::stream_status_pending_received_time,
+                    nc_stream_status::status::inactive, {}, nc_stream_status::status::healthy, U("Receiver activated"), nc_stream_status::status::inactive, U("Receiver deactivated") },
+                { nc_receiver_monitor_connection_status_property_id, nc_receiver_monitor_connection_status_message_property_id, nc_receiver_monitor_connection_status_transition_counter_property_id,
+                    nmos::fields::nc::connection_status_pending, nmos::fields::nc::connection_status_message_pending, nmos::fields::nc::connection_status_pending_received_time,
+                    nc_connection_status::status::inactive, {}, nc_connection_status::status::healthy, U("Receiver activated"), nc_connection_status::status::inactive, U("Receiver deactivated") },
+                { nc_receiver_monitor_link_status_property_id, nc_receiver_monitor_link_status_message_property_id, nc_receiver_monitor_link_status_transition_counter_property_id,
+                    nmos::fields::nc::link_status_pending, nmos::fields::nc::link_status_message_pending, nmos::fields::nc::link_status_pending_received_time }
+            };
+        }
+
+        std::vector<monitor_domain> make_sender_monitor_domains()
+        {
+            return
+            {
+                { nc_sender_monitor_external_synchronization_status_property_id, nc_sender_monitor_external_synchronization_status_message_property_id, nc_sender_monitor_external_synchronization_status_transition_counter_property_id,
+                    nmos::fields::nc::external_synchronization_status_pending, nmos::fields::nc::external_synchronization_status_message_pending, nmos::fields::nc::external_synchronization_status_pending_received_time,
+                    {}, nc_synchronization_status::status::not_used },
+                { nc_sender_monitor_essence_status_property_id, nc_sender_monitor_essence_status_message_property_id, nc_sender_monitor_essence_status_transition_counter_property_id,
+                    nmos::fields::nc::essence_status_pending, nmos::fields::nc::essence_status_message_pending, nmos::fields::nc::essence_status_pending_received_time,
+                    nc_essence_status::status::inactive, {}, nc_essence_status::status::healthy, U("Sender activated"), nc_essence_status::status::inactive, U("Sender deactivated") },
+                { nc_sender_monitor_transmission_status_property_id, nc_sender_monitor_transmission_status_message_property_id, nc_sender_monitor_transmission_status_transition_counter_property_id,
+                    nmos::fields::nc::transmission_status_pending, nmos::fields::nc::transmission_status_message_pending, nmos::fields::nc::transmission_status_pending_received_time,
+                    nc_transmission_status::status::inactive, {}, nc_transmission_status::status::healthy, U("Sender activated"), nc_transmission_status::status::inactive, U("Sender deactivated") },
+                { nc_sender_monitor_link_status_property_id, nc_sender_monitor_link_status_message_property_id, nc_sender_monitor_link_status_transition_counter_property_id,
+                    nmos::fields::nc::link_status_pending, nmos::fields::nc::link_status_message_pending, nmos::fields::nc::link_status_pending_received_time }
+            };
+        }
+
         namespace details
         {
             nmos::experimental::control_protocol_method_handler make_nc_get_handler(get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor)
@@ -258,11 +294,11 @@ namespace nmos
                     return nc::get_late_packet_counters(resources, resource, arguments, is_deprecated, get_late_packet_counters, gate);
                 };
             }
-            nmos::experimental::control_protocol_method_handler make_nc_reset_monitor_handler(get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, control_protocol_property_changed_handler property_changed, reset_monitor_handler reset_monitor)
+            nmos::experimental::control_protocol_method_handler make_nc_reset_monitor_handler(get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, get_monitor_domains_handler get_monitor_domains, control_protocol_property_changed_handler property_changed, reset_monitor_handler reset_monitor)
             {
-                return [get_control_protocol_class_descriptor, property_changed, reset_monitor](nmos::resources& resources, const nmos::resource& resource, const web::json::value& arguments, bool is_deprecated, slog::base_gate& gate)
+                return [get_control_protocol_class_descriptor, get_monitor_domains, property_changed, reset_monitor](nmos::resources& resources, const nmos::resource& resource, const web::json::value& arguments, bool is_deprecated, slog::base_gate& gate)
                 {
-                    return nc::reset_monitor(resources, resource, arguments, is_deprecated, get_control_protocol_class_descriptor, property_changed, reset_monitor, gate);
+                    return nc::reset_monitor(resources, resource, arguments, is_deprecated, get_control_protocol_class_descriptor, property_changed, reset_monitor, get_monitor_domains, gate);
                 };
             }
         }
@@ -297,6 +333,7 @@ namespace nmos
             };
 
             auto get_control_protocol_class_descriptor = make_get_control_protocol_class_descriptor_handler(*this);
+            auto get_monitor_domains = make_get_monitor_domains_handler(*this);
             auto get_control_protocol_datatype_descriptor = make_get_control_protocol_datatype_descriptor_handler(*this);
 
             // setup the standard control classes
@@ -405,7 +442,7 @@ namespace nmos
                         // link NcReceiverMonitor method_ids with method functions
                         { nc_receiver_monitor_get_lost_packet_counters_method_id, details::make_nc_get_lost_packet_counters_handler(get_lost_packet_counters)},
                         { nc_receiver_monitor_get_late_packet_counters_method_id, details::make_nc_get_late_packet_counters_handler(get_late_packet_counters)},
-                        { nc_receiver_monitor_reset_monitor_method_id, details::make_nc_reset_monitor_handler(get_control_protocol_class_descriptor, property_changed, reset_monitor)}
+                        { nc_receiver_monitor_reset_monitor_method_id, details::make_nc_reset_monitor_handler(get_control_protocol_class_descriptor, get_monitor_domains, property_changed, reset_monitor)}
                     }),
                     // NcReceiverMonitor events
                     to_vector(nc::make_receiver_monitor_events())) },
@@ -418,7 +455,7 @@ namespace nmos
                     {
                         // link NcSenderMonitor method_ids with method functions
                         { nc_sender_monitor_get_transmission_error_counters_method_id, details::make_nc_get_lost_packet_counters_handler(get_lost_packet_counters)},
-                        { nc_sender_monitor_reset_monitor_method_id, details::make_nc_reset_monitor_handler(get_control_protocol_class_descriptor, property_changed, reset_monitor)}
+                        { nc_sender_monitor_reset_monitor_method_id, details::make_nc_reset_monitor_handler(get_control_protocol_class_descriptor, get_monitor_domains, property_changed, reset_monitor)}
                     }),
                     // NcSenderMonitor events
                     to_vector(nc::make_sender_monitor_events())) },
@@ -432,6 +469,13 @@ namespace nmos
                         { nc_bulk_properties_manager_set_properties_by_path_method_id, details::make_nc_set_properties_by_path_handler(make_get_control_protocol_class_descriptor_handler(*this), make_get_control_protocol_datatype_descriptor_handler(*this), validate_validation_fingerprint, get_read_only_modification_allow_list, remove_device_model_object, create_device_model_object, property_changed) }
                     }),
                     to_vector(nc::make_bulk_properties_manager_events())) }
+            };
+
+            // Private status-domain metadata, ordered from lowest to highest message priority
+            monitor_domain_profiles =
+            {
+                { nc_receiver_monitor_class_id, make_receiver_monitor_domains() },
+                { nc_sender_monitor_class_id, make_sender_monitor_domains() }
             };
 
             // setup the standard datatypes
@@ -586,5 +630,43 @@ namespace nmos
             }
             return false;
         }
+
+        bool control_protocol_state::insert(const nc_class_id& class_id, const std::vector<monitor_domain>& monitor_domains)
+        {
+            auto lock = write_lock();
+
+            if (monitor_domain_profiles.end() == monitor_domain_profiles.find(class_id))
+            {
+                monitor_domain_profiles[class_id] = monitor_domains;
+                return true;
+            }
+            return false;
+        }
+
+        bool control_protocol_state::erase_monitor_domains(const nc_class_id& class_id)
+        {
+            auto lock = write_lock();
+            return 0 < monitor_domain_profiles.erase(class_id);
+        }
+    }
+
+    get_monitor_domains_handler make_get_monitor_domains_handler(experimental::control_protocol_state& control_protocol_state)
+    {
+        return [&](const nc_class_id& class_id)
+        {
+            std::vector<experimental::monitor_domain> monitor_domains;
+            auto lock = control_protocol_state.read_lock();
+
+            for (size_t class_id_size = 1; class_id_size <= class_id.size(); ++class_id_size)
+            {
+                const nc_class_id ancestor_class_id(class_id.begin(), class_id.begin() + class_id_size);
+                const auto found = control_protocol_state.monitor_domain_profiles.find(ancestor_class_id);
+                if (control_protocol_state.monitor_domain_profiles.end() != found)
+                {
+                    monitor_domains.insert(monitor_domains.end(), found->second.begin(), found->second.end());
+                }
+            }
+            return monitor_domains;
+        };
     }
 }
