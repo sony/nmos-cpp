@@ -120,6 +120,9 @@ namespace nmos
 	    // is the given class_id a NcStatusMonitor
 	    bool is_status_monitor(const nc_class_id& class_id);
 
+	    // is the given class_id a NcReceiverMonitor
+	    bool is_receiver_monitor(const nc_class_id& class_id);
+
 	    // is the given class_id a NcSenderMonitor
 	    bool is_sender_monitor(const nc_class_id& class_id);
 

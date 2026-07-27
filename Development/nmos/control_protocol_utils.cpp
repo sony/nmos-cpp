@@ -614,6 +614,12 @@ namespace nmos
             return details::is_control_class(nc_status_monitor_class_id, class_id);
         }
 
+        // is the given class_id a NcReceiverMonitor
+        bool is_receiver_monitor(const nc_class_id& class_id)
+        {
+            return details::is_control_class(nc_receiver_monitor_class_id, class_id);
+        }
+
         // is the given class_id a NcSenderMonitor
         bool is_sender_monitor(const nc_class_id& class_id)
         {
@@ -624,7 +630,7 @@ namespace nmos
         {
             if (get_monitor_domains_) return get_monitor_domains_(class_id);
             if (is_sender_monitor(class_id)) return experimental::make_sender_monitor_domains();
-            if (details::is_control_class(nc_receiver_monitor_class_id, class_id)) return experimental::make_receiver_monitor_domains();
+            if (is_receiver_monitor(class_id)) return experimental::make_receiver_monitor_domains();
             return {};
         }
 
@@ -1345,7 +1351,7 @@ namespace nmos
                 }
 
                 const auto sender_monitor = nc::is_sender_monitor(class_id);
-                const auto receiver_monitor = details::is_control_class(nc_receiver_monitor_class_id, class_id);
+                const auto receiver_monitor = nc::is_receiver_monitor(class_id);
                 if (succeed && (sender_monitor || receiver_monitor))
                 {
                     auto auto_reset_property_id = sender_monitor ? nmos::nc_sender_monitor_auto_reset_monitor_property_id : nmos::nc_receiver_monitor_auto_reset_monitor_property_id;
