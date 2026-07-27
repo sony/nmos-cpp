@@ -87,39 +87,119 @@ namespace nmos
             return nc::details::make_event_descriptor(description, id, name, event_datatype, is_deprecated);
         }
 
+        // Domains ordered from lowest to highest overallStatusMessage priority: sync, payload, transport, link
         std::vector<monitor_domain> make_receiver_monitor_domains()
         {
             return
             {
-                { nc_receiver_monitor_external_synchronization_status_property_id, nc_receiver_monitor_external_synchronization_status_message_property_id, nc_receiver_monitor_external_synchronization_status_transition_counter_property_id,
-                    nmos::fields::nc::external_synchronization_status_pending, nmos::fields::nc::external_synchronization_status_message_pending, nmos::fields::nc::external_synchronization_status_pending_received_time,
-                    {}, nc_synchronization_status::status::not_used },
-                { nc_receiver_monitor_stream_status_property_id, nc_receiver_monitor_stream_status_message_property_id, nc_receiver_monitor_stream_status_transition_counter_property_id,
-                    nmos::fields::nc::stream_status_pending, nmos::fields::nc::stream_status_message_pending, nmos::fields::nc::stream_status_pending_received_time,
-                    nc_stream_status::status::inactive, {}, nc_stream_status::status::healthy, U("Receiver activated"), nc_stream_status::status::inactive, U("Receiver deactivated") },
-                { nc_receiver_monitor_connection_status_property_id, nc_receiver_monitor_connection_status_message_property_id, nc_receiver_monitor_connection_status_transition_counter_property_id,
-                    nmos::fields::nc::connection_status_pending, nmos::fields::nc::connection_status_message_pending, nmos::fields::nc::connection_status_pending_received_time,
-                    nc_connection_status::status::inactive, {}, nc_connection_status::status::healthy, U("Receiver activated"), nc_connection_status::status::inactive, U("Receiver deactivated") },
-                { nc_receiver_monitor_link_status_property_id, nc_receiver_monitor_link_status_message_property_id, nc_receiver_monitor_link_status_transition_counter_property_id,
-                    nmos::fields::nc::link_status_pending, nmos::fields::nc::link_status_message_pending, nmos::fields::nc::link_status_pending_received_time }
+                // External synchronization status
+                {
+                    nc_receiver_monitor_external_synchronization_status_property_id,                  // status_property_id
+                    nc_receiver_monitor_external_synchronization_status_message_property_id,          // status_message_property_id
+                    nc_receiver_monitor_external_synchronization_status_transition_counter_property_id, // status_transition_counter_property_id
+                    nmos::fields::nc::external_synchronization_status_pending,                       // status_pending_field_name
+                    nmos::fields::nc::external_synchronization_status_message_pending,               // status_message_pending_field_name
+                    nmos::fields::nc::external_synchronization_status_pending_received_time,         // status_pending_received_time_field_name
+                    {},                                                                              // inactive_status
+                    nc_synchronization_status::status::not_used                                      // ignored_status
+                },
+                // Stream status
+                {
+                    nc_receiver_monitor_stream_status_property_id,                                   // status_property_id
+                    nc_receiver_monitor_stream_status_message_property_id,                           // status_message_property_id
+                    nc_receiver_monitor_stream_status_transition_counter_property_id,                // status_transition_counter_property_id
+                    nmos::fields::nc::stream_status_pending,                                         // status_pending_field_name
+                    nmos::fields::nc::stream_status_message_pending,                                 // status_message_pending_field_name
+                    nmos::fields::nc::stream_status_pending_received_time,                           // status_pending_received_time_field_name
+                    nc_stream_status::status::inactive,                                              // inactive_status
+                    {},                                                                              // ignored_status
+                    nc_stream_status::status::healthy,                                               // activation_status
+                    U("Receiver activated"),                                                         // activation_message
+                    nc_stream_status::status::inactive,                                              // deactivation_status
+                    U("Receiver deactivated")                                                        // deactivation_message
+                },
+                // Connection status
+                {
+                    nc_receiver_monitor_connection_status_property_id,                               // status_property_id
+                    nc_receiver_monitor_connection_status_message_property_id,                       // status_message_property_id
+                    nc_receiver_monitor_connection_status_transition_counter_property_id,            // status_transition_counter_property_id
+                    nmos::fields::nc::connection_status_pending,                                     // status_pending_field_name
+                    nmos::fields::nc::connection_status_message_pending,                             // status_message_pending_field_name
+                    nmos::fields::nc::connection_status_pending_received_time,                       // status_pending_received_time_field_name
+                    nc_connection_status::status::inactive,                                          // inactive_status
+                    {},                                                                              // ignored_status
+                    nc_connection_status::status::healthy,                                           // activation_status
+                    U("Receiver activated"),                                                         // activation_message
+                    nc_connection_status::status::inactive,                                          // deactivation_status
+                    U("Receiver deactivated")                                                        // deactivation_message
+                },
+                // Link status
+                {
+                    nc_receiver_monitor_link_status_property_id,                                     // status_property_id
+                    nc_receiver_monitor_link_status_message_property_id,                             // status_message_property_id
+                    nc_receiver_monitor_link_status_transition_counter_property_id,                  // status_transition_counter_property_id
+                    nmos::fields::nc::link_status_pending,                                           // status_pending_field_name
+                    nmos::fields::nc::link_status_message_pending,                                   // status_message_pending_field_name
+                    nmos::fields::nc::link_status_pending_received_time                              // status_pending_received_time_field_name
+                }
             };
         }
 
+        // Domains ordered from lowest to highest overallStatusMessage priority: sync, payload, transport, link
         std::vector<monitor_domain> make_sender_monitor_domains()
         {
             return
             {
-                { nc_sender_monitor_external_synchronization_status_property_id, nc_sender_monitor_external_synchronization_status_message_property_id, nc_sender_monitor_external_synchronization_status_transition_counter_property_id,
-                    nmos::fields::nc::external_synchronization_status_pending, nmos::fields::nc::external_synchronization_status_message_pending, nmos::fields::nc::external_synchronization_status_pending_received_time,
-                    {}, nc_synchronization_status::status::not_used },
-                { nc_sender_monitor_essence_status_property_id, nc_sender_monitor_essence_status_message_property_id, nc_sender_monitor_essence_status_transition_counter_property_id,
-                    nmos::fields::nc::essence_status_pending, nmos::fields::nc::essence_status_message_pending, nmos::fields::nc::essence_status_pending_received_time,
-                    nc_essence_status::status::inactive, {}, nc_essence_status::status::healthy, U("Sender activated"), nc_essence_status::status::inactive, U("Sender deactivated") },
-                { nc_sender_monitor_transmission_status_property_id, nc_sender_monitor_transmission_status_message_property_id, nc_sender_monitor_transmission_status_transition_counter_property_id,
-                    nmos::fields::nc::transmission_status_pending, nmos::fields::nc::transmission_status_message_pending, nmos::fields::nc::transmission_status_pending_received_time,
-                    nc_transmission_status::status::inactive, {}, nc_transmission_status::status::healthy, U("Sender activated"), nc_transmission_status::status::inactive, U("Sender deactivated") },
-                { nc_sender_monitor_link_status_property_id, nc_sender_monitor_link_status_message_property_id, nc_sender_monitor_link_status_transition_counter_property_id,
-                    nmos::fields::nc::link_status_pending, nmos::fields::nc::link_status_message_pending, nmos::fields::nc::link_status_pending_received_time }
+                // External synchronization status
+                {
+                    nc_sender_monitor_external_synchronization_status_property_id,                    // status_property_id
+                    nc_sender_monitor_external_synchronization_status_message_property_id,            // status_message_property_id
+                    nc_sender_monitor_external_synchronization_status_transition_counter_property_id, // status_transition_counter_property_id
+                    nmos::fields::nc::external_synchronization_status_pending,                       // status_pending_field_name
+                    nmos::fields::nc::external_synchronization_status_message_pending,               // status_message_pending_field_name
+                    nmos::fields::nc::external_synchronization_status_pending_received_time,         // status_pending_received_time_field_name
+                    {},                                                                              // inactive_status
+                    nc_synchronization_status::status::not_used                                      // ignored_status
+                },
+                // Essence status
+                {
+                    nc_sender_monitor_essence_status_property_id,                                    // status_property_id
+                    nc_sender_monitor_essence_status_message_property_id,                            // status_message_property_id
+                    nc_sender_monitor_essence_status_transition_counter_property_id,                 // status_transition_counter_property_id
+                    nmos::fields::nc::essence_status_pending,                                        // status_pending_field_name
+                    nmos::fields::nc::essence_status_message_pending,                                // status_message_pending_field_name
+                    nmos::fields::nc::essence_status_pending_received_time,                          // status_pending_received_time_field_name
+                    nc_essence_status::status::inactive,                                             // inactive_status
+                    {},                                                                              // ignored_status
+                    nc_essence_status::status::healthy,                                              // activation_status
+                    U("Sender activated"),                                                           // activation_message
+                    nc_essence_status::status::inactive,                                             // deactivation_status
+                    U("Sender deactivated")                                                          // deactivation_message
+                },
+                // Transmission status
+                {
+                    nc_sender_monitor_transmission_status_property_id,                               // status_property_id
+                    nc_sender_monitor_transmission_status_message_property_id,                       // status_message_property_id
+                    nc_sender_monitor_transmission_status_transition_counter_property_id,            // status_transition_counter_property_id
+                    nmos::fields::nc::transmission_status_pending,                                   // status_pending_field_name
+                    nmos::fields::nc::transmission_status_message_pending,                           // status_message_pending_field_name
+                    nmos::fields::nc::transmission_status_pending_received_time,                     // status_pending_received_time_field_name
+                    nc_transmission_status::status::inactive,                                        // inactive_status
+                    {},                                                                              // ignored_status
+                    nc_transmission_status::status::healthy,                                         // activation_status
+                    U("Sender activated"),                                                           // activation_message
+                    nc_transmission_status::status::inactive,                                        // deactivation_status
+                    U("Sender deactivated")                                                          // deactivation_message
+                },
+                // Link status
+                {
+                    nc_sender_monitor_link_status_property_id,                                       // status_property_id
+                    nc_sender_monitor_link_status_message_property_id,                               // status_message_property_id
+                    nc_sender_monitor_link_status_transition_counter_property_id,                    // status_transition_counter_property_id
+                    nmos::fields::nc::link_status_pending,                                           // status_pending_field_name
+                    nmos::fields::nc::link_status_message_pending,                                   // status_message_pending_field_name
+                    nmos::fields::nc::link_status_pending_received_time                              // status_pending_received_time_field_name
+                }
             };
         }
 
@@ -471,7 +551,7 @@ namespace nmos
                     to_vector(nc::make_bulk_properties_manager_events())) }
             };
 
-            // Private status-domain metadata, ordered from lowest to highest message priority
+            // Private status-domain metadata for standard BCP-008 monitor classes
             monitor_domain_profiles =
             {
                 { nc_receiver_monitor_class_id, make_receiver_monitor_domains() },
