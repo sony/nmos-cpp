@@ -61,6 +61,7 @@ set(NMOS_CPP_TEST_NMOS_TEST_SOURCES
     nmos/test/paging_utils_test.cpp
     nmos/test/query_api_test.cpp
     nmos/test/sdp_test_utils.cpp
+    nmos/test/sdp_temporal_redundancy_test.cpp
     nmos/test/sdp_utils_test.cpp
     nmos/test/settings_test.cpp
     nmos/test/slog_test.cpp

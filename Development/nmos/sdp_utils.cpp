@@ -1,5 +1,6 @@
 #include "nmos/sdp_utils.h"
 
+#include <limits>
 #include <boost/algorithm/string/case_conv.hpp>
 #include <boost/asio/ip/address.hpp>
 #include <boost/range/adaptor/filtered.hpp>
@@ -445,6 +446,7 @@ namespace nmos
             const auto& destination_ip = nmos::fields::destination_ip(transport_param);
             return destination_ip.as_string();
         }
+
     }
 
     // Make a json representation of an SDP file, e.g. for sdp::make_session_description, from the specified parameters; explicitly specify whether 'source-filter' attributes are included to override the default behaviour
@@ -457,8 +459,25 @@ namespace nmos
         // and the rtp_enabled status does not affect the leg's media description
         // see https://github.com/AMWA-TV/is-05/issues/109#issuecomment-598721418
 
+        const bool temporal_redundancy = !sdp_params.temporal_redundancy.synchronization_sources.empty();
+
+        if (temporal_redundancy)
+        {
+            if (2 != transport_params.size() || 2 != sdp_params.temporal_redundancy.synchronization_sources.size())
+            {
+                throw details::sdp_creation_error("SMPTE ST 2022-7 temporal redundancy requires two transport parameter legs and two synchronization sources");
+            }
+            if (sdp_params.temporal_redundancy.media_stream_id.empty())
+            {
+                throw details::sdp_creation_error("SMPTE ST 2022-7 temporal redundancy requires a media stream id");
+            }
+            if (transport_params.at(0) != transport_params.at(1))
+            {
+                throw details::sdp_creation_error("SMPTE ST 2022-7 temporal redundancy requires identical transport parameter legs");
+            }
+        }
         // check to ensure enough media_stream_ids for multi-leg transport_params
-        if (transport_params.size() > 1 && transport_params.size() > sdp_params.group.media_stream_ids.size())
+        else if (transport_params.size() > 1 && transport_params.size() > sdp_params.group.media_stream_ids.size())
         {
             throw details::sdp_creation_error("not enough sdp parameters media stream ids for transport_params");
         }
@@ -684,8 +703,56 @@ namespace nmos
                 web::json::push_back(media_attributes, fmtp);
             }
 
+            if (temporal_redundancy)
+            {
+                auto synchronization_source_ids = value::array();
+                for (const auto& synchronization_source : sdp_params.temporal_redundancy.synchronization_sources)
+                {
+                    web::json::push_back(synchronization_source_ids, value::number(synchronization_source.id));
+                    web::json::push_back(
+                        media_attributes, value_of({
+                            { sdp::fields::name, sdp::attributes::ssrc },
+                            { sdp::fields::value, value_of({
+                                { sdp::fields::ssrc_id, synchronization_source.id },
+                                { sdp::fields::attribute, value_of({
+                                    { sdp::fields::name, U("cname") },
+                                    { sdp::fields::value, synchronization_source.cname }
+                                }, keep_order) }
+                            }, keep_order) }
+                        }, keep_order)
+                    );
+                }
+
+                web::json::push_back(
+                    media_attributes, value_of({
+                        { sdp::fields::name, sdp::attributes::ssrc_group },
+                        { sdp::fields::value, value_of({
+                            { sdp::fields::semantics, sdp::group_semantics::duplication.name },
+                            { sdp::fields::ssrc_ids, std::move(synchronization_source_ids) }
+                        }, keep_order) }
+                    }, keep_order)
+                );
+
+                if (sdp_params.temporal_redundancy.duplication_delay)
+                {
+                    web::json::push_back(
+                        media_attributes, value_of({
+                            { sdp::fields::name, sdp::attributes::duplication_delay },
+                            { sdp::fields::value, *sdp_params.temporal_redundancy.duplication_delay }
+                        }, keep_order)
+                    );
+                }
+
+                web::json::push_back(
+                    media_attributes, value_of({
+                        { sdp::fields::name, sdp::attributes::mid },
+                        { sdp::fields::value, sdp_params.temporal_redundancy.media_stream_id }
+                    }, keep_order)
+                );
+            }
+
             // insert "media stream identification" if there is more than 1 leg
-            if (transport_params.size() > 1)
+            if (transport_params.size() > 1 && !temporal_redundancy)
             {
                 // a=mid:<identification-tag>
                 // See https://tools.ietf.org/html/rfc5888
@@ -705,6 +772,7 @@ namespace nmos
             web::json::push_back(media_descriptions, std::move(media_description));
 
             ++leg;
+            if (temporal_redundancy) break;
         }
 
         // add group attribute if there is more than 1 leg
@@ -954,10 +1022,10 @@ namespace nmos
         // * Any Source Multicast
         // * Operation with SMPTE 2022-7 - Separate Source Addresses
         // * Operation with SMPTE 2022-7 - Separate Destination Addresses
+        // * Operation with SMPTE 2022-7 - Temporal Redundancy
 
         // The following cases are not yet handled:
         // * Operation with SMPTE 2022-5
-        // * Operation with SMPTE 2022-7 - Temporal Redundancy
         // * Operation with RTCP
 
         auto& media_descriptions = sdp::fields::media_descriptions(session_description);
@@ -1013,9 +1081,20 @@ namespace nmos
                 // take account of the number of source addresses (cf. Operation with SMPTE 2022-7 - Separate Source Addresses)
 
                 auto& media_attributes = sdp::fields::attributes(media_description);
+                size_t ssrc_duplication_count = 0;
                 if (!media_attributes.is_null())
                 {
                     auto& ma = media_attributes.as_array();
+
+                    const auto ssrc_group = sdp::find_name(ma, sdp::attributes::ssrc_group);
+                    if (ma.end() != ssrc_group)
+                    {
+                        const auto& value = sdp::fields::value(*ssrc_group);
+                        if (sdp::group_semantics::duplication == sdp::group_semantics_type{ sdp::fields::semantics(value) })
+                        {
+                            ssrc_duplication_count = sdp::fields::ssrc_ids(value).size();
+                        }
+                    }
 
                     // hmm, this code assumes that <filter-mode> is 'incl' and ought to check that <nettype>, <address-types> and <dest-address>
                     // match the connection address, and fall back to any "session-level" source-filter values if they don't match
@@ -1026,17 +1105,20 @@ namespace nmos
                         auto& sf = sdp::fields::value(*source_filter);
                         auto& sa = sdp::fields::source_addresses(sf);
 
-                        if (sa.size() <= source_address)
+                        if (sa.size() <= source_address && !(1 == sa.size() && source_address < ssrc_duplication_count))
                         {
                             source_address -= sa.size();
                             continue;
                         }
 
                         details::set_multicast_ip_interface_ip(params, sdp::fields::destination_address(sf));
-                        params[nmos::fields::source_ip] = sdp::fields::source_addresses(sf).at(source_address);
+                        params[nmos::fields::source_ip] = sdp::fields::source_addresses(sf).at(1 == sa.size() ? 0 : source_address);
                         source_address = 0;
                     }
                 }
+
+                // SSRC-multiplexed temporal redundancy uses one media description for both IS-05 legs.
+                if (0 != source_address && source_address < ssrc_duplication_count) source_address = 0;
 
                 if (0 != source_address)
                 {
@@ -1099,11 +1181,9 @@ namespace nmos
             }
         }
 
-        // hmm, this code does not handle Synchronization Source (SSRC) level grouping or attributes
-        // i.e. the 'ssrc-group' attribute or 'ssrc' used to convey e.g. 'fmtp', 'mediaclk' or 'ts-refclk'
-        // see https://tools.ietf.org/html/rfc7104#section-3.2
-        // and https://tools.ietf.org/html/rfc5576
-        // and https://www.iana.org/assignments/sdp-parameters/sdp-parameters.xhtml#sdp-att-field
+        // SSRC-level attributes used to convey e.g. 'fmtp', 'mediaclk' or 'ts-refclk' are not handled.
+        // SSRC-level duplication grouping and cname attributes are handled below.
+        // See https://www.iana.org/assignments/sdp-parameters/sdp-parameters.xhtml#sdp-att-field
 
         // Group
         // a=group:<semantics>[ <identification-tag>]*
@@ -1124,6 +1204,60 @@ namespace nmos
         // Media Descriptions
         // See https://tools.ietf.org/html/rfc4566#section-5
         const auto& media_descriptions = sdp::fields::media_descriptions(sdp);
+
+        // SSRC-level duplication for SMPTE ST 2022-7 temporal redundancy.
+        // See https://tools.ietf.org/html/rfc5576 and https://tools.ietf.org/html/rfc7104
+        for (const auto& media_description : media_descriptions.as_array())
+        {
+            const auto& media_attributes = sdp::fields::attributes(media_description);
+            if (media_attributes.is_null()) continue;
+
+            const auto& attributes = media_attributes.as_array();
+            const auto ssrc_group = sdp::find_name(attributes, sdp::attributes::ssrc_group);
+            if (attributes.end() == ssrc_group) continue;
+
+            const auto& ssrc_group_value = sdp::fields::value(*ssrc_group);
+            if (sdp::group_semantics::duplication != sdp::group_semantics_type{ sdp::fields::semantics(ssrc_group_value) }) continue;
+            if (2 != sdp::fields::ssrc_ids(ssrc_group_value).size()) continue;
+
+            // Separate-source-address redundancy also uses ssrc-group:DUP, but has more than one source address.
+            const auto source_filter = sdp::find_name(attributes, sdp::attributes::source_filter);
+            if (attributes.end() != source_filter
+                && 1 != sdp::fields::source_addresses(sdp::fields::value(*source_filter)).size()) continue;
+
+            for (const auto& id : sdp::fields::ssrc_ids(ssrc_group_value))
+            {
+                const auto id_value = id.as_number().to_uint64();
+                if (id_value > (std::numeric_limits<uint32_t>::max)()) throw std::out_of_range("SSRC id exceeds 32 bits");
+                utility::string_t cname;
+                for (const auto& attribute : attributes)
+                {
+                    if (sdp::attributes::ssrc != sdp::fields::name(attribute)) continue;
+                    const auto& value = sdp::fields::value(attribute);
+                    const auto& source_attribute = sdp::fields::attribute(value);
+                    if (id_value == sdp::fields::ssrc_id(value)
+                        && U("cname") == sdp::fields::name(source_attribute)
+                        && !sdp::fields::value(source_attribute).is_null())
+                    {
+                        cname = sdp::fields::value(source_attribute).as_string();
+                        break;
+                    }
+                }
+                sdp_params.temporal_redundancy.synchronization_sources.push_back({ static_cast<uint32_t>(id_value), cname });
+            }
+
+            const auto duplication_delay = sdp::find_name(attributes, sdp::attributes::duplication_delay);
+            if (attributes.end() != duplication_delay)
+            {
+                const auto delay = sdp::fields::value(*duplication_delay).as_number().to_uint64();
+                if (delay > (std::numeric_limits<uint32_t>::max)()) throw std::out_of_range("duplication delay exceeds 32 bits");
+                sdp_params.temporal_redundancy.duplication_delay = static_cast<uint32_t>(delay);
+            }
+
+            const auto mid = sdp::find_name(attributes, sdp::attributes::mid);
+            if (attributes.end() != mid) sdp_params.temporal_redundancy.media_stream_id = sdp::fields::value(*mid).as_string();
+            break;
+        }
 
         // ts-refclk attributes
         // See https://tools.ietf.org/html/rfc7273
