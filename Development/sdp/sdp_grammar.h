@@ -26,6 +26,45 @@ namespace sdp
             parser parse;
         };
 
+        // converters for the value types used by this grammar, and generators for compound
+        // values, which may also be used to define additional attribute converters
+        // see https://tools.ietf.org/html/rfc4566#section-9
+        // none of these, or get_default_attribute_converters, default_attribute_converter
+        // or session_description below, are safe to use during static initialization;
+        // prefer a function-local static for application-defined grammars
+
+        // <byte-string>
+        extern const converter string_converter;
+
+        // a number, e.g. <frame rate> in "a=framerate:<frame rate>"
+        extern const converter number_converter;
+
+        // 1*DIGIT
+        extern const converter digits_converter;
+
+        // 1*DIGIT, represented as a numeric string, for values which may exceed the range
+        // of a number, e.g. <sess-id>
+        extern const converter big_digits_converter;
+
+        // a space-separated list of <byte-string>
+        extern const converter strings_converter;
+
+        // a semicolon-separated list of <name>[=<value>], e.g. <format specific parameters>
+        extern const converter named_values_converter;
+
+        // <key>[<separator><value>]
+        converter key_value_converter(char separator, const std::pair<utility::string_t, converter>& key_converter, const std::pair<utility::string_t, converter>& value_converter);
+
+        // a delimited list of values, represented as a json array
+        converter array_converter(const converter& converter, const std::string& delimiter = " ");
+
+        // identical to above except that parse_delimiter is a regex pattern
+        converter array_converter(const converter& converter, const std::string& format_delimiter, const std::string& parse_delimiter);
+
+        // a delimited sequence of values, represented as a json object with the specified field names
+        // an empty field name indicates the values of the converted json object are merged into the result
+        converter object_converter(const std::vector<std::pair<utility::string_t, converter>>& field_converters, const std::string& delimiter = " ");
+
         // "An SDP session description consists of a number of lines of text of
         // the form: <type>=<value>
         // where <type> MUST be exactly one case-significant character and
@@ -80,7 +119,12 @@ namespace sdp
         // See https://tools.ietf.org/html/rfc4566#section-6
         attribute_converters get_default_attribute_converters();
 
+        // converter for an attribute with no specific converter, which treats the <att-value> as an opaque <byte-string>
+        // and an attribute with no <att-value> as a property attribute
+        extern const converter default_attribute_converter;
+
         // construct a grammar with the specified attribute converters
+        // the converters and default_converter are captured by reference and must outlive the returned grammar
         description session_description(const attribute_converters& converters, const converter& default_converter);
     }
 
