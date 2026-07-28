@@ -212,6 +212,10 @@ jobs:
         echo -e "$hostip crl.testsuite.nmos.tv\n$hostip ocsp.testsuite.nmos.tv" | sudo tee -a /etc/hosts > /dev/null
         # re-synchronize the package index
         sudo apt-get update -q
+        # GitHub-hosted runners are ephemeral; needrestart can restart avahi-daemon,
+        # systemd-networkd, systemd-resolved, etc. during later apt installs (e.g. when
+        # a libc upgrade is pulled in), leaving mDNS broken for unit tests. Remove it.
+        sudo apt-get autopurge -y needrestart
 
     - name: ubuntu mdns install
       if: runner.os == 'Linux' && matrix.install_mdns == true
@@ -267,13 +271,33 @@ jobs:
       if: runner.os == 'Linux' && matrix.install_mdns == false
       run: |
         sudo apt-get install -f libavahi-compat-libdnssd-dev libnss-mdns avahi-utils
+        # install Name Service Cache Daemon to speed up repeated mDNS name discovery
+        # (do this before configuring Avahi so any package work finishes first)
+        sudo apt-get install -f nscd
         echo "CTEST_EXTRA_ARGS=$CTEST_EXTRA_ARGS -E testMdnsAdvertiseAddress" >> $GITHUB_ENV
         echo "CTEST_EXPECTED_FAILURES=$CTEST_EXPECTED_FAILURES -R testMdnsAdvertiseAddress" >> $GITHUB_ENV
         # make avahi only respond on the "eth0" interface
         sudo sed -i 's/#*allow-interfaces=.*/allow-interfaces=eth0/g' /etc/avahi/avahi-daemon.conf
         sudo systemctl restart avahi-daemon
-        # install Name Service Cache Daemon to speed up repeated mDNS name discovery
-        sudo apt-get install -f nscd
+        # verify local publish/browse works before spending time on the build
+        avahi-publish -s ci-selftest _nmos-test._tcp 8080 &
+        publish_pid=$!
+        found=
+        for _ in $(seq 1 30); do
+          if avahi-browse -pt _nmos-test._tcp 2>/dev/null | grep -q ci-selftest; then
+            found=1
+            break
+          fi
+          sleep 1
+        done
+        kill "$publish_pid" 2>/dev/null || true
+        wait "$publish_pid" 2>/dev/null || true
+        if [ -z "$found" ]; then
+          systemctl status avahi-daemon --no-pager || true
+          journalctl -u avahi-daemon --no-pager -n 100 || true
+          echo "::error::avahi-daemon cannot browse locally published services"
+          exit 1
+        fi
         # force dependency on avahi
         echo "CMAKE_EXTRA_ARGS=${{ env.CMAKE_EXTRA_ARGS }} -DNMOS_CPP_USE_AVAHI:BOOL=\"1\"" >> $GITHUB_ENV
 
