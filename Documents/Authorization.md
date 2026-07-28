@@ -74,7 +74,7 @@ Token validation is done by regenerating the matching token signature.  This is 
 
 ## Authorization Behaviour
 
-> [nmos/authorization_behaviour.cpp](../../Development/nmos/authorization_behaviour.cpp)
+> [nmos/authorization_behaviour.cpp](../Development/nmos/authorization_behaviour.cpp)
 
 The required Authorization behaviour includes:
 
@@ -90,8 +90,8 @@ The state machine implemented by the ```nmos::experimental::authorization_behavi
 
 ## Validating Access Tokens When Public Keys Are Missing
 
-> [nmos/authorization_handlers.cpp](../../Development/nmos/authorization_handlers.cpp)
-> [nmos/authorization_behaviour.cpp](../../Development/nmos/authorization_behaviour.cpp)
+> [nmos/authorization_handlers.cpp](../Development/nmos/authorization_handlers.cpp)
+> [nmos/authorization_behaviour.cpp](../Development/nmos/authorization_behaviour.cpp)
 
 If no matching public key is available to validate the incoming access token the validation handler will trigger the authorization token issuer thread to fetch and cache the public keys from this token's issuer, which can then be used to validate any token issued by this issuer.
 
