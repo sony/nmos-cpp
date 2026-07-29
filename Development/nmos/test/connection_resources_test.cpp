@@ -86,6 +86,23 @@ BST_TEST_CASE(testConnectionRtpOptionalParameterSetsResolveAuto)
     }
 
     {
+        const nmos::rtp_sender_parameter_sets parameter_sets{ true, false };
+        auto resource = nmos::make_connection_rtp_sender(U("sender"), false, parameter_sets);
+        auto& transport_params = resource.data.at(nmos::fields::endpoint_active).at(nmos::fields::transport_params);
+        auto& params = transport_params.at(0);
+        params[nmos::fields::source_ip] = web::json::value::string(U("192.0.2.10"));
+        params[nmos::fields::destination_ip] = web::json::value::string(U("232.21.21.133"));
+
+        nmos::resolve_rtp_auto(nmos::types::sender, transport_params, 5000);
+
+        BST_REQUIRE_EQUAL(U("232.21.21.133"), nmos::fields::fec_destination_ip(params).as_string());
+        BST_REQUIRE_EQUAL(5002, nmos::fields::fec1D_destination_port(params).as_integer());
+        BST_REQUIRE_EQUAL(5004, nmos::fields::fec2D_destination_port(params).as_integer());
+        BST_REQUIRE_EQUAL(5002, nmos::fields::fec1D_source_port(params).as_integer());
+        BST_REQUIRE_EQUAL(5004, nmos::fields::fec2D_source_port(params).as_integer());
+    }
+
+    {
         const nmos::rtp_receiver_parameter_sets parameter_sets{ false, false, true };
         auto resource = nmos::make_connection_rtp_receiver(U("receiver"), false, parameter_sets);
         auto& transport_params = resource.data.at(nmos::fields::endpoint_active).at(nmos::fields::transport_params);
@@ -96,5 +113,19 @@ BST_TEST_CASE(testConnectionRtpOptionalParameterSetsResolveAuto)
 
         BST_REQUIRE_EQUAL(U("192.0.2.20"), nmos::fields::rtcp_destination_ip(params).as_string());
         BST_REQUIRE_EQUAL(5001, nmos::fields::rtcp_destination_port(params).as_integer());
+    }
+
+    {
+        const nmos::rtp_receiver_parameter_sets parameter_sets{ false, true, false };
+        auto resource = nmos::make_connection_rtp_receiver(U("receiver"), false, parameter_sets);
+        auto& transport_params = resource.data.at(nmos::fields::endpoint_active).at(nmos::fields::transport_params);
+        auto& params = transport_params.at(0);
+        params[nmos::fields::interface_ip] = web::json::value::string(U("192.0.2.20"));
+
+        nmos::resolve_rtp_auto(nmos::types::receiver, transport_params, 5000);
+
+        BST_REQUIRE_EQUAL(U("192.0.2.20"), nmos::fields::fec_destination_ip(params).as_string());
+        BST_REQUIRE_EQUAL(5002, nmos::fields::fec1D_destination_port(params).as_integer());
+        BST_REQUIRE_EQUAL(5004, nmos::fields::fec2D_destination_port(params).as_integer());
     }
 }
