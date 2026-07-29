@@ -139,7 +139,7 @@ namespace sdp
             };
         }
 
-        converter array_converter(const converter& converter, const std::string& delimiter = " ")
+        converter array_converter(const converter& converter, const std::string& delimiter)
         {
             return{
                 [=](const web::json::value& v) {
@@ -211,7 +211,7 @@ namespace sdp
         // in other RFCs and SMPTE standards are inconsistent, so allow additional whitespace
         const converter named_values_converter = array_converter(key_value_converter('=', { sdp::fields::name, string_converter }, { sdp::fields::value, string_converter }), "; ", "[ \\t]*(;[ \\t]*|$)");
 
-        converter object_converter(const std::vector<std::pair<utility::string_t, converter>>& field_converters, const std::string& delimiter = " ")
+        converter object_converter(const std::vector<std::pair<utility::string_t, converter>>& field_converters, const std::string& delimiter)
         {
             return{
                 [=](const web::json::value& v) {
