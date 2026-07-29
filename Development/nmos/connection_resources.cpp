@@ -286,24 +286,24 @@ namespace nmos
 
     nmos::resource make_connection_rtp_sender(const nmos::id& id, bool smpte2022_7)
     {
-        return make_connection_rtp_sender(id, smpte2022_7, rtp_sender_parameter_sets{});
+        return make_connection_rtp_sender(id, smpte2022_7, rtp_sender_parameter_sets_core);
     }
 
-    nmos::resource make_connection_rtp_sender(const nmos::id& id, bool smpte2022_7, const rtp_sender_parameter_sets& parameter_sets)
+    nmos::resource make_connection_rtp_sender(const nmos::id& id, bool smpte2022_7, rtp_sender_parameter_sets parameter_sets)
     {
         using web::json::value;
 
         auto data = details::make_connection_resource_core(id, smpte2022_7);
 
         auto constraints = details::make_connection_rtp_sender_core_constraints();
-        if (parameter_sets.fec) details::insert_parameter_set(constraints, details::make_connection_rtp_sender_fec_constraints());
-        if (parameter_sets.rtcp) details::insert_parameter_set(constraints, details::make_connection_rtp_sender_rtcp_constraints());
+        if (parameter_sets & rtp_sender_parameter_sets_fec) details::insert_parameter_set(constraints, details::make_connection_rtp_sender_fec_constraints());
+        if (parameter_sets & rtp_sender_parameter_sets_rtcp) details::insert_parameter_set(constraints, details::make_connection_rtp_sender_rtcp_constraints());
         data[nmos::fields::endpoint_constraints] = details::legs_of(constraints, smpte2022_7);
 
         data[nmos::fields::endpoint_staged][nmos::fields::receiver_id] = value::null();
         auto transport_params = details::make_connection_rtp_sender_staged_core_parameter_set();
-        if (parameter_sets.fec) details::insert_parameter_set(transport_params, details::make_connection_rtp_sender_staged_fec_parameter_set());
-        if (parameter_sets.rtcp) details::insert_parameter_set(transport_params, details::make_connection_rtp_sender_staged_rtcp_parameter_set());
+        if (parameter_sets & rtp_sender_parameter_sets_fec) details::insert_parameter_set(transport_params, details::make_connection_rtp_sender_staged_fec_parameter_set());
+        if (parameter_sets & rtp_sender_parameter_sets_rtcp) details::insert_parameter_set(transport_params, details::make_connection_rtp_sender_staged_rtcp_parameter_set());
         data[nmos::fields::endpoint_staged][nmos::fields::transport_params] = details::legs_of(transport_params, smpte2022_7);
 
         data[nmos::fields::endpoint_active] = data[nmos::fields::endpoint_staged];
@@ -338,10 +338,10 @@ namespace nmos
 
     nmos::resource make_connection_rtp_sender(const nmos::id& id, bool smpte2022_7, const utility::string_t& transportfile)
     {
-        return make_connection_rtp_sender(id, smpte2022_7, rtp_sender_parameter_sets{}, transportfile);
+        return make_connection_rtp_sender(id, smpte2022_7, rtp_sender_parameter_sets_core, transportfile);
     }
 
-    nmos::resource make_connection_rtp_sender(const nmos::id& id, bool smpte2022_7, const rtp_sender_parameter_sets& parameter_sets, const utility::string_t& transportfile)
+    nmos::resource make_connection_rtp_sender(const nmos::id& id, bool smpte2022_7, rtp_sender_parameter_sets parameter_sets, const utility::string_t& transportfile)
     {
         auto resource = make_connection_rtp_sender(id, smpte2022_7, parameter_sets);
 
@@ -360,27 +360,27 @@ namespace nmos
 
     nmos::resource make_connection_rtp_receiver(const nmos::id& id, bool smpte2022_7)
     {
-        return make_connection_rtp_receiver(id, smpte2022_7, rtp_receiver_parameter_sets{});
+        return make_connection_rtp_receiver(id, smpte2022_7, rtp_receiver_parameter_sets_multicast);
     }
 
-    nmos::resource make_connection_rtp_receiver(const nmos::id& id, bool smpte2022_7, const rtp_receiver_parameter_sets& parameter_sets)
+    nmos::resource make_connection_rtp_receiver(const nmos::id& id, bool smpte2022_7, rtp_receiver_parameter_sets parameter_sets)
     {
         using web::json::value;
 
         auto data = details::make_connection_resource_core(id, smpte2022_7);
 
         auto constraints = details::make_connection_rtp_receiver_core_constraints();
-        if (parameter_sets.multicast) details::insert_parameter_set(constraints, details::make_connection_rtp_receiver_multicast_constraints());
-        if (parameter_sets.fec) details::insert_parameter_set(constraints, details::make_connection_rtp_receiver_fec_constraints());
-        if (parameter_sets.rtcp) details::insert_parameter_set(constraints, details::make_connection_rtp_receiver_rtcp_constraints());
+        if (parameter_sets & rtp_receiver_parameter_sets_multicast) details::insert_parameter_set(constraints, details::make_connection_rtp_receiver_multicast_constraints());
+        if (parameter_sets & rtp_receiver_parameter_sets_fec) details::insert_parameter_set(constraints, details::make_connection_rtp_receiver_fec_constraints());
+        if (parameter_sets & rtp_receiver_parameter_sets_rtcp) details::insert_parameter_set(constraints, details::make_connection_rtp_receiver_rtcp_constraints());
         data[nmos::fields::endpoint_constraints] = details::legs_of(constraints, smpte2022_7);
 
         data[nmos::fields::endpoint_staged][nmos::fields::sender_id] = value::null();
         data[nmos::fields::endpoint_staged][nmos::fields::transport_file] = details::make_connection_receiver_staging_transport_file();
         auto transport_params = details::make_connection_rtp_receiver_staged_core_parameter_set();
-        if (parameter_sets.multicast) details::insert_parameter_set(transport_params, details::make_connection_rtp_receiver_staged_multicast_parameter_set());
-        if (parameter_sets.fec) details::insert_parameter_set(transport_params, details::make_connection_rtp_receiver_staged_fec_parameter_set());
-        if (parameter_sets.rtcp) details::insert_parameter_set(transport_params, details::make_connection_rtp_receiver_staged_rtcp_parameter_set());
+        if (parameter_sets & rtp_receiver_parameter_sets_multicast) details::insert_parameter_set(transport_params, details::make_connection_rtp_receiver_staged_multicast_parameter_set());
+        if (parameter_sets & rtp_receiver_parameter_sets_fec) details::insert_parameter_set(transport_params, details::make_connection_rtp_receiver_staged_fec_parameter_set());
+        if (parameter_sets & rtp_receiver_parameter_sets_rtcp) details::insert_parameter_set(transport_params, details::make_connection_rtp_receiver_staged_rtcp_parameter_set());
         data[nmos::fields::endpoint_staged][nmos::fields::transport_params] = details::legs_of(transport_params, smpte2022_7);
 
         data[nmos::fields::endpoint_active] = data[nmos::fields::endpoint_staged];
