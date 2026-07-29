@@ -136,6 +136,9 @@ namespace sdp
         // See https://tools.ietf.org/html/rfc4570
         const utility::string_t source_filter{ U("source-filter") };
 
+        // See https://tools.ietf.org/html/rfc3605
+        const utility::string_t rtcp{ U("rtcp") };
+
         // See https://tools.ietf.org/html/rfc5888
         const utility::string_t group{ U("group") };
         const utility::string_t mid{ U("mid") };

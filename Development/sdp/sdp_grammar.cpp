@@ -655,6 +655,37 @@ namespace sdp
                         },
                     }
                 },
+                // See https://tools.ietf.org/html/rfc3605
+                {
+                    sdp::attributes::rtcp, // <port> [<nettype> <addrtype> <connection-address>]
+                    {
+                        [](const web::json::value& v) {
+                            std::string s;
+                            s += digits_converter.format(v.at(sdp::fields::port));
+                            if (v.has_field(sdp::fields::unicast_address))
+                            {
+                                s += " " + string_converter.format(v.at(sdp::fields::network_type));
+                                s += " " + string_converter.format(v.at(sdp::fields::address_type));
+                                s += " " + string_converter.format(v.at(sdp::fields::unicast_address));
+                            }
+                            return s;
+                        },
+                        [](const std::string& s) {
+                            const auto parts = strings_converter.parse(s);
+                            if (1 != parts.size() && 4 != parts.size()) throw sdp_parse_error("expected <port> [<nettype> <addrtype> <connection-address>]");
+
+                            auto v = web::json::value::object(keep_order);
+                            v[sdp::fields::port] = digits_converter.parse(utility::us2s(parts.at(0).as_string()));
+                            if (4 == parts.size())
+                            {
+                                v[sdp::fields::network_type] = parts.at(1);
+                                v[sdp::fields::address_type] = parts.at(2);
+                                v[sdp::fields::unicast_address] = parts.at(3);
+                            }
+                            return v;
+                        },
+                    }
+                },
                 // See https://tools.ietf.org/html/rfc5888
                 {
                     sdp::attributes::group, // <semantics>[ <identification-tag>]*
