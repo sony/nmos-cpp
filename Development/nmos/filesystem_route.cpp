@@ -32,6 +32,81 @@ namespace nmos
                 utility::string_t::size_type slash = pathname.find_last_of(U("\\/")) + 1;
                 return slash < dot ? pathname.substr(dot) : utility::string_t();
             }
+
+            // lexically normalizes a URI relative path to prevent directory traversal
+            // returns true on success, or false if the path attempts to traverse above the root (e.g., /../secret)
+            inline bool lexically_normalize_path(const utility::string_t& relative_path, utility::string_t& normalized_out)
+            {
+                using char_t = utility::string_t::value_type;
+
+                std::vector<utility::string_t> segments;
+                utility::string_t segment;
+
+                // split path by forward slashes
+                for (char_t c : relative_path)
+                {
+                    if (c == U('/'))
+                    {
+                        if (!segment.empty())
+                        {
+                            if (segment == U(".."))
+                            {
+                                if (segments.empty())
+                                {
+                                    return false; // traversing above root!
+                                }
+                                segments.pop_back();
+                            }
+                            else if (segment != U("."))
+                            {
+                                segments.push_back(segment);
+                            }
+                            segment.clear();
+                        }
+                    }
+                    else
+                    {
+                        segment += c;
+                    }
+                }
+
+                // handle trailing segment
+                if (!segment.empty())
+                {
+                    if (segment == U(".."))
+                    {
+                        if (segments.empty())
+                        {
+                            return false; // traversing above root!
+                        }
+                        segments.pop_back();
+                    }
+                    else if (segment != U("."))
+                    {
+                        segments.push_back(segment);
+                    }
+                }
+
+                // reconstruct normalized path
+                normalized_out.clear();
+                for (const auto& seg : segments)
+                {
+                    normalized_out += U('/') + seg;
+                }
+
+                // preserve trailing slash if original path ended with one (and isn't root)
+                if (!relative_path.empty() && relative_path.back() == U('/') && !normalized_out.empty())
+                {
+                    normalized_out += U('/');
+                }
+
+                if (normalized_out.empty())
+                {
+                    normalized_out = U("/");
+                }
+
+                return true;
+            }
         }
 
         // determines content type based only on file extension, and rejects unexpected file types
@@ -75,13 +150,33 @@ namespace nmos
             {
                 nmos::api_gate gate(gate_, req, parameters);
                 slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Filesystem request received";
-                auto relative_path = web::uri::decode(parameters.at(U("filesystem-relative-path")));
-                const bool naughty = string_t::npos != relative_path.find(U("/.."));
-                if (!naughty)
-                {
-                    // relative path will begin with a slash
-                    auto filesystem_path = filesystem_root + relative_path;
 
+                auto raw_relative_path = web::uri::decode(parameters.at(U("filesystem-relative-path")));
+
+                // normalize path separators to forward slashes
+                //
+                // converts all backslashes(\) to forward slashes(/ ) to prevent bypass attempts using:
+                //   - %5C..%5C (URL - encoded backslashes)
+                //   - Mixed separators like /foo\..\bar
+                // Example :
+                //   - Input : \..\..\secret.txt -> Output : /../../secret.txt
+                //   - Input : /foo\bar\..\baz   -> Output : /foo/bar/../baz
+                std::replace(raw_relative_path.begin(), raw_relative_path.end(), U('\\'), U('/'));
+
+                // lexically resolve '.' and '..' segments to prevent directory traversal safely
+                utility::string_t relative_path;
+                if (!details::lexically_normalize_path(raw_relative_path, relative_path))
+                {
+                    // Directory traversal attempt (e.g. tried to go above root)
+                    set_reply(res, status_codes::Forbidden);
+                    return pplx::task_from_result(true);
+                }
+
+                auto filesystem_path = filesystem_root + relative_path;
+
+                try
+                {
+                    // check directory index redirects
                     if (bst::filesystem::is_directory(details::native_path(filesystem_path)))
                     {
                         const auto index_redirect = index_redirect_handler(relative_path);
@@ -100,6 +195,7 @@ namespace nmos
                         }
                     }
 
+                    // serve regular file
                     if (bst::filesystem::is_regular_file(details::native_path(filesystem_path)))
                     {
                         const auto content_type = content_type_handler(relative_path);
@@ -114,6 +210,12 @@ namespace nmos
                             });
                         }
                     }
+                }
+                catch (...)
+                {
+                    // file access error or path missing
+                    set_reply(res, status_codes::NotFound);
+                    return pplx::task_from_result(true);
                 }
 
                 // unless requests are for files of a supported file type that are actually found in the filesystem, just report not found
