@@ -109,10 +109,10 @@ namespace nmos
                         {
                             const utility::size64_t content_length = bst::filesystem::file_size(details::native_path(filesystem_path));
                             return concurrency::streams::fstream::open_istream(filesystem_path, std::ios::in).then([res, content_length, content_type](concurrency::streams::istream is) mutable
-                                {
-                                    set_reply(res, status_codes::OK, is, content_length, content_type);
-                                    return true;
-                                });
+                            {
+                                set_reply(res, status_codes::OK, is, content_length, content_type);
+                                return true;
+                            });
                         }
                     }
                 }
