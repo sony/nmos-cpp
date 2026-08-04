@@ -139,7 +139,7 @@ namespace nmos
 
         return [&resources, monitor_status_pending, get_control_protocol_class_descriptor, get_monitor_domains, &gate](nc_oid oid, nmos::nc_link_status::status link_status, const utility::string_t& link_status_message)
         {
-            return nc::set_receiver_monitor_link_status_with_delay(resources, oid, link_status, link_status_message, monitor_status_pending, get_control_protocol_class_descriptor, get_monitor_domains, gate);
+            return nc::set_receiver_monitor_link_status(resources, oid, link_status, link_status_message, monitor_status_pending, get_control_protocol_class_descriptor, get_monitor_domains, gate);
         };
     }
 
@@ -152,7 +152,7 @@ namespace nmos
 
         return [&resources, monitor_status_pending, get_control_protocol_class_descriptor, get_monitor_domains, &gate](nc_oid oid, nmos::nc_connection_status::status connection_status, const utility::string_t& connection_status_message)
         {
-            return nc::set_receiver_monitor_connection_status_with_delay(resources, oid, connection_status, connection_status_message, monitor_status_pending, get_control_protocol_class_descriptor, get_monitor_domains, gate);
+            return nc::set_receiver_monitor_connection_status(resources, oid, connection_status, connection_status_message, monitor_status_pending, get_control_protocol_class_descriptor, get_monitor_domains, gate);
         };
     }
 
@@ -165,7 +165,7 @@ namespace nmos
 
         return [&resources, monitor_status_pending, get_control_protocol_class_descriptor, get_monitor_domains, &gate](nc_oid oid, nmos::nc_synchronization_status::status external_synchronization_status, const utility::string_t& external_synchronization_status_message)
         {
-            return nc::set_receiver_monitor_external_synchronization_status_with_delay(resources, oid, external_synchronization_status, external_synchronization_status_message, monitor_status_pending, get_control_protocol_class_descriptor, get_monitor_domains, gate);
+            return nc::set_receiver_monitor_external_synchronization_status(resources, oid, external_synchronization_status, external_synchronization_status_message, monitor_status_pending, get_control_protocol_class_descriptor, get_monitor_domains, gate);
         };
     }
 
@@ -178,7 +178,7 @@ namespace nmos
 
         return [&resources, monitor_status_pending, get_control_protocol_class_descriptor, get_monitor_domains, &gate](nc_oid oid, nmos::nc_stream_status::status stream_status, const utility::string_t& stream_status_message)
         {
-            return nc::set_receiver_monitor_stream_status_with_delay(resources, oid, stream_status, stream_status_message, monitor_status_pending, get_control_protocol_class_descriptor, get_monitor_domains, gate);
+            return nc::set_receiver_monitor_stream_status(resources, oid, stream_status, stream_status_message, monitor_status_pending, get_control_protocol_class_descriptor, get_monitor_domains, gate);
         };
     }
 
@@ -202,7 +202,7 @@ namespace nmos
 
         return [&resources, monitor_status_pending, get_control_protocol_class_descriptor, get_monitor_domains, &gate](nc_oid oid, nmos::nc_link_status::status link_status, const utility::string_t& link_status_message)
         {
-            return nc::set_sender_monitor_link_status_with_delay(resources, oid, link_status, link_status_message, monitor_status_pending, get_control_protocol_class_descriptor, get_monitor_domains, gate);
+            return nc::set_sender_monitor_link_status(resources, oid, link_status, link_status_message, monitor_status_pending, get_control_protocol_class_descriptor, get_monitor_domains, gate);
         };
     }
 
@@ -215,7 +215,7 @@ namespace nmos
 
         return [&resources, monitor_status_pending, get_control_protocol_class_descriptor, get_monitor_domains, &gate](nc_oid oid, nmos::nc_transmission_status::status transmission_status, const utility::string_t& transmission_status_message)
         {
-            return nc::set_sender_monitor_transmission_status_with_delay(resources, oid, transmission_status, transmission_status_message, monitor_status_pending, get_control_protocol_class_descriptor, get_monitor_domains, gate);
+            return nc::set_sender_monitor_transmission_status(resources, oid, transmission_status, transmission_status_message, monitor_status_pending, get_control_protocol_class_descriptor, get_monitor_domains, gate);
         };
     }
 
@@ -228,7 +228,7 @@ namespace nmos
 
         return [&resources, monitor_status_pending, get_control_protocol_class_descriptor, get_monitor_domains, &gate](nc_oid oid, nmos::nc_synchronization_status::status external_synchronization_status, const utility::string_t& external_synchronization_status_message)
         {
-            return nc::set_sender_monitor_external_synchronization_status_with_delay(resources, oid, external_synchronization_status, external_synchronization_status_message, monitor_status_pending, get_control_protocol_class_descriptor, get_monitor_domains, gate);
+            return nc::set_sender_monitor_external_synchronization_status(resources, oid, external_synchronization_status, external_synchronization_status_message, monitor_status_pending, get_control_protocol_class_descriptor, get_monitor_domains, gate);
         };
     }
 
@@ -241,7 +241,7 @@ namespace nmos
 
         return [&resources, monitor_status_pending, get_control_protocol_class_descriptor, get_monitor_domains, &gate](nc_oid oid, nmos::nc_essence_status::status essence_status, const utility::string_t& essence_status_message)
         {
-            return nc::set_sender_monitor_essence_status_with_delay(resources, oid, essence_status, essence_status_message, monitor_status_pending, get_control_protocol_class_descriptor, get_monitor_domains, gate);
+            return nc::set_sender_monitor_essence_status(resources, oid, essence_status, essence_status_message, monitor_status_pending, get_control_protocol_class_descriptor, get_monitor_domains, gate);
         };
     }
 

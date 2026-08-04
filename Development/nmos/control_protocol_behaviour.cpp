@@ -8,6 +8,21 @@
 
 namespace nmos
 {
+    namespace nc
+    {
+        namespace details
+        {
+            // Declared here rather than in the public header; used only by the behaviour thread
+            bool set_monitor_status_internal(resources& resources, nc_oid oid, int status, const utility::string_t& status_message, const nc_property_id& status_property_id,
+                const nc_property_id& status_message_property_id,
+                const nc_property_id& status_transition_counter_property_id,
+                const utility::string_t& status_pending_received_time_field_name,
+                get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor,
+                get_monitor_domains_handler get_monitor_domains,
+                slog::base_gate& gate);
+        }
+    }
+
     namespace experimental
     {
         void control_protocol_behaviour_thread(nmos::node_model& model, control_protocol_state& state, slog::base_gate& gate_)
@@ -114,7 +129,7 @@ namespace nmos
                                         const auto& status = nc::get_property(control_protocol_resources, oid, domain_status.status_pending_field_name, gate);
                                         const auto& status_message = nc::get_property(control_protocol_resources, oid, domain_status.status_message_pending_field_name, gate);
                                         const auto& status_message_string = status_message == web::json::value::null() ? U("") : status_message.as_string();
-                                        nc::details::set_monitor_status(control_protocol_resources, oid, status.as_integer(), status_message_string,
+                                        nc::details::set_monitor_status_internal(control_protocol_resources, oid, status.as_integer(), status_message_string,
                                             domain_status.status_property_id,
                                             domain_status.status_message_property_id,
                                             domain_status.status_transition_counter_property_id,

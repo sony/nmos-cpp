@@ -11,6 +11,18 @@
 
 #include "bst/test/test.h"
 
+namespace nmos
+{
+    namespace nc
+    {
+        namespace details
+        {
+            // Internal helper under test; kept out of the public header
+            bool set_receiver_monitor_stream_status_internal(resources& resources, nc_oid oid, nmos::nc_stream_status::status stream_status, const utility::string_t& stream_status_message, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, slog::base_gate& gate);
+        }
+    }
+}
+
 //////////////////////////////////////////////////////////////////////////////////////////////
 // Helper template for testing status transitions with different status types and monitor types
 namespace
@@ -528,7 +540,7 @@ BST_TEST_CASE(testStatusTransitionWithinReportDelay)
     // unhealthy (3) -> { healthy (1) -> unhealthy (3) : within the 3 second status reporting delay }
 
     // Step 1: Set initial status to unhealthy (3)
-    BST_REQUIRE(nmos::nc::set_receiver_monitor_stream_status(control_protocol_resources, monitor_oid,
+    BST_REQUIRE(nmos::nc::details::set_receiver_monitor_stream_status_internal(control_protocol_resources, monitor_oid,
         nmos::nc_stream_status::status::unhealthy,
         U("Initial unhealthy status"),
         get_control_protocol_class_descriptor, gate));
