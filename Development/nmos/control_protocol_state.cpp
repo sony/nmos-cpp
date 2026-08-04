@@ -711,7 +711,7 @@ namespace nmos
             return false;
         }
 
-        bool control_protocol_state::insert(const nc_class_id& class_id, const std::vector<monitor_domain>& monitor_domains)
+        bool control_protocol_state::insert_monitor_domains(const nc_class_id& class_id, const std::vector<monitor_domain>& monitor_domains)
         {
             auto lock = write_lock();
 

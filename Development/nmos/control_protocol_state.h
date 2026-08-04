@@ -118,7 +118,7 @@ namespace nmos
             bool erase(const utility::string_t& datatype_name);
 
             // insert monitor domains for the given class id, false if a profile already exists
-            bool insert(const nc_class_id& class_id, const std::vector<monitor_domain>& monitor_domains);
+            bool insert_monitor_domains(const nc_class_id& class_id, const std::vector<monitor_domain>& monitor_domains);
             // erase monitor domains for the given class id, false if a profile was not found
             bool erase_monitor_domains(const nc_class_id& class_id);
         };
