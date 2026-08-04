@@ -77,7 +77,7 @@ namespace nmos
                 slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Filesystem request received";
                 auto relative_path = web::uri::decode(parameters.at(U("filesystem-relative-path")));
                 // Check for directory traversal attempts using both forward and backward slashes
-                const bool naughty = (string_t::npos != relative_path.find(U("/.."))) || (string_t::npos != relative_path.find(U("\\..")));
+                const bool naughty = (string_t::npos != relative_path.find(U("/.."))) || (string_t::npos != relative_path.find(U("\\")));
                 if (!naughty)
                 {
                     // relative path will begin with a slash
