@@ -255,4 +255,24 @@ namespace nmos
             return nc::set_monitor_synchronization_source_id(resources, oid, source_id, get_control_protocol_class_descriptor, gate);
         };
     }
+
+    get_monitor_domains_handler make_get_monitor_domains_handler(experimental::control_protocol_state& control_protocol_state)
+    {
+        return [&](const nc_class_id& class_id)
+        {
+            std::vector<experimental::monitor_domain> monitor_domains;
+            auto lock = control_protocol_state.read_lock();
+
+            for (size_t class_id_size = 1; class_id_size <= class_id.size(); ++class_id_size)
+            {
+                const nc_class_id ancestor_class_id(class_id.begin(), class_id.begin() + class_id_size);
+                const auto found = control_protocol_state.monitor_domain_profiles.find(ancestor_class_id);
+                if (control_protocol_state.monitor_domain_profiles.end() != found)
+                {
+                    monitor_domains.insert(monitor_domains.end(), found->second.begin(), found->second.end());
+                }
+            }
+            return monitor_domains;
+        };
+    }
 }

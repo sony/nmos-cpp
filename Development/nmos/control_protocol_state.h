@@ -149,11 +149,6 @@ namespace nmos
         web::json::value make_control_class_event_descriptor(const utility::string_t& description, const nc_event_id& id, const nc_name& name, const utility::string_t& event_datatype,
             bool is_deprecated = false);
     }
-
-    typedef std::function<std::vector<experimental::monitor_domain>(const nc_class_id& class_id)> get_monitor_domains_handler;
-
-    // construct callback to retrieve monitor domains declared by a class and its ancestors
-    get_monitor_domains_handler make_get_monitor_domains_handler(experimental::control_protocol_state& control_protocol_state);
 }
 
 #endif

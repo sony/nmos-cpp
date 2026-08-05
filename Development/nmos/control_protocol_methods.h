@@ -2,7 +2,6 @@
 #define NMOS_CONTROL_PROTOCOL_METHODS_H
 
 #include "nmos/control_protocol_handlers.h"
-#include "nmos/control_protocol_state.h"
 #include "nmos/resources.h"
 
 namespace slog
