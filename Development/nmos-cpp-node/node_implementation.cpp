@@ -1597,6 +1597,8 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
         nmos::set_block_allowed_member_classes(receiver_monitors_block, {nmos::nc_receiver_monitor_class_id});
 
         // example receiver-monitor(s)
+        // For an example of defining a custom status monitor (derived class + monitor domains), see
+        // testSetDerivedMonitorDomainStatus in nmos/test/control_protocol_utils_test.cpp
         {
             int count = 0;
             for (int index = 0; index < how_many; ++index)

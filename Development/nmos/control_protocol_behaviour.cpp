@@ -8,44 +8,28 @@
 
 namespace nmos
 {
+    namespace nc
+    {
+        namespace details
+        {
+            // Declared here rather than in the public header; used only by the behaviour thread
+            bool set_monitor_status_internal(resources& resources, nc_oid oid, int status, const utility::string_t& status_message, const nc_property_id& status_property_id,
+                const nc_property_id& status_message_property_id,
+                const nc_property_id& status_transition_counter_property_id,
+                const utility::string_t& status_pending_received_time_field_name,
+                get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor,
+                get_monitor_domains_handler get_monitor_domains,
+                slog::base_gate& gate);
+        }
+    }
+
     namespace experimental
     {
-        struct domain_status_properties
-        {
-            domain_status_properties(const nc_property_id& status_property_id, const nc_property_id& status_message_property_id, const nc_property_id& status_transition_counter_property_id, const utility::string_t& status_pending_field_name, const utility::string_t& status_message_pending_field_name, const utility::string_t& status_pending_received_time_field_name)
-                : status_property_id(status_property_id)
-                , status_message_property_id(status_message_property_id)
-                , status_transition_counter_property_id(status_transition_counter_property_id)
-                , status_pending_field_name(status_pending_field_name)
-                , status_message_pending_field_name(status_message_pending_field_name)
-                , status_pending_received_time_field_name(status_pending_received_time_field_name)
-            {}
-
-            nc_property_id status_property_id;
-            nc_property_id status_message_property_id;
-            nc_property_id status_transition_counter_property_id;
-            utility::string_t status_pending_field_name;
-            utility::string_t status_message_pending_field_name;
-            utility::string_t status_pending_received_time_field_name;
-        };
-
         void control_protocol_behaviour_thread(nmos::node_model& model, control_protocol_state& state, slog::base_gate& gate_)
         {
             nmos::details::omanip_gate gate(gate_, nmos::stash_category(nmos::categories::control_protocol_behaviour));
 
             slog::log<slog::severities::info>(gate, SLOG_FLF) << "Starting control protocol behaviour thread";
-
-            std::vector<domain_status_properties> receiver_monitor_domain_statuses;
-            receiver_monitor_domain_statuses.push_back(domain_status_properties(nc_receiver_monitor_stream_status_property_id, nc_receiver_monitor_stream_status_message_property_id, nc_receiver_monitor_stream_status_transition_counter_property_id, nmos::fields::nc::stream_status_pending, nmos::fields::nc::stream_status_message_pending, nmos::fields::nc::stream_status_pending_received_time));
-            receiver_monitor_domain_statuses.push_back(domain_status_properties(nc_receiver_monitor_connection_status_property_id, nc_receiver_monitor_connection_status_message_property_id, nc_receiver_monitor_connection_status_transition_counter_property_id, nmos::fields::nc::connection_status_pending, nmos::fields::nc::connection_status_message_pending, nmos::fields::nc::connection_status_pending_received_time));
-            receiver_monitor_domain_statuses.push_back(domain_status_properties(nc_receiver_monitor_link_status_property_id, nc_receiver_monitor_link_status_message_property_id, nc_receiver_monitor_link_status_transition_counter_property_id, nmos::fields::nc::link_status_pending, nmos::fields::nc::link_status_message_pending, nmos::fields::nc::link_status_pending_received_time));
-            receiver_monitor_domain_statuses.push_back(domain_status_properties(nc_receiver_monitor_external_synchronization_status_property_id, nc_receiver_monitor_external_synchronization_status_message_property_id, nc_receiver_monitor_external_synchronization_status_transition_counter_property_id, nmos::fields::nc::external_synchronization_status_pending, nmos::fields::nc::external_synchronization_status_message_pending, nmos::fields::nc::external_synchronization_status_pending_received_time));
-
-            std::vector<domain_status_properties> sender_monitor_domain_statuses;
-            sender_monitor_domain_statuses.push_back(domain_status_properties(nc_sender_monitor_essence_status_property_id, nc_sender_monitor_essence_status_message_property_id, nc_sender_monitor_essence_status_transition_counter_property_id, nmos::fields::nc::essence_status_pending, nmos::fields::nc::essence_status_message_pending, nmos::fields::nc::essence_status_pending_received_time));
-            sender_monitor_domain_statuses.push_back(domain_status_properties(nc_sender_monitor_transmission_status_property_id, nc_sender_monitor_transmission_status_message_property_id, nc_sender_monitor_transmission_status_transition_counter_property_id, nmos::fields::nc::transmission_status_pending, nmos::fields::nc::transmission_status_message_pending, nmos::fields::nc::transmission_status_pending_received_time));
-            sender_monitor_domain_statuses.push_back(domain_status_properties(nc_sender_monitor_link_status_property_id, nc_sender_monitor_link_status_message_property_id, nc_sender_monitor_link_status_transition_counter_property_id, nmos::fields::nc::link_status_pending, nmos::fields::nc::link_status_message_pending, nmos::fields::nc::link_status_pending_received_time));
-            sender_monitor_domain_statuses.push_back(domain_status_properties(nc_sender_monitor_external_synchronization_status_property_id, nc_sender_monitor_external_synchronization_status_message_property_id, nc_sender_monitor_external_synchronization_status_transition_counter_property_id, nmos::fields::nc::external_synchronization_status_pending, nmos::fields::nc::external_synchronization_status_message_pending, nmos::fields::nc::external_synchronization_status_pending_received_time));
 
             auto lock = model.write_lock();
             auto& condition = model.condition;
@@ -53,6 +37,7 @@ namespace nmos
             auto& control_protocol_resources = model.control_protocol_resources;
 
             auto get_control_protocol_class_descriptor = nmos::make_get_control_protocol_class_descriptor_handler(state);
+            auto get_monitor_domains = nmos::make_get_monitor_domains_handler(state);
             // continue until the server is being shut down
             for (;;)
             {
@@ -91,7 +76,7 @@ namespace nmos
 
                             auto status_reporting_delay = nc::get_property(control_protocol_resources, oid, nc_status_monitor_status_reporting_delay, get_control_protocol_class_descriptor, gate);
 
-                            const auto& domain_statuses = nmos::nc::is_sender_monitor(class_id) ? sender_monitor_domain_statuses : receiver_monitor_domain_statuses;
+                            const auto domain_statuses = nmos::nc::get_monitor_domains(class_id, get_monitor_domains);
 
                             for (const auto& domain_status : domain_statuses)
                             {
@@ -128,7 +113,7 @@ namespace nmos
 
                             const auto status_reporting_delay = nc::get_property(control_protocol_resources, oid, nc_status_monitor_status_reporting_delay, get_control_protocol_class_descriptor, gate);
 
-                            const auto& domain_statuses = nmos::nc::is_sender_monitor(class_id) ? sender_monitor_domain_statuses : receiver_monitor_domain_statuses;
+                            const auto domain_statuses = nmos::nc::get_monitor_domains(class_id, get_monitor_domains);
 
                             for (const auto& domain_status : domain_statuses)
                             {
@@ -144,12 +129,13 @@ namespace nmos
                                         const auto& status = nc::get_property(control_protocol_resources, oid, domain_status.status_pending_field_name, gate);
                                         const auto& status_message = nc::get_property(control_protocol_resources, oid, domain_status.status_message_pending_field_name, gate);
                                         const auto& status_message_string = status_message == web::json::value::null() ? U("") : status_message.as_string();
-                                        nc::details::set_monitor_status(control_protocol_resources, oid, status.as_integer(), status_message_string,
+                                        nc::details::set_monitor_status_internal(control_protocol_resources, oid, status.as_integer(), status_message_string,
                                             domain_status.status_property_id,
                                             domain_status.status_message_property_id,
                                             domain_status.status_transition_counter_property_id,
                                             domain_status.status_pending_received_time_field_name,
                                             get_control_protocol_class_descriptor,
+                                            get_monitor_domains,
                                             gate);
 
                                         model.notify();
