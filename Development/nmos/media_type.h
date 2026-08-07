@@ -12,6 +12,12 @@ namespace nmos
     // and https://specs.amwa.tv/is-04/releases/v1.2.0/APIs/schemas/with-refs/receiver_video.html
     // etc.
     DEFINE_STRING_ENUM(media_type)
+
+    // RFC 4855: media subtype names (and thus media type strings that embed an
+    // RTP encoding name) are case-insensitive. operator== remains exact-string
+    // identity for stored / configured values.
+    bool equals_media_type(const media_type& lhs, const media_type& rhs);
+
     namespace media_types
     {
         // Video media types

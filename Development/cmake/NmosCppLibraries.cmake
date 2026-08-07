@@ -1093,6 +1093,7 @@ set(NMOS_CPP_NMOS_SOURCES
     nmos/manifest_api.cpp
     nmos/mdns.cpp
     nmos/mdns_api.cpp
+    nmos/media_type.cpp
     nmos/node_api.cpp
     nmos/node_api_target_handler.cpp
     nmos/node_behaviour.cpp

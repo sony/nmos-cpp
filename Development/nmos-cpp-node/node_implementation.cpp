@@ -2036,7 +2036,7 @@ nmos::transport_file_parser make_node_implementation_transport_file_parser()
 
         const auto validate_sdp_parameters = [](const web::json::value& receiver, const nmos::sdp_parameters& sdp_params)
         {
-            if (nmos::media_types::video_jxsv == nmos::get_media_type(sdp_params))
+            if (equals_media_type(nmos::media_types::video_jxsv, nmos::get_media_type(sdp_params)))
             {
                 nmos::validate_video_jxsv_sdp_parameters(receiver, sdp_params);
             }
