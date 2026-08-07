@@ -149,9 +149,9 @@ namespace nmos
 
                     if (!source_id_or_null.is_null())
                     {
-                        nmos::modify_resource(model.node_resources, source_id_or_null.as_string(), [&activation_time](nmos::resource& source)
+                        nmos::modify_resource(model.node_resources, source_id_or_null.as_string(), [&resources = model.node_resources, &activation_time](nmos::resource& source)
                         {
-                            nmos::set_resource_version(source, activation_time);
+                            nmos::set_resource_version(resources, source, activation_time);
                         });
                     }
 
@@ -188,9 +188,9 @@ namespace nmos
 
                 for (auto device = devices.first; devices.second != device; ++device)
                 {
-                    nmos::modify_resource(model.node_resources, device->id, [&activation_time](nmos::resource& source)
+                    nmos::modify_resource(model.node_resources, device->id, [&resources = model.node_resources, &activation_time](nmos::resource& source)
                     {
-                        nmos::set_resource_version(source, activation_time);
+                        nmos::set_resource_version(resources, source, activation_time);
                     });
                 }
             }

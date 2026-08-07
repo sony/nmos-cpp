@@ -3,6 +3,7 @@
 
 #include "cpprest/api_router.h"
 #include "nmos/id.h"
+#include "nmos/resources.h"
 
 namespace slog
 {
@@ -57,7 +58,7 @@ namespace nmos
     // Functions for interaction between the Connection API implementation and the connection activation thread
 
     // Activate an IS-05 sender or receiver by transitioning the 'staged' settings into the 'active' resource
-    void set_connection_resource_active(nmos::resource& connection_resource, std::function<void(web::json::value& endpoint_active)> resolve_auto, const nmos::tai& activation_time);
+    void set_connection_resource_active(const nmos::resources& connection_resources, nmos::resource& connection_resource, std::function<void(web::json::value& endpoint_active)> resolve_auto, const nmos::tai& activation_time);
 
     // Clear any pending activation of an IS-05 sender or receiver
     // (This function should not be called after nmos::set_connection_resource_active.)
@@ -65,7 +66,7 @@ namespace nmos
 
     // Update the IS-04 sender or receiver after the active connection is changed in any way
     // (This function should be called after nmos::set_connection_resource_active.)
-    void set_resource_subscription(nmos::resource& node_resource, bool active, const nmos::id& connected_id, const nmos::tai& activation_time);
+    void set_resource_subscription(const nmos::resources& node_resources, nmos::resource& node_resource, bool active, const nmos::id& connected_id, const nmos::tai& activation_time);
 
     // Helper functions for the Connection API callbacks
 

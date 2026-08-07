@@ -169,9 +169,9 @@ namespace nmos
                     {
                         using web::json::value;
 
-                        const auto at = web::json::value::string(nmos::make_version(activation_time));
+                        const auto at = value::string(nmos::make_version(activation_time));
 
-                        connection_resource.data[nmos::fields::version] = at;
+                        connection_resource.data[nmos::fields::version] = value::string(nmos::make_version(nmos::strictly_increasing_update(model.connection_resources, activation_time)));
 
                         auto& endpoint_active = nmos::fields::endpoint_active(connection_resource.data);
                         auto& active_activation = endpoint_active[nmos::fields::activation];
@@ -185,9 +185,9 @@ namespace nmos
 
                     // Update the IS-04 resource's subscription
 
-                    nmos::modify_resource(model.node_resources, id_type.first, [&activation_time](nmos::resource& resource)
+                    nmos::modify_resource(model.node_resources, id_type.first, [&resources = model.node_resources, &activation_time](nmos::resource& resource)
                     {
-                        nmos::set_resource_subscription(resource, false, {}, activation_time);
+                        nmos::set_resource_subscription(resources, resource, false, {}, activation_time);
                     });
                 }
             };

@@ -25,6 +25,7 @@ namespace nmos
                 const auto& interface_name = interface->second.name;
 
                 using web::json::value_of;
+                using web::json::value;
 
                 auto lock = model.write_lock();
                 auto& resources = model.node_resources;
@@ -55,9 +56,9 @@ namespace nmos
                     {
                         slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "LLDP received - updating attached network device info for network interface " << interface->second.name;
 
-                        nmos::modify_resource(resources, resource->id, [&interface_name, &attached_network_device](nmos::resource& resource)
+                        nmos::modify_resource(resources, resource->id, [&resources, &interface_name, &attached_network_device](nmos::resource& resource)
                         {
-                            resource.data[nmos::fields::version] = web::json::value::string(nmos::make_version());
+                            resource.data[nmos::fields::version] = value::string(nmos::make_version(nmos::strictly_increasing_update(resources)));
 
                             auto& json_interfaces = nmos::fields::interfaces(resource.data);
 

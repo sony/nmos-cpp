@@ -142,7 +142,7 @@ namespace nmos
                     {
                         // Update the IS-05 resource's /active endpoint
 
-                        nmos::set_connection_resource_active(connection_resource, [&](web::json::value& endpoint_active)
+                        nmos::set_connection_resource_active(model.connection_resources, connection_resource, [&](web::json::value& endpoint_active)
                         {
                             // the resolve_auto callback may throw exceptions, which will prevent activation in order that
                             // "if there is an error condition that means `auto` cannot be resolved, the active transport parameters
@@ -169,9 +169,9 @@ namespace nmos
 
                     // Update the IS-04 resource's subscription
 
-                    nmos::modify_resource(model.node_resources, id_type.first, [&activation_time, &active, &connected_id](nmos::resource& resource)
+                    nmos::modify_resource(model.node_resources, id_type.first, [&resources = model.node_resources, &activation_time, &active, &connected_id](nmos::resource& resource)
                     {
-                        nmos::set_resource_subscription(resource, active, connected_id, activation_time);
+                        nmos::set_resource_subscription(resources, resource, active, connected_id, activation_time);
                     });
 
                     // Synchronous notification that the active parameters for the specified (IS-04/IS-05) sender/connection_sender or receiver/connection_receiver have changed
