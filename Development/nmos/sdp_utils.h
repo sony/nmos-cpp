@@ -653,20 +653,12 @@ namespace nmos
             }
         };
 
-        inline sdp_parameters::fmtp_t::const_iterator find_fmtp(const sdp_parameters::fmtp_t& fmtp, const utility::string_t& name)
-        {
-            return std::find_if(fmtp.begin(), fmtp.end(), [&](const sdp_parameters::fmtp_t::value_type& param)
-            {
-                return param.first == name;
-            });
-        }
-        inline sdp_parameters::fmtp_t::iterator find_fmtp(sdp_parameters::fmtp_t& fmtp, const utility::string_t& name)
-        {
-            return std::find_if(fmtp.begin(), fmtp.end(), [&](const sdp_parameters::fmtp_t::value_type& param)
-            {
-                return param.first == name;
-            });
-        }
+        // Find the specified fmtp parameter name case-insensitive in the specified fmtp list per RFC 4855
+        sdp_parameters::fmtp_t::const_iterator find_fmtp(const sdp_parameters::fmtp_t& fmtp, const utility::string_t& name);
+        sdp_parameters::fmtp_t::iterator find_fmtp(sdp_parameters::fmtp_t& fmtp, const utility::string_t& name);
+
+        // RTP encoding names are case-insensitive per RFC 4855
+        bool equals_encoding_name(const utility::string_t& lhs, const utility::string_t& rhs);
 
         // type-erased format-specific parameters
         // e.g. can hold a video_raw_parameters, an audio_L_parameters, etc.
@@ -687,6 +679,9 @@ namespace nmos
 
         // Check the specified SDP interlace and segmented parameters against the specified interlace_mode constraint
         bool match_interlace_mode_constraint(bool interlace, bool segmented, const web::json::value& constraint);
+
+        // Check the specified media type case-insensitive against enum values in the specified string constraint per RFC 4855
+        bool match_media_type_constraint(const utility::string_t& value, const web::json::value& constraint);
 
         // Check the specified SDP parameters and format-specific parameters against the specified constraint set
         // using the specified parameter constraint functions

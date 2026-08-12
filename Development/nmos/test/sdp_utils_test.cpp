@@ -841,6 +841,75 @@ BST_TEST_CASE(testSdpParametersVideoRaw)
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////
+// RFC 4855: RTP encoding names and fmtp parameter names are case-insensitive.
+BST_TEST_CASE(testSdpEncodingNameAndFmtpCaseInsensitive)
+{
+    using web::json::value_of;
+
+    nmos::sdp_parameters mixed_case_video{
+        U("mixed-case"),
+        sdp::media_types::video,
+        {
+            96,
+            U("RAW"),
+            90000
+        },
+        {
+            { U("sampling"), U("YCbCr-4:2:2") },
+            { U("depth"), U("10") },
+            { U("width"), U("1920") },
+            { U("height"), U("1080") },
+            { U("exactframerate"), U("50") },
+            { U("colorimetry"), U("BT709") },
+            { U("pm"), U("2110GPM") },
+            { U("ssn"), U("ST2110-20:2017") },
+            { U("tp"), U("2110TPN") }
+        }
+    };
+
+    const auto video = nmos::get_video_raw_parameters(mixed_case_video);
+    BST_REQUIRE_EQUAL(sdp::packing_modes::general.name, video.pm.name);
+    BST_REQUIRE_EQUAL(sdp::smpte_standard_numbers::ST2110_20_2017.name, video.ssn.name);
+    BST_REQUIRE_EQUAL(sdp::type_parameters::type_N.name, video.tp.name);
+    BST_REQUIRE_EQUAL(1920u, video.width);
+    BST_REQUIRE_EQUAL(1080u, video.height);
+
+    auto video_receiver = value_of({
+        { nmos::fields::format, nmos::formats::video.name },
+        { nmos::fields::caps, value_of({
+            { nmos::fields::media_types, value_of({ nmos::media_types::video_raw.name }) }
+        }) }
+    });
+    BST_REQUIRE_NO_THROW(nmos::validate_sdp_parameters(video_receiver, mixed_case_video));
+
+    nmos::sdp_parameters mixed_case_audio{
+        U("mixed-case-audio"),
+        sdp::media_types::audio,
+        {
+            97,
+            U("l24"),
+            48000,
+            2
+        },
+        {
+            { U("CHANNEL-ORDER"), U("SMPTE2110.(ST)") }
+        }
+    };
+
+    const auto audio = nmos::get_audio_L_parameters(mixed_case_audio);
+    BST_REQUIRE_EQUAL(24u, audio.bit_depth);
+    BST_REQUIRE_EQUAL(U("SMPTE2110.(ST)"), audio.channel_order);
+
+    auto audio_receiver = value_of({
+        { nmos::fields::format, nmos::formats::audio.name },
+        { nmos::fields::caps, value_of({
+            { nmos::fields::media_types, value_of({ nmos::media_types::audio_L24.name }) }
+        }) }
+    });
+    BST_REQUIRE_NO_THROW(nmos::validate_sdp_parameters(audio_receiver, mixed_case_audio));
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////
 BST_TEST_CASE(testSdpParametersAudioL)
 {
     std::pair<nmos::sdp_parameters, nmos::audio_L_parameters> example{
