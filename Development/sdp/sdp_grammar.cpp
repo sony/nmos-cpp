@@ -118,6 +118,37 @@ namespace sdp
 
         const converter big_digits_converter{ jns2s, digits2jns };
 
+        bool is_fec_element_text(const std::string& text, bool allow_empty)
+        {
+            if (text.empty()) return allow_empty;
+            const std::string separators{ "()<>@,;:\\\"/[]?={}" };
+            return std::all_of(text.begin(), text.end(), [&](unsigned char c) {
+                return 0x20 < c && c < 0x7f && std::string::npos == separators.find(c);
+            });
+        }
+
+        const converter fec_element_converter{
+            [](const web::json::value& v) {
+                const auto name = utility::us2s(sdp::fields::name(v));
+                const auto value = utility::us2s(sdp::fields::value(v).as_string());
+                if (!is_fec_element_text(name, false) || !is_fec_element_text(value, true))
+                    throw sdp_format_error("invalid FEC scheme-specific element");
+                return name + ':' + value;
+            },
+            [](const std::string& s) {
+                const auto colon = s.find(':');
+                if (std::string::npos == colon) throw sdp_parse_error("expected ':' in FEC scheme-specific element");
+                const auto name = s.substr(0, colon);
+                const auto value = s.substr(colon + 1);
+                if (!is_fec_element_text(name, false) || !is_fec_element_text(value, true))
+                    throw sdp_parse_error("invalid FEC scheme-specific element");
+                return web::json::value_of({
+                    { sdp::fields::name, utility::s2us(name) },
+                    { sdp::fields::value, utility::s2us(value) }
+                }, keep_order);
+            }
+        };
+
         // <key>[<separator><value>]
         converter key_value_converter(char separator, const std::pair<utility::string_t, converter>& key_converter, const std::pair<utility::string_t, converter>& value_converter)
         {
@@ -204,6 +235,7 @@ namespace sdp
 
         const converter strings_converter = array_converter(string_converter, " ");
         const converter digits_array_converter = array_converter(digits_converter, " ");
+        const converter fec_elements_converter = array_converter(fec_element_converter, ",");
 
         // ST 2110-20:2022 says "the <format specific parameters> section shall consist of a sequence of
         // media type parameter entries, separated by the semicolon (";") character followed by whitespace"
@@ -211,7 +243,116 @@ namespace sdp
         // in other RFCs and SMPTE standards are inconsistent, so allow additional whitespace
         const converter named_values_converter = array_converter(key_value_converter('=', { sdp::fields::name, string_converter }, { sdp::fields::value, string_converter }), "; ", "[ \\t]*(;[ \\t]*|$)");
 
-        converter object_converter(const std::vector<std::pair<utility::string_t, converter>>& field_converters, const std::string& delimiter)
+        // See https://tools.ietf.org/html/rfc6364#section-4.4
+        const converter fec_source_flow_converter{
+            [](const web::json::value& v) {
+                std::string s = " id=" + digits_converter.format(v.at(sdp::fields::source_id));
+                if (v.has_field(sdp::fields::tag_length)) s += "; tag-len=" + digits_converter.format(v.at(sdp::fields::tag_length));
+                return s;
+            },
+            [](const std::string& s) {
+                const std::string source_id_prefix{ " id=" };
+                const std::string tag_length_prefix{ "tag-len=" };
+                if (0 != s.compare(0, source_id_prefix.size(), source_id_prefix)) throw sdp_parse_error("expected ' id='");
+
+                const auto separator = s.find("; ", source_id_prefix.size());
+                auto v = web::json::value::object(keep_order);
+                v[sdp::fields::source_id] = digits_converter.parse(s.substr(source_id_prefix.size(), separator - source_id_prefix.size()));
+                if (std::string::npos != separator)
+                {
+                    const auto tag_length = s.substr(separator + 2);
+                    if (0 != tag_length.compare(0, tag_length_prefix.size(), tag_length_prefix)) throw sdp_parse_error("expected 'tag-len='");
+                    v[sdp::fields::tag_length] = digits_converter.parse(tag_length.substr(tag_length_prefix.size()));
+                }
+                return v;
+            }
+        };
+
+        // See https://tools.ietf.org/html/rfc6364#section-4.5
+        const converter fec_repair_flow_converter{
+            [](const web::json::value& v) {
+                std::string s = " encoding-id=" + digits_converter.format(v.at(sdp::fields::encoding_id));
+                if (v.has_field(sdp::fields::preference_level)) s += "; preference-lvl=" + digits_converter.format(v.at(sdp::fields::preference_level));
+                if (v.has_field(sdp::fields::sender_side_scheme_specific))
+                {
+                    const auto elements = fec_elements_converter.format(v.at(sdp::fields::sender_side_scheme_specific));
+                    if (elements.empty()) throw sdp_format_error("expected at least one sender-side FSSI element");
+                    s += "; ss-fssi=" + elements;
+                }
+                if (v.has_field(sdp::fields::scheme_specific))
+                {
+                    const auto elements = fec_elements_converter.format(v.at(sdp::fields::scheme_specific));
+                    if (elements.empty()) throw sdp_format_error("expected at least one FSSI element");
+                    s += "; fssi=" + elements;
+                }
+                return s;
+            },
+            [](const std::string& s) {
+                std::vector<std::string> parameters;
+                size_t pos = 0;
+                while (std::string::npos != pos)
+                {
+                    const auto parameter = substr_find(s, pos, "; ");
+                    if (parameter.empty()) throw sdp_parse_error("unexpected FEC repair-flow delimiter");
+                    parameters.push_back(parameter);
+                }
+
+                const std::string encoding_id_prefix{ " encoding-id=" };
+                const std::string preference_level_prefix{ "preference-lvl=" };
+                const std::string sender_side_scheme_specific_prefix{ "ss-fssi=" };
+                const std::string scheme_specific_prefix{ "fssi=" };
+                if (parameters.empty() || 0 != parameters[0].compare(0, encoding_id_prefix.size(), encoding_id_prefix)) throw sdp_parse_error("expected ' encoding-id='");
+
+                auto v = web::json::value::object(keep_order);
+                v[sdp::fields::encoding_id] = digits_converter.parse(parameters[0].substr(encoding_id_prefix.size()));
+
+                size_t parameter = 1;
+                if (parameter < parameters.size() && 0 == parameters[parameter].compare(0, preference_level_prefix.size(), preference_level_prefix))
+                {
+                    v[sdp::fields::preference_level] = digits_converter.parse(parameters[parameter].substr(preference_level_prefix.size()));
+                    ++parameter;
+                }
+                if (parameter < parameters.size() && 0 == parameters[parameter].compare(0, sender_side_scheme_specific_prefix.size(), sender_side_scheme_specific_prefix))
+                {
+                    auto elements = fec_elements_converter.parse(parameters[parameter].substr(sender_side_scheme_specific_prefix.size()));
+                    if (0 == elements.as_array().size()) throw sdp_parse_error("expected at least one sender-side FSSI element");
+                    v[sdp::fields::sender_side_scheme_specific] = std::move(elements);
+                    ++parameter;
+                }
+                if (parameter < parameters.size() && 0 == parameters[parameter].compare(0, scheme_specific_prefix.size(), scheme_specific_prefix))
+                {
+                    auto elements = fec_elements_converter.parse(parameters[parameter].substr(scheme_specific_prefix.size()));
+                    if (0 == elements.as_array().size()) throw sdp_parse_error("expected at least one FSSI element");
+                    v[sdp::fields::scheme_specific] = std::move(elements);
+                    ++parameter;
+                }
+                if (parameter != parameters.size()) throw sdp_parse_error("unexpected or out-of-order FEC repair-flow parameter");
+                return v;
+            }
+        };
+
+        // See https://tools.ietf.org/html/rfc6364#section-4.6
+        const converter repair_window_converter{
+            [](const web::json::value& v) {
+                const sdp::repair_window_unit unit{ sdp::fields::window_unit(v) };
+                if (!(sdp::repair_window_units::milliseconds == unit || sdp::repair_window_units::microseconds == unit)) throw sdp_format_error("expected repair-window unit 'ms' or 'us'");
+                return digits_converter.format(v.at(sdp::fields::window_size)) + utility::us2s(unit.name);
+            },
+            [](const std::string& s) {
+                if (s.size() < 3) throw sdp_parse_error("expected repair-window size and unit");
+                const auto unit = s.substr(s.size() - 2);
+                if (!("ms" == unit || "us" == unit)) throw sdp_parse_error("expected repair-window unit 'ms' or 'us'");
+                return web::json::value_of({
+                    { sdp::fields::window_size, digits_converter.parse(s.substr(0, s.size() - 2)) },
+                    { sdp::fields::window_unit, utility::s2us(unit) }
+                }, keep_order);
+            }
+        };
+
+        // Unlike each entry in field_converters, which consumes one delimiter-separated value,
+        // trailing_field_converter receives the remainder of the input (which may itself contain
+        // delimiters). Omitted when absent or empty. Pass {} for none.
+        converter object_converter(const std::vector<std::pair<utility::string_t, converter>>& field_converters, const std::pair<utility::string_t, converter>& trailing_field_converter, const std::string& delimiter)
         {
             return{
                 [=](const web::json::value& v) {
@@ -220,6 +361,14 @@ namespace sdp
                     {
                         if (!s.empty()) s += delimiter;
                         s += field.second.format(!field.first.empty() ? v.at(field.first) : v);
+                    }
+                    if (!trailing_field_converter.second.format) return s;
+                    if (!trailing_field_converter.first.empty() && !v.has_field(trailing_field_converter.first)) return s;
+                    const auto formatted = trailing_field_converter.second.format(!trailing_field_converter.first.empty() ? v.at(trailing_field_converter.first) : v);
+                    if (!formatted.empty())
+                    {
+                        if (!s.empty()) s += delimiter;
+                        s += formatted;
                     }
                     return s;
                 },
@@ -237,9 +386,24 @@ namespace sdp
                         if (!field.first.empty()) v[field.first] = vv;
                         else web::json::insert(v, vv.as_object().begin(), vv.as_object().end());
                     }
+                    if (trailing_field_converter.second.parse && std::string::npos != pos)
+                    {
+                        auto each = substr_find(s, pos);
+                        // leading or repeated delimiters are an error
+                        if (each.empty()) throw sdp_parse_error("unexpected delimiter");
+
+                        auto vv = trailing_field_converter.second.parse(each);
+                        if (!trailing_field_converter.first.empty()) v[trailing_field_converter.first] = vv;
+                        else web::json::insert(v, vv.as_object().begin(), vv.as_object().end());
+                    }
                     return v;
                 }
             };
+        }
+
+        converter object_converter(const std::vector<std::pair<utility::string_t, converter>>& field_converters, const std::string& delimiter)
+        {
+            return object_converter(field_converters, {}, delimiter);
         }
 
         const std::string time_units{ 'd', 'h', 'm', 's' }; // days, hours, minutes, seconds
@@ -506,7 +670,7 @@ namespace sdp
         }
 
         // See https://tools.ietf.org/html/rfc4566#section-5
-        description media_descriptions(const attribute_converters& converters, const converter& converter)
+        description media_descriptions(const attribute_converters& converters, const converter& default_converter)
         {
             return optional_descriptions(
                 sdp::fields::media_descriptions,
@@ -518,9 +682,8 @@ namespace sdp
                         object_converter({
                             { sdp::fields::media_type, string_converter },
                             { {}, key_value_converter('/', { sdp::fields::port, digits_converter }, { sdp::fields::port_count, number_converter }) },
-                            { sdp::fields::protocol, string_converter },
-                            { sdp::fields::formats, strings_converter }
-                        })
+                            { sdp::fields::protocol, string_converter }
+                        }, { sdp::fields::formats, strings_converter })
                     ),
                     information,
                     optional_lines(
@@ -530,7 +693,7 @@ namespace sdp
                     ),
                     bandwidth_information,
                     encryption_key,
-                    attributes(converters, converter),
+                    attributes(converters, default_converter),
                 }
             );
         }
@@ -756,6 +919,10 @@ namespace sdp
                 },
                 // See https://datatracker.ietf.org/doc/html/draft-ietf-mmusic-delayed-duplication
                 { sdp::attributes::duplication_delay, digits_converter },
+                // See https://tools.ietf.org/html/rfc6364
+                { sdp::attributes::fec_source_flow, fec_source_flow_converter },
+                { sdp::attributes::fec_repair_flow, fec_repair_flow_converter },
+                { sdp::attributes::repair_window, repair_window_converter },
                 // See https://tools.ietf.org/html/rfc7273
                 {
                     sdp::attributes::ts_refclk,
