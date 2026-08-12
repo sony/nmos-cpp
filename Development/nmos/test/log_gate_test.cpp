@@ -66,4 +66,22 @@ BST_TEST_CASE(testLogGatePertinentCategories)
     BST_REQUIRE(gate.pertinent(send_query_ws_events));
     BST_REQUIRE(!gate.pertinent(access));
     BST_REQUIRE(!gate.pertinent(both));
+
+    // a negative match takes precedence over the same category listed positively
+    model.settings[nmos::fields::logging_categories] = value_of({ U("access"), U("!access") });
+    BST_REQUIRE(!gate.pertinent(access));
+    BST_REQUIRE(!gate.pertinent(both));
+    BST_REQUIRE(!gate.pertinent(no_categories));
+    BST_REQUIRE(!gate.pertinent(send_query_ws_events));
+
+    // "!" excludes messages with no category (negation of "")
+    model.settings[nmos::fields::logging_categories] = value_of({ U("!") });
+    BST_REQUIRE(!gate.pertinent(no_categories));
+    BST_REQUIRE(gate.pertinent(access));
+    BST_REQUIRE(gate.pertinent(send_query_ws_events));
+
+    model.settings[nmos::fields::logging_categories] = value_of({ U("!"), U("!access") });
+    BST_REQUIRE(!gate.pertinent(no_categories));
+    BST_REQUIRE(!gate.pertinent(access));
+    BST_REQUIRE(gate.pertinent(send_query_ws_events));
 }
