@@ -79,6 +79,8 @@
     //"logging_level": 0,
 
     // logging_categories [registry, node]: array of logging categories to be included in the error log
+    // categories prefixed with '!' are excluded, even if another category matches positively;
+    // "!" excludes messages with no category; when only excluded categories are specified, all other log messages are included
     //"logging_categories": ["node_implementation"],
 
     // Configuration settings and defaults for the NMOS APIs

@@ -100,6 +100,8 @@ namespace nmos
         const web::json::field_as_integer_or logging_level{ U("logging_level"), 0 }; // 0, rather than slog::severities::info or slog::nil_severity, just to avoid a #include
 
         // logging_categories [registry, node]: array of logging categories to be included in the error log
+        // categories prefixed with '!' are excluded, even if another category matches positively;
+        // "!" excludes messages with no category; when only excluded categories are specified, all other log messages are included
         const web::json::field_as_array logging_categories{ U("logging_categories") }; // when omitted, all log messages are included
 
         // Configuration settings and defaults for the NMOS APIs

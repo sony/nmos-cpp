@@ -7,6 +7,7 @@
 #include <boost/algorithm/string/find_format.hpp>
 #include <boost/algorithm/string/finder.hpp>
 #include <boost/algorithm/string/formatter.hpp>
+#include <boost/algorithm/string/predicate.hpp>
 #include <boost/range/algorithm/find.hpp>
 #include <boost/range/algorithm/find_if.hpp>
 #include "nmos/log_model.h"
@@ -56,6 +57,13 @@ namespace nmos
         protected:
             virtual bool pertinent(const std::list<nmos::category>& categories) const
             {
+                // logging_categories setting:
+                // - omitted: log everything
+                // - empty list: log nothing
+                // - only positives: allowlist (log just those; "" includes uncategorized)
+                // - only negatives ('!' prefixes): blocklist (log everything except those; "!" excludes uncategorized)
+                // - mix: allowlist of the positives, but a negative match still wins
+
                 if (!model.settings.has_field(nmos::fields::logging_categories))
                 {
                     return true;
@@ -63,16 +71,44 @@ namespace nmos
 
                 const auto& pertinent_categories = nmos::fields::logging_categories(model.settings);
 
+                const auto is_negative = [](const web::json::value& category)
+                {
+                    return boost::starts_with(category.as_string(), U("!"));
+                };
+                // true when the list is non-empty and every entry is negative (blocklist mode)
+                const bool default_pertinent = 0 != pertinent_categories.size()
+                    && pertinent_categories.end() == boost::range::find_if(pertinent_categories, [&](const web::json::value& category)
+                    {
+                        return !is_negative(category);
+                    });
+
                 if (categories.empty())
                 {
+                    // "!" is the negative of "", i.e. excludes messages with no category
+                    static const auto no_category_negative = web::json::value::string(U("!"));
+                    if (pertinent_categories.end() != boost::range::find(pertinent_categories, no_category_negative))
+                    {
+                        return false;
+                    }
+
                     static const auto no_category = web::json::value::string(utility::string_t());
-                    return pertinent_categories.end() != boost::range::find(pertinent_categories, no_category);
+                    return default_pertinent || pertinent_categories.end() != boost::range::find(pertinent_categories, no_category);
                 }
 
                 // this could be made more efficient if there may be many pertinent categories
-                return categories.end() != boost::range::find_if(categories, [&](const nmos::category& c)
+                if (categories.end() != boost::range::find_if(categories, [&](const nmos::category& c)
                 {
-                    return pertinent_categories.end() != boost::range::find(pertinent_categories, web::json::value::string(utility::s2us(c)));
+                    const auto category_negative = web::json::value::string(utility::s2us("!" + c));
+                    return pertinent_categories.end() != boost::range::find(pertinent_categories, category_negative);
+                }))
+                {
+                    return false;
+                }
+
+                return default_pertinent || categories.end() != boost::range::find_if(categories, [&](const nmos::category& c)
+                {
+                    const auto category = web::json::value::string(utility::s2us(c));
+                    return pertinent_categories.end() != boost::range::find(pertinent_categories, category);
                 });
             }
 
