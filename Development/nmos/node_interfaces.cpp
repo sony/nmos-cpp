@@ -20,13 +20,35 @@ namespace nmos
             return chassis_id.is_null() ? utility::string_t{} : chassis_id.as_string();
         }
 
+        bool is_valid_node_interfaces_port_id(const utility::string_t& port_id)
+        {
+            if (17 != port_id.size()) return false;
+
+            for (size_t index = 0; index < port_id.size(); ++index)
+            {
+                const auto character = port_id[index];
+                if (2 == index % 3)
+                {
+                    if (U('-') != character) return false;
+                }
+                else if (!((U('0') <= character && character <= U('9')) || (U('a') <= character && character <= U('f'))))
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
         // Port ID must be a MAC address
         web::json::value make_node_interfaces_port_id(const utility::string_t& port_id)
         {
             using web::json::value;
-            // when no physical address is available, use the common null value of all zeros
+            // IS-04 port_id requires the six-octet lowercase-hyphen form. Any other representation,
+            // including uppercase or colon-separated MAC addresses, is not representable in this field
+            // and uses the existing null-address fallback of all zeros
             // see https://standards.ieee.org/content/dam/ieee-standards/standards/web/documents/tutorials/eui.pdf
-            return value::string(!port_id.empty() ? port_id : U("00-00-00-00-00-00"));
+            return value::string(is_valid_node_interfaces_port_id(port_id) ? port_id : U("00-00-00-00-00-00"));
         }
     }
 

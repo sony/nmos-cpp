@@ -4,6 +4,22 @@
 #include "bst/test/test.h"
 #include "nmos/json_fields.h"
 
+namespace
+{
+    utility::string_t make_node_interface_port_id(const utility::string_t& port_id)
+    {
+        const nmos::node_interface iface{
+            U("aa-bb-cc-dd-ee-01"),
+            port_id,
+            U("tunl0"),
+            U(""),
+            U("")
+        };
+        auto json = nmos::make_node_interface(iface);
+        return nmos::fields::port_id(json);
+    }
+}
+
 ////////////////////////////////////////////////////////////////////////////////////////////
 BST_TEST_CASE(testMakeParseNodeInterface)
 {
@@ -43,6 +59,36 @@ BST_TEST_CASE(testMakeParseNodeInterfaceNullChassisId)
     BST_REQUIRE(!json.has_field(nmos::fields::attached_network_device));
 
     BST_REQUIRE(iface == nmos::parse_node_interface(json));
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////
+BST_TEST_CASE(testMakeNodeInterfaceValidPortIdUnchanged)
+{
+    BST_REQUIRE_EQUAL(U("aa-bb-cc-dd-ee-ff"), make_node_interface_port_id(U("aa-bb-cc-dd-ee-ff")));
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////
+BST_TEST_CASE(testMakeNodeInterfaceEmptyPortIdFallback)
+{
+    BST_REQUIRE_EQUAL(U("00-00-00-00-00-00"), make_node_interface_port_id(U("")));
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////
+BST_TEST_CASE(testMakeNodeInterfaceInvalidPortIdFallback)
+{
+    const std::vector<utility::string_t> invalid_port_ids{
+        U("00-00-00-00"),
+        U("00-00-00-00-00"),
+        U("00-00-00-00-00-00-00"),
+        U("gg-00-00-00-00-00"),
+        U("AA-BB-CC-DD-EE-FF"),
+        U("00:00:00:00:00:00")
+    };
+
+    for (const auto& invalid_port_id : invalid_port_ids)
+    {
+        BST_CHECK_EQUAL(U("00-00-00-00-00-00"), make_node_interface_port_id(invalid_port_id));
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////
