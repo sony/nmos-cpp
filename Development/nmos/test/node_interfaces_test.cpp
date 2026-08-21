@@ -77,12 +77,48 @@ BST_TEST_CASE(testMakeNodeInterfaceEmptyPortIdFallback)
 BST_TEST_CASE(testMakeNodeInterfaceInvalidPortIdFallback)
 {
     const std::vector<utility::string_t> invalid_port_ids{
+        // Uppercase MAC addresses
+        U("AA-BB-CC-DD-EE-FF"),
+        U("AA-bb-cc-dd-ee-ff"),
+        // Colon-separated MAC addresses
+        U("00:00:00:00:00:00"),
+        U("aa:bb:cc:dd:ee:ff"),
+        U("12:34:56:78:9a:bc"),
+        // Various malformed MAC addresses
+        // Wrong length
         U("00-00-00-00"),
         U("00-00-00-00-00"),
         U("00-00-00-00-00-00-00"),
+        U("aa-bb-cc-dd-ee"),
+        U("aa-bb-cc-dd-ee-ff-gg"),
+        // Invalid hex characters
         U("gg-00-00-00-00-00"),
-        U("AA-BB-CC-DD-EE-FF"),
-        U("00:00:00:00:00:00")
+        U("aa-bb-cc-dd-ee-GG"),
+        // Missing separators
+        U("aabbccddeeff"),
+        U("00000000000000"),
+        // Wrong separator positions
+        U("aab-bcc-dde-eff"),
+        U("aa-bbccdd-ee-ff"),
+        // Mixed separators
+        U("aa:bb-cc-dd-ee-ff"),
+        U("aa-bb:cc:dd-ee-ff"),
+        // Extra characters
+        U(" aa-bb-cc-dd-ee-ff"),
+        U("aa-bb-cc-dd-ee-ff "),
+        U("aa-bb-cc-dd-ee-ff-"),
+        U("-aa-bb-cc-dd-ee-ff"),
+        // Special characters
+        U("aa.bb.cc.dd.ee.ff"),
+        U("aa_bb_cc_dd_ee_ff"),
+        // Empty octets
+        U("--bb-cc-dd-ee-ff"),
+        U("aa--cc-dd-ee-ff"),
+        // Single character octets
+        U("a-b-c-d-e-f"),
+        U("0-0-0-0-0-0"),
+        // Three character octets
+        U("aaa-bbb-ccc-ddd-eee-fff")
     };
 
     for (const auto& invalid_port_id : invalid_port_ids)

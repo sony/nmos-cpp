@@ -1,6 +1,8 @@
 #include "nmos/node_interfaces.h"
 
 #include <boost/range/adaptor/transformed.hpp>
+#include "bst/regex.h"
+#include "cpprest/basic_utils.h"
 #include "cpprest/host_utils.h"
 #include "nmos/json_fields.h"
 
@@ -20,24 +22,13 @@ namespace nmos
             return chassis_id.is_null() ? utility::string_t{} : chassis_id.as_string();
         }
 
+        // Port ID must be a MAC address, strictly following the lowercase hexadecimal format and separated by hyphens (not colons)
+        // It should match the regular expression pattern ^([0-9a-f]{2}-){5}([0-9a-f]{2})$
+        // see https://specs.amwa.tv/is-04/branches/v1.2.x/APIs/schemas/with-refs/node.html
         bool is_valid_node_interfaces_port_id(const utility::string_t& port_id)
         {
-            if (17 != port_id.size()) return false;
-
-            for (size_t index = 0; index < port_id.size(); ++index)
-            {
-                const auto character = port_id[index];
-                if (2 == index % 3)
-                {
-                    if (U('-') != character) return false;
-                }
-                else if (!((U('0') <= character && character <= U('9')) || (U('a') <= character && character <= U('f'))))
-                {
-                    return false;
-                }
-            }
-
-            return true;
+            static const bst::regex port_id_regex(R"(([0-9a-f]{2}-){5}[0-9a-f]{2}$)");
+            return bst::regex_match(utility::us2s(port_id), port_id_regex);
         }
 
         // Port ID must be a MAC address
