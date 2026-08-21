@@ -4,6 +4,22 @@
 #include "bst/test/test.h"
 #include "nmos/json_fields.h"
 
+namespace
+{
+    utility::string_t make_node_interface_port_id(const utility::string_t& port_id)
+    {
+        const nmos::node_interface iface{
+            U("aa-bb-cc-dd-ee-01"),
+            port_id,
+            U("tunl0"),
+            U(""),
+            U("")
+        };
+        auto json = nmos::make_node_interface(iface);
+        return nmos::fields::port_id(json);
+    }
+}
+
 ////////////////////////////////////////////////////////////////////////////////////////////
 BST_TEST_CASE(testMakeParseNodeInterface)
 {
@@ -43,6 +59,72 @@ BST_TEST_CASE(testMakeParseNodeInterfaceNullChassisId)
     BST_REQUIRE(!json.has_field(nmos::fields::attached_network_device));
 
     BST_REQUIRE(iface == nmos::parse_node_interface(json));
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////
+BST_TEST_CASE(testMakeNodeInterfaceValidPortIdUnchanged)
+{
+    BST_REQUIRE_EQUAL(U("aa-bb-cc-dd-ee-ff"), make_node_interface_port_id(U("aa-bb-cc-dd-ee-ff")));
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////
+BST_TEST_CASE(testMakeNodeInterfaceEmptyPortIdFallback)
+{
+    BST_REQUIRE_EQUAL(U("00-00-00-00-00-00"), make_node_interface_port_id(U("")));
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////
+BST_TEST_CASE(testMakeNodeInterfaceInvalidPortIdFallback)
+{
+    const std::vector<utility::string_t> invalid_port_ids{
+        // Uppercase MAC addresses
+        U("AA-BB-CC-DD-EE-FF"),
+        U("AA-bb-cc-dd-ee-ff"),
+        // Colon-separated MAC addresses
+        U("00:00:00:00:00:00"),
+        U("aa:bb:cc:dd:ee:ff"),
+        U("12:34:56:78:9a:bc"),
+        // Various malformed MAC addresses
+        // Wrong length
+        U("00-00-00-00"),
+        U("00-00-00-00-00"),
+        U("00-00-00-00-00-00-00"),
+        U("aa-bb-cc-dd-ee"),
+        U("aa-bb-cc-dd-ee-ff-gg"),
+        // Invalid hex characters
+        U("gg-00-00-00-00-00"),
+        U("aa-bb-cc-dd-ee-GG"),
+        // Missing separators
+        U("aabbccddeeff"),
+        U("00000000000000"),
+        // Wrong separator positions
+        U("aab-bcc-dde-eff"),
+        U("aa-bbccdd-ee-ff"),
+        // Mixed separators
+        U("aa:bb-cc-dd-ee-ff"),
+        U("aa-bb:cc:dd-ee-ff"),
+        // Extra characters
+        U(" aa-bb-cc-dd-ee-ff"),
+        U("aa-bb-cc-dd-ee-ff "),
+        U("aa-bb-cc-dd-ee-ff-"),
+        U("-aa-bb-cc-dd-ee-ff"),
+        // Special characters
+        U("aa.bb.cc.dd.ee.ff"),
+        U("aa_bb_cc_dd_ee_ff"),
+        // Empty octets
+        U("--bb-cc-dd-ee-ff"),
+        U("aa--cc-dd-ee-ff"),
+        // Single character octets
+        U("a-b-c-d-e-f"),
+        U("0-0-0-0-0-0"),
+        // Three character octets
+        U("aaa-bbb-ccc-ddd-eee-fff")
+    };
+
+    for (const auto& invalid_port_id : invalid_port_ids)
+    {
+        BST_CHECK_EQUAL(U("00-00-00-00-00-00"), make_node_interface_port_id(invalid_port_id));
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////
