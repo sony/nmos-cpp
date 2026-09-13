@@ -23,6 +23,13 @@ namespace nmos
 
         web::uri make_nodeapi_receiver_target_put_request_schema_uri(const nmos::api_version& version);
 
+        web::uri make_node_schema_uri(const nmos::api_version& version);
+        web::uri make_device_schema_uri(const nmos::api_version& version);
+        web::uri make_source_schema_uri(const nmos::api_version& version);
+        web::uri make_flow_schema_uri(const nmos::api_version& version);
+        web::uri make_sender_schema_uri(const nmos::api_version& version);
+        web::uri make_receiver_schema_uri(const nmos::api_version& version);
+
         web::uri make_connectionapi_staged_patch_request_schema_uri(const nmos::api_version& version, const nmos::type& type);
         web::uri make_connectionapi_sender_staged_patch_request_schema_uri(const nmos::api_version& version);
         web::uri make_connectionapi_receiver_staged_patch_request_schema_uri(const nmos::api_version& version);
