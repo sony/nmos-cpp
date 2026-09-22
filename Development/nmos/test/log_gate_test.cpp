@@ -3,6 +3,7 @@
 
 #include <sstream>
 #include "bst/test/test.h"
+#include "cpprest/basic_utils.h" // for utility::us2s
 
 namespace
 {
@@ -84,4 +85,43 @@ BST_TEST_CASE(testLogGatePertinentCategories)
     BST_REQUIRE(!gate.pertinent(no_categories));
     BST_REQUIRE(!gate.pertinent(access));
     BST_REQUIRE(gate.pertinent(send_query_ws_events));
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////
+BST_TEST_CASE(testInsertLogEventNonUtf8)
+{
+    // this covers the path that crashed: a log message containing locale-dependent narrow
+    // bytes, e.g. from std::exception::what(), being serialized to JSON on the async logging
+    // worker thread, where utility::s2us threw std::range_error and nothing caught it
+    nmos::experimental::log_events events;
+
+    // 0xFC is u with diaeresis in the Windows Western code page, and is not valid UTF-8
+    const slog::async_log_message message("M\xFCller.cpp", 42, "f\xFCnf", slog::severities::error, "caf\xFC");
+
+    BST_REQUIRE_NO_THROW(nmos::experimental::insert_log_event(events, message, U("42")));
+    BST_REQUIRE_EQUAL(size_t(1), events.size());
+
+    const auto& data = events.front().data;
+
+    // the message and source location are preserved, not dropped or emptied
+    BST_REQUIRE(!data.at(U("message")).as_string().empty());
+    BST_REQUIRE(!data.at(U("source_location")).at(U("file")).as_string().empty());
+    BST_REQUIRE(!data.at(U("source_location")).at(U("function")).as_string().empty());
+
+    // and the event is well-formed, i.e. the Logging API can serialize and return it
+    BST_REQUIRE_NO_THROW(web::json::value::parse(data.serialize()));
+
+    // each converted field must be valid UTF-8, which is what makes the JSON well-formed
+    // to_utf16string is the strict decoder, so this asserts the fix on a narrow build too,
+    // where s2us is a pass-through and would otherwise have let the invalid bytes through
+    for (const auto& field : { data.at(U("message")), data.at(U("source_location")).at(U("file")), data.at(U("source_location")).at(U("function")) })
+    {
+        BST_REQUIRE_NO_THROW(utility::conversions::to_utf16string(utility::us2s(field.as_string())));
+    }
+
+    // valid UTF-8 is unaffected, i.e. it still arrives exactly as logged
+    const slog::async_log_message utf8_message("test.cpp", 42, "test", slog::severities::error, "caf\xC3\xA9");
+    BST_REQUIRE_NO_THROW(nmos::experimental::insert_log_event(events, utf8_message, U("43")));
+    BST_REQUIRE_EQUAL(size_t(2), events.size());
+    BST_REQUIRE_EQUAL(utility::s2us("caf\xC3\xA9"), events.front().data.at(U("message")).as_string());
 }
