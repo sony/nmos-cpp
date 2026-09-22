@@ -616,7 +616,8 @@ namespace nmos
     // set up a standard NMOS error response, using the default reason phrase and the specified debug information
     void set_error_reply(web::http::http_response& res, web::http::status_code code, const std::exception& debug)
     {
-        set_error_reply(res, code, {}, utility::s2us(debug.what()));
+        // what() is a narrow platform string with no UTF-8 guarantee
+        set_error_reply(res, code, {}, utility::s2us_lenient(debug.what()));
     }
 
     // add handler to set appropriate response headers, and error response body if indicated - call this only after adding all others!
@@ -863,7 +864,8 @@ namespace nmos
                 if (error.value != nmos::experimental::authorization_error::without_authentication)
                 {
                     utility::string_t error_string = { (error.value == nmos::experimental::authorization_error::insufficient_scope) ? web::http::oauth2::experimental::resource_server_errors::insufficient_scope.name : web::http::oauth2::experimental::resource_server_errors::invalid_token.name };
-                    error_description = utility::s2us(error.message);
+                    // the message originates from std::exception::what(), so may not be UTF-8
+                    error_description = utility::s2us_lenient(error.message);
                     auth_params += U(",error=") + error_string + U(",error_description=") + error_description;
                 }
 
@@ -880,7 +882,7 @@ namespace nmos
                     res.headers().add(web::http::header_names::retry_after, retry_after);
                 }
 
-                nmos::set_error_reply(res, status_code, utility::s2us(error.message));
+                nmos::set_error_reply(res, status_code, utility::s2us_lenient(error.message));
             }
         }
     }

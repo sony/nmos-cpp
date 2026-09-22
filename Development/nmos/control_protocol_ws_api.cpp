@@ -369,7 +369,7 @@ namespace nmos
                             resources.modify(grain, [&](nmos::resource& grain)
                             {
                                 web::json::push_back(nmos::fields::message_grain_data(grain.data),
-                                    nc::make_error_message({ nc_method_status::bad_command_format }, utility::s2us(e.what())));
+                                    nc::make_error_message({ nc_method_status::bad_command_format }, utility::s2us_lenient(e.what())));
 
                                 grain.updated = strictly_increasing_update(resources);
                             });
@@ -381,7 +381,7 @@ namespace nmos
                             resources.modify(grain, [&](nmos::resource& grain)
                             {
                                 web::json::push_back(nmos::fields::message_grain_data(grain.data),
-                                    nc::make_error_message({ nc_method_status::bad_command_format }, utility::s2us(std::string("Unexpected exception while handing control protocol command : ") + e.what())));
+                                    nc::make_error_message({ nc_method_status::bad_command_format }, utility::s2us_lenient(std::string("Unexpected exception while handing control protocol command : ") + e.what())));
 
                                 grain.updated = strictly_increasing_update(resources);
                             });
