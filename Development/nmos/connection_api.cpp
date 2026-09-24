@@ -670,6 +670,8 @@ namespace nmos
             }
             else
             {
+                slog::log<slog::severities::warning>(gate, SLOG_FLF) << "Rejecting PATCH request for " << id_type << " which was not found";
+
                 return details::make_connection_resource_patch_error_response(status_codes::NotFound);
             }
         }
