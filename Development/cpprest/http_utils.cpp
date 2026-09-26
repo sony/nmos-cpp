@@ -27,7 +27,10 @@ namespace web
             if (req.headers().end() != header)
             {
                 auto first = header->second.substr(0, header->second.find(','));
-                auto colon = first.find(':');
+                // an IPv6 address is enclosed in square brackets, e.g. "[2001:db8::1]:42", so look for the port after the closing bracket
+                // see https://tools.ietf.org/html/rfc3986#section-3.2.2
+                const auto bracket = first.find(']');
+                auto colon = first.find(':', utility::string_t::npos != bracket ? bracket : 0);
                 if (utility::string_t::npos == colon) return{ std::move(first), 0 };
                 return{ first.substr(0, colon), utility::conversions::details::scan_string(first.substr(colon + 1), 0) };
             }

@@ -35,6 +35,12 @@ BST_TEST_CASE(testGetHostPort)
         req.headers().add(U("Host"), U("29.31.37.41:42"));
         BST_REQUIRE_EQUAL(std::make_pair(utility::string_t{ U("29.31.37.41") }, 42), web::http::get_host_port(req));
     }
+    // IPv6 address and port
+    {
+        web::http::http_request req;
+        req.headers().add(U("Host"), U("[2001:db8::1]:42"));
+        BST_REQUIRE_EQUAL(std::make_pair(utility::string_t{ U("[2001:db8::1]") }, 42), web::http::get_host_port(req));
+    }
 
     // 'X-Forwarded-Host'
 
