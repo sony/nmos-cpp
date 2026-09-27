@@ -37,23 +37,43 @@ namespace nmos
 // cf. preprocessor conditions in nmos::make_http_client_config and nmos::make_websocket_client_config
 #if !defined(_WIN32) || !defined(__cplusplus_winrt) || defined(CPPREST_FORCE_HTTP_CLIENT_ASIO)
         template <typename ExceptionType>
-        inline std::function<void(boost::asio::ssl::context&)> make_client_ssl_context_callback(const nmos::settings& settings, load_ca_certificates_handler load_ca_certificates, slog::base_gate& gate)
+        inline std::function<void(boost::asio::ssl::context&)> make_client_ssl_context_callback(const nmos::settings& settings, load_ca_certificates_handler load_ca_certificates, load_client_certificate_handler load_client_certificate, slog::base_gate& gate)
         {
             if (!load_ca_certificates)
             {
                 load_ca_certificates = make_load_ca_certificates_handler(settings, gate);
             }
 
-            return [load_ca_certificates](boost::asio::ssl::context& ctx)
+            return [load_ca_certificates, load_client_certificate](boost::asio::ssl::context& ctx)
             {
                 try
                 {
                     ctx.set_options(nmos::details::ssl_context_options);
 
+                    // for server certificate validation
                     const auto cacerts = utility::us2s(load_ca_certificates());
                     ctx.add_certificate_authority(boost::asio::buffer(cacerts.data(), cacerts.size()));
 
                     set_cipher_list(ctx, nmos::details::ssl_cipher_list);
+
+                    // for client certificate support
+                    // ignore if client certificate handler is not provided
+                    if (load_client_certificate)
+                    {
+                        const auto client_certificate = load_client_certificate();
+                        const auto key = utility::us2s(client_certificate.private_key);
+                        if (0 == key.size())
+                        {
+                            throw ExceptionType({}, "Missing client private key");
+                        }
+                        const auto cert_chain = utility::us2s(client_certificate.certificate_chain);
+                        if (0 == cert_chain.size())
+                        {
+                            throw ExceptionType({}, "Missing client certificate chain");
+                        }
+                        ctx.use_private_key(boost::asio::buffer(key.data(), key.size()), boost::asio::ssl::context_base::pem);
+                        ctx.use_certificate_chain(boost::asio::buffer(cert_chain.data(), cert_chain.size()));
+                    }
                 }
                 catch (const boost::system::system_error& e)
                 {
@@ -158,25 +178,33 @@ namespace nmos
 
     // construct client config based on specified secure flag and settings, e.g. using the specified proxy and OCSP config
     // with the remaining options defaulted, e.g. request timeout
-    web::http::client::http_client_config make_http_client_config(bool secure, const nmos::settings& settings, load_ca_certificates_handler load_ca_certificates, slog::base_gate& gate)
+    web::http::client::http_client_config make_http_client_config(bool secure, const nmos::settings& settings, load_ca_certificates_handler load_ca_certificates, load_client_certificate_handler load_client_certificate, slog::base_gate& gate)
     {
         web::http::client::http_client_config config;
         const auto proxy = proxy_uri(settings);
         if (!proxy.is_empty()) config.set_proxy(proxy);
         if (secure) config.set_validate_certificates(nmos::experimental::fields::validate_certificates(settings));
 #if !defined(_WIN32) && !defined(__cplusplus_winrt) || defined(CPPREST_FORCE_HTTP_CLIENT_ASIO)
-        if (secure) config.set_ssl_context_callback(details::make_client_ssl_context_callback<web::http::http_exception>(settings, load_ca_certificates, gate));
+        if (secure) config.set_ssl_context_callback(details::make_client_ssl_context_callback<web::http::http_exception>(settings, load_ca_certificates, load_client_certificate, gate));
         config.set_nativehandle_options(details::make_client_nativehandle_options(secure, nmos::experimental::fields::client_address(settings), gate));
 #endif
 
         return config;
     }
+    web::http::client::http_client_config make_http_client_config(bool secure, const nmos::settings& settings, load_ca_certificates_handler load_ca_certificates, slog::base_gate& gate)
+    {
+        return make_http_client_config(secure, settings, load_ca_certificates, {}, gate);
+    }
 
     // construct client config based on settings, e.g. using the specified proxy and OCSP config
     // with the remaining options defaulted, e.g. request timeout
+    web::http::client::http_client_config make_http_client_config(const nmos::settings& settings, load_ca_certificates_handler load_ca_certificates, load_client_certificate_handler load_client_certificate, slog::base_gate& gate)
+    {
+        return make_http_client_config(nmos::experimental::fields::client_secure(settings), settings, load_ca_certificates, load_client_certificate, gate);
+    }
     web::http::client::http_client_config make_http_client_config(const nmos::settings& settings, load_ca_certificates_handler load_ca_certificates, slog::base_gate& gate)
     {
-        return make_http_client_config(nmos::experimental::fields::client_secure(settings), settings, load_ca_certificates, gate);
+        return make_http_client_config(settings, load_ca_certificates, load_client_certificate_handler{}, gate);
     }
 
     // construct oauth2 config with the bearer token
@@ -225,7 +253,7 @@ namespace nmos
         if (!proxy.is_empty()) config.set_proxy(proxy);
         if (secure) config.set_validate_certificates(nmos::experimental::fields::validate_certificates(settings));
 #if !defined(_WIN32) || !defined(__cplusplus_winrt)
-        if (secure) config.set_ssl_context_callback(details::make_client_ssl_context_callback<web::websockets::client::websocket_exception>(settings, load_ca_certificates, gate));
+        if (secure) config.set_ssl_context_callback(details::make_client_ssl_context_callback<web::websockets::client::websocket_exception>(settings, load_ca_certificates, {}, gate));
 #ifdef CPPRESTSDK_ENABLE_BIND_WEBSOCKET_CLIENT
         config.set_nativehandle_options(details::make_ws_client_nativehandle_options(secure, nmos::experimental::fields::client_address(settings), gate));
 #endif

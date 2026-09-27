@@ -44,8 +44,12 @@ namespace ssl
         std::vector<std::string> split_certificate_chain(const std::string& certificate_chain);
 
         // calculate the number of seconds until expiry of the specified certificate
-        // 0 is returned if certificate has already expired
+        // if the certificate has expired, the value of 0 will be returned
         double certificate_expiry_from_now(const std::string& certificate);
+
+        // calculate the number of the factor of seconds until expiry of the specified certificate
+        // if the certificate has expired, the value of 0 will be returned
+        double certificate_expiry_from_now(const std::string& certificate, double ratio);
     }
 }
 

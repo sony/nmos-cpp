@@ -30,11 +30,18 @@ namespace nmos
             // private_key_file (attribute of server_certificates objects): full path of private key file in PEM format
             const web::json::field_as_string_or private_key_file{ U("private_key_file"), U("") };
 
-            // certificate_chain_file (attribute of server_certificates objects): full path of certificate chain file in PEM format, which must be sorted
+            // certificate_chain_file (attribute of server_certificates and client_certificate objects): full path of certificate chain file in PEM format, which must be sorted
             // starting with the server's certificate, followed by any intermediate CA certificates, and ending with the highest level (root) CA
             // on Windows, if C++ REST SDK is built with CPPREST_HTTP_LISTENER_IMPL=httpsys (reported as "listener=httpsys" by nmos::get_build_settings_info)
             // one of the certificates must also be bound to each port e.g. using 'netsh add sslcert'
             const web::json::field_as_string_or certificate_chain_file{ U("certificate_chain_file"), U("") };
+
+            // client_certificate [registry, node]: a client certificate object, which has the full paths of private key file and certificate chain file
+            // the value must be an object like { "private_key_file": "client-key.pem, "certificate_chain_file": "client-chain.pem" }
+            // see private_key_file and certificate_chain_file above
+            // note: on windows, if C++ REST SDK is built with CPPREST_HTTP_CLIENT_IMPL=winhttp (reported as "client=winhttp" by nmos::get_build_settings_info)
+            // the certificate_chain_file must be in PKCS#12 format, storing the certificate chain and the private key
+            const web::json::field_as_value_or client_certificate{ U("client_certificate"), web::json::value_of({ { private_key_file, U("") }, { certificate_chain_file, U("") } }) };
 
             // dh_param_file [registry, node]: Diffie-Hellman parameters file in PEM format for ephemeral key exchange support, or empty string for no support
             const web::json::field_as_string_or dh_param_file{ U("dh_param_file"), U("") };

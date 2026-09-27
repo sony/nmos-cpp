@@ -49,8 +49,15 @@ namespace nmos
         nmos::key_algorithm key_algorithm;
         utility::string_t private_key;
         // the chain should be sorted starting with the end entity's certificate, followed by any intermediate CA certificates, and ending with the highest level (root) CA
+        // see https://datatracker.ietf.org/doc/html/rfc5246#section-7.4.6 for client certificate
+        // see https://datatracker.ietf.org/doc/html/rfc5246#section-7.4.2 for server certificate
         utility::string_t certificate_chain;
     };
+
+    // callback to supply a client certificate
+    // this callback is executed when opening the HTTP or WebSocket client
+    // this callback should not throw exceptions
+    typedef std::function<certificate()> load_client_certificate_handler;
 
     // callback to supply a list of server certificates
     // this callback is executed when a connection is accepted by the HTTP or WebSocket listener
@@ -68,8 +75,19 @@ namespace nmos
     // callback to supply a list of RSA private keys
     typedef std::function<std::vector<utility::string_t>()> load_rsa_private_keys_handler;
 
+    // callback to save trusted root CA certificate(s) in PEM format
+    // this callback should not throw exceptions
+    typedef std::function<void(const utility::string_t& ca_certificates)> save_ca_certificates_handler;
+
+    // callback to save server certificate
+    // this callback should not throw exceptions
+    typedef std::function<void(const certificate& certificate)> save_server_certificate_handler;
+
     // construct callback to load certification authorities from file based on settings, see nmos/certificate_settings.h
     load_ca_certificates_handler make_load_ca_certificates_handler(const nmos::settings& settings, slog::base_gate& gate);
+
+    // construct callback to load client certificate from files based on settings, see nmos/certificate_settings.h
+    load_client_certificate_handler make_load_client_certificate_handler(const nmos::settings& settings, slog::base_gate& gate);
 
     // construct callback to load server certificates from files based on settings, see nmos/certificate_settings.h
     load_server_certificates_handler make_load_server_certificates_handler(const nmos::settings& settings, slog::base_gate& gate);
@@ -79,6 +97,15 @@ namespace nmos
 
     // construct callback to load server RSA private key files based on settings, see nmos/certificate_settings.h
     load_rsa_private_keys_handler make_load_rsa_private_keys_handler(const nmos::settings& settings, slog::base_gate& gate);
+
+    // construct callback to save certification authorities to file based on settings, see nmos/certificate_settings.h
+    save_ca_certificates_handler make_save_ca_certificates_handler(const nmos::settings& settings, slog::base_gate& gate);
+
+    // construct callback to save ECDSA server certificate to file based on settings, see nmos/certificate_settings.h
+    save_server_certificate_handler make_save_ecdsa_server_certificate_handler(const nmos::settings& settings, slog::base_gate& gate);
+
+    // construct callback to save RSA server certificate to file based on settings, see nmos/certificate_settings.h
+    save_server_certificate_handler make_save_rsa_server_certificate_handler(const nmos::settings& settings, slog::base_gate& gate);
 }
 
 #endif
