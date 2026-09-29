@@ -116,6 +116,7 @@ namespace nmos
         "is09_versions": { "$ref": "#/definitions/apiVersionArray" },
         "is10_versions": { "$ref": "#/definitions/apiVersionArray" },
         "is12_versions": { "$ref": "#/definitions/apiVersionArray" },
+        "is13_versions": { "$ref": "#/definitions/apiVersionArray" },
         "is14_versions": { "$ref": "#/definitions/apiVersionArray" },
 
         "pri":                          { "$ref": "#/definitions/nonNegativeInteger" },
@@ -143,6 +144,7 @@ namespace nmos
         "channelmapping_port":      { "$ref": "#/definitions/port" },
         "system_port":              { "$ref": "#/definitions/port" },
         "control_protocol_ws_port": { "$ref": "#/definitions/port" },
+        "annotation_port":          { "$ref": "#/definitions/port" },
         "configuration_port":       { "$ref": "#/definitions/port" },
 
         "listen_backlog":                  { "$ref": "#/definitions/nonNegativeInteger" },
@@ -377,6 +379,7 @@ namespace nmos
                 if (registry) web::json::insert(settings, std::make_pair(nmos::fields::query_ws_port, ws_port));
                 if (registry) web::json::insert(settings, std::make_pair(nmos::fields::registration_port, http_port));
                 web::json::insert(settings, std::make_pair(nmos::fields::node_port, http_port));
+                if (!registry) web::json::insert(settings, std::make_pair(nmos::fields::annotation_port, http_port));
                 if (registry) web::json::insert(settings, std::make_pair(nmos::fields::system_port, http_port));
                 if (!registry) web::json::insert(settings, std::make_pair(nmos::fields::connection_port, http_port));
                 if (!registry) web::json::insert(settings, std::make_pair(nmos::fields::events_port, http_port));
