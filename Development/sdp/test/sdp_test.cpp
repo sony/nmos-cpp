@@ -431,6 +431,9 @@ BST_TEST_CASE(testSdpRfc6364RejectsMalformedAttributes)
         "a=fec-repair-flow: encoding-id=0; ss-fssi=n:7; preference-lvl=1\r\n",
         "a=fec-repair-flow: encoding-id=0; ss-fssi=\r\n",
         "a=fec-repair-flow: encoding-id=0; ss-fssi=n:7/bad\r\n",
+        "a=fec-repair-flow: encoding-id=0; fssi=k:7; ss-fssi=n:7\r\n",
+        "a=fec-repair-flow: encoding-id=0; ss-fssi=n:7; fssi=\r\n",
+        "a=fec-repair-flow: encoding-id=0; ss-fssi=n:7; fssi=k:7/bad\r\n",
         "a=repair-window:1s\r\n"
     };
 

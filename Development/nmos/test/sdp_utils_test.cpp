@@ -429,6 +429,8 @@ a=mid:R1
     BST_REQUIRE_EQUAL(2, fec.repair_flows.at(0).sender_side_scheme_specific.size());
     BST_CHECK_EQUAL(U("n"), fec.repair_flows.at(0).sender_side_scheme_specific.at(0).first);
     BST_CHECK_EQUAL(U("7"), fec.repair_flows.at(0).sender_side_scheme_specific.at(0).second);
+    BST_CHECK_EQUAL(U("k"), fec.repair_flows.at(0).sender_side_scheme_specific.at(1).first);
+    BST_CHECK_EQUAL(U("5"), fec.repair_flows.at(0).sender_side_scheme_specific.at(1).second);
 
     // A Receiver must resolve interface_ip before using the parsed parameters to create SDP.
     parsed.second[0][nmos::fields::interface_ip] = value::string(U("172.29.26.24"));
@@ -519,21 +521,149 @@ c=IN IP4 233.252.0.3/127
 a=fec-repair-flow: encoding-id=11
 a=mid:R2
 )";
+    const std::string source2 = R"(m=video 30000 RTP/AVP 101
+c=IN IP4 233.252.0.4/127
+a=rtpmap:101 MP2T/90000
+a=fec-source-flow: id=1
+a=mid:S2
+)";
 
     // Multiple-source RFC 6364 groups are valid at the sdp/ layer but cannot be represented by IS-05 transport parameters.
-    const auto unsupported = sdp::parse_session_description(before + "a=group:FEC-FR S1 S2 R1\n" + source + repair1);
-    const auto unsupported_transport_params = nmos::get_session_description_transport_params(unsupported);
-    BST_REQUIRE_EQUAL(1, unsupported_transport_params.size());
-    BST_CHECK(!unsupported_transport_params.at(0).has_field(nmos::fields::fec_enabled));
+    // See https://datatracker.ietf.org/doc/html/rfc6364#section-6.2
+    {
+        const auto unsupported = sdp::parse_session_description(before + "a=group:FEC-FR S1 S2 R1\n" + source + repair1);
+        const auto unsupported_transport_params = nmos::get_session_description_transport_params(unsupported);
+        BST_REQUIRE_EQUAL(1, unsupported_transport_params.size());
+        BST_CHECK(!unsupported_transport_params.at(0).has_field(nmos::fields::fec_enabled));
+    }
+    {
+        const auto unsupported = sdp::parse_session_description(before + "a=group:FEC-FR S1 S2 R1\n" + source + source2 + repair1);
+        const auto unsupported_transport_params = nmos::get_session_description_transport_params(unsupported);
+        BST_REQUIRE_EQUAL(2, unsupported_transport_params.size());
+        BST_CHECK(!unsupported_transport_params.at(0).has_field(nmos::fields::fec_enabled));
+        BST_CHECK(!unsupported_transport_params.at(1).has_field(nmos::fields::fec_enabled));
+    }
 
-    const auto missing_media = sdp::parse_session_description(before + "a=group:FEC-FR S1 MISSING\n" + source);
-    BST_REQUIRE_THROW(nmos::get_session_description_transport_params(missing_media), std::runtime_error);
+    // Missing media description for FEC group references
+    {
+        const auto missing_media = sdp::parse_session_description(before + "a=group:FEC-FR S1 MISSING\n" + source);
+        BST_REQUIRE_THROW(nmos::get_session_description_transport_params(missing_media), std::runtime_error);
+    }
+    {
+        const auto missing_media = sdp::parse_session_description(before + "a=group:FEC-FR MISSING R1\n" + source);
+        BST_REQUIRE_THROW(nmos::get_session_description_transport_params(missing_media), std::runtime_error);
+    }
 
+    // RFC 6364 Multiple-repair flows with different connection addresses are valid at the sdp/ layer but cannot be represented by IS-05 transport parameters.
+    // See https://datatracker.ietf.org/doc/html/rfc6364#section-6.4
     const auto different_addresses = sdp::parse_session_description(before
         + "a=group:FEC-FR S1 R1\n"
         + "a=group:FEC-FR S1 R2\n"
         + source + repair1 + repair2_different_address);
     BST_REQUIRE_THROW(nmos::get_session_description_transport_params(different_addresses), std::runtime_error);
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////
+BST_TEST_CASE(testSdpTransportParamsFecSourceFlowValidation)
+{
+    const std::string before = R"(v=0
+o=- 0 0 IN IP4 192.0.2.1
+s=FEC
+t=0 0
+)";
+    const std::string source = R"(m=video 30000 RTP/AVP 100
+c=IN IP4 233.252.0.1/127
+a=rtpmap:100 MP2T/90000
+a=fec-source-flow: id=0
+a=mid:S1
+)";
+    const std::string source_duplicate_mid = R"(m=video 30010 RTP/AVP 101
+c=IN IP4 233.252.0.10/127
+a=rtpmap:101 MP2T/90000
+a=fec-source-flow: id=1
+a=mid:S1
+)";
+    const std::string source_missing_fec_source_flow = R"(m=video 30000 RTP/AVP 100
+c=IN IP4 233.252.0.1/127
+a=rtpmap:100 MP2T/90000
+a=mid:S1
+)";
+    const std::string repair1 = R"(m=application 30002 UDP/FEC
+c=IN IP4 233.252.0.2/127
+a=fec-repair-flow: encoding-id=10
+a=mid:R1
+)";
+    const std::string repair2 = R"(m=application 30004 UDP/FEC
+c=IN IP4 233.252.0.2/127
+a=fec-repair-flow: encoding-id=11
+a=mid:R2
+)";
+    const std::string repair3 = R"(m=application 30006 UDP/FEC
+c=IN IP4 233.252.0.2/127
+a=fec-repair-flow: encoding-id=12
+a=mid:R3
+)";
+    const std::string repair_wrong_media = R"(m=video 30002 RTP/AVP 102
+c=IN IP4 233.252.0.2/127
+a=rtpmap:102 MP2T/90000
+a=fec-repair-flow: encoding-id=10
+a=mid:R1
+)";
+    const std::string repair_missing_fec_repair_flow = R"(m=application 30002 UDP/FEC
+c=IN IP4 233.252.0.2/127
+a=mid:R1
+)";
+
+    // Group references duplicate source mid
+    {
+        const auto sdp = sdp::parse_session_description(before
+            + "a=group:FEC-FR S1 R1\n"
+            + source + source_duplicate_mid + repair1);
+        BST_REQUIRE_THROW(nmos::get_session_description_transport_params(sdp), std::runtime_error);
+    }
+
+    // Repair media must be application/UDP-FEC
+    {
+        const auto sdp = sdp::parse_session_description(before
+            + "a=group:FEC-FR S1 R1\n"
+            + source + repair_wrong_media);
+        BST_REQUIRE_THROW(nmos::get_session_description_transport_params(sdp), std::runtime_error);
+    }
+
+    // Source media must contain a fec-source-flow attribute
+    {
+        const auto sdp = sdp::parse_session_description(before
+            + "a=group:FEC-FR S1 R1\n"
+            + source_missing_fec_source_flow + repair1);
+        BST_REQUIRE_THROW(nmos::get_session_description_transport_params(sdp), std::runtime_error);
+    }
+
+    // Repair media must contain a fec-repair-flow attribute
+    {
+        const auto sdp = sdp::parse_session_description(before
+            + "a=group:FEC-FR S1 R1\n"
+            + source + repair_missing_fec_repair_flow);
+        BST_REQUIRE_THROW(nmos::get_session_description_transport_params(sdp), std::runtime_error);
+    }
+
+    // Duplicate repair flow references for the same source are invalid
+    {
+        const auto sdp = sdp::parse_session_description(before
+            + "a=group:FEC-FR S1 R1\n"
+            + "a=group:FEC-FR S1 R1\n"
+            + source + repair1);
+        BST_REQUIRE_THROW(nmos::get_session_description_transport_params(sdp), std::runtime_error);
+    }
+
+    // IS-05 supports at most two repair flows per RTP leg
+    {
+        const auto sdp = sdp::parse_session_description(before
+            + "a=group:FEC-FR S1 R1\n"
+            + "a=group:FEC-FR S1 R2\n"
+            + "a=group:FEC-FR S1 R3\n"
+            + source + repair1 + repair2 + repair3);
+        BST_REQUIRE_THROW(nmos::get_session_description_transport_params(sdp), std::runtime_error);
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////
