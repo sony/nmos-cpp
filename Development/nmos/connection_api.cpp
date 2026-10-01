@@ -670,8 +670,6 @@ namespace nmos
             }
             else
             {
-                slog::log<slog::severities::warning>(gate, SLOG_FLF) << "Rejecting PATCH request for " << id_type << " which was not found";
-
                 return details::make_connection_resource_patch_error_response(status_codes::NotFound);
             }
         }
@@ -1099,6 +1097,11 @@ namespace nmos
                     catch (...)
                     {
                         result = handle_connection_resource_exception({ id, type });
+                    }
+
+                    if (status_codes::NotFound == result.first)
+                    {
+                        slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Resource not found for " << std::make_pair(id, type) << " in bulk request";
                     }
 
                     results.push_back(result);
