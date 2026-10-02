@@ -47,6 +47,7 @@ set(NMOS_CPP_TEST_NMOS_TEST_SOURCES
     nmos/test/channels_test.cpp
     nmos/test/condition_variable_test.cpp
     nmos/test/connection_resources_test.cpp
+    nmos/test/constraints_test.cpp
     nmos/test/configuration_methods_test.cpp
     nmos/test/configuration_resources_test.cpp
     nmos/test/configuration_utils_test.cpp
@@ -69,6 +70,7 @@ set(NMOS_CPP_TEST_NMOS_TEST_SOURCES
     nmos/test/sdp_utils_test.cpp
     nmos/test/settings_test.cpp
     nmos/test/slog_test.cpp
+    nmos/test/streamcompatibility_validation_test.cpp
     nmos/test/system_resources_test.cpp
     nmos/test/video_jxsv_test.cpp
     )

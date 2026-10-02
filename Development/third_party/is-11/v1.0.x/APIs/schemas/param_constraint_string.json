@@ -1,0 +1,15 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "description": "Describes a String Parameter Constraint",
+  "title": "String Parameter Constraint",
+  "type": "object",
+  "properties": {
+    "enum": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string"
+      }
+    }
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema",
+  "description": "Describes Constraints",
+  "title": "Constraints",
+  "type": "object",
+  "required": [
+    "constraint_sets"
+  ],
+  "properties": {
+    "constraint_sets": {
+      "type": "array",
+      "items": {
+        "$ref": "constraint_set.json"
+      }
+    }
+  }
+}

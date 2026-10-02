@@ -1,0 +1,15 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "description": "Describes a Boolean Parameter Constraint",
+  "title": "Boolean Parameter Constraint",
+  "type": "object",
+  "properties": {
+    "enum": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "boolean"
+      }
+    }
+  }
+}

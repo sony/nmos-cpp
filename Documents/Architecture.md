@@ -14,13 +14,15 @@ The module also provides the concept of a server which combines the REST APIs an
 
 The top-level data structures for an NMOS Node and Registry are ``nmos::node_model`` and ``nmos::registry_model`` respectively.
 
-A ``node_model`` has four member variables which are containers, of IS-04 resources, IS-05 resources, IS-07 resources and IS-08 resources, respectively:
+A ``node_model`` has six member variables which are containers, of IS-04 resources, IS-05 resources, IS-07 resources, IS-08 resources, IS-11 resources and IS-12 resources, respectively:
 
 ```C++
 nmos::resources node_resources;
 nmos::resources connection_resources;
 nmos::resources events_resources;
 nmos::resources channelmapping_resources;
+nmos::resources streamcompatibility_resources;
+nmos::resources control_protocol_resources;
 ```
 
 A ``registry_model`` has two containers, this time for the Registry's own Node API "self" resource, and for the resources that have been registered with the Registration API:
@@ -121,9 +123,11 @@ for (;;)
 > [nmos/registration_api.cpp](../Development/nmos/registration_api.cpp),
 > [nmos/query_api.cpp](../Development/nmos/query_api.cpp),
 > [nmos/system_api.cpp](../Development/nmos/system_api.cpp),
-> [nmos/authorization_redirect_api.cpp](../Development/nmos/authorization_redirect_api.cpp)
+> [nmos/authorization_redirect_api.cpp](../Development/nmos/authorization_redirect_api.cpp),
+> [nmos/streamcompatibility_api.cpp](../Development/nmos/streamcompatibility_api.cpp),
+> [nmos/configuration_api.cpp](../Development/nmos/configuration_api.cpp),
 
-The ``nmos`` module also provides the implementation of each of the REST APIs defined by AMWA IS-04, IS-05, IS-07, IS-08, IS-09 and IS-10.
+The ``nmos`` module also provides the implementation of each of the REST APIs defined by AMWA IS-04, IS-05, IS-07, IS-08, IS-09, IS-10, IS-11 and IS-14.
 
 The C++ REST SDK provides a general purpose HTTP listener, that accepts requests at a particular base URL and passes them to a user-specified request handler for processing.
 Therefore the ``nmos`` module implements each API as a request handler which reads and/or writes the relevant parts of the NMOS data model, and provides a convenience function, ``nmos::support_api``, for associating the API request handler with the HTTP listener.

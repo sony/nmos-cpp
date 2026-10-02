@@ -1,0 +1,30 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "description": "Describes a Constraint Set",
+  "title": "Constraint Set",
+  "type": "object",
+  "minProperties": 1,
+  "properties": {
+    "urn:x-nmos:cap:meta:label": {
+      "description": "Freeform string label for the Constraint Set",
+      "type": "string"
+    },
+    "urn:x-nmos:cap:meta:preference": {
+      "description": "This value expresses the relative 'weight' that the Receiver assigns to its preference for the streams satisfied by the associated Constraint Set. The weight is an integer in the range -100 through 100, where -100 is least preferred and 100 is most preferred. When the attribute is omitted, the effective value for the associated Constraint Set is 0.",
+      "type": "integer",
+      "default": 0,
+      "maximum": 100,
+      "minimum": -100
+    },
+    "urn:x-nmos:cap:meta:enabled": {
+      "description": "This value indicates whether a Constraint Set is available to use immediately (true) or whether this is an offline capability which can be activated via some unspecified configuration mechanism (false). When the attribute is omitted its value is assumed to be true.",
+      "type": "boolean",
+      "default": true
+    }
+  },
+  "patternProperties": {
+    "^urn:x-nmos:cap:(?!meta:)": {
+      "$ref": "param_constraint.json"
+    }
+  }
+}
