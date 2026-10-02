@@ -163,6 +163,9 @@ namespace nmos
     // construct a websocket_listener on the specified address and port - captures handlers by reference!
     web::websockets::experimental::listener::websocket_listener make_ws_api_listener(bool secure, const utility::string_t& host_address, int port, const web::websockets::experimental::listener::websocket_listener_handlers& handlers, web::websockets::experimental::listener::websocket_listener_config config, slog::base_gate& gate);
 
+    // combine WebSocket API handlers for one listener, selecting an API by the leading path component
+    web::websockets::experimental::listener::websocket_listener_handlers make_ws_api_router(std::map<utility::string_t, web::websockets::experimental::listener::websocket_listener_handlers> handlers);
+
     // returns "http" or "https" depending on settings
     utility::string_t http_scheme(const nmos::settings& settings);
 

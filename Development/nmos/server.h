@@ -27,6 +27,7 @@ namespace nmos
 
         // WebSocket APIs
         std::map<host_port, std::pair<web::websockets::experimental::listener::websocket_listener_handlers, nmos::websockets>> ws_handlers;
+        nmos::websockets control_protocol_websockets;
         std::vector<web::websockets::experimental::listener::websocket_listener> ws_listeners;
 
         // Server behaviours
