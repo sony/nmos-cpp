@@ -2107,6 +2107,25 @@ nmos::connection_resource_auto_resolver make_node_implementation_auto_resolver(c
             const bool smpte2022_7 = 1 < transport_params.size();
             nmos::details::resolve_auto(transport_params[0], nmos::fields::interface_ip, [&] { return web::json::front(nmos::fields::constraint_enum(constraints.at(0).at(nmos::fields::interface_ip))); });
             if (smpte2022_7) nmos::details::resolve_auto(transport_params[1], nmos::fields::interface_ip, [&] { return web::json::back(nmos::fields::constraint_enum(constraints.at(1).at(nmos::fields::interface_ip))); });
+            for (size_t leg = 0; leg < transport_params.size(); ++leg)
+            {
+                auto& params = transport_params.at(leg);
+                // The IS-05 receiver schema defines "auto" as the highest available number of dimensions.
+                nmos::details::resolve_auto(params, nmos::fields::fec_mode, [&] {
+                    const auto& constraint = constraints.at(leg).at(nmos::fields::fec_mode);
+                    if (constraint.has_field(nmos::fields::constraint_enum))
+                    {
+                        const auto& modes = nmos::fields::constraint_enum(constraint).as_array();
+                        const auto has_2d = modes.end() != boost::range::find_if(modes, [](const value& mode)
+                        {
+                            return mode.is_string() && U("2D") == mode.as_string();
+                        });
+                        return value::string(has_2d ? U("2D") : U("1D"));
+                    }
+                    // unconstrained: highest available in the schema
+                    return value::string(U("2D"));
+                });
+            }
             // lastly, apply the specification defaults for any properties not handled above
             nmos::resolve_rtp_auto(id_type.second, transport_params);
         }
