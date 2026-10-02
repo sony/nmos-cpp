@@ -1093,6 +1093,15 @@ namespace nmos
                     try
                     {
                         result = details::handle_connection_resource_patch(model, lock, version, { id, type }, patch[nmos::fields::params], request_time, parse_transport_file, validate_merged, gate);
+
+                        if (status_codes::NotFound == result.first)
+                        {
+                            slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Resource not found for " << std::make_pair(id, type) << " in bulk request";
+                        }
+                        else if (status_codes::Conflict == result.first)
+                        {
+                            slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Resource conflict for " << std::make_pair(id, type) << " in bulk request";
+                        }
                     }
                     catch (...)
                     {
