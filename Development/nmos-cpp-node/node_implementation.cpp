@@ -1597,6 +1597,8 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
         nmos::set_block_allowed_member_classes(receiver_monitors_block, {nmos::nc_receiver_monitor_class_id});
 
         // example receiver-monitor(s)
+        // For an example of defining a custom status monitor (derived class + monitor domains), see
+        // testSetDerivedMonitorDomainStatus in nmos/test/control_protocol_utils_test.cpp
         {
             int count = 0;
             for (int index = 0; index < how_many; ++index)
@@ -2034,7 +2036,7 @@ nmos::transport_file_parser make_node_implementation_transport_file_parser()
 
         const auto validate_sdp_parameters = [](const web::json::value& receiver, const nmos::sdp_parameters& sdp_params)
         {
-            if (nmos::media_types::video_jxsv == nmos::get_media_type(sdp_params))
+            if (equals_media_type(nmos::media_types::video_jxsv, nmos::get_media_type(sdp_params)))
             {
                 nmos::validate_video_jxsv_sdp_parameters(receiver, sdp_params);
             }
@@ -2292,6 +2294,27 @@ nmos::channelmapping_activation_handler make_node_implementation_channelmapping_
     {
         const auto output_id = nmos::fields::channelmapping_id(channelmapping_output.data);
         slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::stash_category(impl::categories::node_implementation) << "Activating output: " << output_id;
+    };
+}
+
+// Example Annotation API patch callback to update resource labels, descriptions and tags
+nmos::annotation_patch_merger make_node_implementation_annotation_patch_merger(const nmos::settings& settings, slog::base_gate& gate)
+{
+    using web::json::value;
+    using web::json::value_of;
+
+    return [&settings, &gate](const nmos::resource& resource, web::json::value& value, const web::json::value& patch)
+    {
+        const std::pair<nmos::id, nmos::type> id_type{ resource.id, resource.type };
+        slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::stash_category(impl::categories::node_implementation) << "Updating " << id_type;
+        // this example uses the specified tags for node and device resources as defaults
+        const auto default_tags
+            = id_type.second == nmos::types::node ? impl::fields::node_tags(settings)
+            : id_type.second == nmos::types::device ? impl::fields::device_tags(settings)
+            : value::object();
+        // and uses the default predicate for read-only tags
+        nmos::details::merge_annotation_patch(value, patch, &nmos::details::is_read_only_tag, value_of({ { nmos::fields::tags, default_tags } }));
+        // this example does not save the new values to persistent storage or e.g. reject values that are too large
     };
 }
 
@@ -2678,6 +2701,7 @@ nmos::experimental::node_implementation make_node_implementation(nmos::node_mode
         .on_connection_activated(make_node_implementation_connection_activation_handler(model, gate))
         .on_validate_channelmapping_output_map(make_node_implementation_map_validator()) // may be omitted if not required
         .on_channelmapping_activated(make_node_implementation_channelmapping_activation_handler(gate))
+        .on_merge_annotation_patch(make_node_implementation_annotation_patch_merger(model.settings, gate)) // may be omitted if not required
         .on_control_protocol_property_changed(make_node_implementation_control_protocol_property_changed_handler(gate)) // may be omitted if IS-12 not required
         .on_create_validation_fingerprint(make_create_validation_fingerprint_handler())
         .on_validate_validation_fingerprint(make_validate_validation_fingerprint_handler())

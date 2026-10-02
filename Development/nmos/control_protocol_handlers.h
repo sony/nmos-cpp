@@ -19,6 +19,7 @@ namespace nmos
         struct control_protocol_state;
         struct control_class_descriptor;
         struct datatype_descriptor;
+        struct monitor_domain;
     }
 
     // callback to retrieve a specific control protocol class descriptor
@@ -100,6 +101,10 @@ namespace nmos
     // construct callback to set values on device model
     typedef std::function<bool(nc_oid oid, const nc_property_id& property_id, const web::json::value& value)> set_control_protocol_property_handler;
     set_control_protocol_property_handler make_set_control_protocol_property_handler(resources& resources, experimental::control_protocol_state& control_protocol_state, slog::base_gate& gate);
+
+    // construct callback to retrieve monitor domains declared by a class and its ancestors
+    typedef std::function<std::vector<experimental::monitor_domain>(const nc_class_id& class_id)> get_monitor_domains_handler;
+    get_monitor_domains_handler make_get_monitor_domains_handler(experimental::control_protocol_state& control_protocol_state);
 
     // NcReceiverMonitor handlers
 

@@ -3,7 +3,6 @@
   "description": "Describes MQTT Sender transport parameters. The constraints in this schema are minimum constraints, but may be further constrained at the constraints endpoint. MQTT Senders must support all properties in this schema.",
   "title": "MQTT Sender Transport Parameters",
   "type": "object",
-  "title": "Sender Output",
   "properties": {
     "destination_host": {
       "type": [

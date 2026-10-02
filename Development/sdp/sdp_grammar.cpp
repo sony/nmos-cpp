@@ -139,7 +139,7 @@ namespace sdp
             };
         }
 
-        converter array_converter(const converter& converter, const std::string& delimiter = " ")
+        converter array_converter(const converter& converter, const std::string& delimiter)
         {
             return{
                 [=](const web::json::value& v) {
@@ -203,6 +203,7 @@ namespace sdp
         }
 
         const converter strings_converter = array_converter(string_converter, " ");
+        const converter digits_array_converter = array_converter(digits_converter, " ");
 
         // ST 2110-20:2022 says "the <format specific parameters> section shall consist of a sequence of
         // media type parameter entries, separated by the semicolon (";") character followed by whitespace"
@@ -210,7 +211,7 @@ namespace sdp
         // in other RFCs and SMPTE standards are inconsistent, so allow additional whitespace
         const converter named_values_converter = array_converter(key_value_converter('=', { sdp::fields::name, string_converter }, { sdp::fields::value, string_converter }), "; ", "[ \\t]*(;[ \\t]*|$)");
 
-        converter object_converter(const std::vector<std::pair<utility::string_t, converter>>& field_converters, const std::string& delimiter = " ")
+        converter object_converter(const std::vector<std::pair<utility::string_t, converter>>& field_converters, const std::string& delimiter)
         {
             return{
                 [=](const web::json::value& v) {
@@ -654,6 +655,37 @@ namespace sdp
                         },
                     }
                 },
+                // See https://tools.ietf.org/html/rfc3605
+                {
+                    sdp::attributes::rtcp, // <port> [<nettype> <addrtype> <connection-address>]
+                    {
+                        [](const web::json::value& v) {
+                            std::string s;
+                            s += digits_converter.format(v.at(sdp::fields::port));
+                            if (v.has_field(sdp::fields::unicast_address))
+                            {
+                                s += " " + string_converter.format(v.at(sdp::fields::network_type));
+                                s += " " + string_converter.format(v.at(sdp::fields::address_type));
+                                s += " " + string_converter.format(v.at(sdp::fields::unicast_address));
+                            }
+                            return s;
+                        },
+                        [](const std::string& s) {
+                            const auto parts = strings_converter.parse(s);
+                            if (1 != parts.size() && 4 != parts.size()) throw sdp_parse_error("expected <port> [<nettype> <addrtype> <connection-address>]");
+
+                            auto v = web::json::value::object(keep_order);
+                            v[sdp::fields::port] = digits_converter.parse(utility::us2s(parts.at(0).as_string()));
+                            if (4 == parts.size())
+                            {
+                                v[sdp::fields::network_type] = parts.at(1);
+                                v[sdp::fields::address_type] = parts.at(2);
+                                v[sdp::fields::unicast_address] = parts.at(3);
+                            }
+                            return v;
+                        },
+                    }
+                },
                 // See https://tools.ietf.org/html/rfc5888
                 {
                     sdp::attributes::group, // <semantics>[ <identification-tag>]*
@@ -676,6 +708,54 @@ namespace sdp
                     }
                 },
                 { sdp::attributes::mid, string_converter },
+                // See https://tools.ietf.org/html/rfc5576
+                {
+                    sdp::attributes::ssrc, // <ssrc-id> <attribute>[:<value>]
+                    {
+                        [](const web::json::value& v) {
+                            std::string s;
+                            s += digits_converter.format(v.at(sdp::fields::ssrc_id));
+                            const auto& attribute = sdp::fields::attribute(v);
+                            s += " " + string_converter.format(attribute.at(sdp::fields::name));
+                            const auto& attribute_value = sdp::fields::value(attribute);
+                            if (!attribute_value.is_null()) s += ":" + string_converter.format(attribute_value);
+                            return s;
+                        },
+                        [](const std::string& s) {
+                            auto v = web::json::value::object(keep_order);
+                            size_t pos = 0;
+                            v[sdp::fields::ssrc_id] = digits_converter.parse(substr_find(s, pos, " "));
+                            if (std::string::npos == pos) throw sdp_parse_error("expected a value for " + utility::us2s(sdp::fields::attribute));
+                            const auto attribute_text = substr_find(s, pos);
+                            const auto colon = attribute_text.find(':');
+                            auto attribute = web::json::value_of({
+                                { sdp::fields::name, string_converter.parse(attribute_text.substr(0, colon)) }
+                            }, keep_order);
+                            if (std::string::npos != colon) attribute[sdp::fields::value] = string_converter.parse(attribute_text.substr(colon + 1));
+                            v[sdp::fields::attribute] = std::move(attribute);
+                            return v;
+                        },
+                    }
+                },
+                // See https://tools.ietf.org/html/rfc5576 and https://tools.ietf.org/html/rfc7104
+                {
+                    sdp::attributes::ssrc_group, // <semantics> <ssrc-id>...
+                    {
+                        [](const web::json::value& v) {
+                            return string_converter.format(v.at(sdp::fields::semantics)) + " " + digits_array_converter.format(v.at(sdp::fields::ssrc_ids));
+                        },
+                        [](const std::string& s) {
+                            auto v = web::json::value::object(keep_order);
+                            size_t pos = 0;
+                            v[sdp::fields::semantics] = string_converter.parse(substr_find(s, pos, " "));
+                            if (std::string::npos == pos) throw sdp_parse_error("expected a value for " + utility::us2s(sdp::fields::ssrc_ids));
+                            v[sdp::fields::ssrc_ids] = digits_array_converter.parse(substr_find(s, pos));
+                            return v;
+                        },
+                    }
+                },
+                // See https://datatracker.ietf.org/doc/html/draft-ietf-mmusic-delayed-duplication
+                { sdp::attributes::duplication_delay, digits_converter },
                 // See https://tools.ietf.org/html/rfc7273
                 {
                     sdp::attributes::ts_refclk,

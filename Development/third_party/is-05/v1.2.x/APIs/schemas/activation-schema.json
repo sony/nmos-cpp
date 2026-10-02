@@ -1,6 +1,5 @@
 {
   "$schema": "http://json-schema.org/draft-04/schema#",
-  "type": "object",
   "title": "Activation resource",
   "description": "Parameters concerned with activation of the transport parameters",
   "type": "object",
@@ -23,7 +22,7 @@
       }]
     },
     "requested_time": {
-      "description": "String formatted TAI timestamp (<seconds>:<nanoseconds>) indicating time (absolute or relative) for activation. Should be null or not present if 'mode' is null.",
+      "description": "String formatted TAI timestamp (<seconds>:<nanoseconds>) indicating time (absolute or relative) for activation. Should be null or not present if 'mode' is null or activate_immediate.",
       "anyOf": [{
         "type": "string",
         "pattern": "^[0-9]+:[0-9]+$"

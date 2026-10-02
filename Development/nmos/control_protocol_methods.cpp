@@ -721,38 +721,19 @@ namespace nmos
         }
 
         // Resets the packet counters and messages
-        web::json::value reset_monitor(nmos::resources& resources, const nmos::resource& resource, const web::json::value&, bool is_deprecated, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, control_protocol_property_changed_handler property_changed, reset_monitor_handler reset_monitor, slog::base_gate& gate)
+        web::json::value reset_monitor(nmos::resources& resources, const nmos::resource& resource, const web::json::value&, bool is_deprecated, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, control_protocol_property_changed_handler property_changed, reset_monitor_handler reset_monitor, get_monitor_domains_handler get_monitor_domains, slog::base_gate& gate)
         {
             slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Resets the packet counters";
 
-            const std::vector<std::pair<nc_property_id, web::json::value>> receiver_property_values = {
-                std::pair<nc_property_id, web::json::value>(nc_receiver_monitor_connection_status_transition_counter_property_id, web::json::value::number(0)),
-                std::pair<nc_property_id, web::json::value>(nc_receiver_monitor_external_synchronization_status_transition_counter_property_id, web::json::value::number(0)),
-                std::pair<nc_property_id, web::json::value>(nc_receiver_monitor_link_status_transition_counter_property_id, web::json::value::number(0)),
-                std::pair<nc_property_id, web::json::value>(nc_receiver_monitor_stream_status_transition_counter_property_id, web::json::value::number(0)),
-                std::pair<nc_property_id, web::json::value>(nc_receiver_monitor_connection_status_message_property_id, web::json::value::null()),
-                std::pair<nc_property_id, web::json::value>(nc_receiver_monitor_external_synchronization_status_message_property_id, web::json::value::null()),
-                std::pair<nc_property_id, web::json::value>(nc_receiver_monitor_link_status_message_property_id, web::json::value::null()),
-                std::pair<nc_property_id, web::json::value>(nc_receiver_monitor_stream_status_message_property_id, web::json::value::null()),
-                std::pair<nc_property_id, web::json::value>(nc_status_monitor_overall_status_message_property_id, web::json::value::null()),
-            };
-
-            const std::vector<std::pair<nc_property_id, web::json::value>> sender_property_values = {
-                std::pair<nc_property_id, web::json::value>(nc_sender_monitor_transmission_status_transition_counter_property_id, web::json::value::number(0)),
-                std::pair<nc_property_id, web::json::value>(nc_sender_monitor_external_synchronization_status_transition_counter_property_id, web::json::value::number(0)),
-                std::pair<nc_property_id, web::json::value>(nc_sender_monitor_link_status_transition_counter_property_id, web::json::value::number(0)),
-                std::pair<nc_property_id, web::json::value>(nc_sender_monitor_essence_status_transition_counter_property_id, web::json::value::number(0)),
-                std::pair<nc_property_id, web::json::value>(nc_sender_monitor_transmission_status_message_property_id, web::json::value::null()),
-                std::pair<nc_property_id, web::json::value>(nc_sender_monitor_external_synchronization_status_message_property_id, web::json::value::null()),
-                std::pair<nc_property_id, web::json::value>(nc_sender_monitor_link_status_message_property_id, web::json::value::null()),
-                std::pair<nc_property_id, web::json::value>(nc_sender_monitor_essence_status_message_property_id, web::json::value::null()),
-                std::pair<nc_property_id, web::json::value>(nc_status_monitor_overall_status_message_property_id, web::json::value::null()),
-            };
-
             const auto& class_id = details::parse_class_id(nmos::fields::nc::class_id(resource.data));
 
-            // reset all counters
-            const std::vector<std::pair<nc_property_id, web::json::value>> property_values = nmos::nc::is_sender_monitor(class_id) ? sender_property_values : receiver_property_values;
+            std::vector<std::pair<nc_property_id, web::json::value>> property_values;
+            for (const auto& monitor_domain : nc::get_monitor_domains(class_id, get_monitor_domains))
+            {
+                property_values.push_back({ monitor_domain.status_transition_counter_property_id, web::json::value::number(0) });
+                property_values.push_back({ monitor_domain.status_message_property_id, web::json::value::null() });
+            }
+            property_values.push_back({ nc_status_monitor_overall_status_message_property_id, web::json::value::null() });
 
             for (const auto& property_value : property_values)
             {

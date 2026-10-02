@@ -263,7 +263,7 @@ namespace nmos
         {
             // These are the constraints that support "auto" in /staged
             // BCP-007-03: MXL Receivers MUST NOT use "auto" for mxl_flow_id (domain only).
-            // See https://specs.amwa.tv/bcp-007-03/branches/publish-auto-null/docs/NMOS-With-MXL.html
+            // See https://specs.amwa.tv/bcp-007-03/branches/v1.0.x/docs/NMOS-With-MXL.html
             static const std::map<nmos::type, std::set<utility::string_t>> auto_constraints
             {
                 {
@@ -286,7 +286,7 @@ namespace nmos
         static const std::map<nmos::type, std::set<utility::string_t>>& mxl_null_constraints()
         {
             // These are the constraints that support null (unconfigured) in /staged
-            // See https://specs.amwa.tv/bcp-007-03/branches/publish-auto-null/docs/NMOS-With-MXL.html
+            // See https://specs.amwa.tv/bcp-007-03/branches/v1.0.x/docs/NMOS-With-MXL.html
             // and sender_transport_params_mxl.json / receiver_transport_params_mxl.json
             static const std::map<nmos::type, std::set<utility::string_t>> null_constraints
             {

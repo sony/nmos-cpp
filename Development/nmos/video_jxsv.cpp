@@ -317,7 +317,7 @@ namespace nmos
 #define CAPS_ARGS const sdp_parameters& sdp, const format_parameters& format, const web::json::value& con
         static const std::map<utility::string_t, std::function<bool(CAPS_ARGS)>> jxsv_constraints
         {
-            { nmos::caps::format::media_type, [](CAPS_ARGS) { return nmos::match_string_constraint(get_media_type(sdp).name, con); } },
+            { nmos::caps::format::media_type, [](CAPS_ARGS) { return nmos::details::match_media_type_constraint(get_media_type(sdp).name, con); } },
             { nmos::caps::format::grain_rate, [](CAPS_ARGS) { auto jxsv = get_jxsv(&format); return jxsv && (nmos::rational{} == jxsv->exactframerate || nmos::match_rational_constraint(jxsv->exactframerate, con)); } },
             { nmos::caps::format::profile, [](CAPS_ARGS) { auto jxsv = get_jxsv(&format); return jxsv && (jxsv->profile.empty() || nmos::match_string_constraint(jxsv->profile.name, con)); } },
             { nmos::caps::format::level, [](CAPS_ARGS) { auto jxsv = get_jxsv(&format); return jxsv && (jxsv->level.empty() || nmos::match_string_constraint(jxsv->level.name, con)); } },
@@ -342,7 +342,8 @@ namespace nmos
     {
         // this function can only be used to validate SDP data for "video/jxsv"; logic error otherwise
         const auto media_type = get_media_type(sdp_params);
-        if (nmos::media_types::video_jxsv != media_type) throw std::invalid_argument("unexpected media type/encoding name");
+        if (!equals_media_type(nmos::media_types::video_jxsv, media_type))
+            throw std::invalid_argument("unexpected media type/encoding name");
 
         nmos::details::validate_sdp_parameters(details::jxsv_constraints, sdp_params, nmos::formats::video, get_video_jxsv_parameters(sdp_params), receiver);
     }

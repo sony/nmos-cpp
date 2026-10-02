@@ -1,37 +1,32 @@
 {
   "$schema": "http://json-schema.org/draft-04/schema#",
-  "description": "Describes MXL Receiver transport parameters. The constraints in this schema are minimum constraints, but may be further constrained at the constraints endpoint.",
+  "description": "Describes MXL transport parameters. The constraints in this schema are minimum constraints, but may be further constrained at the constraints endpoint. Receivers support at least the `mxl_domain_id` and `mxl_flow_id` parameters.",
   "title": "MXL Receiver Transport Parameters",
   "type": "object",
   "properties": {
     "mxl_domain_id": {
-      "type": [
-        "string",
-        "null"
-      ],
       "description": "Specifies the MXL Domain ID where the MXL Flow will be located. The Receiver lists allowed Domain IDs in the constraints endpoint. Where the Domain is not yet determined, implementations use null. MXL Receivers accept null for an unconfigured Receiver. MXL Receivers support the literal auto for the single-domain case and, where appropriate, in multi-domain deployments. In replicated topologies, the selected Domain may differ in identity from an origin Domain (for example permissions, security context, or administrative boundary), provided it yields a valid operational configuration. Where auto cannot be resolved to a valid value for /active in the current operating context, the Receiver may reject the request or activation. The constraints endpoint does not list auto as an available option.",
-      "anyOf": [{
-          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-9a-f][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+      "anyOf": [
+        {
+          "type": "null"
         },
         {
+          "type": "string",
           "pattern": "^auto$"
         },
         {
-          "type": "null"
+          "$ref": "mxl_uuid.json"
         }
       ]
     },
     "mxl_flow_id": {
-      "type": [
-        "string",
-        "null"
-      ],
       "description": "Specifies the MXL Flow ID for the MXL read operation. The Receiver lists allowed Flow IDs in the constraints endpoint. Where the flow is not yet determined, implementations use null. MXL Receivers accept null for an unconfigured Receiver as the MXL Flow ID may be unknown until the Receiver has been suitably patched. The literal auto is not used for this parameter.",
-      "anyOf": [{
-          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-9a-f][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
-        },
+      "anyOf": [
         {
           "type": "null"
+        },
+        {
+          "$ref": "mxl_uuid.json"
         }
       ]
     }

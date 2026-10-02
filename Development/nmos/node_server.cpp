@@ -2,6 +2,7 @@
 
 #include "cpprest/ws_utils.h"
 #include "nmos/api_utils.h"
+#include "nmos/annotation_api.h"
 #include "nmos/channelmapping_activation.h"
 #include "nmos/configuration_api.h"
 #include "nmos/control_protocol_ws_api.h"
@@ -23,7 +24,8 @@ namespace nmos
     namespace experimental
     {
         // Construct a server instance for an NMOS Node, implementing the IS-04 Node API, IS-05 Connection API, IS-07 Events API, IS-08 Audio Channel Mapping API, IS-10 Authorization API,
-        // IS-12 Control & Monitoring Protocol Websocket API, IS-14 Configuration API and the experimental Logging API and Settings API, according to the specified data models and callbacks
+        // IS-12 Control & Monitoring Protocol Websocket API, IS-13 Annotation API, IS-14 Configuration API, and the experimental Logging API and Settings API, according to the specified
+        // data models and callbacks
         nmos::server make_node_server(nmos::node_model& node_model, nmos::experimental::node_implementation node_implementation, nmos::experimental::log_model& log_model, slog::base_gate& gate)
         {
             // Log the API addresses we'll be using
@@ -62,6 +64,10 @@ namespace nmos
             auto validate_authorization = node_implementation.validate_authorization;
             node_server.api_routers[{ {}, nmos::fields::node_port(node_model.settings) }].mount({}, nmos::make_node_api(node_model, target_handler, validate_authorization ? validate_authorization(nmos::experimental::scopes::node) : nullptr, gate));
             node_server.api_routers[{ {}, nmos::experimental::fields::manifest_port(node_model.settings) }].mount({}, nmos::experimental::make_manifest_api(node_model, gate));
+
+            // Configure the Annotation API
+
+            node_server.api_routers[{ {}, nmos::fields::annotation_port(node_model.settings) }].mount({}, nmos::make_annotation_api(node_model, node_implementation.merge_annotation_patch, validate_authorization ? validate_authorization(nmos::experimental::scopes::annotation) : nullptr, gate));
 
             // Configure the Connection API
 

@@ -3,7 +3,6 @@
   "description": "Describes WebSocket Sender transport parameters. The constraints in this schema are minimum constraints, but may be further constrained at the constraints endpoint. WebSocket Senders must support all parameters in this schema.",
   "title": "WebSocket Sender Transport Parameters",
   "type": "object",
-  "title": "Sender Output",
   "properties": {
     "connection_uri": {
       "type": [

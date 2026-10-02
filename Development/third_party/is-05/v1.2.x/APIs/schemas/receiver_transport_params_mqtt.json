@@ -3,7 +3,6 @@
   "description": "Describes MQTT Receiver transport parameters. The constraints in this schema are minimum constraints, but may be further constrained at the constraints endpoint. MQTT Receivers must support all parameters in this schema.",
   "title": "MQTT Receiver Transport Parameters",
   "type": "object",
-  "title": "Receiver Input",
   "properties": {
     "source_host": {
       "type": [

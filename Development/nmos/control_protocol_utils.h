@@ -3,6 +3,7 @@
 
 #include "cpprest/basic_utils.h"
 #include "nmos/control_protocol_handlers.h"
+#include "nmos/control_protocol_state.h"
 
 namespace nmos
 {
@@ -40,26 +41,6 @@ namespace nmos
 
             // convert . delimited string into role path object
             web::json::value parse_role_path(const utility::string_t& role_path);
-
-	        bool set_monitor_status(resources& resources, nc_oid oid, int status, const utility::string_t& status_message, const nc_property_id& status_property_id,
-	            const nc_property_id& status_message_property_id,
-	            const nc_property_id& status_transition_counter_property_id,
-	            const utility::string_t& status_pending_received_time_field_name,
-	            get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor,
-	            slog::base_gate& gate);
-	        bool set_monitor_status_with_delay(resources& resources, nc_oid oid, int status, const utility::string_t& status_message,
-	             const nc_property_id& status_property_id,
-	             const nc_property_id& status_message_property_id,
-	             const nc_property_id& status_transition_counter_property_id,
-	             const utility::string_t& status_pending_field_name,
-	             const utility::string_t& status_message_pending_time_field_name,
-	             const utility::string_t& status_pending_received_time_field_name,
-	             long long current_time,
-	             monitor_status_pending_handler monitor_status_pending,
-	             get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor,
-	             slog::base_gate& gate);
-	        bool update_receiver_monitor_overall_status(resources& resources, nc_oid oid, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, slog::base_gate& gate);
-	        bool update_sender_monitor_overall_status(resources& resources, nc_oid oid, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, slog::base_gate& gate);
         }
 
         // is the given class_id a NcBlock
@@ -80,8 +61,14 @@ namespace nmos
 	    // is the given class_id a NcStatusMonitor
 	    bool is_status_monitor(const nc_class_id& class_id);
 
+	    // is the given class_id a NcReceiverMonitor
+	    bool is_receiver_monitor(const nc_class_id& class_id);
+
 	    // is the given class_id a NcSenderMonitor
 	    bool is_sender_monitor(const nc_class_id& class_id);
+
+        // get status domains declared by the given class and its ancestors
+        std::vector<experimental::monitor_domain> get_monitor_domains(const nc_class_id& class_id, get_monitor_domains_handler get_monitor_domains = {});
 
 	    // construct NcClassId
 	    nc_class_id make_class_id(const nc_class_id& prefix, int32_t authority_key, const std::vector<int32_t>& suffix);
@@ -143,53 +130,40 @@ namespace nmos
         // set hidden property but don't notify, as property isn't part of class definition
         bool set_property(resources& resources, nc_oid oid, const utility::string_t& property_name, const web::json::value& value, slog::base_gate& gate);
 
-        // Set link status and link status message
-        bool set_receiver_monitor_link_status(resources& resources, nc_oid oid, nmos::nc_link_status::status link_status, const utility::string_t& link_status_message, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, slog::base_gate& gate);
+        // Set a user-defined monitor domain status and apply status reporting delay
+        bool set_monitor_status(resources& resources, nc_oid oid, int status, const utility::string_t& status_message, const experimental::monitor_domain& domain, monitor_status_pending_handler monitor_status_pending, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, get_monitor_domains_handler get_monitor_domains, slog::base_gate& gate);
+
         // Set link status and status message and apply status reporting delay
-        bool set_receiver_monitor_link_status_with_delay(resources& resources, nc_oid oid, nmos::nc_link_status::status link_status, const utility::string_t& link_status_message, monitor_status_pending_handler monitor_status_pending, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, slog::base_gate& gate);
+        bool set_receiver_monitor_link_status(resources& resources, nc_oid oid, nmos::nc_link_status::status link_status, const utility::string_t& link_status_message, monitor_status_pending_handler monitor_status_pending, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, get_monitor_domains_handler get_monitor_domains, slog::base_gate& gate);
 
-        // Set connection status and connection status message
-        bool set_receiver_monitor_connection_status(resources& resources, nc_oid oid, nmos::nc_connection_status::status connection_status, const utility::string_t& connection_status_message, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, slog::base_gate& gate);
         // Set connection status and status message and apply status reporting delay
-        bool set_receiver_monitor_connection_status_with_delay(resources& resources, nc_oid oid, nmos::nc_connection_status::status connection_status, const utility::string_t& connection_status_message, monitor_status_pending_handler monitor_status_pending, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, slog::base_gate& gate);
+        bool set_receiver_monitor_connection_status(resources& resources, nc_oid oid, nmos::nc_connection_status::status connection_status, const utility::string_t& connection_status_message, monitor_status_pending_handler monitor_status_pending, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, get_monitor_domains_handler get_monitor_domains, slog::base_gate& gate);
 
-        // Set external synchronization status and external synchronization status message
-        bool set_receiver_monitor_external_synchronization_status(resources& resources, nc_oid oid, nmos::nc_synchronization_status::status external_synchronization_status, const utility::string_t& external_synchronization_status_message, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, slog::base_gate& gate);
         // Set external synchronization status and status message and apply status reporting delay
-        bool set_receiver_monitor_external_synchronization_status_with_delay(resources& resources, nc_oid oid, nmos::nc_synchronization_status::status external_synchronization_status, const utility::string_t& external_synchronization_status_message, monitor_status_pending_handler monitor_status_pending, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, slog::base_gate& gate);
+        bool set_receiver_monitor_external_synchronization_status(resources& resources, nc_oid oid, nmos::nc_synchronization_status::status external_synchronization_status, const utility::string_t& external_synchronization_status_message, monitor_status_pending_handler monitor_status_pending, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, get_monitor_domains_handler get_monitor_domains, slog::base_gate& gate);
 
-        // Set stream status and stream status message
-        bool set_receiver_monitor_stream_status(resources& resources, nc_oid oid, nmos::nc_stream_status::status stream_status, const utility::string_t& stream_status_message, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, slog::base_gate& gate);
         // Set stream status and status message and apply status reporting delay
-        bool set_receiver_monitor_stream_status_with_delay(resources& resources, nc_oid oid, nmos::nc_stream_status::status stream_status, const utility::string_t& stream_status_message, monitor_status_pending_handler monitor_status_pending, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, slog::base_gate& gate);
+        bool set_receiver_monitor_stream_status(resources& resources, nc_oid oid, nmos::nc_stream_status::status stream_status, const utility::string_t& stream_status_message, monitor_status_pending_handler monitor_status_pending, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, get_monitor_domains_handler get_monitor_domains, slog::base_gate& gate);
 
         // Set synchronization source id
         bool set_monitor_synchronization_source_id(resources& resources, nc_oid oid, const bst::optional<utility::string_t>& source_id, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, slog::base_gate& gate);
 
         // Call when monitor is activated
-        bool activate_monitor(resources& resources, nc_oid oid, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, nmos::get_control_protocol_method_descriptor_handler get_control_protocol_method_descriptor, slog::base_gate& gate);
+        bool activate_monitor(resources& resources, nc_oid oid, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, nmos::get_control_protocol_method_descriptor_handler get_control_protocol_method_descriptor, get_monitor_domains_handler get_monitor_domains, slog::base_gate& gate);
         // Call when monitor is deactivated
-        bool deactivate_monitor(resources& resources, nc_oid oid, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, slog::base_gate& gate);
+        bool deactivate_monitor(resources& resources, nc_oid oid, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, get_monitor_domains_handler get_monitor_domains, slog::base_gate& gate);
 
-        // Set link status and link status message
-        bool set_sender_monitor_link_status(resources& resources, nc_oid oid, nmos::nc_link_status::status link_status, const utility::string_t& link_status_message, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, slog::base_gate& gate);
         // Set link status and status message and apply status reporting delay
-        bool set_sender_monitor_link_status_with_delay(resources& resources, nc_oid oid, nmos::nc_link_status::status link_status, const utility::string_t& link_status_message, monitor_status_pending_handler monitor_status_pending, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, slog::base_gate& gate);
+        bool set_sender_monitor_link_status(resources& resources, nc_oid oid, nmos::nc_link_status::status link_status, const utility::string_t& link_status_message, monitor_status_pending_handler monitor_status_pending, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, get_monitor_domains_handler get_monitor_domains, slog::base_gate& gate);
 
-        // Set transmission status and transmission status message
-        bool set_sender_monitor_transmission_status(resources& resources, nc_oid oid, nmos::nc_transmission_status::status transmission_status, const utility::string_t& transmission_status_message, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, slog::base_gate& gate);
         // Set transmission status and status message and apply status reporting delay
-        bool set_sender_monitor_transmission_status_with_delay(resources& resources, nc_oid oid, nmos::nc_transmission_status::status transmission_status, const utility::string_t& transmission_status_message, monitor_status_pending_handler monitor_status_pending, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, slog::base_gate& gate);
+        bool set_sender_monitor_transmission_status(resources& resources, nc_oid oid, nmos::nc_transmission_status::status transmission_status, const utility::string_t& transmission_status_message, monitor_status_pending_handler monitor_status_pending, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, get_monitor_domains_handler get_monitor_domains, slog::base_gate& gate);
 
-        // Set external synchronization status and external synchronization status message
-        bool set_sender_monitor_external_synchronization_status(resources& resources, nc_oid oid, nmos::nc_synchronization_status::status external_synchronization_status, const utility::string_t& external_synchronization_status_message, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, slog::base_gate& gate);
         // Set external synchronization status and status message and apply status reporting delay
-        bool set_sender_monitor_external_synchronization_status_with_delay(resources& resources, nc_oid oid, nmos::nc_synchronization_status::status external_synchronization_status, const utility::string_t& external_synchronization_status_message, monitor_status_pending_handler monitor_status_pending, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, slog::base_gate& gate);
+        bool set_sender_monitor_external_synchronization_status(resources& resources, nc_oid oid, nmos::nc_synchronization_status::status external_synchronization_status, const utility::string_t& external_synchronization_status_message, monitor_status_pending_handler monitor_status_pending, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, get_monitor_domains_handler get_monitor_domains, slog::base_gate& gate);
 
-        // Set essence status and stream status message
-        bool set_sender_monitor_essence_status(resources& resources, nc_oid oid, nmos::nc_essence_status::status essence_status, const utility::string_t& essence_status_message, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, slog::base_gate& gate);
         // Set essence status and status message and apply status reporting delay
-        bool set_sender_monitor_essence_status_with_delay(resources& resources, nc_oid oid, nmos::nc_essence_status::status essence_status, const utility::string_t& essence_status_message, monitor_status_pending_handler monitor_status_pending, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, slog::base_gate& gate);
+        bool set_sender_monitor_essence_status(resources& resources, nc_oid oid, nmos::nc_essence_status::status essence_status, const utility::string_t& essence_status_message, monitor_status_pending_handler monitor_status_pending, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, get_monitor_domains_handler get_monitor_domains, slog::base_gate& gate);
 
         // Get property by name, rather than by property id. Used to get "hidden" resource properties
         web::json::value get_property(const resources& resources, nc_oid oid, const utility::string_t& property_name, slog::base_gate& gate);

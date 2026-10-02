@@ -7,7 +7,7 @@ namespace nmos
 {
     namespace is05_schemas
     {
-        namespace v1_2_dev
+        namespace v1_2_x
         {
             extern const char* activation_schema;
             extern const char* sender_stage_schema;
@@ -18,6 +18,7 @@ namespace nmos
             extern const char* sender_transport_params_mqtt;
             extern const char* sender_transport_params_mxl;
             extern const char* sender_transport_params_ext;
+            extern const char* mxl_uuid;
             extern const char* receiver_stage_schema;
             extern const char* receiver_transport_file;
             extern const char* receiver_transport_params;

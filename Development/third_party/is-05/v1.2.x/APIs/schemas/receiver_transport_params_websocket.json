@@ -3,7 +3,6 @@
   "description": "Describes WebSocket Receiver transport parameters. The constraints in this schema are minimum constraints, but may be further constrained at the constraints endpoint. WebSocket Receivers must support all parameters in this schema.",
   "title": "WebSocket Receiver Transport Parameters",
   "type": "object",
-  "title": "Receiver Input",
   "properties": {
     "connection_uri": {
       "type": [

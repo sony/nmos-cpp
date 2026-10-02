@@ -79,6 +79,8 @@
     //"logging_level": 0,
 
     // logging_categories [registry, node]: array of logging categories to be included in the error log
+    // categories prefixed with '!' are excluded, even if another category matches positively;
+    // "!" excludes messages with no category; when only excluded categories are specified, all other log messages are included
     //"logging_categories": ["node_implementation"],
 
     // Configuration settings and defaults for the NMOS APIs
@@ -129,6 +131,9 @@
     // is12_versions [node]: used to specify the enabled API versions for a version-locked configuration
     //"is12_versions": ["v1.0"],
 
+    // is13_versions [node]: used to specify the enabled API versions for a version-locked configuration
+    //"is13_versions": ["v1.0"],
+
     // pri [registry, node]: used for the 'pri' TXT record; specifying nmos::service_priorities::no_priority (maximum value) disables advertisement completely
     //"pri": 100,
 
@@ -171,6 +176,7 @@
     //"system_port": 10641,
     // control_protocol_ws_port [node]: used to construct request URLs for the Control Protocol websocket, or negative to disable the control protocol features
     //"control_protocol_ws_port": 3218,
+    //"annotation_port": 3212,
     //"configuration_port": 3219,
 
     // listen_backlog [registry, node]: the maximum length of the queue of pending connections, or zero for the implementation default (the implementation may not honour this value)

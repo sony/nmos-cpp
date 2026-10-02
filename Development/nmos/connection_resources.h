@@ -13,6 +13,37 @@ namespace nmos
 {
     struct resource;
 
+    // Optional IS-05 RTP parameter sets supported by a Sender or Receiver.
+    // Core parameters are always present; the _core enumerator is a zero-value call-site token
+    // when no optional sets are selected. The no-argument factory overloads preserve historical
+    // defaults (sender: core only; receiver: core + multicast).
+    // rtp_sender_parameter_sets is a bitmask
+    enum rtp_sender_parameter_sets
+    {
+        rtp_sender_parameter_sets_core = 0x0000,
+        rtp_sender_parameter_sets_fec = 0x0001,
+        rtp_sender_parameter_sets_rtcp = 0x0002
+    };
+    // so for some convenience...
+    inline rtp_sender_parameter_sets operator|(rtp_sender_parameter_sets lhs, rtp_sender_parameter_sets rhs)
+    {
+        return rtp_sender_parameter_sets((int)lhs | (int)rhs);
+    }
+
+    // rtp_receiver_parameter_sets is a bitmask
+    enum rtp_receiver_parameter_sets
+    {
+        rtp_receiver_parameter_sets_core = 0x0000,
+        rtp_receiver_parameter_sets_multicast = 0x0001,
+        rtp_receiver_parameter_sets_fec = 0x0002,
+        rtp_receiver_parameter_sets_rtcp = 0x0004
+    };
+    // so for some convenience...
+    inline rtp_receiver_parameter_sets operator|(rtp_receiver_parameter_sets lhs, rtp_receiver_parameter_sets rhs)
+    {
+        return rtp_receiver_parameter_sets((int)lhs | (int)rhs);
+    }
+
     // make an absolute URL for the /transportfile endpoint of the specified sender
     // e.g. for use in the manifest_href property of the IS-04 Node API sender
     web::uri make_connection_api_transportfile(const nmos::id& sender_id, const nmos::settings& settings);
@@ -36,6 +67,7 @@ namespace nmos
     // The caller must resolve all instances of "auto" in the /active endpoint into the actual values that will be used!
     // See nmos::resolve_rtp_auto
     nmos::resource make_connection_rtp_sender(const nmos::id& id, bool smpte2022_7);
+    nmos::resource make_connection_rtp_sender(const nmos::id& id, bool smpte2022_7, rtp_sender_parameter_sets parameter_sets);
 
     web::json::value make_connection_rtp_sender_transportfile(const utility::string_t& transportfile);
     web::json::value make_connection_rtp_sender_transportfile(const web::uri& transportfile);
@@ -44,10 +76,12 @@ namespace nmos
     // See nmos::resolve_rtp_auto
     // transportfile may be URL or the contents of the SDP file (yeah, yuck)
     nmos::resource make_connection_rtp_sender(const nmos::id& id, bool smpte2022_7, const utility::string_t& transportfile);
+    nmos::resource make_connection_rtp_sender(const nmos::id& id, bool smpte2022_7, rtp_sender_parameter_sets parameter_sets, const utility::string_t& transportfile);
 
     // The caller must resolve all instances of "auto" in the /active endpoint into the actual values that will be used!
     // See nmos::resolve_rtp_auto
     nmos::resource make_connection_rtp_receiver(const nmos::id& id, bool smpte2022_7);
+    nmos::resource make_connection_rtp_receiver(const nmos::id& id, bool smpte2022_7, rtp_receiver_parameter_sets parameter_sets);
 
     // Although these functions make "connection" (IS-05) resources, the details are defined by IS-07 Event & Tally
     // so maybe these belong in nmos/events_resources.h or their own file, e.g. nmos/connection_events_resources.h?

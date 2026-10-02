@@ -3,6 +3,7 @@
 
 #include "bst/test/test.h"
 #include "sdp/json.h"
+#include "sdp/sdp_grammar.h"
 
 ////////////////////////////////////////////////////////////////////////////////////////////
 BST_TEST_CASE(testSdpRoundtrip)
@@ -1119,4 +1120,94 @@ a=mid:SECONDARY
             BST_CHECK_EQUAL(expected_line, actual_line);
         } while (!expected.fail() && !actual.fail());
     }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////
+namespace
+{
+    // an example application-defined attribute
+    // a=x-example-foo:<format> <bar>
+    const utility::string_t example_foo{ U("x-example-foo") };
+
+    namespace example_fields
+    {
+        const web::json::field_as_integer format{ U("format") };
+        const web::json::field_as_string bar{ U("bar") };
+    }
+
+    // session_description captures converters by reference, so they must outlive
+    // the returned grammar; a function-local static is the natural application pattern
+    const sdp::grammar::attribute_converters& example_attribute_converters()
+    {
+        static const auto converters = [] {
+            auto converters = sdp::grammar::get_default_attribute_converters();
+            converters[example_foo] = sdp::grammar::object_converter({
+                { example_fields::format, sdp::grammar::digits_converter },
+                { example_fields::bar, sdp::grammar::string_converter }
+            });
+            return converters;
+        }();
+        return converters;
+    }
+
+    const sdp::grammar::description& example_grammar()
+    {
+        static const auto grammar = sdp::grammar::session_description(
+            example_attribute_converters(),
+            sdp::grammar::default_attribute_converter
+        );
+        return grammar;
+    }
+}
+
+BST_TEST_CASE(testSdpApplicationDefinedAttributes)
+{
+    const auto& grammar = example_grammar();
+
+    const std::string test_sdp = R"(v=0
+o=- 3745911798 3745911798 IN IP4 192.168.9.142
+s=Example Sender 1 (Video)
+t=0 0
+a=x-example-foo:0 session-level
+m=video 50020 RTP/AVP 96
+c=IN IP4 239.22.142.1/32
+a=rtpmap:96 raw/90000
+a=x-example-foo:96 media-level
+a=x-example-bar:unknown attributes are still handled by the default converter
+a=recvonly
+)";
+
+    auto session_description = sdp::parse_session_description(test_sdp, grammar);
+
+    auto& session_attributes = sdp::fields::attributes(session_description).as_array();
+    auto session_foo = sdp::find_name(session_attributes, example_foo);
+    BST_REQUIRE(session_attributes.end() != session_foo);
+    BST_REQUIRE_EQUAL(0, example_fields::format(sdp::fields::value(*session_foo)));
+    BST_REQUIRE_EQUAL(U("session-level"), example_fields::bar(sdp::fields::value(*session_foo)));
+
+    auto& media_attributes = sdp::fields::attributes(sdp::fields::media_descriptions(session_description).at(0)).as_array();
+    auto media_foo = sdp::find_name(media_attributes, example_foo);
+    BST_REQUIRE(media_attributes.end() != media_foo);
+    BST_REQUIRE_EQUAL(96, example_fields::format(sdp::fields::value(*media_foo)));
+    BST_REQUIRE_EQUAL(U("media-level"), example_fields::bar(sdp::fields::value(*media_foo)));
+
+    auto media_bar = sdp::find_name(media_attributes, U("x-example-bar"));
+    BST_REQUIRE(media_attributes.end() != media_bar);
+    BST_REQUIRE_EQUAL(U("unknown attributes are still handled by the default converter"), sdp::fields::value(*media_bar).as_string());
+
+    auto recvonly = sdp::find_name(media_attributes, sdp::attributes::recvonly);
+    BST_REQUIRE(media_attributes.end() != recvonly);
+    BST_REQUIRE(sdp::fields::value(*recvonly).is_null());
+
+    auto test_sdp2 = sdp::make_session_description(session_description, grammar);
+    std::istringstream expected(test_sdp), actual(test_sdp2);
+    do
+    {
+        std::string expected_line, actual_line;
+        std::getline(expected, expected_line);
+        std::getline(actual, actual_line);
+        // CR cannot appear in a raw string literal, so remove it from the actual line
+        if (!actual_line.empty() && '\r' == actual_line.back()) actual_line.pop_back();
+        BST_CHECK_EQUAL(expected_line, actual_line);
+    } while (!expected.fail() && !actual.fail());
 }
