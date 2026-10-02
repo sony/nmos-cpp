@@ -3,6 +3,7 @@
 
 #include "bst/test/test.h"
 #include "sdp/json.h"
+#include "sdp/sdp_grammar.h"
 
 ////////////////////////////////////////////////////////////////////////////////////////////
 BST_TEST_CASE(testSdpRoundtrip)
@@ -311,6 +312,135 @@ a=mid:SECONDARY
 
     BST_CHECK_EQUAL(session_description3, session_description2);
     BST_CHECK_EQUAL(session_description3.serialize(), session_description2.serialize());
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////
+BST_TEST_CASE(testSdpRfc6364Roundtrip)
+{
+    const std::string test_sdp = R"(v=0
+o=ali 1122334455 1122334466 IN IP4 fec.example.com
+s=FEC Framework Examples
+t=0 0
+a=group:FEC-FR S6 R5
+a=group:FEC-FR S6 R6
+m=video 30000 RTP/AVP 100
+c=IN IP4 233.252.0.1/127
+a=rtpmap:100 MP2T/90000
+a=fec-source-flow: id=0; tag-len=4
+a=mid:S6
+m=application 30000 UDP/FEC
+c=IN IP4 233.252.0.3/127
+a=fec-repair-flow: encoding-id=0; preference-lvl=0; ss-fssi=n:7,k:5; fssi=note:
+a=repair-window:200ms
+a=mid:R5
+m=application 30000 UDP/FEC
+c=IN IP4 233.252.0.4/127
+a=fec-repair-flow: encoding-id=1; preference-lvl=1; ss-fssi=t:3
+a=repair-window:150500us
+a=mid:R6
+)";
+
+    const auto session_description = sdp::parse_session_description(test_sdp);
+    const auto& session_attributes = sdp::fields::attributes(session_description).as_array();
+    const auto group = sdp::find_name(session_attributes, sdp::attributes::group);
+    BST_REQUIRE(session_attributes.end() != group);
+    BST_CHECK_EQUAL(sdp::group_semantics::fec_fr, sdp::group_semantics_type{ sdp::fields::semantics(sdp::fields::value(*group)) });
+
+    const auto& media_descriptions = sdp::fields::media_descriptions(session_description).as_array();
+    BST_REQUIRE_EQUAL(3, media_descriptions.size());
+
+    const auto& source_attributes = sdp::fields::attributes(media_descriptions.at(0)).as_array();
+    const auto source_flow = sdp::find_name(source_attributes, sdp::attributes::fec_source_flow);
+    BST_REQUIRE(source_attributes.end() != source_flow);
+    const auto& source_flow_value = sdp::fields::value(*source_flow);
+    BST_CHECK_EQUAL(0, sdp::fields::source_id(source_flow_value));
+    BST_CHECK_EQUAL(4, sdp::fields::tag_length(source_flow_value));
+
+    const auto& first_repair_media = sdp::fields::media(media_descriptions.at(1));
+    BST_CHECK_EQUAL(sdp::protocols::UDP_FEC, sdp::protocol{ sdp::fields::protocol(first_repair_media) });
+    BST_CHECK_EQUAL(0, sdp::fields::formats(first_repair_media).size());
+
+    const auto& first_repair_attributes = sdp::fields::attributes(media_descriptions.at(1)).as_array();
+    const auto repair_flow = sdp::find_name(first_repair_attributes, sdp::attributes::fec_repair_flow);
+    BST_REQUIRE(first_repair_attributes.end() != repair_flow);
+    const auto& repair_flow_value = sdp::fields::value(*repair_flow);
+    BST_CHECK_EQUAL(0, sdp::fields::encoding_id(repair_flow_value));
+    BST_CHECK_EQUAL(0, sdp::fields::preference_level(repair_flow_value));
+    const auto& sender_side_elements = sdp::fields::sender_side_scheme_specific(repair_flow_value);
+    BST_REQUIRE_EQUAL(2, sender_side_elements.size());
+    BST_CHECK_EQUAL(U("n"), sdp::fields::name(sender_side_elements.at(0)));
+    BST_CHECK_EQUAL(U("7"), sdp::fields::value(sender_side_elements.at(0)).as_string());
+    const auto& scheme_elements = sdp::fields::scheme_specific(repair_flow_value);
+    BST_REQUIRE_EQUAL(1, scheme_elements.size());
+    BST_CHECK_EQUAL(U(""), sdp::fields::value(scheme_elements.at(0)).as_string());
+
+    const auto repair_window = sdp::find_name(first_repair_attributes, sdp::attributes::repair_window);
+    BST_REQUIRE(first_repair_attributes.end() != repair_window);
+    const auto& repair_window_value = sdp::fields::value(*repair_window);
+    BST_CHECK_EQUAL(200, sdp::fields::window_size(repair_window_value));
+    BST_CHECK_EQUAL(sdp::repair_window_units::milliseconds, sdp::repair_window_unit{ sdp::fields::window_unit(repair_window_value) });
+
+    BST_CHECK_EQUAL(U("FEC/UDP"), sdp::protocols::FEC_UDP.name);
+
+    std::istringstream expected(test_sdp), actual(sdp::make_session_description(session_description));
+    do
+    {
+        std::string expected_line, actual_line;
+        std::getline(expected, expected_line);
+        std::getline(actual, actual_line);
+        if (!actual_line.empty() && '\r' == actual_line.back()) actual_line.pop_back();
+        BST_CHECK_EQUAL(expected_line, actual_line);
+    } while (!expected.fail() && !actual.fail());
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////
+BST_TEST_CASE(testSdpMediaDescriptionOptionalFormats)
+{
+    const std::string test_sdp = "v=0\r\n"
+        "o=- 0 0 IN IP4 192.0.2.1\r\n"
+        "s=Media formats\r\n"
+        "t=0 0\r\n"
+        "m=video 5004 RTP/AVP 96 97\r\n"
+        "m=application 5006 UDP/FEC\r\n";
+
+    const auto session_description = sdp::parse_session_description(test_sdp);
+    const auto& media_descriptions = sdp::fields::media_descriptions(session_description).as_array();
+    BST_REQUIRE_EQUAL(2, media_descriptions.size());
+
+    const auto& video_media = sdp::fields::media(media_descriptions.at(0));
+    const auto& video_formats = sdp::fields::formats(video_media).as_array();
+    BST_REQUIRE_EQUAL(2, video_formats.size());
+    BST_CHECK_EQUAL(U("96"), video_formats.at(0).as_string());
+    BST_CHECK_EQUAL(U("97"), video_formats.at(1).as_string());
+
+    const auto& repair_media = sdp::fields::media(media_descriptions.at(1));
+    BST_CHECK(!repair_media.has_field(sdp::fields::formats));
+    BST_CHECK_EQUAL(0, sdp::fields::formats(repair_media).size());
+
+    BST_CHECK_EQUAL(test_sdp, sdp::make_session_description(session_description));
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////
+BST_TEST_CASE(testSdpRfc6364RejectsMalformedAttributes)
+{
+    const std::string before = "v=0\r\no=- 0 0 IN IP4 192.0.2.1\r\ns=FEC\r\nt=0 0\r\nm=application 30000 UDP/FEC\r\n";
+
+    const std::vector<std::string> malformed = {
+        "a=fec-source-flow:id=0\r\n",
+        "a=fec-source-flow: id=0; tag-len=4; extra=1\r\n",
+        "a=fec-repair-flow: encoding-id=0; ss-fssi=n:7; preference-lvl=1\r\n",
+        "a=fec-repair-flow: encoding-id=0; ss-fssi=\r\n",
+        "a=fec-repair-flow: encoding-id=0; ss-fssi=n:7/bad\r\n",
+        "a=fec-repair-flow: encoding-id=0; fssi=k:7; ss-fssi=n:7\r\n",
+        "a=fec-repair-flow: encoding-id=0; ss-fssi=n:7; fssi=\r\n",
+        "a=fec-repair-flow: encoding-id=0; ss-fssi=n:7; fssi=k:7/bad\r\n",
+        "a=repair-window:1s\r\n"
+    };
+
+    for (const auto& attribute : malformed)
+    {
+        BST_CHECK_THROW(sdp::parse_session_description(before + attribute), std::runtime_error);
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////
@@ -1119,4 +1249,94 @@ a=mid:SECONDARY
             BST_CHECK_EQUAL(expected_line, actual_line);
         } while (!expected.fail() && !actual.fail());
     }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////
+namespace
+{
+    // an example application-defined attribute
+    // a=x-example-foo:<format> <bar>
+    const utility::string_t example_foo{ U("x-example-foo") };
+
+    namespace example_fields
+    {
+        const web::json::field_as_integer format{ U("format") };
+        const web::json::field_as_string bar{ U("bar") };
+    }
+
+    // session_description captures converters by reference, so they must outlive
+    // the returned grammar; a function-local static is the natural application pattern
+    const sdp::grammar::attribute_converters& example_attribute_converters()
+    {
+        static const auto converters = [] {
+            auto converters = sdp::grammar::get_default_attribute_converters();
+            converters[example_foo] = sdp::grammar::object_converter({
+                { example_fields::format, sdp::grammar::digits_converter },
+                { example_fields::bar, sdp::grammar::string_converter }
+            });
+            return converters;
+        }();
+        return converters;
+    }
+
+    const sdp::grammar::description& example_grammar()
+    {
+        static const auto grammar = sdp::grammar::session_description(
+            example_attribute_converters(),
+            sdp::grammar::default_attribute_converter
+        );
+        return grammar;
+    }
+}
+
+BST_TEST_CASE(testSdpApplicationDefinedAttributes)
+{
+    const auto& grammar = example_grammar();
+
+    const std::string test_sdp = R"(v=0
+o=- 3745911798 3745911798 IN IP4 192.168.9.142
+s=Example Sender 1 (Video)
+t=0 0
+a=x-example-foo:0 session-level
+m=video 50020 RTP/AVP 96
+c=IN IP4 239.22.142.1/32
+a=rtpmap:96 raw/90000
+a=x-example-foo:96 media-level
+a=x-example-bar:unknown attributes are still handled by the default converter
+a=recvonly
+)";
+
+    auto session_description = sdp::parse_session_description(test_sdp, grammar);
+
+    auto& session_attributes = sdp::fields::attributes(session_description).as_array();
+    auto session_foo = sdp::find_name(session_attributes, example_foo);
+    BST_REQUIRE(session_attributes.end() != session_foo);
+    BST_REQUIRE_EQUAL(0, example_fields::format(sdp::fields::value(*session_foo)));
+    BST_REQUIRE_EQUAL(U("session-level"), example_fields::bar(sdp::fields::value(*session_foo)));
+
+    auto& media_attributes = sdp::fields::attributes(sdp::fields::media_descriptions(session_description).at(0)).as_array();
+    auto media_foo = sdp::find_name(media_attributes, example_foo);
+    BST_REQUIRE(media_attributes.end() != media_foo);
+    BST_REQUIRE_EQUAL(96, example_fields::format(sdp::fields::value(*media_foo)));
+    BST_REQUIRE_EQUAL(U("media-level"), example_fields::bar(sdp::fields::value(*media_foo)));
+
+    auto media_bar = sdp::find_name(media_attributes, U("x-example-bar"));
+    BST_REQUIRE(media_attributes.end() != media_bar);
+    BST_REQUIRE_EQUAL(U("unknown attributes are still handled by the default converter"), sdp::fields::value(*media_bar).as_string());
+
+    auto recvonly = sdp::find_name(media_attributes, sdp::attributes::recvonly);
+    BST_REQUIRE(media_attributes.end() != recvonly);
+    BST_REQUIRE(sdp::fields::value(*recvonly).is_null());
+
+    auto test_sdp2 = sdp::make_session_description(session_description, grammar);
+    std::istringstream expected(test_sdp), actual(test_sdp2);
+    do
+    {
+        std::string expected_line, actual_line;
+        std::getline(expected, expected_line);
+        std::getline(actual, actual_line);
+        // CR cannot appear in a raw string literal, so remove it from the actual line
+        if (!actual_line.empty() && '\r' == actual_line.back()) actual_line.pop_back();
+        BST_CHECK_EQUAL(expected_line, actual_line);
+    } while (!expected.fail() && !actual.fail());
 }

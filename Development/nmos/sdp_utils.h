@@ -111,6 +111,7 @@ namespace nmos
     // with each RTP sender and receiver.
     // When redundancy is being used, the media description and media-level attributes for each stream are assumed
     // to be identical except for the values corresponding to the IS-05 transport parameters for each leg.
+    // SSRC-multiplexed temporal redundancy is represented by one media description and two transport parameter legs.
     struct sdp_parameters
     {
         // Origin ("o=")
@@ -173,6 +174,95 @@ namespace nmos
             group_t() {}
             group_t(const sdp::group_semantics_type& semantics, const std::vector<utility::string_t>& media_stream_ids) : semantics(semantics), media_stream_ids(media_stream_ids) {}
         } group;
+
+        // SSRC-level duplication for SMPTE ST 2022-7 temporal redundancy.
+        // See https://tools.ietf.org/html/rfc5576 and https://tools.ietf.org/html/rfc7104
+        struct temporal_redundancy_t
+        {
+            struct synchronization_source_t
+            {
+                uint32_t id;
+                utility::string_t cname;
+
+                synchronization_source_t() : id() {}
+                synchronization_source_t(uint32_t id, const utility::string_t& cname) : id(id), cname(cname) {}
+            };
+
+            std::vector<synchronization_source_t> synchronization_sources;
+            bst::optional<uint32_t> duplication_delay;
+            utility::string_t media_stream_id;
+
+            temporal_redundancy_t() {}
+            temporal_redundancy_t(const std::vector<synchronization_source_t>& synchronization_sources, bst::optional<uint32_t> duplication_delay, const utility::string_t& media_stream_id)
+                : synchronization_sources(synchronization_sources)
+                , duplication_delay(duplication_delay)
+                , media_stream_id(media_stream_id)
+            {}
+        } temporal_redundancy;
+
+        // Forward Error Correction (FEC) Framework parameters for the IS-05-compatible
+        // topology of one source flow and one or two repair flows per RTP leg.
+        // RFC-only values are explicit because they cannot be derived from IS-05 transport parameters.
+        // See https://tools.ietf.org/html/rfc6364
+        struct fec_t
+        {
+            typedef std::vector<std::pair<utility::string_t, utility::string_t>> scheme_specific_t;
+
+            struct repair_window_t
+            {
+                uint32_t size;
+                sdp::repair_window_unit unit;
+
+                repair_window_t() : size() {}
+                repair_window_t(uint32_t size, const sdp::repair_window_unit& unit) : size(size), unit(unit) {}
+            };
+
+            struct repair_flow_t
+            {
+                uint64_t encoding_id;
+                bst::optional<uint64_t> preference_level;
+                scheme_specific_t sender_side_scheme_specific;
+                scheme_specific_t scheme_specific;
+                bst::optional<repair_window_t> repair_window;
+                utility::string_t media_stream_id;
+
+                repair_flow_t() : encoding_id() {}
+                repair_flow_t(uint64_t encoding_id, const utility::string_t& media_stream_id)
+                    : encoding_id(encoding_id)
+                    , media_stream_id(media_stream_id)
+                {}
+                repair_flow_t(uint64_t encoding_id, bst::optional<uint64_t> preference_level,
+                    const scheme_specific_t& sender_side_scheme_specific, const scheme_specific_t& scheme_specific,
+                    bst::optional<repair_window_t> repair_window, const utility::string_t& media_stream_id)
+                    : encoding_id(encoding_id)
+                    , preference_level(preference_level)
+                    , sender_side_scheme_specific(sender_side_scheme_specific)
+                    , scheme_specific(scheme_specific)
+                    , repair_window(repair_window)
+                    , media_stream_id(media_stream_id)
+                {}
+            };
+
+            uint32_t source_id;
+            bst::optional<uint64_t> tag_length;
+            utility::string_t media_stream_id;
+            std::vector<repair_flow_t> repair_flows;
+
+            fec_t() : source_id() {}
+            fec_t(uint32_t source_id, const utility::string_t& media_stream_id, const std::vector<repair_flow_t>& repair_flows)
+                : source_id(source_id)
+                , media_stream_id(media_stream_id)
+                , repair_flows(repair_flows)
+            {}
+            fec_t(uint32_t source_id, bst::optional<uint64_t> tag_length, const utility::string_t& media_stream_id,
+                const std::vector<repair_flow_t>& repair_flows)
+                : source_id(source_id)
+                , tag_length(tag_length)
+                , media_stream_id(media_stream_id)
+                , repair_flows(repair_flows)
+            {}
+        };
+        std::vector<fec_t> fec;
 
         // Media ("m=")
         // See https://tools.ietf.org/html/rfc4566#section-5.14
@@ -631,20 +721,12 @@ namespace nmos
             }
         };
 
-        inline sdp_parameters::fmtp_t::const_iterator find_fmtp(const sdp_parameters::fmtp_t& fmtp, const utility::string_t& name)
-        {
-            return std::find_if(fmtp.begin(), fmtp.end(), [&](const sdp_parameters::fmtp_t::value_type& param)
-            {
-                return param.first == name;
-            });
-        }
-        inline sdp_parameters::fmtp_t::iterator find_fmtp(sdp_parameters::fmtp_t& fmtp, const utility::string_t& name)
-        {
-            return std::find_if(fmtp.begin(), fmtp.end(), [&](const sdp_parameters::fmtp_t::value_type& param)
-            {
-                return param.first == name;
-            });
-        }
+        // Find the specified fmtp parameter name case-insensitive in the specified fmtp list per RFC 4855
+        sdp_parameters::fmtp_t::const_iterator find_fmtp(const sdp_parameters::fmtp_t& fmtp, const utility::string_t& name);
+        sdp_parameters::fmtp_t::iterator find_fmtp(sdp_parameters::fmtp_t& fmtp, const utility::string_t& name);
+
+        // RTP encoding names are case-insensitive per RFC 4855
+        bool equals_encoding_name(const utility::string_t& lhs, const utility::string_t& rhs);
 
         // type-erased format-specific parameters
         // e.g. can hold a video_raw_parameters, an audio_L_parameters, etc.
@@ -665,6 +747,9 @@ namespace nmos
 
         // Check the specified SDP interlace and segmented parameters against the specified interlace_mode constraint
         bool match_interlace_mode_constraint(bool interlace, bool segmented, const web::json::value& constraint);
+
+        // Check the specified media type case-insensitive against enum values in the specified string constraint per RFC 4855
+        bool match_media_type_constraint(const utility::string_t& value, const web::json::value& constraint);
 
         // Check the specified SDP parameters and format-specific parameters against the specified constraint set
         // using the specified parameter constraint functions

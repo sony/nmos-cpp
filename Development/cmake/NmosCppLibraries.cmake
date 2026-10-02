@@ -407,8 +407,50 @@ set(NMOS_IS05_SCHEMAS_HEADERS
     nmos/is05_schemas/is05_schemas.h
     )
 
+set(NMOS_IS05_V1_2_TAG v1.2.x)
 set(NMOS_IS05_V1_1_TAG v1.1.x)
 set(NMOS_IS05_V1_0_TAG v1.0.x)
+
+set(NMOS_IS05_V1_2_SCHEMAS_JSON
+    third_party/is-05/${NMOS_IS05_V1_2_TAG}/APIs/schemas/activation-response-schema.json
+    third_party/is-05/${NMOS_IS05_V1_2_TAG}/APIs/schemas/activation-schema.json
+    third_party/is-05/${NMOS_IS05_V1_2_TAG}/APIs/schemas/bulk-receiver-post-schema.json
+    third_party/is-05/${NMOS_IS05_V1_2_TAG}/APIs/schemas/bulk-response-schema.json
+    third_party/is-05/${NMOS_IS05_V1_2_TAG}/APIs/schemas/bulk-sender-post-schema.json
+    third_party/is-05/${NMOS_IS05_V1_2_TAG}/APIs/schemas/connectionapi-base.json
+    third_party/is-05/${NMOS_IS05_V1_2_TAG}/APIs/schemas/connectionapi-bulk.json
+    third_party/is-05/${NMOS_IS05_V1_2_TAG}/APIs/schemas/connectionapi-receiver.json
+    third_party/is-05/${NMOS_IS05_V1_2_TAG}/APIs/schemas/connectionapi-sender.json
+    third_party/is-05/${NMOS_IS05_V1_2_TAG}/APIs/schemas/connectionapi-single.json
+    third_party/is-05/${NMOS_IS05_V1_2_TAG}/APIs/schemas/constraint-schema.json
+    third_party/is-05/${NMOS_IS05_V1_2_TAG}/APIs/schemas/constraints-schema.json
+    third_party/is-05/${NMOS_IS05_V1_2_TAG}/APIs/schemas/constraints-schema-mqtt.json
+    third_party/is-05/${NMOS_IS05_V1_2_TAG}/APIs/schemas/constraints-schema-rtp.json
+    third_party/is-05/${NMOS_IS05_V1_2_TAG}/APIs/schemas/constraints-schema-websocket.json
+    third_party/is-05/${NMOS_IS05_V1_2_TAG}/APIs/schemas/error.json
+    third_party/is-05/${NMOS_IS05_V1_2_TAG}/APIs/schemas/mxl_uuid.json
+    third_party/is-05/${NMOS_IS05_V1_2_TAG}/APIs/schemas/receiver_transport_params.json
+    third_party/is-05/${NMOS_IS05_V1_2_TAG}/APIs/schemas/receiver_transport_params_dash.json
+    third_party/is-05/${NMOS_IS05_V1_2_TAG}/APIs/schemas/receiver_transport_params_ext.json
+    third_party/is-05/${NMOS_IS05_V1_2_TAG}/APIs/schemas/receiver_transport_params_mqtt.json
+    third_party/is-05/${NMOS_IS05_V1_2_TAG}/APIs/schemas/receiver_transport_params_mxl.json
+    third_party/is-05/${NMOS_IS05_V1_2_TAG}/APIs/schemas/receiver_transport_params_rtp.json
+    third_party/is-05/${NMOS_IS05_V1_2_TAG}/APIs/schemas/receiver_transport_params_websocket.json
+    third_party/is-05/${NMOS_IS05_V1_2_TAG}/APIs/schemas/receiver-response-schema.json
+    third_party/is-05/${NMOS_IS05_V1_2_TAG}/APIs/schemas/receiver-stage-schema.json
+    third_party/is-05/${NMOS_IS05_V1_2_TAG}/APIs/schemas/receiver-transport-file.json
+    third_party/is-05/${NMOS_IS05_V1_2_TAG}/APIs/schemas/sender_transport_params.json
+    third_party/is-05/${NMOS_IS05_V1_2_TAG}/APIs/schemas/sender_transport_params_dash.json
+    third_party/is-05/${NMOS_IS05_V1_2_TAG}/APIs/schemas/sender_transport_params_ext.json
+    third_party/is-05/${NMOS_IS05_V1_2_TAG}/APIs/schemas/sender_transport_params_mqtt.json
+    third_party/is-05/${NMOS_IS05_V1_2_TAG}/APIs/schemas/sender_transport_params_mxl.json
+    third_party/is-05/${NMOS_IS05_V1_2_TAG}/APIs/schemas/sender_transport_params_rtp.json
+    third_party/is-05/${NMOS_IS05_V1_2_TAG}/APIs/schemas/sender_transport_params_websocket.json
+    third_party/is-05/${NMOS_IS05_V1_2_TAG}/APIs/schemas/sender-receiver-base.json
+    third_party/is-05/${NMOS_IS05_V1_2_TAG}/APIs/schemas/sender-response-schema.json
+    third_party/is-05/${NMOS_IS05_V1_2_TAG}/APIs/schemas/sender-stage-schema.json
+    third_party/is-05/${NMOS_IS05_V1_2_TAG}/APIs/schemas/transporttype-response-schema.json
+    )
 
 set(NMOS_IS05_V1_1_SCHEMAS_JSON
     third_party/is-05/${NMOS_IS05_V1_1_TAG}/APIs/schemas/activation-response-schema.json
@@ -474,10 +516,11 @@ set(NMOS_IS05_V1_0_SCHEMAS_JSON
 
 set(NMOS_IS05_SCHEMAS_JSON_MATCH "third_party/is-05/([^/]+)/APIs/schemas/([^;]+)\\.json")
 set(NMOS_IS05_SCHEMAS_SOURCE_REPLACE "${CMAKE_CURRENT_BINARY_DIR_REPLACE}/nmos/is05_schemas/\\1/\\2.cpp")
+string(REGEX REPLACE "${NMOS_IS05_SCHEMAS_JSON_MATCH}(;|$)" "${NMOS_IS05_SCHEMAS_SOURCE_REPLACE}\\3" NMOS_IS05_V1_2_SCHEMAS_SOURCES "${NMOS_IS05_V1_2_SCHEMAS_JSON}")
 string(REGEX REPLACE "${NMOS_IS05_SCHEMAS_JSON_MATCH}(;|$)" "${NMOS_IS05_SCHEMAS_SOURCE_REPLACE}\\3" NMOS_IS05_V1_1_SCHEMAS_SOURCES "${NMOS_IS05_V1_1_SCHEMAS_JSON}")
 string(REGEX REPLACE "${NMOS_IS05_SCHEMAS_JSON_MATCH}(;|$)" "${NMOS_IS05_SCHEMAS_SOURCE_REPLACE}\\3" NMOS_IS05_V1_0_SCHEMAS_SOURCES "${NMOS_IS05_V1_0_SCHEMAS_JSON}")
 
-foreach(JSON ${NMOS_IS05_V1_1_SCHEMAS_JSON} ${NMOS_IS05_V1_0_SCHEMAS_JSON})
+foreach(JSON ${NMOS_IS05_V1_2_SCHEMAS_JSON} ${NMOS_IS05_V1_1_SCHEMAS_JSON} ${NMOS_IS05_V1_0_SCHEMAS_JSON})
     string(REGEX REPLACE "${NMOS_IS05_SCHEMAS_JSON_MATCH}" "${NMOS_IS05_SCHEMAS_SOURCE_REPLACE}" SOURCE "${JSON}")
     string(REGEX REPLACE "${NMOS_IS05_SCHEMAS_JSON_MATCH}" "\\1" NS "${JSON}")
     string(REGEX REPLACE "${NMOS_IS05_SCHEMAS_JSON_MATCH}" "\\2" VAR "${JSON}")
@@ -509,11 +552,13 @@ endforeach()
 add_library(
     nmos_is05_schemas STATIC
     ${NMOS_IS05_SCHEMAS_HEADERS}
+    ${NMOS_IS05_V1_2_SCHEMAS_SOURCES}
     ${NMOS_IS05_V1_1_SCHEMAS_SOURCES}
     ${NMOS_IS05_V1_0_SCHEMAS_SOURCES}
     )
 
 source_group("nmos\\is05_schemas\\Header Files" FILES ${NMOS_IS05_SCHEMAS_HEADERS})
+source_group("nmos\\is05_schemas\\${NMOS_IS05_V1_2_TAG}\\Source Files" FILES ${NMOS_IS05_V1_2_SCHEMAS_SOURCES})
 source_group("nmos\\is05_schemas\\${NMOS_IS05_V1_1_TAG}\\Source Files" FILES ${NMOS_IS05_V1_1_SCHEMAS_SOURCES})
 source_group("nmos\\is05_schemas\\${NMOS_IS05_V1_0_TAG}\\Source Files" FILES ${NMOS_IS05_V1_0_SCHEMAS_SOURCES})
 
@@ -924,6 +969,77 @@ target_include_directories(nmos_is12_schemas PUBLIC
 list(APPEND NMOS_CPP_TARGETS nmos_is12_schemas)
 add_library(nmos-cpp::nmos_is12_schemas ALIAS nmos_is12_schemas)
 
+# nmos_is13_schemas library
+
+set(NMOS_IS13_SCHEMAS_HEADERS
+    nmos/is13_schemas/is13_schemas.h
+    )
+
+set(NMOS_IS13_V1_0_TAG v1.0-dev)
+
+set(NMOS_IS13_V1_0_SCHEMAS_JSON
+    third_party/is-13/${NMOS_IS13_V1_0_TAG}/APIs/schemas/annotationapi-base.json
+    third_party/is-13/${NMOS_IS13_V1_0_TAG}/APIs/schemas/annotationapi-node-base.json
+    third_party/is-13/${NMOS_IS13_V1_0_TAG}/APIs/schemas/error.json
+    third_party/is-13/${NMOS_IS13_V1_0_TAG}/APIs/schemas/resource_core.json
+    third_party/is-13/${NMOS_IS13_V1_0_TAG}/APIs/schemas/resource_core_patch.json
+    third_party/is-13/${NMOS_IS13_V1_0_TAG}/APIs/schemas/resource-list.json
+    )
+
+set(NMOS_IS13_SCHEMAS_JSON_MATCH "third_party/is-13/([^/]+)/APIs/schemas/([^;]+)\\.json")
+set(NMOS_IS13_SCHEMAS_SOURCE_REPLACE "${CMAKE_CURRENT_BINARY_DIR_REPLACE}/nmos/is13_schemas/\\1/\\2.cpp")
+string(REGEX REPLACE "${NMOS_IS13_SCHEMAS_JSON_MATCH}(;|$)" "${NMOS_IS13_SCHEMAS_SOURCE_REPLACE}\\3" NMOS_IS13_V1_0_SCHEMAS_SOURCES "${NMOS_IS13_V1_0_SCHEMAS_JSON}")
+
+foreach(JSON ${NMOS_IS13_V1_0_SCHEMAS_JSON})
+    string(REGEX REPLACE "${NMOS_IS13_SCHEMAS_JSON_MATCH}" "${NMOS_IS13_SCHEMAS_SOURCE_REPLACE}" SOURCE "${JSON}")
+    string(REGEX REPLACE "${NMOS_IS13_SCHEMAS_JSON_MATCH}" "\\1" NS "${JSON}")
+    string(REGEX REPLACE "${NMOS_IS13_SCHEMAS_JSON_MATCH}" "\\2" VAR "${JSON}")
+    string(MAKE_C_IDENTIFIER "${NS}" NS)
+    string(MAKE_C_IDENTIFIER "${VAR}" VAR)
+
+    file(WRITE "${SOURCE}.in" "\
+// Auto-generated from: ${JSON}\n\
+\n\
+namespace nmos\n\
+{\n\
+    namespace is13_schemas\n\
+    {\n\
+        namespace ${NS}\n\
+        {\n\
+            const char* ${VAR} = R\"-auto-generated-(")
+
+    file(READ "${JSON}" RAW)
+    file(APPEND "${SOURCE}.in" "${RAW}")
+
+    file(APPEND "${SOURCE}.in" ")-auto-generated-\";\n\
+        }\n\
+    }\n\
+}\n")
+
+    configure_file("${SOURCE}.in" "${SOURCE}" COPYONLY)
+endforeach()
+
+add_library(
+    nmos_is13_schemas STATIC
+    ${NMOS_IS13_SCHEMAS_HEADERS}
+    ${NMOS_IS13_V1_0_SCHEMAS_SOURCES}
+    )
+
+source_group("nmos\\is13_schemas\\Header Files" FILES ${NMOS_IS13_SCHEMAS_HEADERS})
+source_group("nmos\\is13_schemas\\${NMOS_IS13_V1_0_TAG}\\Source Files" FILES ${NMOS_IS13_V1_0_SCHEMAS_SOURCES})
+
+target_link_libraries(
+    nmos_is13_schemas PRIVATE
+    nmos-cpp::compile-settings
+    )
+target_include_directories(nmos_is13_schemas PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+    $<INSTALL_INTERFACE:${NMOS_CPP_INSTALL_INCLUDEDIR}>
+    )
+
+list(APPEND NMOS_CPP_TARGETS nmos_is13_schemas)
+add_library(nmos-cpp::nmos_is13_schemas ALIAS nmos_is13_schemas)
+
 # nmos_is14_schemas library
 
 set(NMOS_IS14_SCHEMAS_HEADERS
@@ -1084,6 +1200,7 @@ set(NMOS_CPP_JWK_HEADERS
 set(NMOS_CPP_NMOS_SOURCES
     nmos/activation_utils.cpp
     nmos/admin_ui.cpp
+    nmos/annotation_api.cpp
     nmos/api_downgrade.cpp
     nmos/api_utils.cpp
     nmos/authorization.cpp
@@ -1139,6 +1256,7 @@ set(NMOS_CPP_NMOS_SOURCES
     nmos/manifest_api.cpp
     nmos/mdns.cpp
     nmos/mdns_api.cpp
+    nmos/media_type.cpp
     nmos/node_api.cpp
     nmos/node_api_target_handler.cpp
     nmos/node_behaviour.cpp
@@ -1182,6 +1300,7 @@ set(NMOS_CPP_NMOS_HEADERS
     nmos/activation_mode.h
     nmos/activation_utils.h
     nmos/admin_ui.h
+    nmos/annotation_api.h
     nmos/api_downgrade.h
     nmos/api_utils.h
     nmos/api_version.h
@@ -1248,6 +1367,7 @@ set(NMOS_CPP_NMOS_HEADERS
     nmos/is09_versions.h
     nmos/is10_versions.h
     nmos/is12_versions.h
+    nmos/is13_versions.h
     nmos/is14_versions.h
     nmos/issuers.h
     nmos/json_fields.h
@@ -1267,6 +1387,7 @@ set(NMOS_CPP_NMOS_HEADERS
     nmos/mdns_api.h
     nmos/mdns_versions.h
     nmos/media_type.h
+    nmos/mxl.h
     nmos/model.h
     nmos/mutex.h
     nmos/node_api.h
@@ -1407,6 +1528,7 @@ target_link_libraries(
     nmos-cpp::nmos_is10_schemas
     nmos-cpp::nmos_is11_schemas
     nmos-cpp::nmos_is12_schemas
+    nmos-cpp::nmos_is13_schemas
     nmos-cpp::nmos_is14_schemas
     nmos-cpp::mdns
     nmos-cpp::slog

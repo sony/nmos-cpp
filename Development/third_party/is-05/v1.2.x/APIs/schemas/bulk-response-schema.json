@@ -1,0 +1,36 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "description": "Describes a response to a bulk activation request",
+  "title": "Bulk activation response",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "required": [
+      "id",
+      "code"
+    ],
+    "properties": {
+      "id": {
+        "description": "ID of a device to be activated",
+        "type": "string",
+        "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+      },
+      "code": {
+        "description": "HTTP status code that would have resulted from an individual activation on this device",
+        "type": "integer",
+        "anyOf": [
+          { "minimum": 200, "maximum": 299 },
+          { "minimum": 400, "maximum": 599 }
+        ]
+      },
+      "error": {
+        "description": "Human readable message which is suitable for user interface display, and helpful to the user. Only included if 'code' indicates an error state",
+        "type": "string"
+      },
+      "debug": {
+        "description": "Debug information which may assist a programmer working with the API. Only included if 'code' indicates an error state",
+        "type": ["null", "string"]
+      }
+    }
+  }
+}

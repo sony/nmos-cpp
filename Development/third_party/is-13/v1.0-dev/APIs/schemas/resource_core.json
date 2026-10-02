@@ -1,0 +1,45 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "description": "Describes the foundations of all NMOS resources",
+  "title": "Base resource",
+  "required": [
+    "id",
+    "version",
+    "label",
+    "description",
+    "tags"
+  ],
+  "properties": {
+    "id": {
+      "description": "Globally unique identifier for the resource",
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+    },
+    "version": {
+      "description": "String formatted TAI timestamp (<seconds>:<nanoseconds>) indicating precisely when an attribute of the resource last changed",
+      "type": "string",
+      "pattern": "^[0-9]+:[0-9]+$"
+    },
+    "label": {
+      "description": "Freeform string label for the resource",
+      "type": "string"
+    },
+    "description": {
+      "description": "Detailed description of the resource",
+      "type": "string"
+    },
+    "tags": {
+      "description": "Key value set of freeform string tags to aid in filtering resources. Values should be represented as an array of strings. Can be empty.",
+      "type": "object",
+      "patternProperties": {
+        "": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}

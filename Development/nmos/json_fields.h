@@ -151,15 +151,20 @@ namespace nmos
         const web::json::field_as_value_or destination_ip{ U("destination_ip"), {} }; // string
         const web::json::field_as_value_or source_port{ U("source_port"), {} }; // string or integer
         const web::json::field_as_bool_or rtp_enabled{ U("rtp_enabled"), false };
+        const web::json::field_as_bool_or fec_enabled{ U("fec_enabled"), false };
         const web::json::field_as_value_or fec_destination_ip{ U("fec_destination_ip"), {} }; // string
+        const web::json::field_as_string fec_type{ U("fec_type") };
+        const web::json::field_as_value_or fec_mode{ U("fec_mode"), {} }; // string
+        const web::json::field_as_integer fec_block_width{ U("fec_block_width") };
+        const web::json::field_as_integer fec_block_height{ U("fec_block_height") };
         const web::json::field_as_value_or fec1D_destination_port{ U("fec1D_destination_port"), {} }; // string or integer
         const web::json::field_as_value_or fec2D_destination_port{ U("fec2D_destination_port"), {} }; // string or integer
         const web::json::field_as_value_or fec1D_source_port{ U("fec1D_source_port"), {} }; // string or integer
         const web::json::field_as_value_or fec2D_source_port{ U("fec2D_source_port"), {} }; // string or integer
+        const web::json::field_as_bool_or rtcp_enabled{ U("rtcp_enabled"), false };
         const web::json::field_as_value_or rtcp_destination_ip{ U("rtcp_destination_ip"), {} }; // string
         const web::json::field_as_value_or rtcp_destination_port{ U("rtcp_destination_port"), {} }; // string or integer
         const web::json::field_as_value_or rtcp_source_port{ U("rtcp_source_port"), {} }; // string or integer
-        const web::json::field_as_value_or fec_mode{ U("fec_mode"), {} }; // string
         // for urn:x-nmos:transport:websocket
         const web::json::field_as_value_or connection_uri{ U("connection_uri"), {} }; // string or null
         const web::json::field_as_value_or connection_authorization{ U("connection_authorization"), {} }; // string or bool
@@ -172,6 +177,9 @@ namespace nmos
         const web::json::field_as_value_or broker_authorization{ U("broker_authorization"), {} }; // string or bool
         const web::json::field_as_value_or broker_topic{ U("broker_topic"), {} }; // string or null
         const web::json::field_as_value_or connection_status_broker_topic{ U("connection_status_broker_topic"), {} }; // string or null
+        // for urn:x-nmos:transport:mxl (see AMWA BCP-007-03 NMOS With MXL)
+        const web::json::field_as_value_or mxl_domain_id{ U("mxl_domain_id"), {} }; // UUID string, auto, or null
+        const web::json::field_as_value_or mxl_flow_id{ U("mxl_flow_id"), {} }; // senders: UUID, auto, or null; receivers: UUID or null
 
         // IS-07 Event & Tally
 

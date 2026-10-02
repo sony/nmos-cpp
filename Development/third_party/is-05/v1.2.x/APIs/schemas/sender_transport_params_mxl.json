@@ -1,0 +1,44 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "description": "Describes MXL transport parameters. The constraints in this schema are minimum constraints, but may be further constrained at the constraints endpoint. Senders support at least the `mxl_domain_id` and `mxl_flow_id` parameters.",
+  "title": "MXL Sender Transport Parameters",
+  "type": "object",
+  "properties": {
+    "mxl_domain_id": {
+      "description": "Specifies the MXL Domain ID where the MXL Flow will be located. The Sender lists allowed Domain IDs in the constraints endpoint. Where the Domain is not yet determined, implementations use null. MXL Senders accept null where the MXL Domain is unknown a priori in a multi-domain system. MXL Senders support `auto` where the Sender can resolve the Domain without a Controller-supplied Domain ID. Where `auto` cannot be resolved to a valid value for /active in the current operating context, the Sender may reject the request or activation. The constraints endpoint does not list `auto` as an available option.",
+      "anyOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "string",
+          "pattern": "^auto$"
+        },
+        {
+          "$ref": "mxl_uuid.json"
+        }
+      ]
+    },
+    "mxl_flow_id": {
+      "description": "Specifies the MXL Flow ID for the MXL write operation. The Sender lists allowed Flow IDs in the constraints endpoint. Where the flow is not yet determined, implementations use null. MXL Senders accept null including where the MXL Flow is not yet configured. MXL Senders support `auto` where the Sender resolves the MXL Flow ID (for example when only one MXL Flow applies). Where `auto` cannot be resolved to a valid value for /active in the current operating context, the Sender may reject the request or activation. The constraints endpoint does not list auto as an available option.",
+      "anyOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "string",
+          "pattern": "^auto$"
+        },
+        {
+          "$ref": "mxl_uuid.json"
+        }
+      ]
+    }
+  },
+  "patternProperties": {
+    "^ext_[a-zA-Z0-9_]+$": {
+      "$ref": "sender_transport_params_ext.json"
+    }
+  },
+  "additionalProperties": false
+}

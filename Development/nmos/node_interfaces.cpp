@@ -1,6 +1,8 @@
 #include "nmos/node_interfaces.h"
 
 #include <boost/range/adaptor/transformed.hpp>
+#include "bst/regex.h"
+#include "cpprest/basic_utils.h"
 #include "cpprest/host_utils.h"
 #include "nmos/json_fields.h"
 
@@ -15,48 +17,93 @@ namespace nmos
             return !chassis_id.empty() ? value::string(chassis_id) : value::null();
         }
 
+        utility::string_t parse_node_interfaces_chassis_id(const web::json::value& chassis_id)
+        {
+            return chassis_id.is_null() ? utility::string_t{} : chassis_id.as_string();
+        }
+
+        // Port ID must be a MAC address, strictly following the lowercase hexadecimal format and separated by hyphens (not colons)
+        // It should match the regular expression pattern ^([0-9a-f]{2}-){5}([0-9a-f]{2})$
+        // see https://specs.amwa.tv/is-04/branches/v1.2.x/APIs/schemas/with-refs/node.html
+        bool is_valid_node_interfaces_port_id(const utility::string_t& port_id)
+        {
+            static const bst::regex port_id_regex(R"(([0-9a-f]{2}-){5}[0-9a-f]{2}$)");
+            return bst::regex_match(utility::us2s(port_id), port_id_regex);
+        }
+
         // Port ID must be a MAC address
         web::json::value make_node_interfaces_port_id(const utility::string_t& port_id)
         {
             using web::json::value;
-            // when no physical address is available, use the common null value of all zeros
+            // IS-04 port_id requires the six-octet lowercase-hyphen form. Any other representation,
+            // including uppercase or colon-separated MAC addresses, is not representable in this field
+            // and uses the existing null-address fallback of all zeros
             // see https://standards.ieee.org/content/dam/ieee-standards/standards/web/documents/tutorials/eui.pdf
-            return value::string(!port_id.empty() ? port_id : U("00-00-00-00-00-00"));
+            return value::string(is_valid_node_interfaces_port_id(port_id) ? port_id : U("00-00-00-00-00-00"));
         }
     }
 
+    // make node interface JSON data
+    web::json::value make_node_interface(const node_interface& interface)
+    {
+        using web::json::value_of;
+
+        const bool keep_order = true;
+
+        const auto has_attached = !interface.attached_chassis_id.empty() && !interface.attached_port_id.empty();
+
+        return value_of({
+            { nmos::fields::chassis_id, details::make_node_interfaces_chassis_id(interface.chassis_id) },
+            { nmos::fields::port_id, details::make_node_interfaces_port_id(interface.port_id) },
+            { nmos::fields::name, interface.name },
+            { has_attached ? nmos::fields::attached_network_device.key : U(""), value_of({
+                { nmos::fields::chassis_id, interface.attached_chassis_id },
+                { nmos::fields::port_id, interface.attached_port_id }
+            }, keep_order) }
+        }, keep_order);
+    }
+
+    // parse node interface JSON data
+    node_interface parse_node_interface(const web::json::value& interface)
+    {
+        const auto& attached = nmos::fields::attached_network_device(interface);
+        return {
+            details::parse_node_interfaces_chassis_id(interface.at(nmos::fields::chassis_id)),
+            nmos::fields::port_id(interface),
+            nmos::fields::name(interface),
+            attached.is_object() ? nmos::fields::chassis_id(attached) : utility::string_t{},
+            attached.is_object() ? nmos::fields::port_id(attached) : utility::string_t{}
+        };
+    }
+
     // make node interfaces JSON data, for the specified map from local interface_id
-    // no attached_network_device details are included
     web::json::value make_node_interfaces(const std::map<utility::string_t, node_interface>& interfaces)
     {
         using web::json::value_from_elements;
-        using web::json::value_of;
 
         return value_from_elements(interfaces | boost::adaptors::transformed([](const std::map<utility::string_t, node_interface>::value_type& interface)
         {
-            return value_of({
-                { nmos::fields::chassis_id, details::make_node_interfaces_chassis_id(interface.second.chassis_id) },
-                { nmos::fields::port_id, details::make_node_interfaces_port_id(interface.second.port_id) },
-                { nmos::fields::name, interface.second.name }
-            });
+            return make_node_interface(interface.second);
         }));
     }
 
     namespace experimental
     {
         // make a map from local interface_id to the (recommended) node interface details for the specified host interfaces
+        // no attached_network_device details are included
         std::map<utility::string_t, node_interface> node_interfaces(const std::vector<web::hosts::experimental::host_interface>& host_interfaces)
         {
             return boost::copy_range<std::map<utility::string_t, node_interface>>(host_interfaces | boost::adaptors::transformed([&](const web::hosts::experimental::host_interface& interface)
             {
                 return std::map<utility::string_t, node_interface>::value_type{
                     interface.name,
-                    { host_interfaces.front().physical_address, interface.physical_address, interface.name }
+                    { host_interfaces.front().physical_address, interface.physical_address, interface.name, {}, {} }
                 };
             }));
         }
 
         // make a map from local interface_id to the (recommended) node interface details
+        // no attached_network_device details are included
         std::map<utility::string_t, node_interface> node_interfaces()
         {
             return node_interfaces(web::hosts::experimental::host_interfaces());

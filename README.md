@@ -12,14 +12,16 @@ This repository contains an implementation of the [AMWA Networked Media Open Spe
 - [AMWA IS-09 NMOS System Parameters Specification](https://specs.amwa.tv/is-09/) (originally defined in JT-NM TR-1001-1:2018 Annex A)
 - [AMWA IS-10 NMOS Authorization Specification](https://specs.amwa.tv/is-10/)
 - [AMWA IS-11 NMOS Stream Compatibility Management](https://specs.amwa.tv/is-11/)
-- [AMWA IS-12 NMOS Control Protocol](https://specs.amwa.tv/is-12/)
-- [AMWA IS-14 NMOS Device Configuration Specification](https://specs.amwa.tv/is-14/)
+- [AMWA IS-12 AMWA IS-12 NMOS Control Protocol](https://specs.amwa.tv/is-12/)
+- [AMWA IS-13 NMOS Annotation Specification](https://specs.amwa.tv/is-13/)
+- [AMWA IS-14 AMWA IS-14 NMOS Device Configuration Specification](https://specs.amwa.tv/is-14/)
 - [AMWA BCP-002-01 NMOS Grouping Recommendations - Natural Grouping](https://specs.amwa.tv/bcp-002-01/)
 - [AMWA BCP-002-02 NMOS Asset Distinguishing Information](https://specs.amwa.tv/bcp-002-02/)
 - [AMWA BCP-003-01 Secure Communication in NMOS Systems](https://specs.amwa.tv/bcp-003-01/)
 - [AMWA BCP-003-02 Authorization in NMOS Systems](https://specs.amwa.tv/bcp-003-02/)
 - [AMWA BCP-004-01 NMOS Receiver Capabilities](https://specs.amwa.tv/bcp-004-01/)
 - [AMWA BCP-006-01 NMOS With JPEG XS](https://specs.amwa.tv/bcp-006-01/)
+- [AMWA BCP-007-03 NMOS With MXL](https://specs.amwa.tv/bcp-007-03/)
 - [AMWA BCP-008-01 NMOS Receiver Status](https://specs.amwa.tv/bcp-008-01/)
 - [AMWA BCP-008-02 NMOS Sender Status](https://specs.amwa.tv/bcp-008-02/)
 - [AMWA MS-05-01 NMOS Control Architecture](https://specs.amwa.tv/ms-05-01/)
@@ -83,6 +85,7 @@ The [AMWA NMOS API Testing Tool](https://github.com/AMWA-TV/nmos-testing) is aut
 **Test Suite/Status:**
 [![BCP-003-01][BCP-003-01-badge]][BCP-003-01-sheet]
 [![BCP-006-01-01][BCP-006-01-01-badge]][BCP-006-01-01-sheet]
+[![BCP-007-03-01][BCP-007-03-01-badge]][BCP-007-03-01-sheet]
 [![BCP-008-01-01][BCP-008-01-01-badge]][BCP-008-01-01-sheet]
 [![BCP-008-02-01][BCP-008-02-01-badge]][BCP-008-02-01-sheet]
 [![IS-04-01][IS-04-01-badge]][IS-04-01-sheet]
@@ -102,6 +105,7 @@ The [AMWA NMOS API Testing Tool](https://github.com/AMWA-TV/nmos-testing) is aut
 
 [BCP-003-01-badge]: https://raw.githubusercontent.com/sony/nmos-cpp/badges/BCP-003-01.svg
 [BCP-006-01-01-badge]: https://raw.githubusercontent.com/sony/nmos-cpp/badges/BCP-006-01-01.svg
+[BCP-007-03-01-badge]: https://raw.githubusercontent.com/sony/nmos-cpp/badges/BCP-007-03-01.svg
 [BCP-008-01-01-badge]: https://raw.githubusercontent.com/sony/nmos-cpp/badges/BCP-008-01-01.svg
 [BCP-008-02-01-badge]: https://raw.githubusercontent.com/sony/nmos-cpp/badges/BCP-008-02-01.svg
 [IS-04-01-badge]: https://raw.githubusercontent.com/sony/nmos-cpp/badges/IS-04-01.svg
@@ -120,6 +124,7 @@ The [AMWA NMOS API Testing Tool](https://github.com/AMWA-TV/nmos-testing) is aut
 [IS-14-01-badge]: https://raw.githubusercontent.com/sony/nmos-cpp/badges/IS-14-01.svg
 [BCP-003-01-sheet]: https://docs.google.com/spreadsheets/d/1UgZoI0lGCMDn9-zssccf2Azil3WN6jogroMT8Wh6H64/edit#gid=468090822
 [BCP-006-01-01-sheet]: https://docs.google.com/spreadsheets/d/1UgZoI0lGCMDn9-zssccf2Azil3WN6jogroMT8Wh6H64/edit?gid=1835994800
+[BCP-007-03-01-sheet]: https://docs.google.com/spreadsheets/d/1UgZoI0lGCMDn9-zssccf2Azil3WN6jogroMT8Wh6H64/edit?gid=926264123
 [BCP-008-01-01-sheet]: https://docs.google.com/spreadsheets/d/1UgZoI0lGCMDn9-zssccf2Azil3WN6jogroMT8Wh6H64/edit?gid=1290589116
 [BCP-008-02-01-sheet]: https://docs.google.com/spreadsheets/d/1UgZoI0lGCMDn9-zssccf2Azil3WN6jogroMT8Wh6H64/edit?gid=582384563
 [IS-04-01-sheet]: https://docs.google.com/spreadsheets/d/1UgZoI0lGCMDn9-zssccf2Azil3WN6jogroMT8Wh6H64/edit#gid=0
@@ -144,6 +149,8 @@ The implementation is designed to be extended. Development is ongoing, following
 Recent activity on the project (newest first):
 
 - Added support for IS-11 NMOS Stream Compatibility Management
+- Added support for IS-13 NMOS Annotation
+- Added support for BCP-007-03 NMOS With MXL
 - Added support for IS-14 NMOS Device Configuration
 - Added support for BCP-008-01 Receiver Status Monitoring
 - Added support for BCP-008-02 Sender Status Monitoring

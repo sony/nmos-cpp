@@ -50,15 +50,13 @@ namespace nmos
 
         // all types (other than nodes, and subscriptions) must* be a sub-resource of an existing resource
         // (*assuming not out-of-order insertion by the allow_invalid_resources setting)
-        auto super_resource = find_resource(resources, get_super_resource(resource));
-        if (super_resource != resources.end())
-        {
-            // this isn't modifying the visible data of the super_resouce, so no resource events need to be generated
-            resources.modify(super_resource, [&](nmos::resource& super_resource)
-            {
-                super_resource.sub_resources.insert(resource.id);
-            });
-        }
+        // evaluate the super-resource id/type before insertion (get_super_resource may throw if
+        // referential-integrity fields are missing), but only update sub_resources after a successful
+        // insert or replace — otherwise a rejected insert whose id matches an existing resource
+        // (e.g. a device reusing a node id) would leave a self-reference and later recurse unboundedly
+        // in set_resource_health / erase_resource
+        // see https://github.com/sony/nmos-cpp/issues/403
+        const auto super_id_type = get_super_resource(resource);
 
         auto result = resources.insert(std::move(resource));
         // replacement of a deleted or expired resource is also allowed
@@ -72,6 +70,17 @@ namespace nmos
         if (result.second)
         {
             auto& inserted = *result.first;
+
+            auto super_resource = find_resource(resources, super_id_type);
+            if (super_resource != resources.end())
+            {
+                // this isn't modifying the visible data of the super_resouce, so no resource events need to be generated
+                resources.modify(super_resource, [&](nmos::resource& super_resource)
+                {
+                    super_resource.sub_resources.insert(inserted.id);
+                });
+            }
+
             insert_resource_events(resources, inserted.version, inserted.downgrade_version, inserted.type, web::json::value::null(), inserted.data);
 
             // set the initial health of this resource from the super-resource (if applicable)

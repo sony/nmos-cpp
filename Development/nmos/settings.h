@@ -1,7 +1,9 @@
 #ifndef NMOS_SETTINGS_H
 #define NMOS_SETTINGS_H
 
+#include <utility>
 #include "bst/optional.h"
+#include "cpprest/base_uri.h"
 #include "cpprest/json_utils.h"
 
 namespace web
@@ -26,6 +28,32 @@ namespace web
 namespace nmos
 {
     typedef web::json::value settings;
+
+    // Validates the known properties (declared in nmos/settings.h and nmos/certificate_settings.h)
+    // against an embedded JSON schema. Unknown properties are silently ignored. Throws
+    // web::json::json_exception on failure.
+    void validate_node_settings(const settings& settings);
+    void validate_registry_settings(const settings& settings);
+
+    namespace details
+    {
+        // The library's settings schema (used by validate_node_settings and
+        // validate_registry_settings). Exposed in the same form as
+        // settings_definitions_schema() so downstream code wanting to compose
+        // its own validator from the library's schemas can register both without
+        // re-parsing the schema text at every validator construction.
+        const std::pair<web::uri, web::json::value>& settings_schema();
+
+        // Useful value-type definitions (positiveInteger, nonNegativeInteger,
+        // stringArray, uuid, tags, rational, interlaceMode, colorspace,
+        // transferCharacteristic, colorSampling) for application code that wants
+        // to compose its own settings JSON schema via cross-schema $refs of the form
+        //   { "$ref": "urn:x-nmos-cpp:schemas:defs#/definitions/<name>" }
+        // The first member is the URI under which the fragment is registered; the second
+        // is the parsed schema. Pass `.first` to the json_validator's known-schemas list
+        // and return `.second` from the loader callback when it is invoked with that URI.
+        const std::pair<web::uri, web::json::value>& settings_definitions_schema();
+    }
 
     // Inserts run-time default settings for those which are impossible to determine at compile-time
     // if not already present in the specified settings
@@ -72,6 +100,8 @@ namespace nmos
         const web::json::field_as_integer_or logging_level{ U("logging_level"), 0 }; // 0, rather than slog::severities::info or slog::nil_severity, just to avoid a #include
 
         // logging_categories [registry, node]: array of logging categories to be included in the error log
+        // categories prefixed with '!' are excluded, even if another category matches positively;
+        // "!" excludes messages with no category; when only excluded categories are specified, all other log messages are included
         const web::json::field_as_array logging_categories{ U("logging_categories") }; // when omitted, all log messages are included
 
         // Configuration settings and defaults for the NMOS APIs
@@ -125,6 +155,9 @@ namespace nmos
         // is12_versions [node]: used to specify the enabled API versions for a version-locked configuration
         const web::json::field_as_array is12_versions{ U("is12_versions") }; // when omitted, nmos::is12_versions::all is used
 
+        // is13_versions [node]: used to specify the enabled API versions for a version-locked configuration
+        const web::json::field_as_array is13_versions{ U("is13_versions") }; // when omitted, nmos::is13_versions::all is used
+
         // is14_versions [node]: used to specify the enabled API versions for a version-locked configuration
         const web::json::field_as_array is14_versions{ U("is14_versions") }; // when omitted, nmos::is14_versions::all is used
 
@@ -172,6 +205,7 @@ namespace nmos
         const web::json::field_as_integer_or system_port{ U("system_port"), 10641 };
         // control_protocol_ws_port [node]: used to construct request URLs for the Control Protocol websocket, or negative to disable the control protocol features
         const web::json::field_as_integer_or control_protocol_ws_port{ U("control_protocol_ws_port"), 3218 };
+        const web::json::field_as_integer_or annotation_port{ U("annotation_port"), 3212 };
         const web::json::field_as_integer_or configuration_port{ U("configuration_port"), 3219 };
         const web::json::field_as_integer_or streamcompatibility_port{ U("streamcompatibility_port"), 3220 };
 

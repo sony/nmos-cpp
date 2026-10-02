@@ -59,6 +59,8 @@ namespace nmos
         const route_pattern system_api = make_route_pattern(U("api"), U("system"));
         // IS-11 Stream Compatibility Management API
         const route_pattern streamcompatibility_api = make_route_pattern(U("api"), U("streamcompatibility"));
+        // IS-13 Annotation API
+        const route_pattern annotation_api = make_route_pattern(U("api"), U("annotation"));
         // IS-14 Configuration API
         const route_pattern configuration_api = make_route_pattern(U("api"), U("configuration"));
 

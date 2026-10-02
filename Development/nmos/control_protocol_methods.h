@@ -52,7 +52,12 @@ namespace nmos
         // Gets the lost packet counters
         web::json::value get_lost_packet_counters(nmos::resources& resources, const nmos::resource& resource, const web::json::value& arguments, bool is_deprecated, get_packet_counters_handler get_lost_packet_counters, slog::base_gate& gate);
         // Resets the packet counters and messages
-        web::json::value reset_monitor(nmos::resources& resources, const nmos::resource& resource, const web::json::value&, bool is_deprecated, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, control_protocol_property_changed_handler property_changed, reset_monitor_handler reset_monitor, slog::base_gate& gate);
+        web::json::value reset_monitor(nmos::resources& resources, const nmos::resource& resource, const web::json::value&, bool is_deprecated, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, control_protocol_property_changed_handler property_changed, reset_monitor_handler reset_monitor, get_monitor_domains_handler get_monitor_domains, slog::base_gate& gate);
+        // Deprecated: use the overload with get_monitor_domains_handler to reset custom monitor domains
+        inline web::json::value reset_monitor(nmos::resources& resources, const nmos::resource& resource, const web::json::value& arguments, bool is_deprecated, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, control_protocol_property_changed_handler property_changed, reset_monitor_handler reset_monitor_callback, slog::base_gate& gate)
+        {
+            return reset_monitor(resources, resource, arguments, is_deprecated, get_control_protocol_class_descriptor, property_changed, reset_monitor_callback, {}, gate);
+        }
     }
 }
 #endif

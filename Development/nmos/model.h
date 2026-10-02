@@ -23,7 +23,7 @@ namespace nmos
         mutable nmos::condition_variable shutdown_condition;
 
         // application-wide configuration
-        nmos::settings settings;
+        nmos::settings settings = web::json::value::object();
 
         // flag indicating whether shutdown has been initiated
         bool shutdown = false;

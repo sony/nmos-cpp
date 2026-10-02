@@ -3,7 +3,14 @@
 #include <boost/algorithm/string/erase.hpp>
 #include "bst/filesystem.h"
 
+// From VS2026, or more precisely, MSVC Build Tools v14.51, std::ios_base::_Openprot is removed
+// Its replacement, std::ios_base::_Default_open_prot was introduced way back in VS 2019
+#if defined(_MSC_VER) && (_MSC_VER >= 1920)
+#include <ios>
+#define _Openprot _Default_open_prot
+#endif
 #include "cpprest/filestream.h"
+
 #include "nmos/slog.h"
 
 namespace nmos
@@ -69,7 +76,8 @@ namespace nmos
                 nmos::api_gate gate(gate_, req, parameters);
                 slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Filesystem request received";
                 auto relative_path = web::uri::decode(parameters.at(U("filesystem-relative-path")));
-                const bool naughty = string_t::npos != relative_path.find(U("/.."));
+                // Check for directory traversal attempts using both forward and backward slashes
+                const bool naughty = (string_t::npos != relative_path.find(U("/.."))) || (string_t::npos != relative_path.find(U("\\")));
                 if (!naughty)
                 {
                     // relative path will begin with a slash

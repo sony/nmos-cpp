@@ -19,6 +19,7 @@ namespace nmos
         struct control_protocol_state;
         struct control_class_descriptor;
         struct datatype_descriptor;
+        struct monitor_domain;
     }
 
     // callback to retrieve a specific control protocol class descriptor
@@ -87,6 +88,9 @@ namespace nmos
     // construct callback to retrieve a specific method
     get_control_protocol_method_descriptor_handler make_get_control_protocol_method_descriptor_handler(experimental::control_protocol_state& control_protocol_state);
 
+    // Set monitor status to pending
+    monitor_status_pending_handler make_monitor_status_pending_handler(experimental::control_protocol_state& control_protocol_state);
+
     // control_protocol_connection_activation_handler notifies that the active parameters for the specified (IS-05) sender/connection_sender or receiver/connection_receiver have changed
     control_protocol_connection_activation_handler make_monitor_connection_activation_handler(resources& resources, experimental::control_protocol_state& control_protocol_state, slog::base_gate& gate);
 
@@ -97,6 +101,10 @@ namespace nmos
     // construct callback to set values on device model
     typedef std::function<bool(nc_oid oid, const nc_property_id& property_id, const web::json::value& value)> set_control_protocol_property_handler;
     set_control_protocol_property_handler make_set_control_protocol_property_handler(resources& resources, experimental::control_protocol_state& control_protocol_state, slog::base_gate& gate);
+
+    // construct callback to retrieve monitor domains declared by a class and its ancestors
+    typedef std::function<std::vector<experimental::monitor_domain>(const nc_class_id& class_id)> get_monitor_domains_handler;
+    get_monitor_domains_handler make_get_monitor_domains_handler(experimental::control_protocol_state& control_protocol_state);
 
     // NcReceiverMonitor handlers
 

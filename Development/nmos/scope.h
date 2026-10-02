@@ -28,6 +28,8 @@ namespace nmos
             const scope streamcompatibility{ U("streamcompatibility") };
             // IS-12
             const scope ncp{ U("ncp") };
+            // IS-13
+            const scope annotation{ U("annotation") };
             // IS-14
             const scope configuration{ U("configuration") };
         }
@@ -48,6 +50,7 @@ namespace nmos
             if (scopes::channelmapping.name == scope) { return scopes::channelmapping; }
             if (scopes::streamcompatibility.name == scope) { return scopes::streamcompatibility; }
             if (scopes::ncp.name == scope) { return scopes::ncp; }
+            if (scopes::annotation.name == scope) { return scopes::annotation; }
             if (scopes::configuration.name == scope) { return scopes::configuration; }
             return{};
         }

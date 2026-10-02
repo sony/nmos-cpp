@@ -14,6 +14,8 @@
 #include "nmos/is11_schemas/is11_schemas.h"
 #include "nmos/is12_versions.h"
 #include "nmos/is12_schemas/is12_schemas.h"
+#include "nmos/is13_versions.h"
+#include "nmos/is13_schemas/is13_schemas.h"
 #include "nmos/is14_versions.h"
 #include "nmos/is14_schemas/is14_schemas.h"
 #include "nmos/type.h"
@@ -77,6 +79,16 @@ namespace nmos
         web::uri make_schema_uri(const utility::string_t& tag, const utility::string_t& ref = {})
         {
             return{ _XPLATSTR("https://github.com/AMWA-TV/is-05/raw/") + tag + _XPLATSTR("/APIs/schemas/") + ref };
+        }
+
+        // See https://github.com/AMWA-TV/is-05/blob/v1.2.x/APIs/schemas/
+        namespace v1_2
+        {
+            using namespace nmos::is05_schemas::v1_2_x;
+            const utility::string_t tag(_XPLATSTR("v1.2.x"));
+
+            const web::uri connectionapi_sender_staged_patch_request_uri = make_schema_uri(tag, _XPLATSTR("sender-stage-schema.json"));
+            const web::uri connectionapi_receiver_staged_patch_request_uri = make_schema_uri(tag, _XPLATSTR("receiver-stage-schema.json"));
         }
 
         // See https://github.com/AMWA-TV/is-05/blob/v1.1.x/APIs/schemas/
@@ -189,6 +201,23 @@ namespace nmos
             const web::uri controlprotocolapi_base_message_schema_uri = make_schema_uri(tag, _XPLATSTR("base-message.json"));
             const web::uri controlprotocolapi_command_message_schema_uri = make_schema_uri(tag, _XPLATSTR("command-message.json"));
             const web::uri controlprotocolapi_subscription_message_schema_uri = make_schema_uri(tag, _XPLATSTR("subscription-message.json"));
+        }
+    }
+
+    namespace is13_schemas
+    {
+        web::uri make_schema_uri(const utility::string_t& tag, const utility::string_t& ref = {})
+        {
+            return{ _XPLATSTR("https://github.com/AMWA-TV/is-13/raw/") + tag + _XPLATSTR("/APIs/schemas/") + ref };
+        }
+
+        // See https://github.com/AMWA-TV/is-13/blob/v1.0-dev/APIs/schemas/
+        namespace v1_0
+        {
+            using namespace nmos::is13_schemas::v1_0_dev;
+            const utility::string_t tag(_XPLATSTR("v1.0-dev"));
+
+            const web::uri annotationapi_resource_core_patch_request_uri = make_schema_uri(tag, _XPLATSTR("resource_core_patch.json"));
         }
     }
 
@@ -342,6 +371,26 @@ namespace nmos
 
             return
             {
+                // v1.2
+                { make_schema_uri(v1_2::tag, _XPLATSTR("sender-stage-schema.json")), make_schema(v1_2::sender_stage_schema) },
+                { make_schema_uri(v1_2::tag, _XPLATSTR("receiver-stage-schema.json")), make_schema(v1_2::receiver_stage_schema) },
+                { make_schema_uri(v1_2::tag, _XPLATSTR("receiver-transport-file.json")), make_schema(v1_2::receiver_transport_file) },
+                { make_schema_uri(v1_2::tag, _XPLATSTR("activation-schema.json")), make_schema(v1_2::activation_schema) },
+                { make_schema_uri(v1_2::tag, _XPLATSTR("sender_transport_params.json")), make_schema(v1_2::sender_transport_params) },
+                { make_schema_uri(v1_2::tag, _XPLATSTR("sender_transport_params_rtp.json")), make_schema(v1_2::sender_transport_params_rtp) },
+                { make_schema_uri(v1_2::tag, _XPLATSTR("sender_transport_params_dash.json")), make_schema(v1_2::sender_transport_params_dash) },
+                { make_schema_uri(v1_2::tag, _XPLATSTR("sender_transport_params_websocket.json")), make_schema(v1_2::sender_transport_params_websocket) },
+                { make_schema_uri(v1_2::tag, _XPLATSTR("sender_transport_params_mqtt.json")), make_schema(v1_2::sender_transport_params_mqtt) },
+                { make_schema_uri(v1_2::tag, _XPLATSTR("sender_transport_params_mxl.json")), make_schema(v1_2::sender_transport_params_mxl) },
+                { make_schema_uri(v1_2::tag, _XPLATSTR("sender_transport_params_ext.json")), make_schema(v1_2::sender_transport_params_ext) },
+                { make_schema_uri(v1_2::tag, _XPLATSTR("mxl_uuid.json")), make_schema(v1_2::mxl_uuid) },
+                { make_schema_uri(v1_2::tag, _XPLATSTR("receiver_transport_params.json")), make_schema(v1_2::receiver_transport_params) },
+                { make_schema_uri(v1_2::tag, _XPLATSTR("receiver_transport_params_rtp.json")), make_schema(v1_2::receiver_transport_params_rtp) },
+                { make_schema_uri(v1_2::tag, _XPLATSTR("receiver_transport_params_dash.json")), make_schema(v1_2::receiver_transport_params_dash) },
+                { make_schema_uri(v1_2::tag, _XPLATSTR("receiver_transport_params_websocket.json")), make_schema(v1_2::receiver_transport_params_websocket) },
+                { make_schema_uri(v1_2::tag, _XPLATSTR("receiver_transport_params_mqtt.json")), make_schema(v1_2::receiver_transport_params_mqtt) },
+                { make_schema_uri(v1_2::tag, _XPLATSTR("receiver_transport_params_mxl.json")), make_schema(v1_2::receiver_transport_params_mxl) },
+                { make_schema_uri(v1_2::tag, _XPLATSTR("receiver_transport_params_ext.json")), make_schema(v1_2::receiver_transport_params_ext) },
                 // v1.1
                 { make_schema_uri(v1_1::tag, _XPLATSTR("sender-stage-schema.json")), make_schema(v1_1::sender_stage_schema) },
                 { make_schema_uri(v1_1::tag, _XPLATSTR("receiver-stage-schema.json")), make_schema(v1_1::receiver_stage_schema) },
@@ -450,6 +499,17 @@ namespace nmos
             };
         }
 
+        static std::map<web::uri, web::json::value> make_is13_schemas()
+        {
+            using namespace nmos::is13_schemas;
+
+            return
+            {
+                // v1.0
+                { make_schema_uri(v1_0::tag, _XPLATSTR("resource_core_patch.json")), make_schema(v1_0::resource_core_patch) }
+            };
+        }
+
         static std::map<web::uri, web::json::value> make_is14_schemas()
         {
             using namespace nmos::is14_schemas;
@@ -478,6 +538,7 @@ namespace nmos
             merge(result, make_is10_schemas());
             merge(result, make_is11_schemas());
             merge(result, make_is12_schemas());
+            merge(result, make_is13_schemas());
             merge(result, make_is14_schemas());
             return result;
         }
@@ -525,12 +586,14 @@ namespace nmos
 
         web::uri make_connectionapi_sender_staged_patch_request_schema_uri(const nmos::api_version& version)
         {
+            if (is05_versions::v1_2 <= version) return is05_schemas::v1_2::connectionapi_sender_staged_patch_request_uri;
             if (is05_versions::v1_1 <= version) return is05_schemas::v1_1::connectionapi_sender_staged_patch_request_uri;
             return is05_schemas::v1_0::connectionapi_sender_staged_patch_request_uri;
         }
 
         web::uri make_connectionapi_receiver_staged_patch_request_schema_uri(const nmos::api_version& version)
         {
+            if (is05_versions::v1_2 <= version) return is05_schemas::v1_2::connectionapi_receiver_staged_patch_request_uri;
             if (is05_versions::v1_1 <= version) return is05_schemas::v1_1::connectionapi_receiver_staged_patch_request_uri;
             return is05_schemas::v1_0::connectionapi_receiver_staged_patch_request_uri;
         }
@@ -588,6 +651,11 @@ namespace nmos
         web::uri make_controlprotocolapi_subscription_message_schema_uri(const nmos::api_version& version)
         {
             return is12_schemas::v1_0::controlprotocolapi_subscription_message_schema_uri;
+        }
+
+        web::uri make_annotationapi_resource_core_patch_request_schema_uri(const nmos::api_version& version)
+        {
+            return is13_schemas::v1_0::annotationapi_resource_core_patch_request_uri;
         }
 
         web::uri make_configurationapi_bulkProperties_put_request_schema_uri(const nmos::api_version& version)
