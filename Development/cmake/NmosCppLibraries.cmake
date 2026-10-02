@@ -1056,6 +1056,7 @@ set(NMOS_CPP_BST_HEADERS
 
 set(NMOS_CPP_CPPREST_SOURCES
     cpprest/api_router.cpp
+    cpprest/basic_utils.cpp
     cpprest/host_utils.cpp
     cpprest/http_utils.cpp
     cpprest/json_escape.cpp

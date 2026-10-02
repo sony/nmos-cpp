@@ -133,19 +133,38 @@ namespace nmos
             {
                 auto lock = model.write_lock();
 
-                auto categories = nmos::get_categories_stash(message.stream());
-
-                if (pertinent(message.level()) && pertinent(categories))
+                // this runs on the async logging worker thread, and slog's message_service::run only
+                // catches its own stopped_exception, so anything else escaping here would propagate out
+                // of the thread function and terminate the process - a last resort, since a failure to
+                // log must never take down the application; the encoding boundaries that could
+                // realistically throw are handled in json_from_message with utility::s2us_lenient
+                try
                 {
-                    error_log << details::error_log_format(message);
-                }
+                    auto categories = nmos::get_categories_stash(message.stream());
 
-                if (categories.end() != boost::range::find(categories, nmos::categories::access))
+                    if (pertinent(message.level()) && pertinent(categories))
+                    {
+                        error_log << details::error_log_format(message);
+                    }
+
+                    if (categories.end() != boost::range::find(categories, nmos::categories::access))
+                    {
+                        access_log << nmos::common_log_format(message);
+                    }
+
+                    nmos::experimental::insert_log_event(model.events, message, generate_id(), nmos::experimental::fields::logging_limit(model.settings));
+                }
+                catch (const std::exception& e)
                 {
-                    access_log << nmos::common_log_format(message);
+                    // report on the error log directly rather than via the gate, which would re-enter here
+                    // and guard that too, since the error log is itself a plausible source of the error,
+                    // and throwing from a handler here would defeat the point of catching at all
+                    try { error_log << "Error while logging: " << e.what() << std::endl; } catch (...) {}
                 }
-
-                nmos::experimental::insert_log_event(model.events, message, generate_id(), nmos::experimental::fields::logging_limit(model.settings));
+                catch (...)
+                {
+                    try { error_log << "Unexpected error while logging" << std::endl; } catch (...) {}
+                }
             }
 
             mutable slog::async_log_service<service_function> async_service;
