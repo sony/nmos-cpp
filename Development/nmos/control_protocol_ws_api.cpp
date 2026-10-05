@@ -1,5 +1,6 @@
 #include "nmos/control_protocol_ws_api.h"
 
+#include <algorithm>
 #include <boost/algorithm/string/join.hpp>
 #include <boost/range/join.hpp>
 #include "cpprest/json_validator.h"
@@ -65,11 +66,13 @@ namespace nmos
                 if (!ws_validate_authorization(req, nmos::experimental::scopes::ncp)) { return false; }
             }
 
-            // For now just return true
             const auto& ws_ncp_path = req.request_uri().path();
             slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Validating websocket connection to: " << ws_ncp_path;
-
-            return true;
+            const auto is12_versions = nmos::is12_versions::from_settings(model.settings);
+            return std::any_of(is12_versions.begin(), is12_versions.end(), [&ws_ncp_path](const nmos::api_version& version)
+            {
+                return ws_ncp_path == U("/x-nmos/ncp/") + nmos::make_api_version(version);
+            });
         };
     }
 
