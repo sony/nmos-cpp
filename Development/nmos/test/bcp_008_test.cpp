@@ -18,7 +18,7 @@ namespace nmos
         namespace details
         {
             // Internal helper under test; kept out of the public header
-            bool set_receiver_monitor_stream_status_internal(resources& resources, nc_oid oid, nmos::nc_stream_status::status stream_status, const utility::string_t& stream_status_message, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, slog::base_gate& gate);
+            bool set_monitor_status_internal(resources& resources, nc_oid oid, int status, const utility::string_t& status_message, const experimental::monitor_domain& domain, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, get_monitor_domains_handler get_monitor_domains, slog::base_gate& gate);
         }
     }
 }
@@ -540,10 +540,11 @@ BST_TEST_CASE(testStatusTransitionWithinReportDelay)
     // unhealthy (3) -> { healthy (1) -> unhealthy (3) : within the 3 second status reporting delay }
 
     // Step 1: Set initial status to unhealthy (3)
-    BST_REQUIRE(nmos::nc::details::set_receiver_monitor_stream_status_internal(control_protocol_resources, monitor_oid,
+    BST_REQUIRE(nmos::nc::details::set_monitor_status_internal(control_protocol_resources, monitor_oid,
         nmos::nc_stream_status::status::unhealthy,
         U("Initial unhealthy status"),
-        get_control_protocol_class_descriptor, gate));
+        nmos::experimental::make_receiver_monitor_domains().at(1),
+        get_control_protocol_class_descriptor, {}, gate));
 
     // Verify initial status is unhealthy
     auto current_status = nmos::nc::get_property(control_protocol_resources, monitor_oid,
