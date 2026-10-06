@@ -447,7 +447,8 @@ namespace nmos
 
         inline connection_resource_patch_response make_connection_resource_patch_error_response(web::http::status_code code, const std::exception& debug)
         {
-            return make_connection_resource_patch_error_response(code, {}, utility::s2us(debug.what()));
+            // what() is a narrow platform string with no UTF-8 guarantee
+            return make_connection_resource_patch_error_response(code, {}, utility::s2us_lenient(debug.what()));
         }
 
         // Basic theory of implementation of PATCH /staged

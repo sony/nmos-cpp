@@ -84,7 +84,8 @@ namespace nmos
 
         inline channelmapping_activation_post_response make_channelmapping_activation_post_error_response(web::http::status_code code, const std::exception& debug)
         {
-            return make_channelmapping_activation_post_error_response(code, {}, utility::s2us(debug.what()));
+            // what() is a narrow platform string with no UTF-8 guarantee
+            return make_channelmapping_activation_post_error_response(code, {}, utility::s2us_lenient(debug.what()));
         }
 
         inline utility::string_t make_channelmapping_input_error(const nmos::channelmapping_id& input_id)
