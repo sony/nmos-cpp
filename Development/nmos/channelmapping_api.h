@@ -52,7 +52,7 @@ namespace nmos
 
     // Update the IS-04 source or device after the active map is changed in any way
     // (This function should be called after nmos::set_channelmapping_output_active.)
-    void set_resource_version(nmos::resource& node_resource, const nmos::tai& activation_time);
+    void set_resource_version(const nmos::resources& node_resources, nmos::resource& node_resource, const nmos::tai& activation_time);
 
     // Channel Mapping API implementation details
     namespace details
