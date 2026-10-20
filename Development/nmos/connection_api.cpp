@@ -559,6 +559,8 @@ namespace nmos
                 }
                 else
                 {
+                    slog::log<slog::severities::error>(gate, SLOG_FLF) << "Rejecting PATCH request for " << id_type << " since the API version is not a permitted downgrade";
+
                     // experimental extension, proposed for v1.1, to distinguish from Not Found
                     return details::make_connection_resource_patch_error_response(status_codes::Conflict, U("Conflict; ") + details::make_permitted_downgrade_error(*resource, version));
                     // hmm, no way to pass the Location header back
@@ -1096,11 +1098,7 @@ namespace nmos
 
                         if (status_codes::NotFound == result.first)
                         {
-                            slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Resource not found for " << std::make_pair(id, type) << " in bulk request";
-                        }
-                        else if (status_codes::Conflict == result.first)
-                        {
-                            slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Resource conflict for " << std::make_pair(id, type) << " in bulk request";
+                            slog::log<slog::severities::error>(gate, SLOG_FLF) << "Resource not found for " << std::make_pair(id, type) << " in bulk request";
                         }
                     }
                     catch (...)
