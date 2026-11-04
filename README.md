@@ -144,6 +144,7 @@ The implementation is designed to be extended. Development is ongoing, following
 
 Recent activity on the project (newest first):
 
+- Added support for the VSF TR-10-1 IPMX SDP format-specific parameters (`IPMX`, `measuredpixclk`, `vtotal`, `htotal` and `measuredsamplerate`), which can be demonstrated with **nmos-cpp-node** by using `"ipmx": true`
 - Added support for IS-13 NMOS Annotation
 - Added support for BCP-007-03 NMOS With MXL
 - Added support for IS-14 NMOS Device Configuration
