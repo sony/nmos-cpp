@@ -33,7 +33,8 @@ namespace nmos
         // see https://specs.amwa.tv/is-04/releases/v1.2.1/docs/4.1._Behaviour_-_Registration.html#referential-integrity
         const std::vector<type> all{ nmos::types::node, nmos::types::device, nmos::types::source, nmos::types::flow, nmos::types::sender, nmos::types::receiver, nmos::types::subscription, nmos::types::grain };
 
-        // the Channel Mapping API resource types, see nmos/channelmapping_resources.h
+        // the Channel Mapping API resource types, see nmos/channelmapping_resources.h and
+        // the Stream Compatibility Management API resource types, see nmos/streamcompatibility_resources.h
         const type input{ U("input") };
         const type output{ U("output") };
 
