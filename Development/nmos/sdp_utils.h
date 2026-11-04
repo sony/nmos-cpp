@@ -450,7 +450,13 @@ namespace nmos
         sdp::timestamp_mode tsmode; // if omitted (empty), assume sdp::timestamp_modes::NEW
         bst::optional<uint32_t> tsdelay;
 
-        video_raw_parameters() : depth(), width(), height(), interlace(), segmented(), troff(), cmax(), maxudp(), tsdelay() {}
+        // additional fmtp parameters from VSF TR-10-1:2024 (IPMX)
+        bool ipmx;
+        uint64_t measuredpixclk; // if omitted (zero), the sender's output is not based upon the conversion of a Baseband signal
+        uint32_t vtotal; // if omitted (zero), as above
+        uint32_t htotal; // if omitted (zero), as above
+
+        video_raw_parameters() : depth(), width(), height(), interlace(), segmented(), troff(), cmax(), maxudp(), tsdelay(), ipmx(), measuredpixclk(), vtotal(), htotal() {}
 
         video_raw_parameters(
             sdp::sampling sampling,
@@ -471,7 +477,11 @@ namespace nmos
             uint32_t cmax,
             uint32_t maxudp,
             sdp::timestamp_mode tsmode,
-            bst::optional<uint32_t> tsdelay
+            bst::optional<uint32_t> tsdelay,
+            bool ipmx = false,
+            uint64_t measuredpixclk = 0,
+            uint32_t vtotal = 0,
+            uint32_t htotal = 0
         )
             : sampling(std::move(sampling))
             , depth(depth)
@@ -492,6 +502,10 @@ namespace nmos
             , maxudp(maxudp)
             , tsmode(tsmode)
             , tsdelay(tsdelay)
+            , ipmx(ipmx)
+            , measuredpixclk(measuredpixclk)
+            , vtotal(vtotal)
+            , htotal(htotal)
         {}
 
         // deprecated
@@ -524,7 +538,11 @@ namespace nmos
         // ptime
         double packet_time;
 
-        audio_L_parameters() : channel_count(), bit_depth(), sample_rate(), tsdelay(), packet_time() {}
+        // additional fmtp parameters from VSF TR-10-1:2024 (IPMX)
+        bool ipmx;
+        uint32_t measuredsamplerate; // if omitted (zero), the sender's output is not based upon the conversion of a Baseband signal
+
+        audio_L_parameters() : channel_count(), bit_depth(), sample_rate(), tsdelay(), packet_time(), ipmx(), measuredsamplerate() {}
 
         audio_L_parameters(
             uint32_t channel_count,
@@ -533,7 +551,9 @@ namespace nmos
             utility::string_t channel_order,
             sdp::timestamp_mode tsmode,
             bst::optional<uint32_t> tsdelay,
-            double packet_time
+            double packet_time,
+            bool ipmx = false,
+            uint32_t measuredsamplerate = 0
         )
             : channel_count(channel_count)
             , bit_depth(bit_depth)
@@ -542,6 +562,8 @@ namespace nmos
             , tsmode(std::move(tsmode))
             , tsdelay(tsdelay)
             , packet_time(packet_time)
+            , ipmx(ipmx)
+            , measuredsamplerate(measuredsamplerate)
         {}
 
         // deprecated
@@ -574,7 +596,10 @@ namespace nmos
         sdp::timestamp_mode tsmode; // if omitted (empty), assume sdp::timestamp_modes::NEW
         bst::optional<uint32_t> tsdelay;
 
-        video_smpte291_parameters() : vpid_code(), troff(), tsdelay() {}
+        // additional fmtp parameters from VSF TR-10-1:2024 (IPMX)
+        bool ipmx;
+
+        video_smpte291_parameters() : vpid_code(), troff(), tsdelay(), ipmx() {}
 
         video_smpte291_parameters(
             std::vector<nmos::did_sdid> did_sdids,
@@ -584,7 +609,8 @@ namespace nmos
             sdp::smpte_standard_number ssn,
             bst::optional<uint32_t> troff,
             sdp::timestamp_mode tsmode,
-            bst::optional<uint32_t> tsdelay
+            bst::optional<uint32_t> tsdelay,
+            bool ipmx = false
         )
             : did_sdids(std::move(did_sdids))
             , vpid_code(vpid_code)
@@ -594,6 +620,7 @@ namespace nmos
             , troff(troff)
             , tsmode(std::move(tsmode))
             , tsdelay(tsdelay)
+            , ipmx(ipmx)
         {}
 
         // deprecated

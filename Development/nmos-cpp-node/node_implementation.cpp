@@ -132,6 +132,11 @@ namespace impl
         // smpte2022_7: controls whether senders and receivers have one leg (false) or two legs (true, default)
         const web::json::field_as_bool_or smpte2022_7{ U("smpte2022_7"), true };
 
+        // ipmx: controls whether the SDP files of the RTP senders include the IPMX declaration (true) or not (false, default)
+        // and, for video and audio senders, the parameters required when the sender's output is based upon the conversion
+        // of a Baseband signal, see VSF TR-10-1:2024 Section 10
+        const web::json::field_as_bool_or ipmx{ U("ipmx"), false };
+
         // simulate_status_monitor_activity: when true status monitor statuses will change randomly after activation
         const web::json::field_as_bool_or simulate_status_monitor_activity{U("simulate_status_monitor_activity"), true};
 
@@ -140,6 +145,12 @@ namespace impl
     }
 
     nmos::interlace_mode get_interlace_mode(const nmos::settings& settings);
+
+    // add the IPMX declaration and the parameters for a sender whose output is based upon the conversion of a Baseband signal
+    // see VSF TR-10-1:2024 Section 10
+    void set_ipmx_parameters(nmos::video_raw_parameters& params);
+    void set_ipmx_parameters(nmos::video_jxsv_parameters& params);
+    void set_ipmx_parameters(nmos::audio_L_parameters& params);
 
     // the different kinds of 'port' (standing for the format/media type/event type) implemented by the example node
     // each 'port' of the example node has a source, flow, sender and/or compatible receiver
@@ -2164,9 +2175,10 @@ nmos::connection_sender_transportfile_setter make_node_implementation_transportf
     const auto rtp_source_ids = impl::make_ids(seed_id, nmos::types::source, rtp_sender_ports, how_many);
     const auto rtp_flow_ids = impl::make_ids(seed_id, nmos::types::flow, rtp_sender_ports, how_many);
     const auto rtp_sender_ids = impl::make_ids(seed_id, nmos::types::sender, rtp_sender_ports, how_many);
+    const auto ipmx = impl::fields::ipmx(settings);
 
     // as part of activation, the example sender /transportfile should be updated based on the active transport parameters
-    return [&node_resources, node_id, rtp_source_ids, rtp_flow_ids, rtp_sender_ids](const nmos::resource& sender, const nmos::resource& connection_sender, value& endpoint_transportfile)
+    return [&node_resources, node_id, rtp_source_ids, rtp_flow_ids, rtp_sender_ids, ipmx](const nmos::resource& sender, const nmos::resource& connection_sender, value& endpoint_transportfile)
     {
         const auto found = boost::range::find(rtp_sender_ids, connection_sender.id);
         if (rtp_sender_ids.end() != found)
@@ -2200,11 +2212,17 @@ nmos::connection_sender_transportfile_setter make_node_implementation_transportf
                     const nmos::media_type video_type{ nmos::fields::media_type(flow->data) };
                     if (nmos::media_types::video_raw == video_type)
                     {
-                        return nmos::make_video_sdp_parameters(node->data, source->data, flow->data, sender.data, nmos::details::payload_type_video_default, mids, {}, sdp::type_parameters::type_N);
+                        if (!ipmx) return nmos::make_video_sdp_parameters(node->data, source->data, flow->data, sender.data, nmos::details::payload_type_video_default, mids, {}, sdp::type_parameters::type_N);
+
+                        auto params = nmos::make_video_raw_parameters(node->data, source->data, flow->data, sender.data, sdp::type_parameters::type_N);
+                        impl::set_ipmx_parameters(params);
+                        const auto ts_refclk = nmos::details::make_ts_refclk(node->data, source->data, sender.data, {});
+                        return nmos::make_sdp_parameters(nmos::fields::label(sender.data), params, nmos::details::payload_type_video_default, mids, ts_refclk);
                     }
                     else if (nmos::media_types::video_jxsv == video_type)
                     {
-                        const auto params = nmos::make_video_jxsv_parameters(node->data, source->data, flow->data, sender.data);
+                        auto params = nmos::make_video_jxsv_parameters(node->data, source->data, flow->data, sender.data);
+                        if (ipmx) impl::set_ipmx_parameters(params);
                         const auto ts_refclk = nmos::details::make_ts_refclk(node->data, source->data, sender.data, {});
                         return nmos::make_sdp_parameters(nmos::fields::label(sender.data), params, nmos::details::payload_type_video_default, mids, ts_refclk);
                     }
@@ -2217,11 +2235,21 @@ nmos::connection_sender_transportfile_setter make_node_implementation_transportf
                 {
                     // this example application doesn't actually stream, so just indicate a sensible value for packet time
                     const double packet_time = nmos::fields::channels(source->data).size() > 8 ? 0.125 : 1;
-                    return nmos::make_audio_sdp_parameters(node->data, source->data, flow->data, sender.data, nmos::details::payload_type_audio_default, mids, {}, packet_time);
+                    if (!ipmx) return nmos::make_audio_sdp_parameters(node->data, source->data, flow->data, sender.data, nmos::details::payload_type_audio_default, mids, {}, packet_time);
+
+                    auto params = nmos::make_audio_L_parameters(node->data, source->data, flow->data, sender.data, packet_time);
+                    impl::set_ipmx_parameters(params);
+                    const auto ts_refclk = nmos::details::make_ts_refclk(node->data, source->data, sender.data, {});
+                    return nmos::make_sdp_parameters(nmos::fields::label(sender.data), params, nmos::details::payload_type_audio_default, mids, ts_refclk);
                 }
                 else if (nmos::formats::data == format)
                 {
-                    return nmos::make_data_sdp_parameters(node->data, source->data, flow->data, sender.data, nmos::details::payload_type_data_default, mids, {}, {});
+                    if (!ipmx) return nmos::make_data_sdp_parameters(node->data, source->data, flow->data, sender.data, nmos::details::payload_type_data_default, mids, {}, {});
+
+                    auto params = nmos::make_video_smpte291_parameters(node->data, source->data, flow->data, sender.data, {});
+                    params.ipmx = true;
+                    const auto ts_refclk = nmos::details::make_ts_refclk(node->data, source->data, sender.data, {});
+                    return nmos::make_sdp_parameters(nmos::fields::label(sender.data), params, nmos::details::payload_type_data_default, mids, ts_refclk);
                 }
                 else if (nmos::formats::mux == format)
                 {
@@ -2481,6 +2509,58 @@ nmos::create_device_model_object_handler make_create_device_model_object_handler
 
 namespace impl
 {
+    // nominal total (active and blanking) pixels per line and lines per frame of common Baseband video formats
+    // see SMPTE ST 296 (720-line), SMPTE ST 274 (1080-line) and SMPTE ST 2036-1/CTA-861 (2160-line) raster timings
+    static std::pair<uint32_t, uint32_t> get_baseband_htotal_vtotal(uint32_t width, uint32_t height, const nmos::rational& frame_rate)
+    {
+        // the 1/1.001 variants have the same raster as the integer frame rates
+        const auto rate = 0 != frame_rate.denominator() ? (frame_rate.numerator() + frame_rate.denominator() / 2) / frame_rate.denominator() : 0;
+        const auto index = 24 == rate ? 0 : 25 == rate ? 1 : 30 == rate ? 2 : 50 == rate ? 3 : 60 == rate ? 4 : -1;
+        if (0 > index) return{};
+
+        //                             24     25     30     50     60
+        const uint32_t htotal_720[]  { 4125,  3960,  3300,  1980,  1650 };
+        const uint32_t htotal_1080[] { 2750,  2640,  2200,  2640,  2200 };
+        const uint32_t htotal_2160[] { 5500,  5280,  4400,  5280,  4400 };
+
+        if (1280 == width && 720 == height) return{ htotal_720[index], 750 };
+        if (1920 == width && 1080 == height) return{ htotal_1080[index], 1125 };
+        if (3840 == width && 2160 == height) return{ htotal_2160[index], 2250 };
+        return{};
+    }
+
+    template <typename VideoParameters>
+    static void set_ipmx_video_parameters(VideoParameters& params)
+    {
+        params.ipmx = true;
+
+        // this example application doesn't actually convert a Baseband signal, so indicate the nominal values for common formats
+        // rather than measured values; the frame rate is used for interlaced formats too because vtotal includes both fields
+        const auto totals = get_baseband_htotal_vtotal(params.width, params.height, params.exactframerate);
+        if (0 == totals.first) return;
+        params.htotal = totals.first;
+        params.vtotal = totals.second;
+        params.measuredpixclk = (uint64_t(params.htotal) * params.vtotal * params.exactframerate.numerator() + params.exactframerate.denominator() / 2) / params.exactframerate.denominator();
+    }
+
+    void set_ipmx_parameters(nmos::video_raw_parameters& params)
+    {
+        set_ipmx_video_parameters(params);
+    }
+
+    void set_ipmx_parameters(nmos::video_jxsv_parameters& params)
+    {
+        set_ipmx_video_parameters(params);
+    }
+
+    void set_ipmx_parameters(nmos::audio_L_parameters& params)
+    {
+        params.ipmx = true;
+
+        // this example application doesn't actually convert a Baseband signal, so indicate the nominal sample rate
+        params.measuredsamplerate = (uint32_t)params.sample_rate;
+    }
+
     nmos::interlace_mode get_interlace_mode(const nmos::settings& settings)
     {
         if (settings.has_field(impl::fields::interlace_mode))

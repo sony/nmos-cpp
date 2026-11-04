@@ -1015,6 +1015,12 @@ namespace nmos
         if (!params.tsmode.empty()) fmtp.push_back({ sdp::fields::timestamp_mode, params.tsmode.name });
         if (params.tsdelay) fmtp.push_back({ sdp::fields::timestamp_delay, utility::ostringstreamed(*params.tsdelay) });
 
+        // additional parameters for IPMX, following the order in the examples given in VSF TR-10-1:2024 Section 10
+        if (params.ipmx) fmtp.push_back({ sdp::fields::IPMX, {} });
+        if (0 != params.measuredpixclk) fmtp.push_back({ sdp::fields::measuredpixclk, utility::ostringstreamed(params.measuredpixclk) });
+        if (0 != params.vtotal) fmtp.push_back({ sdp::fields::vtotal, utility::ostringstreamed(params.vtotal) });
+        if (0 != params.htotal) fmtp.push_back({ sdp::fields::htotal, utility::ostringstreamed(params.htotal) });
+
         return{ session_name, sdp::media_types::video, rtpmap, fmtp, {}, {}, {}, {}, media_stream_ids, ts_refclk };
     }
 
@@ -1031,6 +1037,10 @@ namespace nmos
         if (!params.channel_order.empty()) fmtp.push_back({ sdp::fields::channel_order, params.channel_order });
         if (!params.tsmode.empty()) fmtp.push_back({ sdp::fields::timestamp_mode, params.tsmode.name });
         if (params.tsdelay) fmtp.push_back({ sdp::fields::timestamp_delay, utility::ostringstreamed(*params.tsdelay) });
+
+        // additional parameters for IPMX, see VSF TR-10-1:2024 Section 10
+        if (params.ipmx) fmtp.push_back({ sdp::fields::IPMX, {} });
+        if (0 != params.measuredsamplerate) fmtp.push_back({ sdp::fields::measuredsamplerate, utility::ostringstreamed(params.measuredsamplerate) });
 
         return{ session_name, sdp::media_types::audio, rtpmap, fmtp, {}, params.packet_time, {}, {}, media_stream_ids, ts_refclk };
     }
@@ -1055,6 +1065,9 @@ namespace nmos
         if (params.troff) fmtp.push_back({ sdp::fields::TROFF, utility::ostringstreamed(*params.troff) });
         if (!params.tsmode.empty()) fmtp.push_back({ sdp::fields::timestamp_mode, params.tsmode.name });
         if (params.tsdelay) fmtp.push_back({ sdp::fields::timestamp_delay, utility::ostringstreamed(*params.tsdelay) });
+
+        // additional parameters for IPMX, see VSF TR-10-1:2024 Section 10.1
+        if (params.ipmx) fmtp.push_back({ sdp::fields::IPMX, {} });
 
         return{ session_name, sdp::media_types::video, rtpmap, fmtp, {}, {}, {}, {}, media_stream_ids, ts_refclk };
     }
@@ -1894,6 +1907,25 @@ namespace nmos
         const auto tsdelay = details::find_fmtp(sdp_params.fmtp, sdp::fields::timestamp_delay);
         if (sdp_params.fmtp.end() != tsdelay) params.tsdelay = utility::istringstreamed<uint32_t>(tsdelay->second);
 
+        // See VSF TR-10-1:2024 Section 10.1 IPMX Sender Signaling
+        // and Section 10.2 Baseband Video IPMX Sender Signaling
+
+        // optional
+        const auto ipmx = details::find_fmtp(sdp_params.fmtp, sdp::fields::IPMX);
+        params.ipmx = sdp_params.fmtp.end() != ipmx;
+
+        // optional
+        const auto measuredpixclk = details::find_fmtp(sdp_params.fmtp, sdp::fields::measuredpixclk);
+        if (sdp_params.fmtp.end() != measuredpixclk) params.measuredpixclk = utility::istringstreamed<uint64_t>(measuredpixclk->second);
+
+        // optional
+        const auto vtotal = details::find_fmtp(sdp_params.fmtp, sdp::fields::vtotal);
+        if (sdp_params.fmtp.end() != vtotal) params.vtotal = utility::istringstreamed<uint32_t>(vtotal->second);
+
+        // optional
+        const auto htotal = details::find_fmtp(sdp_params.fmtp, sdp::fields::htotal);
+        if (sdp_params.fmtp.end() != htotal) params.htotal = utility::istringstreamed<uint32_t>(htotal->second);
+
         return params;
     }
 
@@ -1939,6 +1971,17 @@ namespace nmos
 
         // optional
         params.packet_time = sdp_params.packet_time;
+
+        // See VSF TR-10-1:2024 Section 10.1 IPMX Sender Signaling
+        // and Section 10.3 Baseband Audio Sender Signaling
+
+        // optional
+        const auto ipmx = details::find_fmtp(sdp_params.fmtp, sdp::fields::IPMX);
+        params.ipmx = sdp_params.fmtp.end() != ipmx;
+
+        // optional
+        const auto measuredsamplerate = details::find_fmtp(sdp_params.fmtp, sdp::fields::measuredsamplerate);
+        if (sdp_params.fmtp.end() != measuredsamplerate) params.measuredsamplerate = utility::istringstreamed<uint32_t>(measuredsamplerate->second);
 
         return params;
     }
@@ -1988,6 +2031,10 @@ namespace nmos
         // optional
         const auto tsdelay = details::find_fmtp(sdp_params.fmtp, sdp::fields::timestamp_delay);
         if (sdp_params.fmtp.end() != tsdelay) params.tsdelay = utility::istringstreamed<uint32_t>(tsdelay->second);
+
+        // optional, see VSF TR-10-1:2024 Section 10.1 IPMX Sender Signaling
+        const auto ipmx = details::find_fmtp(sdp_params.fmtp, sdp::fields::IPMX);
+        params.ipmx = sdp_params.fmtp.end() != ipmx;
 
         return params;
     }
