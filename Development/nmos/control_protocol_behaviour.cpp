@@ -103,6 +103,11 @@ namespace nmos
 
                         current_time = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
 
+                        // the model's lock was released while waiting, so status monitors may have been removed meanwhile (e.g. with
+                        // their device): get them again, since a removed monitor has no properties to read
+                        descriptors = web::json::value::array();
+                        nmos::nc::find_members_by_class_id(control_protocol_resources, *found, nmos::nc_status_monitor_class_id, true, true, descriptors.as_array());
+
                         monitors_updates_pending = false;
 
                         // update statuses

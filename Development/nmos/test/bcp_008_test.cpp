@@ -608,3 +608,113 @@ BST_TEST_CASE(testStatusTransitionWithinReportDelay)
         gate);
     BST_CHECK_EQUAL(0, pending_received_time.as_integer());
 }
+
+////////////////////////////////////////////////////////////////////////////////////////////
+BST_TEST_CASE(testStatusMonitorRemovedWhileStatusPending)
+{
+    // Test scenario: two receiver monitors' stream statuses transition from unhealthy (3) to healthy (1), which is
+    // held pending for the 3 second report delay. Within the delay, one monitor is removed (e.g. with its receiver),
+    // while the behaviour thread is waiting for the pending statuses. The other monitor's status should still be
+    // reported, rather than the thread reading the removed monitor's properties.
+
+    boost::iostreams::stream<boost::iostreams::null_sink> null_ostream((boost::iostreams::null_sink()));
+    nmos::experimental::log_model log_model;
+    nmos::experimental::log_gate gate(null_ostream, null_ostream, log_model);
+
+    nmos::node_model model;
+    nmos::experimental::control_protocol_state control_protocol_state;
+    auto& control_protocol_resources = model.control_protocol_resources;
+    auto get_control_protocol_class_descriptor = nmos::make_get_control_protocol_class_descriptor_handler(control_protocol_state);
+    auto set_receiver_monitor_stream_status = nmos::make_set_receiver_monitor_stream_status_handler(control_protocol_resources, control_protocol_state, gate);
+
+    // Create Device Model
+    // root
+    auto root_block = nmos::make_root_block();
+    auto root_block_oid = nmos::root_block_oid;
+    // root, ClassManager
+    auto class_manager_oid = ++root_block_oid;
+    auto class_manager = nmos::make_class_manager(class_manager_oid, control_protocol_state);
+    // root, the monitors
+    const auto removed_monitor_oid = ++class_manager_oid;
+    const auto kept_monitor_oid = removed_monitor_oid + 1;
+    auto removed_monitor = nmos::make_receiver_monitor(removed_monitor_oid, true, nmos::root_block_oid, U("removed"), U("removed"), U("removed"), web::json::value::null());
+    auto kept_monitor = nmos::make_receiver_monitor(kept_monitor_oid, true, nmos::root_block_oid, U("kept"), U("kept"), U("kept"), web::json::value::null());
+
+    nmos::nc::push_back(root_block, class_manager);
+    nmos::nc::push_back(root_block, removed_monitor);
+    nmos::nc::push_back(root_block, kept_monitor);
+    insert_resource(control_protocol_resources, std::move(root_block));
+    insert_resource(control_protocol_resources, std::move(class_manager));
+    insert_resource(control_protocol_resources, std::move(removed_monitor));
+    insert_resource(control_protocol_resources, std::move(kept_monitor));
+
+    // Set initial activation time to simulate monitors have been active long enough
+    auto now_time = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
+    for (const auto oid : { removed_monitor_oid, kept_monitor_oid })
+    {
+        BST_REQUIRE(nmos::nc::set_property(control_protocol_resources, oid,
+            nmos::fields::nc::monitor_activation_time,
+            web::json::value::number(now_time - 10),
+            gate));
+
+        // Set initial status to unhealthy (3)
+        BST_REQUIRE(nmos::nc::details::set_monitor_status_internal(control_protocol_resources, oid,
+            nmos::nc_stream_status::status::unhealthy,
+            U("Initial unhealthy status"),
+            nmos::experimental::make_receiver_monitor_domains().at(1),
+            get_control_protocol_class_descriptor, {}, gate));
+    }
+
+    // Start control_protocol_behaviour_thread to process the pending statuses
+    std::thread behaviour_thread([&model, &control_protocol_state, &gate]()
+        {
+            nmos::experimental::control_protocol_behaviour_thread(model, control_protocol_state, gate);
+        });
+
+    // Step 1: Transition both to healthy (1), which is held pending for the status reporting delay
+    {
+        auto lock = model.write_lock();
+        for (const auto oid : { removed_monitor_oid, kept_monitor_oid })
+        {
+            BST_REQUIRE(set_receiver_monitor_stream_status(oid, nmos::nc_stream_status::status::healthy, U("Transitioning to healthy")));
+        }
+        model.notify();
+    }
+
+    // Step 2: Within the delay window, while the behaviour thread is waiting, remove one of the monitors,
+    // from the resources and from its block's members
+    std::this_thread::sleep_for(std::chrono::seconds(1));
+    {
+        auto lock = model.write_lock();
+        BST_REQUIRE_EQUAL(1, nmos::nc::erase_resource(control_protocol_resources, utility::s2us(std::to_string(removed_monitor_oid))));
+        BST_REQUIRE(nmos::nc::modify_resource(control_protocol_resources, utility::s2us(std::to_string(nmos::root_block_oid)), [&](nmos::resource& block)
+            {
+                auto members = web::json::value::array();
+                for (const auto& member : nmos::fields::nc::members(block.data))
+                {
+                    if (removed_monitor_oid != nmos::fields::nc::oid(member)) web::json::push_back(members, member);
+                }
+                block.data[nmos::fields::nc::members] = members;
+            }));
+        model.notify();
+    }
+
+    // Wait for the behaviour thread to process the pending statuses
+    // Wait slightly more than 3 seconds from the pending statuses
+    std::this_thread::sleep_for(std::chrono::seconds(4));
+
+    // Shutdown the model to stop the behaviour thread
+    model.controlled_shutdown();
+    behaviour_thread.join();
+
+    // Step 3: Verify the kept monitor's final status is healthy (1), and its pending received time has been reset to 0
+    auto final_status = nmos::nc::get_property(control_protocol_resources, kept_monitor_oid,
+        nmos::nc_receiver_monitor_stream_status_property_id,
+        get_control_protocol_class_descriptor, gate);
+    BST_CHECK_EQUAL(nmos::nc_stream_status::status::healthy, final_status.as_integer());
+
+    auto pending_received_time = nmos::nc::get_property(control_protocol_resources, kept_monitor_oid,
+        nmos::fields::nc::stream_status_pending_received_time,
+        gate);
+    BST_CHECK_EQUAL(0, pending_received_time.as_integer());
+}
