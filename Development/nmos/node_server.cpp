@@ -86,17 +86,23 @@ namespace nmos
             node_server.api_routers[{ {}, nmos::fields::configuration_port(node_model.settings) }].mount({}, nmos::make_configuration_api(node_model, validate_authorization ? validate_authorization(nmos::experimental::scopes::configuration) : nullptr, node_implementation.get_control_protocol_class_descriptor, node_implementation.get_control_protocol_datatype_descriptor, node_implementation.get_control_protocol_method_descriptor, node_implementation.create_validation_fingerprint, node_implementation.validate_validation_fingerprint, node_implementation.get_read_only_modification_allow_list, node_implementation.remove_device_model_object, node_implementation.create_device_model_object, node_implementation.control_protocol_property_changed, gate));
 
             const auto& events_ws_port = nmos::fields::events_ws_port(node_model.settings);
-            auto& events_ws_api = node_server.ws_handlers[{ {}, nmos::fields::events_ws_port(node_model.settings) }];
-            events_ws_api.first = nmos::make_events_ws_api(node_model, events_ws_api.second, node_implementation.ws_validate_authorization, gate);
-
-            // can't share a port between the events ws and the control protocol ws
             const auto& control_protocol_enabled = (0 <= nmos::fields::control_protocol_ws_port(node_model.settings));
             const auto& control_protocol_ws_port = nmos::fields::control_protocol_ws_port(node_model.settings);
+
+            static const utility::string_t events_ws_path_prefix{ U("/x-nmos/events/") };
+            static const utility::string_t control_protocol_ws_path_prefix{ U("/x-nmos/ncp/") };
+
+            // events ws handlers
+            {
+                auto& events_ws_entry = node_server.ws_handlers[{ {}, events_ws_port }][events_ws_path_prefix];
+                events_ws_entry.first = nmos::make_events_ws_api(node_model, events_ws_entry.second, node_implementation.ws_validate_authorization, gate);
+            }
+
+            // control protocol ws handlers
             if (control_protocol_enabled)
             {
-                if (control_protocol_ws_port == events_ws_port) throw std::runtime_error("Same port used for events and control protocol websockets are not supported");
-                auto& control_protocol_ws_api = node_server.ws_handlers[{ {}, control_protocol_ws_port }];
-                control_protocol_ws_api.first = nmos::make_control_protocol_ws_api(node_model, control_protocol_ws_api.second, node_implementation.ws_validate_authorization, node_implementation.get_control_protocol_class_descriptor, node_implementation.get_control_protocol_datatype_descriptor, node_implementation.get_control_protocol_method_descriptor, node_implementation.control_protocol_property_changed, gate);
+                auto& control_protocol_ws_entry = node_server.ws_handlers[{ {}, control_protocol_ws_port }][control_protocol_ws_path_prefix];
+                control_protocol_ws_entry.first = nmos::make_control_protocol_ws_api(node_model, control_protocol_ws_entry.second, node_implementation.ws_validate_authorization, node_implementation.get_control_protocol_class_descriptor, node_implementation.get_control_protocol_datatype_descriptor, node_implementation.get_control_protocol_method_descriptor, node_implementation.control_protocol_property_changed, gate);
             }
 
             // Set up the listeners for each HTTP API port
@@ -117,32 +123,25 @@ namespace nmos
             auto websocket_config = nmos::make_websocket_listener_config(node_model.settings, node_implementation.load_server_certificates, node_implementation.load_dh_param, node_implementation.get_ocsp_response, gate);
             websocket_config.set_log_callback(nmos::make_slog_logging_callback(gate));
 
-            size_t event_ws_pos{ 0 };
-            bool found_event_ws{ false };
-            size_t control_protocol_ws_pos{ 0 };
-            bool found_control_protocol_ws{ false };
             for (auto& ws_handler : node_server.ws_handlers)
             {
+                // combine the handlers for each API sharing this WebSocket port into one set of handlers
+                auto& api_handlers = ws_handler.second;
+                std::map<utility::string_t, web::websockets::experimental::listener::websocket_listener_handlers> path_handlers;
+                for (auto& api_handler : api_handlers)
+                {
+                    path_handlers[api_handler.first] = api_handler.second.first;
+                }
+                node_server.combined_ws_handlers.push_back(nmos::make_ws_api_router(path_handlers));
+
                 // if IP address isn't specified for this router, use default server address or wildcard address
                 const auto& host = !ws_handler.first.first.empty() ? ws_handler.first.first : !server_address.empty() ? server_address : web::websockets::experimental::listener::host_wildcard;
                 // map the configured client port to the server port on which to listen
                 // hmm, this should probably also take account of the address
-                node_server.ws_listeners.push_back(nmos::make_ws_api_listener(server_secure, host, nmos::experimental::server_port(ws_handler.first.second, node_model.settings), ws_handler.second.first, websocket_config, gate));
-
-                if (!found_event_ws)
-                {
-                    if (ws_handler.first.second == events_ws_port) { found_event_ws = true; }
-                    else { ++event_ws_pos; }
-                }
-
-                if (control_protocol_enabled && !found_control_protocol_ws)
-                {
-                    if (ws_handler.first.second == control_protocol_ws_port) { found_control_protocol_ws = true; }
-                    else { ++control_protocol_ws_pos; }
-                }
+                node_server.ws_listeners.insert({ ws_handler.first, nmos::make_ws_api_listener(server_secure, host, nmos::experimental::server_port(ws_handler.first.second, node_model.settings), node_server.combined_ws_handlers.back(), websocket_config, gate) });
             }
 
-            auto& events_ws_listener = node_server.ws_listeners.at(event_ws_pos);
+            auto& events_ws_listener = node_server.ws_listeners.at({ {}, events_ws_port });
 
             // Set up node operation (including the DNS-SD advertisements)
 
@@ -154,9 +153,10 @@ namespace nmos
             auto monitor_connection_activated = node_implementation.monitor_connection_activated;
             auto channelmapping_activated = node_implementation.channelmapping_activated;
             auto get_authorization_bearer_token = node_implementation.get_authorization_bearer_token;
+            auto& event_ws = node_server.ws_handlers.at({ {}, events_ws_port }).at(events_ws_path_prefix).second;
             node_server.thread_functions.assign({
                 [&, load_ca_certificates, registration_changed, get_authorization_bearer_token] { nmos::node_behaviour_thread(node_model, load_ca_certificates, registration_changed, get_authorization_bearer_token, gate); },
-                [&] { nmos::send_events_ws_messages_thread(events_ws_listener, node_model, events_ws_api.second, gate); },
+                [&] { nmos::send_events_ws_messages_thread(events_ws_listener, node_model, event_ws, gate); },
                 [&] { nmos::erase_expired_events_resources_thread(node_model, gate); },
                 [&, resolve_auto, set_transportfile, connection_activated, monitor_connection_activated] { nmos::connection_activation_thread(node_model, resolve_auto, set_transportfile, connection_activated, monitor_connection_activated, gate); },
                 [&, channelmapping_activated] { nmos::channelmapping_activation_thread(node_model, channelmapping_activated, gate); }
@@ -167,12 +167,11 @@ namespace nmos
             {
                 node_server.thread_functions.push_back([&, load_ca_certificates, system_changed] { nmos::node_system_behaviour_thread(node_model, load_ca_certificates, system_changed, gate); });
             }
-
             if (control_protocol_enabled)
             {
-                auto& control_protocol_ws_listener = node_server.ws_listeners.at(control_protocol_ws_pos);
-                auto& control_protocol_ws_api = node_server.ws_handlers.at({ {}, control_protocol_ws_port });
-                node_server.thread_functions.push_back([&] { nmos::send_control_protocol_ws_messages_thread(control_protocol_ws_listener, node_model, control_protocol_ws_api.second, gate); });
+                auto& control_protocol_ws_listener = node_server.ws_listeners.at({ {}, control_protocol_ws_port });
+                auto& control_protocol_ws = node_server.ws_handlers.at({ {}, control_protocol_ws_port }).at(control_protocol_ws_path_prefix).second;
+                node_server.thread_functions.push_back([&] { nmos::send_control_protocol_ws_messages_thread(control_protocol_ws_listener, node_model, control_protocol_ws, gate); });
             }
 
             return node_server;
