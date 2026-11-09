@@ -64,6 +64,10 @@
     // smpte2022_7: controls whether senders and receivers have one leg (false) or two legs (true, default)
     //"smpte2022_7": false,
 
+    // ipmx: controls whether the RTP receivers have the IPMX Link Offset Delay transport parameter (true) or not (false, default)
+    // see VSF TR-10-8:2026 Section 8
+    //"ipmx": true,
+
     // simulate_status_monitor_activity: when true status monitor statuses will change randomly after activation
     //"simulate_status_monitor_activity": true,
 

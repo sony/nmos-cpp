@@ -132,6 +132,10 @@ namespace impl
         // smpte2022_7: controls whether senders and receivers have one leg (false) or two legs (true, default)
         const web::json::field_as_bool_or smpte2022_7{ U("smpte2022_7"), true };
 
+        // ipmx: controls whether the RTP receivers have the IPMX Link Offset Delay transport parameter (true) or not (false, default)
+        // see VSF TR-10-8:2026 Section 8
+        const web::json::field_as_bool_or ipmx{ U("ipmx"), false };
+
         // simulate_status_monitor_activity: when true status monitor statuses will change randomly after activation
         const web::json::field_as_bool_or simulate_status_monitor_activity{U("simulate_status_monitor_activity"), true};
 
@@ -209,6 +213,13 @@ namespace impl
 
     // add an example "natural grouping" hint to a sender or receiver
     void insert_group_hint(nmos::resource& resource, const port& port, int index);
+
+    // example range of the IPMX Link Offset Delay (microseconds) while a receiver is active, based on VSF TR-10-8:2026 Section 8
+    const int link_offset_delay_minimum = 15;
+    const int link_offset_delay_maximum = 52;
+
+    // update the IPMX Link Offset Delay constraints and values of a receiver after it is activated or deactivated
+    void update_link_offset_delay(nmos::resource& connection_receiver);
 
     // specific event types used by the example node
     const auto temperature_Celsius = nmos::event_types::measurement(U("temperature"), U("C"));
@@ -444,6 +455,7 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
     const auto mxl_video_type = nmos::media_type{ impl::fields::mxl_video_type(model.settings) };
     const auto channel_count = impl::fields::channel_count(model.settings);
     const auto smpte2022_7 = impl::fields::smpte2022_7(model.settings);
+    const auto ipmx = impl::fields::ipmx(model.settings);
 
     // for now, some typical values for video/jxsv, based on VSF TR-08:2022
     // see https://vsf.tv/download/technical_recommendations/VSF_TR-08_2022-04-20.pdf
@@ -801,6 +813,19 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
             if (smpte2022_7) connection_receiver.data[nmos::fields::endpoint_constraints][1][nmos::fields::interface_ip] = value_of({
                 { nmos::fields::constraint_enum, value_from_elements(secondary_interface.addresses) }
             });
+            if (ipmx)
+            {
+                // an inactive IPMX receiver has no constraints on the Link Offset Delay, see impl::update_link_offset_delay
+                for (auto& constraints : connection_receiver.data[nmos::fields::endpoint_constraints].as_array())
+                {
+                    constraints[nmos::fields::ext_link_offset_delay] = value::object();
+                }
+                for (auto& params : connection_receiver.data[nmos::fields::endpoint_staged][nmos::fields::transport_params].as_array())
+                {
+                    params[nmos::fields::ext_link_offset_delay] = value::string(U("auto"));
+                }
+                connection_receiver.data[nmos::fields::endpoint_active][nmos::fields::transport_params] = connection_receiver.data[nmos::fields::endpoint_staged][nmos::fields::transport_params];
+            }
 
             resolve_auto(receiver, connection_receiver, connection_receiver.data[nmos::fields::endpoint_active][nmos::fields::transport_params]);
 
@@ -2125,6 +2150,12 @@ nmos::connection_resource_auto_resolver make_node_implementation_auto_resolver(c
                     // unconstrained: highest available in the schema
                     return value::string(U("2D"));
                 });
+                // VSF TR-10-8:2026 Section 8 defines "auto" as the minimum constraint, and the value of an inactive receiver as 0
+                // see impl::update_link_offset_delay
+                nmos::details::resolve_auto(params, nmos::fields::ext_link_offset_delay, [&] {
+                    const auto& constraint = constraints.at(leg).at(nmos::fields::ext_link_offset_delay);
+                    return constraint.has_field(nmos::fields::constraint_minimum) ? nmos::fields::constraint_minimum(constraint) : value(0);
+                });
             }
             // lastly, apply the specification defaults for any properties not handled above
             nmos::resolve_rtp_auto(id_type.second, transport_params);
@@ -2289,12 +2320,19 @@ nmos::connection_activation_handler make_node_implementation_connection_activati
     auto handle_close = nmos::experimental::make_events_ws_close_handler(model, gate);
     auto connection_events_activation_handler = nmos::make_connection_events_websocket_activation_handler(handle_load_ca_certificates, handle_events_ws_message, handle_close, model.settings, gate);
 
-    return [connection_events_activation_handler, &gate](const nmos::resource& resource, const nmos::resource& connection_resource)
+    return [connection_events_activation_handler, &model, &gate](const nmos::resource& resource, const nmos::resource& connection_resource)
     {
         const std::pair<nmos::id, nmos::type> id_type{ resource.id, resource.type };
         slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::stash_category(impl::categories::node_implementation) << "Activating " << id_type;
 
         connection_events_activation_handler(resource, connection_resource);
+
+        // this callback is called with the model write lock held, so the connection resource can be modified directly
+        // and the model is notified after it returns
+        if (nmos::types::receiver == connection_resource.type && nmos::fields::endpoint_constraints(connection_resource.data).at(0).has_field(nmos::fields::ext_link_offset_delay))
+        {
+            nmos::modify_resource(model.connection_resources, connection_resource.id, impl::update_link_offset_delay);
+        }
     };
 }
 
@@ -2620,6 +2658,42 @@ namespace impl
         web::json::push_back(resource.data[nmos::fields::tags][nmos::fields::group_hint], nmos::make_group_hint({ U("example"), resource.type.name + U(' ') + port.name + utility::conversions::details::to_string_t(index) }));
     }
 
+    // update the IPMX Link Offset Delay constraints and values of a receiver after it is activated or deactivated
+    // see VSF TR-10-8:2026 Section 8
+    // a real receiver would only know the range once it is receiving the stream, and would then make these changes itself
+    void update_link_offset_delay(nmos::resource& connection_receiver)
+    {
+        using web::json::value;
+        using web::json::value_of;
+
+        auto& constraints = connection_receiver.data[nmos::fields::endpoint_constraints];
+        auto& staged = connection_receiver.data[nmos::fields::endpoint_staged][nmos::fields::transport_params];
+        auto& active = connection_receiver.data[nmos::fields::endpoint_active];
+        const bool receiving = nmos::fields::master_enable(active);
+
+        for (size_t leg = 0; leg < constraints.size(); ++leg)
+        {
+            auto& staged_delay = staged[leg][nmos::fields::ext_link_offset_delay];
+            auto& active_delay = active[nmos::fields::transport_params][leg][nmos::fields::ext_link_offset_delay];
+            if (receiving)
+            {
+                // an active receiver specifies a minimum and maximum, and a value outside these is changed to the closest of them
+                constraints[leg][nmos::fields::ext_link_offset_delay] = value_of({
+                    { nmos::fields::constraint_minimum, link_offset_delay_minimum },
+                    { nmos::fields::constraint_maximum, link_offset_delay_maximum }
+                });
+                if (staged_delay.is_integer()) staged_delay = (std::min)((std::max)(staged_delay.as_integer(), link_offset_delay_minimum), link_offset_delay_maximum);
+                active_delay = staged_delay.is_integer() ? staged_delay : value(link_offset_delay_minimum);
+            }
+            else
+            {
+                // an inactive receiver does not specify constraints, and has a value of 0
+                constraints[leg][nmos::fields::ext_link_offset_delay] = value::object();
+                active_delay = 0;
+            }
+        }
+    }
+
     // JSON schema covering the example-node-specific impl::fields::* settings; combined with
     // nmos::validate_node_settings, this covers all the properties this example reads from the
     // settings JSON. additionalProperties is not set to false, so all other (standard) settings
@@ -2667,6 +2741,7 @@ namespace impl
         "channel_count": { "$ref": "#/definitions/positiveInteger" },
 
         "smpte2022_7":                      { "type": "boolean" },
+        "ipmx":                             { "type": "boolean" },
         "simulate_status_monitor_activity": { "type": "boolean" },
 
         "mxl_domain_id": { "$ref": "#/definitions/uuid" }
