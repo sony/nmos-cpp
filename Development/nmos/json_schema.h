@@ -26,6 +26,7 @@ namespace nmos
         web::uri make_connectionapi_staged_patch_request_schema_uri(const nmos::api_version& version, const nmos::type& type);
         web::uri make_connectionapi_sender_staged_patch_request_schema_uri(const nmos::api_version& version);
         web::uri make_connectionapi_receiver_staged_patch_request_schema_uri(const nmos::api_version& version);
+        web::uri make_connectionapi_transport_params_ext_register_schema_uri(const nmos::type& type);
 
         web::uri make_channelmappingapi_map_activations_post_request_schema_uri(const nmos::api_version& version);
 
