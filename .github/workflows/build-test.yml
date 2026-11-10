@@ -321,6 +321,31 @@ jobs:
       if: runner.os == 'Windows'
       uses: ilammy/msvc-dev-cmd@v1
 
+    - name: conan cache key
+      if: matrix.use_conan == true
+      id: conan-cache-key
+      shell: bash
+      run: |
+        # the compiler version as the CMake provider records it in the Conan host profile
+        if [[ "${{ runner.os }}" == "Windows" ]]; then
+          compiler=$( (cl 2>&1 >/dev/null || true) | sed -n 's/.*Version \([0-9]*\)\.\([0-9]\).*/\1\2/p' | head -1)
+        else
+          compiler=$(c++ -dumpfullversion | cut -d. -f1)
+        fi
+        test -n "$compiler"
+        echo "compiler=$compiler" >> "$GITHUB_OUTPUT"
+
+    # package binaries only, so that the profiles the CMake provider writes are not restored
+    - name: restore conan cache
+      if: matrix.use_conan == true
+      id: conan-cache
+      uses: actions/cache/restore@v6
+      with:
+        path: ~/.conan2/p
+        key: conan-${{ matrix.os }}-${{ steps.conan-cache-key.outputs.compiler }}-asio-${{ matrix.force_cpprest_asio }}-${{ hashFiles('Development/conanfile.txt', 'Development/third_party/cmake/conan_provider.cmake') }}
+        restore-keys: |
+          conan-${{ matrix.os }}-${{ steps.conan-cache-key.outputs.compiler }}-asio-${{ matrix.force_cpprest_asio }}-
+
     - name: build
       uses: lukka/run-cmake@v3.4
       with:
@@ -328,6 +353,20 @@ jobs:
         cmakeListsTxtPath: '${{ env.GITHUB_WORKSPACE }}/Development/CMakeLists.txt'
         buildDirectory: '${{ env.RUNNER_WORKSPACE }}/build/'
         cmakeAppendedArgs: '-GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="${{ env.RUNNER_WORKSPACE }}/install" ${{ env.CMAKE_COMPILER_ARGS }} ${{ env.CMAKE_EXTRA_ARGS }}'
+
+    # save the cleaned cache when this key is not already stored
+    - name: clean conan cache
+      if: matrix.use_conan == true && steps.conan-cache.outputs.cache-hit != 'true'
+      shell: bash
+      run: |
+        conan cache clean "*" --source --build --temp
+
+    - name: save conan cache
+      if: matrix.use_conan == true && steps.conan-cache.outputs.cache-hit != 'true'
+      uses: actions/cache/save@v6
+      with:
+        path: ~/.conan2/p
+        key: ${{ steps.conan-cache.outputs.cache-primary-key }}
 
     - name: dump conan lockfile
       if: matrix.use_conan == true
