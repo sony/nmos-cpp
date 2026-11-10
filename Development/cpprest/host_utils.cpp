@@ -331,7 +331,7 @@ namespace web
                 boost::system::error_code ec;
                 // for now, limited to IPv4
 #if BOOST_VERSION >= 106600
-                const auto results = resolver.resolve(boost::asio::ip::tcp::v4(), utility::conversions::to_utf8string(host_name), "", ec);
+                const auto results = resolver.resolve(boost::asio::ip::tcp::v4(), utility::conversions::to_utf8string(host_name), "", boost::asio::ip::resolver_base::address_configured, ec);
 #else
                 const auto results = resolver.resolve({ boost::asio::ip::tcp::v4(), utility::conversions::to_utf8string(host_name), "" }, ec);
 #endif

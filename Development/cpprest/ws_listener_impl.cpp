@@ -363,7 +363,7 @@ namespace web
                                     // retry, limiting ourselves to IPv4
                                     server.get_alog().write(websocketpp::log::alevel::app, "listening with IPv6 failed; retrying with IPv4 only");
 #if BOOST_VERSION >= 106600
-                                    const auto results = resolver.resolve(boost::asio::ip::tcp::v4(), host, service);
+                                    const auto results = resolver.resolve(boost::asio::ip::tcp::v4(), host, service, boost::asio::ip::resolver_base::address_configured);
                                     websocketpp::lib::asio::ip::tcp::endpoint endpoint = results.begin()->endpoint();
 #else
                                     websocketpp::lib::asio::ip::tcp::resolver::query query(boost::asio::ip::tcp::v4(), host, service);
