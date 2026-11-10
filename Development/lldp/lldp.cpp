@@ -99,7 +99,11 @@ namespace lldp
         static const bst::regex mac_regex(R"(([0-9a-fA-F]{2}-){5}([0-9a-fA-F]{2}))");
 
         boost::system::error_code ec;
-        auto addr = boost::asio::ip::address::from_string(address, ec);
+#if BOOST_VERSION >= 106600
+        const auto addr = boost::asio::ip::make_address(address, ec);
+#else
+        const auto addr = boost::asio::ip::address::from_string(address, ec);
+#endif
 
         if (!ec)
         {
