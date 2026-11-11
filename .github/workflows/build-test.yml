@@ -12,7 +12,7 @@ env:
   SECRET_RESULTS_SHEET_ID: ${{ secrets.RESULTS_SHEET_ID }}
 jobs:
   build_and_test:
-    name: '${{ matrix.os }}: build and test (install mdns: ${{ matrix.install_mdns }}, use conan: ${{ matrix.use_conan }}, force cpprest asio: ${{ matrix.force_cpprest_asio }}, dns-sd mode: ${{ matrix.dns_sd_mode}}, enable_authorization: ${{ matrix.enable_authorization }})'
+    name: '${{ matrix.os }}: build and test (install mdns: ${{ matrix.install_mdns }}, use conan: ${{ matrix.use_conan }}, force cpprest asio: ${{ matrix.force_cpprest_asio }}, dns-sd mode: ${{ matrix.dns_sd_mode}}, enable_authorization: ${{ matrix.enable_authorization }}, boost version: ${{ matrix.boost_version }})'
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -48,7 +48,17 @@ jobs:
             # don't force ASIO for ubuntu platforms
           - os: ubuntu-24.04
             force_cpprest_asio: true
-          
+        include:
+          # additional build to test against an older Boost release (1.65) that is no longer
+          # packaged by Ubuntu 24.04, so it is built from source instead of using conan
+          - os: ubuntu-24.04
+            install_mdns: false
+            use_conan: false
+            force_cpprest_asio: false
+            dns_sd_mode: multicast
+            enable_authorization: true
+            boost_version: '1.65.1'
+
     steps:
     - uses: actions/checkout@v3
 
@@ -63,15 +73,19 @@ jobs:
 
         if [[ "${{ runner.os }}"  == "Linux" ]]; then
           if [[ "${{ matrix.install_mdns }}" == "true" ]]; then
-            echo "BUILD_NAME=${{ matrix.os }}_mdns_${{ matrix.dns_sd_mode }}_$authorization_mode" >> $GITHUB_ENV
+            build_name="${{ matrix.os }}_mdns_${{ matrix.dns_sd_mode }}_$authorization_mode"
           else
-            echo "BUILD_NAME=${{ matrix.os }}_avahi_${{ matrix.dns_sd_mode }}_$authorization_mode" >> $GITHUB_ENV
+            build_name="${{ matrix.os }}_avahi_${{ matrix.dns_sd_mode }}_$authorization_mode"
           fi
         elif [[ "${{ matrix.force_cpprest_asio }}" == "true" ]]; then
-          echo "BUILD_NAME=${{ matrix.os }}_asio_$authorization_mode" >> $GITHUB_ENV
+          build_name="${{ matrix.os }}_asio_$authorization_mode"
         else
-          echo "BUILD_NAME=${{ matrix.os }}_$authorization_mode" >> $GITHUB_ENV
+          build_name="${{ matrix.os }}_$authorization_mode"
         fi
+        if [[ -n "${{ matrix.boost_version }}" ]]; then
+          build_name="${build_name}_boost${{ matrix.boost_version }}"
+        fi
+        echo "BUILD_NAME=$build_name" >> $GITHUB_ENV
         GITHUB_COMMIT=`echo "${{ github.sha }}" | cut -c1-7`
         echo "GITHUB_COMMIT=$GITHUB_COMMIT" >> $GITHUB_ENV
         echo "GITHUB_WORKSPACE=${{ github.workspace }}" >> $GITHUB_ENV
@@ -243,15 +257,30 @@ jobs:
       if: runner.os == 'Linux' && matrix.use_conan == false
       run: |
         sudo apt-get install -y \
-          libboost-chrono-dev \
-          libboost-date-time-dev \
-          libboost-regex-dev \
-          libboost-system-dev \
-          libboost-thread-dev \
-          libboost-random-dev \
-          libboost-filesystem-dev \
           openssl \
           libssl-dev
+
+        if [[ -n "${{ matrix.boost_version }}" ]]; then
+          # the requested Boost release is no longer packaged for this Ubuntu version, so build it from source
+          boost_version="${{ matrix.boost_version }}"
+          boost_version_underscored="${boost_version//./_}"
+          cd ${{ env.RUNNER_WORKSPACE }}
+          curl -L "https://archives.boost.io/release/${boost_version}/source/boost_${boost_version_underscored}.tar.gz" -o boost.tar.gz
+          mkdir boost && tar xzf boost.tar.gz -C boost --strip-components=1
+          cd boost
+          ./bootstrap.sh --with-libraries=chrono,date_time,regex,system,thread,random,filesystem
+          sudo ./b2 install -j 2
+          sudo ldconfig
+        else
+          sudo apt-get install -y \
+            libboost-chrono-dev \
+            libboost-date-time-dev \
+            libboost-regex-dev \
+            libboost-system-dev \
+            libboost-thread-dev \
+            libboost-random-dev \
+            libboost-filesystem-dev
+        fi    
 
         cd ${{ env.RUNNER_WORKSPACE }}
         git clone --recurse-submodules --branch v2.10.19 https://github.com/Microsoft/cpprestsdk
@@ -483,13 +512,6 @@ jobs:
           mv nmostesting/GenericTest.py nmostesting/GenericTest.py.old
           printf 'import socket\nold_getaddrinfo = socket.getaddrinfo\ndef new_getaddrinfo(host, port, family=0, type=0, proto=0, flags=0):\n    return old_getaddrinfo(host, port, socket.AF_INET, type, proto, flags)\nsocket.getaddrinfo = new_getaddrinfo\n' > nmostesting/GenericTest.py
           cat nmostesting/GenericTest.py.old >> nmostesting/GenericTest.py
-        fi
-
-        if [[ "${{ runner.os }}" == "Linux" && "${{ matrix.use_conan }}" == "false" ]]; then
-          # ubuntu 14 non-conan build uses boost 1.54.0 which doesn't support disabling TLS 1.1
-          mkdir -p ${{ env.GITHUB_WORKSPACE_BASH }}/Sandbox/nmos-testing-options/
-          echo "--ignore test_01" > ${{ env.GITHUB_WORKSPACE_BASH }}/Sandbox/nmos-testing-options/BCP-003-01.txt
-          echo "1" > ${{ env.GITHUB_WORKSPACE_BASH }}/Sandbox/nmos-testing-options/BCP-003-01_max_disabled.txt
         fi
 
         if [[ "${{ runner.os }}" == "Linux" ]]; then

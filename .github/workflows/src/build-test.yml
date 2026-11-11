@@ -12,7 +12,7 @@ env:
   SECRET_RESULTS_SHEET_ID: ${{ secrets.RESULTS_SHEET_ID }}
 jobs:
   build_and_test:
-    name: '${{ matrix.os }}: build and test (install mdns: ${{ matrix.install_mdns }}, use conan: ${{ matrix.use_conan }}, force cpprest asio: ${{ matrix.force_cpprest_asio }}, dns-sd mode: ${{ matrix.dns_sd_mode}}, enable_authorization: ${{ matrix.enable_authorization }})'
+    name: '${{ matrix.os }}: build and test (install mdns: ${{ matrix.install_mdns }}, use conan: ${{ matrix.use_conan }}, force cpprest asio: ${{ matrix.force_cpprest_asio }}, dns-sd mode: ${{ matrix.dns_sd_mode}}, enable_authorization: ${{ matrix.enable_authorization }}, boost version: ${{ matrix.boost_version }})'
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -48,7 +48,17 @@ jobs:
             # don't force ASIO for ubuntu platforms
           - os: ubuntu-24.04
             force_cpprest_asio: true
-          
+        include:
+          # additional build to test against an older Boost release (1.65) that is no longer
+          # packaged by Ubuntu 24.04, so it is built from source instead of using conan
+          - os: ubuntu-24.04
+            install_mdns: false
+            use_conan: false
+            force_cpprest_asio: false
+            dns_sd_mode: multicast
+            enable_authorization: true
+            boost_version: '1.65.1'
+
     steps:
     - uses: actions/checkout@v3
 
@@ -63,15 +73,19 @@ jobs:
 
         if [[ "${{ runner.os }}"  == "Linux" ]]; then
           if [[ "${{ matrix.install_mdns }}" == "true" ]]; then
-            echo "BUILD_NAME=${{ matrix.os }}_mdns_${{ matrix.dns_sd_mode }}_$authorization_mode" >> $GITHUB_ENV
+            build_name="${{ matrix.os }}_mdns_${{ matrix.dns_sd_mode }}_$authorization_mode"
           else
-            echo "BUILD_NAME=${{ matrix.os }}_avahi_${{ matrix.dns_sd_mode }}_$authorization_mode" >> $GITHUB_ENV
+            build_name="${{ matrix.os }}_avahi_${{ matrix.dns_sd_mode }}_$authorization_mode"
           fi
         elif [[ "${{ matrix.force_cpprest_asio }}" == "true" ]]; then
-          echo "BUILD_NAME=${{ matrix.os }}_asio_$authorization_mode" >> $GITHUB_ENV
+          build_name="${{ matrix.os }}_asio_$authorization_mode"
         else
-          echo "BUILD_NAME=${{ matrix.os }}_$authorization_mode" >> $GITHUB_ENV
+          build_name="${{ matrix.os }}_$authorization_mode"
         fi
+        if [[ -n "${{ matrix.boost_version }}" ]]; then
+          build_name="${build_name}_boost${{ matrix.boost_version }}"
+        fi
+        echo "BUILD_NAME=$build_name" >> $GITHUB_ENV
         GITHUB_COMMIT=`echo "${{ github.sha }}" | cut -c1-7`
         echo "GITHUB_COMMIT=$GITHUB_COMMIT" >> $GITHUB_ENV
         echo "GITHUB_WORKSPACE=${{ github.workspace }}" >> $GITHUB_ENV
