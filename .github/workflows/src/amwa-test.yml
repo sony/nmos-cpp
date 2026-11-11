@@ -1,7 +1,7 @@
 - name: install wsl
   if: runner.os == 'Windows'
   run: |
-    & curl -L https://aka.ms/wsl-ubuntu-1804 -o ubuntu-1804.appx
+    & curl -fL https://aka.ms/wsl-ubuntu-1804 -o ubuntu-1804.appx
     Rename-Item .\ubuntu-1804.appx .\ubuntu-1804.zip
     Expand-Archive .\ubuntu-1804.zip .\ubuntu-1804
     cd ubuntu-1804
@@ -43,7 +43,7 @@
 
     # Download testssl
     cd testssl
-    curl -L https://github.com/drwetter/testssl.sh/archive/v3.0.7.tar.gz -s | tar -xvzf - --strip-components=1 > /dev/null
+    curl -fL https://github.com/drwetter/testssl.sh/archive/v3.0.7.tar.gz -s | tar -xvzf - --strip-components=1 > /dev/null
     cd ..
 
     # Create output directories
