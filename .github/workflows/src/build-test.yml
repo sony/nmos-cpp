@@ -50,7 +50,7 @@ jobs:
             force_cpprest_asio: true
           
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v5
 
     - name: set environment variables
       shell: bash
@@ -93,7 +93,7 @@ jobs:
     needs: [build_and_test]
     runs-on: ubuntu-22.04
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v5
 
     - name: set environment variables
       shell: bash
@@ -103,7 +103,7 @@ jobs:
         echo "GITHUB_WORKSPACE=${{ github.workspace }}" >> $GITHUB_ENV
         echo "RUNNER_WORKSPACE=${{ runner.workspace }}" >> $GITHUB_ENV
 
-    - uses: actions/download-artifact@v4
+    - uses: actions/download-artifact@v7
       with:
         path: ${{ runner.workspace }}/artifacts
 
