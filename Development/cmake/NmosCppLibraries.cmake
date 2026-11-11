@@ -1221,6 +1221,7 @@ set(NMOS_CPP_NMOS_SOURCES
     nmos/filesystem_route.cpp
     nmos/group_hint.cpp
     nmos/id.cpp
+    nmos/ipmx.cpp
     nmos/lldp_handler.cpp
     nmos/lldp_manager.cpp
     nmos/json_schema.cpp
@@ -1330,6 +1331,7 @@ set(NMOS_CPP_NMOS_HEADERS
     nmos/health.h
     nmos/id.h
     nmos/interlace_mode.h
+    nmos/ipmx.h
     nmos/is04_versions.h
     nmos/is05_versions.h
     nmos/is07_versions.h

@@ -36,6 +36,7 @@
 #include "nmos/format.h"
 #include "nmos/group_hint.h"
 #include "nmos/interlace_mode.h"
+#include "nmos/ipmx.h"
 #include "nmos/is12_versions.h"  // for IS-12 gain control
 #ifdef HAVE_LLDP
 #include "nmos/lldp_manager.h"
@@ -2113,10 +2114,11 @@ nmos::connection_resource_auto_resolver make_node_implementation_auto_resolver(c
     const auto ws_receiver_ids = impl::make_ids(seed_id, nmos::types::receiver, ws_receiver_ports, how_many);
     const auto mxl_receiver_ports = boost::copy_range<std::vector<impl::port>>(receiver_ports | boost::adaptors::filtered(impl::is_mxl_port));
     const auto mxl_receiver_ids = impl::make_ids(seed_id, nmos::types::receiver, mxl_receiver_ports, how_many);
+    const auto ipmx = impl::fields::ipmx(settings);
 
     // although which properties may need to be defaulted depends on the resource type,
     // the default value will almost always be different for each resource
-    return [rtp_sender_ids, rtp_receiver_ids, ws_sender_ids, ws_sender_uri, ws_receiver_ids, mxl_sender_ids, mxl_receiver_ids](const nmos::resource& resource, const nmos::resource& connection_resource, value& transport_params)
+    return [rtp_sender_ids, rtp_receiver_ids, ws_sender_ids, ws_sender_uri, ws_receiver_ids, mxl_sender_ids, mxl_receiver_ids, ipmx](const nmos::resource& resource, const nmos::resource& connection_resource, value& transport_params)
     {
         const std::pair<nmos::id, nmos::type> id_type{ connection_resource.id, connection_resource.type };
         // this code relies on the specific constraints added by node_implementation_thread
@@ -2129,8 +2131,19 @@ nmos::connection_resource_auto_resolver make_node_implementation_auto_resolver(c
             const bool smpte2022_7 = 1 < transport_params.size();
             nmos::details::resolve_auto(transport_params[0], nmos::fields::source_ip, [&] { return web::json::front(nmos::fields::constraint_enum(constraints.at(0).at(nmos::fields::source_ip))); });
             if (smpte2022_7) nmos::details::resolve_auto(transport_params[1], nmos::fields::source_ip, [&] { return web::json::back(nmos::fields::constraint_enum(constraints.at(1).at(nmos::fields::source_ip))); });
-            nmos::details::resolve_auto(transport_params[0], nmos::fields::destination_ip, [&] { return value::string(impl::make_source_specific_multicast_address_v4(id_type.first, 0)); });
-            if (smpte2022_7) nmos::details::resolve_auto(transport_params[1], nmos::fields::destination_ip, [&] { return value::string(impl::make_source_specific_multicast_address_v4(id_type.first, 1)); });
+            if (ipmx)
+            {
+                // each RTP sender is a separate IPMX media stream, numbered from 1, on each of its interfaces
+                // see VSF TR-10-9:2025 Section 17.1
+                const int stream_number = int(boost::range::find(rtp_sender_ids, id_type.first) - rtp_sender_ids.begin()) + 1;
+                nmos::details::resolve_auto(transport_params[0], nmos::fields::destination_ip, [&] { return value::string(nmos::ipmx::make_default_multicast_address_v4(nmos::fields::source_ip(transport_params[0]).as_string(), stream_number)); });
+                if (smpte2022_7) nmos::details::resolve_auto(transport_params[1], nmos::fields::destination_ip, [&] { return value::string(nmos::ipmx::make_default_multicast_address_v4(nmos::fields::source_ip(transport_params[1]).as_string(), stream_number)); });
+            }
+            else
+            {
+                nmos::details::resolve_auto(transport_params[0], nmos::fields::destination_ip, [&] { return value::string(impl::make_source_specific_multicast_address_v4(id_type.first, 0)); });
+                if (smpte2022_7) nmos::details::resolve_auto(transport_params[1], nmos::fields::destination_ip, [&] { return value::string(impl::make_source_specific_multicast_address_v4(id_type.first, 1)); });
+            }
             // lastly, apply the specification defaults for any properties not handled above
             nmos::resolve_rtp_auto(id_type.second, transport_params);
         }
