@@ -268,7 +268,7 @@ jobs:
           curl -L "https://archives.boost.io/release/${boost_version}/source/boost_${boost_version_underscored}.tar.gz" -o boost.tar.gz
           mkdir boost && tar xzf boost.tar.gz -C boost --strip-components=1
           cd boost
-          ./bootstrap.sh --with-libraries=chrono,date_time,regex,system,thread,random,filesystem
+          ./bootstrap.sh --with-libraries=atomic,chrono,date_time,regex,system,thread,random,filesystem
           sudo ./b2 install -j 2
           sudo ldconfig
         else
@@ -280,7 +280,7 @@ jobs:
             libboost-thread-dev \
             libboost-random-dev \
             libboost-filesystem-dev
-        fi    
+        fi
 
         cd ${{ env.RUNNER_WORKSPACE }}
         git clone --recurse-submodules --branch v2.10.19 https://github.com/Microsoft/cpprestsdk
