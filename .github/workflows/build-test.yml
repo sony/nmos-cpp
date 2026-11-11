@@ -489,7 +489,7 @@ jobs:
           sudo pip install --upgrade -r requirements.txt
           # install SDPoker
           npm install -g git+https://git@github.com/AMWA-TV/sdpoker.git
-          run_python="sudo python"
+          run_python="sudo --preserve-env=NODNS python"
         else
           # run test suite directly
           pip install -r requirements.txt
@@ -585,6 +585,13 @@ jobs:
         if [[ "${{ runner.os }}" == "Linux" && "${{ matrix.install_mdns }}" == "false" ]]; then
           # nmos-cpp-node doesn't currently support advertising hostnames to Avahi
           avahi-publish -a -R nmos-api.local ${{ env.HOST_IP_ADDRESS }} &
+        fi
+
+        # the testing tool gives testssl.sh the IP address, so it needs no DNS queries
+        export NODNS=none
+        if [[ "${{ runner.os }}" == "Windows" ]]; then
+          # testssl.sh runs in WSL
+          export WSLENV="${WSLENV:+$WSLENV:}NODNS"
         fi
 
         ${{ env.GITHUB_WORKSPACE_BASH }}/Sandbox/run_nmos_testing.sh "$run_python" ${domain} ${root_dir}/build/nmos-cpp-node ${root_dir}/build/nmos-cpp-registry results badges $GITHUB_STEP_SUMMARY ${{ env.HOST_IP_ADDRESS }} "${{ env.GITHUB_COMMIT }}-${{ env.BUILD_NAME }}-"
