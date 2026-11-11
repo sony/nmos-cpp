@@ -101,7 +101,7 @@ namespace pplx
                 {
                     timer->cancel();
                 }
-                catch (...)
+                catch (const boost::system::system_error&)
                 {
                     // ignore any exceptions from canceling the timer
                 }
