@@ -27,10 +27,8 @@ endif()
 # since std::shared_mutex is not available until C++17
 # see bst/shared_mutex.h
 list(APPEND FIND_BOOST_COMPONENTS thread)
-# Prefer BoostConfig.cmake (CMake 3.30+ / CMP0167). Legacy FindBoost is removed
-# there; Config mode is what Conan CMakeDeps and modern Boost installs provide.
-find_package(Boost ${BOOST_VERSION_MIN} CONFIG REQUIRED COMPONENTS ${FIND_BOOST_COMPONENTS})
-# cope with historical versions of FindBoost.cmake / BoostConfig.cmake
+find_package(Boost ${BOOST_VERSION_MIN} REQUIRED COMPONENTS ${FIND_BOOST_COMPONENTS})
+# cope with historical versions of FindBoost.cmake
 if(DEFINED Boost_VERSION_STRING)
     set(Boost_VERSION_COMPONENTS "${Boost_VERSION_STRING}")
 elseif(DEFINED Boost_VERSION_MAJOR)
