@@ -692,7 +692,7 @@ BST_TEST_CASE(testStatusMonitorRemovedWhileStatusPending)
                 auto members = web::json::value::array();
                 for (const auto& member : nmos::fields::nc::members(block.data))
                 {
-                    if (removed_monitor_oid != nmos::fields::nc::oid(member)) web::json::push_back(members, member);
+                    if (removed_monitor_oid != nmos::nc_oid(nmos::fields::nc::oid(member))) web::json::push_back(members, member);
                 }
                 block.data[nmos::fields::nc::members] = members;
             }));
