@@ -31,3 +31,13 @@ install(FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/third_party/cmake/FindDNSSD.cmake
     DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/nmos-cpp
     )
+
+# when using the supplied third-party sources instead of external packages,
+# the corresponding headers must also be installed since the exported targets'
+# INSTALL_INTERFACE include directories reference ${NMOS_CPP_INSTALL_INCLUDEDIR}/third_party
+if(NMOS_CPP_USE_SUPPLIED_JSON_SCHEMA_VALIDATOR)
+    install(FILES ${JSON_SCHEMA_VALIDATOR_HEADERS} DESTINATION ${NMOS_CPP_INSTALL_INCLUDEDIR}/third_party/nlohmann)
+endif()
+if(NMOS_CPP_USE_SUPPLIED_JWT_CPP)
+    install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/third_party/jwt-cpp DESTINATION ${NMOS_CPP_INSTALL_INCLUDEDIR}/third_party)
+endif()
