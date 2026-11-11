@@ -1,10 +1,11 @@
 // The first "test" is of course whether the header compiles standalone
+#include "nmos/control_protocol_utils.h"
+
 #include "nmos/control_protocol_behaviour.h"
 #include "nmos/control_protocol_resource.h"
 #include "nmos/control_protocol_resources.h"
 #include "nmos/control_protocol_state.h"
 #include "nmos/control_protocol_typedefs.h"
-#include "nmos/control_protocol_utils.h"
 #include "nmos/is04_versions.h"
 #include "nmos/is12_versions.h"
 #include "nmos/log_gate.h"

@@ -1,5 +1,6 @@
 // The first "test" is of course whether the header compiles standalone
 #include "nmos/control_protocol_behaviour.h"
+
 #include "nmos/control_protocol_resource.h"
 #include "nmos/control_protocol_resources.h"
 #include "nmos/control_protocol_state.h"
