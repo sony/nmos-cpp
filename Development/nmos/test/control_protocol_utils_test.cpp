@@ -1,6 +1,4 @@
 // The first "test" is of course whether the header compiles standalone
-#include "boost/iostreams/stream.hpp"
-#include "boost/iostreams/device/null.hpp"
 #include "nmos/control_protocol_behaviour.h"
 #include "nmos/control_protocol_resource.h"
 #include "nmos/control_protocol_resources.h"
@@ -47,7 +45,7 @@ BST_TEST_CASE(testGetSetControlProtocolProperty)
     nmos::get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor = nmos::make_get_control_protocol_class_descriptor_handler(control_protocol_state);
     nmos::get_control_protocol_datatype_descriptor_handler get_control_protocol_datatype_descriptor = nmos::make_get_control_protocol_datatype_descriptor_handler(control_protocol_state);
 
-    boost::iostreams::stream< boost::iostreams::null_sink > null_ostream((boost::iostreams::null_sink()));
+    std::ostream null_ostream(nullptr);
     nmos::experimental::log_model log_model;
     nmos::experimental::log_gate gate(null_ostream, null_ostream, log_model);
 
@@ -89,7 +87,7 @@ BST_TEST_CASE(testSetReceiverMonitorStatuses)
     nmos::get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor = nmos::make_get_control_protocol_class_descriptor_handler(control_protocol_state);
     nmos::get_control_protocol_datatype_descriptor_handler get_control_protocol_datatype_descriptor = nmos::make_get_control_protocol_datatype_descriptor_handler(control_protocol_state);
 
-    boost::iostreams::stream< boost::iostreams::null_sink > null_ostream((boost::iostreams::null_sink()));
+    std::ostream null_ostream(nullptr);
     nmos::experimental::log_model log_model;
     nmos::experimental::log_gate gate(null_ostream, null_ostream, log_model);
 
@@ -313,7 +311,7 @@ BST_TEST_CASE(testSetSynchronizationSourceId)
     nmos::get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor = nmos::make_get_control_protocol_class_descriptor_handler(control_protocol_state);
     nmos::get_control_protocol_datatype_descriptor_handler get_control_protocol_datatype_descriptor = nmos::make_get_control_protocol_datatype_descriptor_handler(control_protocol_state);
 
-    boost::iostreams::stream< boost::iostreams::null_sink > null_ostream((boost::iostreams::null_sink()));
+    std::ostream null_ostream(nullptr);
     nmos::experimental::log_model log_model;
     nmos::experimental::log_gate gate(null_ostream, null_ostream, log_model);
 
@@ -367,7 +365,7 @@ BST_TEST_CASE(testActivateDeactivateReceiverMonitor)
     nmos::get_control_protocol_datatype_descriptor_handler get_control_protocol_datatype_descriptor = nmos::make_get_control_protocol_datatype_descriptor_handler(control_protocol_state);
     nmos::get_control_protocol_method_descriptor_handler get_control_protocol_method_descriptor = nmos::make_get_control_protocol_method_descriptor_handler(control_protocol_state);
 
-    boost::iostreams::stream< boost::iostreams::null_sink > null_ostream((boost::iostreams::null_sink()));
+    std::ostream null_ostream(nullptr);
     nmos::experimental::log_model log_model;
     nmos::experimental::log_gate gate(null_ostream, null_ostream, log_model);
 
@@ -498,7 +496,7 @@ BST_TEST_CASE(testSetSenderMonitorStatuses)
     nmos::get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor = nmos::make_get_control_protocol_class_descriptor_handler(control_protocol_state);
     nmos::get_control_protocol_datatype_descriptor_handler get_control_protocol_datatype_descriptor = nmos::make_get_control_protocol_datatype_descriptor_handler(control_protocol_state);
 
-    boost::iostreams::stream< boost::iostreams::null_sink > null_ostream((boost::iostreams::null_sink()));
+    std::ostream null_ostream(nullptr);
     nmos::experimental::log_model log_model;
     nmos::experimental::log_gate gate(null_ostream, null_ostream, log_model);
 
@@ -727,7 +725,7 @@ BST_TEST_CASE(testSetDerivedMonitorDomainStatus)
     const auto get_monitor_domains = nmos::make_get_monitor_domains_handler(control_protocol_state);
     const auto set_monitor_status_pending = nmos::make_monitor_status_pending_handler(control_protocol_state);
 
-    boost::iostreams::stream< boost::iostreams::null_sink > null_ostream((boost::iostreams::null_sink()));
+    std::ostream null_ostream(nullptr);
     nmos::experimental::log_model log_model;
     nmos::experimental::log_gate gate(null_ostream, null_ostream, log_model);
 
@@ -846,7 +844,7 @@ BST_TEST_CASE(testSetDerivedSenderMonitorDomainStatus)
     const auto get_control_protocol_class_descriptor = nmos::make_get_control_protocol_class_descriptor_handler(control_protocol_state);
     const auto get_monitor_domains = nmos::make_get_monitor_domains_handler(control_protocol_state);
 
-    boost::iostreams::stream< boost::iostreams::null_sink > null_ostream((boost::iostreams::null_sink()));
+    std::ostream null_ostream(nullptr);
     nmos::experimental::log_model log_model;
     nmos::experimental::log_gate gate(null_ostream, null_ostream, log_model);
 
@@ -926,7 +924,7 @@ BST_TEST_CASE(testActivateDeactivateSenderMonitor)
     nmos::get_control_protocol_datatype_descriptor_handler get_control_protocol_datatype_descriptor = nmos::make_get_control_protocol_datatype_descriptor_handler(control_protocol_state);
     nmos::get_control_protocol_method_descriptor_handler get_control_protocol_method_descriptor = nmos::make_get_control_protocol_method_descriptor_handler(control_protocol_state);
 
-    boost::iostreams::stream< boost::iostreams::null_sink > null_ostream((boost::iostreams::null_sink()));
+    std::ostream null_ostream(nullptr);
     nmos::experimental::log_model log_model;
     nmos::experimental::log_gate gate(null_ostream, null_ostream, log_model);
 
@@ -1069,7 +1067,7 @@ BST_TEST_CASE(testSetMonitorStatusWithDelay)
     nmos::experimental::control_protocol_state control_protocol_state(nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, reset_monitor);
     nmos::get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor = nmos::make_get_control_protocol_class_descriptor_handler(control_protocol_state);
 
-    boost::iostreams::stream< boost::iostreams::null_sink > null_ostream((boost::iostreams::null_sink()));
+    std::ostream null_ostream(nullptr);
     nmos::experimental::log_model log_model;
     nmos::experimental::log_gate gate(null_ostream, null_ostream, log_model);
 

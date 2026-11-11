@@ -1,5 +1,4 @@
 // The first "test" is of course whether the header compiles standalone
-#include "boost/iostreams/stream.hpp"
 #include "nmos/control_protocol_behaviour.h"
 #include "nmos/control_protocol_resource.h"
 #include "nmos/control_protocol_resources.h"
@@ -302,7 +301,7 @@ namespace
         using web::json::value;
         using Traits = StatusTraits<StatusType, mointor_type>;
 
-        boost::iostreams::stream<boost::iostreams::null_sink> null_ostream((boost::iostreams::null_sink()));
+        std::ostream null_ostream(nullptr);
         nmos::experimental::log_model log_model;
         nmos::experimental::log_gate gate(null_ostream, null_ostream, log_model);
 
@@ -487,7 +486,7 @@ BST_TEST_CASE(testStatusTransitionWithinReportDelay)
     // Test scenario: Status transitions from unhealthy (3) to healthy (1) then back to unhealthy (3)
     // within the 3 second report delay. Final status should be unhealthy (3).
 
-    boost::iostreams::stream<boost::iostreams::null_sink> null_ostream((boost::iostreams::null_sink()));
+    std::ostream null_ostream(nullptr);
     nmos::experimental::log_model log_model;
     nmos::experimental::log_gate gate(null_ostream, null_ostream, log_model);
 
@@ -617,7 +616,7 @@ BST_TEST_CASE(testStatusMonitorRemovedWhileStatusPending)
     // while the behaviour thread is waiting for the pending statuses. The other monitor's status should still be
     // reported, rather than the thread reading the removed monitor's properties.
 
-    boost::iostreams::stream<boost::iostreams::null_sink> null_ostream((boost::iostreams::null_sink()));
+    std::ostream null_ostream(nullptr);
     nmos::experimental::log_model log_model;
     nmos::experimental::log_gate gate(null_ostream, null_ostream, log_model);
 
