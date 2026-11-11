@@ -1,0 +1,69 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "description": "Describes additional Receiver transport parameters defined in the Transport Parameters register of the NMOS Parameter Registers. The constraints in this schema are minimum constraints, but may be further constrained at the constraints endpoint.",
+  "title": "Externally-defined Receiver Transport Parameters",
+  "type": "object",
+  "properties": {
+    "ext_is_07_source_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Identifies the Source that emits an IS-07 event. A null value indicates that the source has not been configured.",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+    },
+    "ext_is_07_rest_api_url": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "URL of the Events API resource providing the current state and type of an Event emitter (Source). A null value indicates that the source has not been configured.",
+      "format": "uri"
+    },
+    "ext_link_offset_delay": {
+      "type": [
+        "integer",
+        "string"
+      ],
+      "description": "Identifies the Link Offset Delay (microseconds) used to synchronise Playout Time of all components of a stream by receivers. If auto is set, the minimum achievable delay is selected.",
+      "minimum": 0,
+      "pattern": "^auto$"
+    },
+    "ext_privacy_protocol": {
+      "type": "string",
+      "description": "Defines the privacy encryption protocol adaptation."
+    },
+    "ext_privacy_mode": {
+      "type": "string",
+      "description": "Defines the encryption, authentication and key derivation functions."
+    },
+    "ext_privacy_iv": {
+      "type": "string",
+      "description": "Defines the initial vector."
+    },
+    "ext_privacy_key_generator": {
+      "type": "string",
+      "description": "Defines the key generator."
+    },
+    "ext_privacy_key_version": {
+      "type": "string",
+      "description": "Defines the key version."
+    },
+    "ext_privacy_key_id": {
+      "type": "string",
+      "description": "Defines the key identifier."
+    },
+    "ext_privacy_ecdh_sender_public_key": {
+      "type": "string",
+      "description": "Defines the ECDH public key of the Sender."
+    },
+    "ext_privacy_ecdh_receiver_public_key": {
+      "type": "string",
+      "description": "Defines the ECDH public key of the Receiver."
+    },
+    "ext_privacy_ecdh_curve": {
+      "type": "string",
+      "description": "Defines the ECDH elliptic curve."
+    }
+  }
+}

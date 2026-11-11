@@ -64,9 +64,8 @@
     // smpte2022_7: controls whether senders and receivers have one leg (false) or two legs (true, default)
     //"smpte2022_7": false,
 
-    // ipmx: controls whether the SDP files of the RTP senders include the IPMX declaration (true) or not (false, default)
-    // and, for video and audio senders, the parameters required when the sender's output is based upon the conversion
-    // of a Baseband signal, see VSF TR-10-1:2024 Section 10
+    // ipmx: controls whether the node demonstrates IPMX behaviour (true) or not (false, default)
+    // see VSF TR-10
     //"ipmx": true,
 
     // simulate_status_monitor_activity: when true status monitor statuses will change randomly after activation

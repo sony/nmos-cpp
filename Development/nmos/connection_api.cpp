@@ -1,5 +1,6 @@
 #include "nmos/connection_api.h"
 
+#include <boost/algorithm/string/predicate.hpp>
 #include <boost/range/join.hpp>
 #include <boost/range/adaptor/filtered.hpp>
 #include "cpprest/http_utils.h"
@@ -122,6 +123,19 @@ namespace nmos
             return validator;
         }
 
+        static const web::json::experimental::json_validator& transport_params_ext_register_validator()
+        {
+            static const web::json::experimental::json_validator validator
+            {
+                nmos::experimental::load_json_schema,
+                {
+                    experimental::make_connectionapi_transport_params_ext_register_schema_uri(nmos::types::sender),
+                    experimental::make_connectionapi_transport_params_ext_register_schema_uri(nmos::types::receiver)
+                }
+            };
+            return validator;
+        }
+
         // Validate against specification schema
         // throws web::json::json_exception on failure, which results in a 400 Bad Request
         void validate_staged_core(const nmos::api_version& version, const nmos::type& type, const web::json::value& staged)
@@ -129,6 +143,18 @@ namespace nmos
             // Validate JSON syntax according to the schema
 
             staged_core_validator().validate(staged, experimental::make_connectionapi_staged_patch_request_schema_uri(version, type));
+
+            // Validate the registered ext_ parameters according to the schema of the Transport Parameters register
+            // See https://github.com/AMWA-TV/nmos-parameter-registers/tree/main/transport-parameters
+
+            if (is05_versions::v1_1 <= version && staged.has_field(nmos::fields::transport_params))
+            {
+                const auto ext_register_uri = experimental::make_connectionapi_transport_params_ext_register_schema_uri(type);
+                for (const auto& params : nmos::fields::transport_params(staged).as_array())
+                {
+                    transport_params_ext_register_validator().validate(params, ext_register_uri);
+                }
+            }
         }
 
         // Extend an existing schema with "auto" and/or null as valid values
@@ -165,11 +191,40 @@ namespace nmos
             }, keep_order);
         }
 
+        static std::set<utility::string_t> make_registered_ext_params(const nmos::type& type)
+        {
+            std::set<utility::string_t> ext_params;
+            const auto schema = experimental::load_json_schema(experimental::make_connectionapi_transport_params_ext_register_schema_uri(type));
+            for (const auto& property : schema.at(U("properties")).as_object())
+            {
+                ext_params.insert(property.first);
+            }
+            return ext_params;
+        }
+
+        static const std::map<nmos::type, std::set<utility::string_t>>& registered_ext_params()
+        {
+            // These are the ext_ parameters in the Transport Parameters register of the NMOS Parameter Registers;
+            // auto_constraints and null_constraints determine whether they support "auto" or null in /staged
+            // See https://github.com/AMWA-TV/nmos-parameter-registers/tree/main/transport-parameters
+            static const std::map<nmos::type, std::set<utility::string_t>> ext_params
+            {
+                {
+                    nmos::types::sender, make_registered_ext_params(nmos::types::sender)
+                },
+                {
+                    nmos::types::receiver, make_registered_ext_params(nmos::types::receiver)
+                }
+            };
+            return ext_params;
+        }
+
         static const std::map<nmos::type, std::set<utility::string_t>>& rtp_auto_constraints()
         {
             // These are the constraints that support "auto" in /staged; cf. resolve_rtp_auto
             // See https://specs.amwa.tv/is-05/releases/v1.1.0/APIs/schemas/with-refs/sender_transport_params_rtp.html
             // and https://specs.amwa.tv/is-05/releases/v1.1.0/APIs/schemas/with-refs/receiver_transport_params_rtp.html
+            // and for ext_link_offset_delay, VSF TR-10-8:2026 Section 8
             static const std::map<nmos::type, std::set<utility::string_t>> auto_constraints
             {
                 {
@@ -199,7 +254,8 @@ namespace nmos
                         nmos::fields::fec1D_destination_port,
                         nmos::fields::fec2D_destination_port,
                         nmos::fields::rtcp_destination_ip,
-                        nmos::fields::rtcp_destination_port
+                        nmos::fields::rtcp_destination_port,
+                        nmos::fields::ext_link_offset_delay
                     }
                 }
             };
@@ -308,6 +364,45 @@ namespace nmos
             return null_constraints;
         }
 
+        static const std::map<nmos::type, std::set<utility::string_t>>& websocket_null_constraints()
+        {
+            // These are the constraints that support null (unconfigured) in /staged
+            // See https://specs.amwa.tv/is-07/releases/v1.0.1/APIs/schemas/with-refs/receiver_transport_params_ext.html
+            static const std::map<nmos::type, std::set<utility::string_t>> null_constraints
+            {
+                {
+                    nmos::types::sender, {}
+                },
+                {
+                    nmos::types::receiver,
+                    {
+                        nmos::fields::ext_is_07_source_id,
+                        nmos::fields::ext_is_07_rest_api_url
+                    }
+                }
+            };
+            return null_constraints;
+        }
+
+        static const std::map<nmos::type, std::set<utility::string_t>>& mqtt_null_constraints()
+        {
+            // These are the constraints that support null (unconfigured) in /staged
+            // See https://specs.amwa.tv/is-07/releases/v1.0.1/APIs/schemas/with-refs/receiver_transport_params_ext.html
+            static const std::map<nmos::type, std::set<utility::string_t>> null_constraints
+            {
+                {
+                    nmos::types::sender, {}
+                },
+                {
+                    nmos::types::receiver,
+                    {
+                        nmos::fields::ext_is_07_rest_api_url
+                    }
+                }
+            };
+            return null_constraints;
+        }
+
         static const std::map<nmos::type, std::set<utility::string_t>>& auto_constraints(const nmos::transport& transport_base)
         {
             if (nmos::transports::rtp == transport_base) return rtp_auto_constraints();
@@ -329,6 +424,8 @@ namespace nmos
 
         static const std::map<nmos::type, std::set<utility::string_t>>& null_constraints(const nmos::transport& transport_base)
         {
+            if (nmos::transports::websocket == transport_base) return websocket_null_constraints();
+            if (nmos::transports::mqtt == transport_base) return mqtt_null_constraints();
             if (nmos::transports::mxl == transport_base) return mxl_null_constraints();
 
             static const std::map<nmos::type, std::set<utility::string_t>> no_null_constraints
@@ -355,6 +452,7 @@ namespace nmos
 
             auto& type_auto_constraints = auto_constraints(transport_base).at(type);
             auto& type_null_constraints = null_constraints(transport_base).at(type);
+            auto& type_ext_params = registered_ext_params().at(type);
 
             for (const auto& leg : constraints.as_array())
             {
@@ -362,8 +460,12 @@ namespace nmos
 
                 for (const auto& constraint : leg.as_object())
                 {
-                    const bool auto_value = type_auto_constraints.end() != type_auto_constraints.find(constraint.first);
-                    const bool null_value = type_null_constraints.end() != type_null_constraints.find(constraint.first);
+                    // "auto" and null are permitted for any unregistered ext_ parameter, since its usage is defined by a specification this library does not know;
+                    // the application must resolve "auto" on activation, and reject any value that specification does not permit
+                    // See https://specs.amwa.tv/is-05/releases/v1.1.0/docs/4.0._Behaviour.html#externally-defined-parameters
+                    const bool ext_param = boost::algorithm::starts_with(constraint.first, U("ext_")) && type_ext_params.end() == type_ext_params.find(constraint.first);
+                    const bool auto_value = ext_param || type_auto_constraints.end() != type_auto_constraints.find(constraint.first);
+                    const bool null_value = ext_param || type_null_constraints.end() != type_null_constraints.find(constraint.first);
 
                     properties[constraint.first] = make_staged_param_schema(constraint.second, auto_value, null_value);
                 }
@@ -990,6 +1092,7 @@ namespace nmos
                 details::resolve_auto(params, nmos::fields::fec2D_destination_port, [&] { return params[nmos::fields::destination_port].as_integer() + 4; });
                 details::resolve_auto(params, nmos::fields::rtcp_destination_ip, [&] { return !nmos::fields::multicast_ip(params).is_null() ? params[nmos::fields::multicast_ip] : params[nmos::fields::interface_ip]; });
                 details::resolve_auto(params, nmos::fields::rtcp_destination_port, [&] { return params[nmos::fields::destination_port].as_integer() + 1; });
+                // nmos::fields::ext_link_offset_delay
             }
         }
     }

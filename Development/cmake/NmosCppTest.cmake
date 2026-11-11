@@ -46,6 +46,7 @@ set(NMOS_CPP_TEST_NMOS_TEST_SOURCES
     nmos/test/capabilities_test.cpp
     nmos/test/channels_test.cpp
     nmos/test/condition_variable_test.cpp
+    nmos/test/connection_api_test.cpp
     nmos/test/connection_resources_test.cpp
     nmos/test/configuration_methods_test.cpp
     nmos/test/configuration_resources_test.cpp

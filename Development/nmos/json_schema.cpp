@@ -16,6 +16,7 @@
 #include "nmos/is13_schemas/is13_schemas.h"
 #include "nmos/is14_versions.h"
 #include "nmos/is14_schemas/is14_schemas.h"
+#include "nmos/parameter_registers_schemas/parameter_registers_schemas.h"
 #include "nmos/type.h"
 
 namespace nmos
@@ -219,6 +220,24 @@ namespace nmos
             const web::uri configurationapi_bulkProperties_patch_request_schema_uri = make_schema_uri(tag, _XPLATSTR("bulkProperties-patch-request.json"));
             const web::uri configurationapi_method_patch_request_schema_uri = make_schema_uri(tag, _XPLATSTR("method-patch-request.json"));
             const web::uri configurationapi_property_value_put_request_schema_uri = make_schema_uri(tag, _XPLATSTR("property-value-put-request.json"));
+        }
+    }
+
+    namespace parameter_registers_schemas
+    {
+        web::uri make_schema_uri(const utility::string_t& tag, const utility::string_t& ref = {})
+        {
+            return{ _XPLATSTR("https://github.com/AMWA-TV/nmos-parameter-registers/raw/") + tag + _XPLATSTR("/") + ref };
+        }
+
+        // See https://github.com/AMWA-TV/nmos-parameter-registers/tree/main
+        namespace main
+        {
+            using namespace nmos::parameter_registers_schemas::main;
+            const utility::string_t tag(_XPLATSTR("main"));
+
+            const web::uri sender_transport_params_ext_register_uri = make_schema_uri(tag, _XPLATSTR("transport-parameters/sender_transport_params_ext_register.json"));
+            const web::uri receiver_transport_params_ext_register_uri = make_schema_uri(tag, _XPLATSTR("transport-parameters/receiver_transport_params_ext_register.json"));
         }
     }
 }
@@ -487,6 +506,18 @@ namespace nmos
             };
         }
 
+        static std::map<web::uri, web::json::value> make_parameter_registers_schemas()
+        {
+            using namespace nmos::parameter_registers_schemas;
+
+            return
+            {
+                // main
+                { main::sender_transport_params_ext_register_uri, make_schema(main::sender_transport_params_ext_register) },
+                { main::receiver_transport_params_ext_register_uri, make_schema(main::receiver_transport_params_ext_register) }
+            };
+        }
+
         inline void merge(std::map<web::uri, web::json::value>& to, std::map<web::uri, web::json::value>&& from)
         {
             to.insert(from.begin(), from.end()); // std::map::merge in C++17
@@ -502,6 +533,7 @@ namespace nmos
             merge(result, make_is12_schemas());
             merge(result, make_is13_schemas());
             merge(result, make_is14_schemas());
+            merge(result, make_parameter_registers_schemas());
             return result;
         }
 
@@ -558,6 +590,13 @@ namespace nmos
             if (is05_versions::v1_2 <= version) return is05_schemas::v1_2::connectionapi_receiver_staged_patch_request_uri;
             if (is05_versions::v1_1 <= version) return is05_schemas::v1_1::connectionapi_receiver_staged_patch_request_uri;
             return is05_schemas::v1_0::connectionapi_receiver_staged_patch_request_uri;
+        }
+
+        web::uri make_connectionapi_transport_params_ext_register_schema_uri(const nmos::type& type)
+        {
+            return nmos::types::sender == type
+                ? parameter_registers_schemas::main::sender_transport_params_ext_register_uri
+                : parameter_registers_schemas::main::receiver_transport_params_ext_register_uri;
         }
 
         web::uri make_channelmappingapi_map_activations_post_request_schema_uri(const nmos::api_version& version)
