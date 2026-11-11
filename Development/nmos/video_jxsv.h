@@ -296,12 +296,14 @@ namespace nmos
 
         // additional fmtp parameters from VSF TR-10-1:2024 (IPMX)
         bool ipmx;
-        uint64_t measuredpixclk; // if omitted (zero), the sender's output is not based upon the conversion of a Baseband signal
+        uint64_t measuredpixclk; // if omitted (zero), not compliant with IPMX, see VSF TR-10-1:2024 Section 10.2 and VSF TR-10-9:2025 Section 10
         uint32_t vtotal; // if omitted (zero), as above
         uint32_t htotal; // if omitted (zero), as above
 
         video_jxsv_parameters() : depth(), width(), height(), interlace(), segmented(), troff(), cmax(), maxudp(), tsdelay(), ipmx(), measuredpixclk(), vtotal(), htotal() {}
 
+        // for IPMX, see VSF TR-10-1:2024
+        // or ST 2110-22
         video_jxsv_parameters(
             sdp::video_jxsv::packetization_mode packetmode,
             sdp::video_jxsv::transmission_mode transmode,
@@ -326,10 +328,10 @@ namespace nmos
             sdp::timestamp_mode tsmode,
             bst::optional<uint32_t> tsdelay,
             uint64_t bit_rate,
-            bool ipmx = false,
-            uint64_t measuredpixclk = 0,
-            uint32_t vtotal = 0,
-            uint32_t htotal = 0
+            bool ipmx,
+            uint64_t measuredpixclk,
+            uint32_t vtotal,
+            uint32_t htotal
         )
             : packetmode(packetmode)
             , transmode(transmode)
@@ -358,6 +360,35 @@ namespace nmos
             , measuredpixclk(measuredpixclk)
             , vtotal(vtotal)
             , htotal(htotal)
+        {}
+
+        // for ST 2110-22
+        video_jxsv_parameters(
+            sdp::video_jxsv::packetization_mode packetmode,
+            sdp::video_jxsv::transmission_mode transmode,
+            sdp::video_jxsv::profile profile,
+            sdp::video_jxsv::level level,
+            sdp::video_jxsv::sublevel sublevel,
+            sdp::sampling sampling,
+            uint32_t depth,
+            uint32_t width,
+            uint32_t height,
+            nmos::rational exactframerate,
+            bool interlace,
+            bool segmented,
+            sdp::transfer_characteristic_system tcs,
+            sdp::colorimetry colorimetry,
+            sdp::range range,
+            sdp::smpte_standard_number ssn,
+            sdp::type_parameter tp,
+            bst::optional<uint32_t> troff,
+            uint32_t cmax,
+            uint32_t maxudp,
+            sdp::timestamp_mode tsmode,
+            bst::optional<uint32_t> tsdelay,
+            uint64_t bit_rate
+        )
+            : video_jxsv_parameters(packetmode, transmode, std::move(profile), std::move(level), std::move(sublevel), std::move(sampling), depth, width, height, exactframerate, interlace, segmented, std::move(tcs), std::move(colorimetry), std::move(range), std::move(ssn), std::move(tp), troff, cmax, maxudp, std::move(tsmode), tsdelay, bit_rate, {}, {}, {}, {})
         {}
     };
 

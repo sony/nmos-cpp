@@ -151,6 +151,7 @@ namespace impl
     void set_ipmx_parameters(nmos::video_raw_parameters& params);
     void set_ipmx_parameters(nmos::video_jxsv_parameters& params);
     void set_ipmx_parameters(nmos::audio_L_parameters& params);
+    void set_ipmx_parameters(nmos::video_smpte291_parameters& params);
 
     // the different kinds of 'port' (standing for the format/media type/event type) implemented by the example node
     // each 'port' of the example node has a source, flow, sender and/or compatible receiver
@@ -2212,10 +2213,8 @@ nmos::connection_sender_transportfile_setter make_node_implementation_transportf
                     const nmos::media_type video_type{ nmos::fields::media_type(flow->data) };
                     if (nmos::media_types::video_raw == video_type)
                     {
-                        if (!ipmx) return nmos::make_video_sdp_parameters(node->data, source->data, flow->data, sender.data, nmos::details::payload_type_video_default, mids, {}, sdp::type_parameters::type_N);
-
                         auto params = nmos::make_video_raw_parameters(node->data, source->data, flow->data, sender.data, sdp::type_parameters::type_N);
-                        impl::set_ipmx_parameters(params);
+                        if (ipmx) impl::set_ipmx_parameters(params);
                         const auto ts_refclk = nmos::details::make_ts_refclk(node->data, source->data, sender.data, {});
                         return nmos::make_sdp_parameters(nmos::fields::label(sender.data), params, nmos::details::payload_type_video_default, mids, ts_refclk);
                     }
@@ -2235,19 +2234,15 @@ nmos::connection_sender_transportfile_setter make_node_implementation_transportf
                 {
                     // this example application doesn't actually stream, so just indicate a sensible value for packet time
                     const double packet_time = nmos::fields::channels(source->data).size() > 8 ? 0.125 : 1;
-                    if (!ipmx) return nmos::make_audio_sdp_parameters(node->data, source->data, flow->data, sender.data, nmos::details::payload_type_audio_default, mids, {}, packet_time);
-
                     auto params = nmos::make_audio_L_parameters(node->data, source->data, flow->data, sender.data, packet_time);
-                    impl::set_ipmx_parameters(params);
+                    if (ipmx) impl::set_ipmx_parameters(params);
                     const auto ts_refclk = nmos::details::make_ts_refclk(node->data, source->data, sender.data, {});
                     return nmos::make_sdp_parameters(nmos::fields::label(sender.data), params, nmos::details::payload_type_audio_default, mids, ts_refclk);
                 }
                 else if (nmos::formats::data == format)
                 {
-                    if (!ipmx) return nmos::make_data_sdp_parameters(node->data, source->data, flow->data, sender.data, nmos::details::payload_type_data_default, mids, {}, {});
-
                     auto params = nmos::make_video_smpte291_parameters(node->data, source->data, flow->data, sender.data, {});
-                    params.ipmx = true;
+                    if (ipmx) impl::set_ipmx_parameters(params);
                     const auto ts_refclk = nmos::details::make_ts_refclk(node->data, source->data, sender.data, {});
                     return nmos::make_sdp_parameters(nmos::fields::label(sender.data), params, nmos::details::payload_type_data_default, mids, ts_refclk);
                 }
@@ -2561,6 +2556,11 @@ namespace impl
         params.measuredsamplerate = (uint32_t)params.sample_rate;
     }
 
+    void set_ipmx_parameters(nmos::video_smpte291_parameters& params)
+    {
+        params.ipmx = true;
+    }
+
     nmos::interlace_mode get_interlace_mode(const nmos::settings& settings)
     {
         if (settings.has_field(impl::fields::interlace_mode))
@@ -2747,6 +2747,7 @@ namespace impl
         "channel_count": { "$ref": "#/definitions/positiveInteger" },
 
         "smpte2022_7":                      { "type": "boolean" },
+        "ipmx":                             { "type": "boolean" },
         "simulate_status_monitor_activity": { "type": "boolean" },
 
         "mxl_domain_id": { "$ref": "#/definitions/uuid" }

@@ -1526,7 +1526,7 @@ BST_TEST_CASE(testSdpParametersVideoRawIpmx)
         }
     };
 
-    // an IPMX Sender whose output is not based upon the conversion of a Baseband signal only includes the IPMX declaration
+    // an IPMX Sender whose output is not based upon the conversion of a Baseband signal uses the values in VSF TR-10-9:2025 Section 10
     std::pair<nmos::sdp_parameters, nmos::video_raw_parameters> not_baseband{
         {
             U("not_baseband"),
@@ -1546,7 +1546,10 @@ BST_TEST_CASE(testSdpParametersVideoRawIpmx)
                 { U("PM"), U("2110GPM") },
                 { U("SSN"), U("ST2110-20:2017") },
                 { U("TP"), U("2110TPW") },
-                { U("IPMX"), {} }
+                { U("IPMX"), {} },
+                { U("measuredpixclk"), U("497664000") },
+                { U("vtotal"), U("2160") },
+                { U("htotal"), U("3840") }
             }
         },
         {
@@ -1570,9 +1573,9 @@ BST_TEST_CASE(testSdpParametersVideoRawIpmx)
             {},
             {},
             true,
-            0,
-            0,
-            0
+            3840 * 2160 * 60,
+            2160,
+            3840
         }
     };
 
@@ -1700,33 +1703,35 @@ BST_TEST_CASE(testSdpParametersAudioLIpmx)
         }
     };
 
+    // an IPMX Sender whose output is not based upon the conversion of a Baseband signal uses the values in VSF TR-10-9:2025 Section 10
     std::pair<nmos::sdp_parameters, nmos::audio_L_parameters> not_baseband{
         {
             U("not_baseband"),
             sdp::media_types::audio,
             {
                 97,
-                U("L16"),
+                U("L24"),
                 96000,
                 2
             },
             {
                 { U("channel-order"), U("SMPTE2110.(ST)") },
-                { U("IPMX"), {} }
+                { U("IPMX"), {} },
+                { U("measuredsamplerate"), U("96000") }
             },
             {},
             1
         },
         {
             2,
-            16,
+            24,
             96000,
             U("SMPTE2110.(ST)"),
             {},
             {},
             1,
             true,
-            0
+            96000
         }
     };
 
