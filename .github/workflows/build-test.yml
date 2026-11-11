@@ -201,6 +201,29 @@ jobs:
         echo "DOCKER_HOST=$DOCKER_HOST" >> $GITHUB_ENV
         echo "DOCKER_CERT_PATH=$DOCKER_CERT_PATH" >> $GITHUB_ENV
 
+    # the Ubuntu package mirror is sometimes slow or unreachable, so keep the downloaded packages
+    - name: ubuntu package cache setup
+      if: runner.os == 'Linux'
+      id: debs-key
+      run: |
+        # the key changes each week, so that the cache picks up package updates
+        # (kojo formats this file, so each literal percent sign is doubled)
+        echo "week=$(date -u +%G-W%V)" >> "$GITHUB_OUTPUT"
+        mkdir -p "$RUNNER_TEMP/debs/partial"
+        # make every later apt-get install keep its packages there
+        echo "Dir::Cache::Archives \"$RUNNER_TEMP/debs\";" | sudo tee /etc/apt/apt.conf.d/90ci-debs > /dev/null
+
+    - name: restore ubuntu packages
+      if: runner.os == 'Linux'
+      id: debs-cache
+      uses: actions/cache/restore@v6
+      with:
+        path: ${{ runner.temp }}/debs
+        key: debs-${{ matrix.os }}-mdns-${{ matrix.install_mdns }}-${{ hashFiles('.github/workflows/build-test.yml') }}-${{ steps.debs-key.outputs.week }}
+        restore-keys: |
+          debs-${{ matrix.os }}-mdns-${{ matrix.install_mdns }}-${{ hashFiles('.github/workflows/build-test.yml') }}-
+          debs-${{ matrix.os }}-mdns-${{ matrix.install_mdns }}-
+
     - name: ubuntu setup
       if: runner.os == 'Linux'
       run: |
@@ -300,6 +323,21 @@ jobs:
         fi
         # force dependency on avahi
         echo "CMAKE_EXTRA_ARGS=${{ env.CMAKE_EXTRA_ARGS }} -DNMOS_CPP_USE_AVAHI:BOOL=\"1\"" >> $GITHUB_ENV
+
+    # save the packages when this key is not already stored
+    - name: clean ubuntu packages
+      if: runner.os == 'Linux' && steps.debs-cache.outputs.cache-hit != 'true'
+      run: |
+        # autoclean removes the packages that have been superseded, so that the cache does not keep growing
+        sudo apt-get autoclean
+        sudo chown -R "$(id -u):$(id -g)" "$RUNNER_TEMP/debs"
+
+    - name: save ubuntu packages
+      if: runner.os == 'Linux' && steps.debs-cache.outputs.cache-hit != 'true'
+      uses: actions/cache/save@v6
+      with:
+        path: ${{ runner.temp }}/debs
+        key: ${{ steps.debs-cache.outputs.cache-primary-key }}
 
     - name: force cpprest asio
       if: matrix.force_cpprest_asio == true && matrix.use_conan == true
