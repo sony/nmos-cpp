@@ -554,6 +554,26 @@ namespace sdp
         const web::json::field_as_string DID_SDID{ U("DID_SDID") }; // e.g. "{0x41,0x01}", see nmos::did_sdid
         const web::json::field<uint32_t> VPID_Code{ U("VPID_Code") }; // 1..255, see nmos::vpid_code
         const web::json::field_as_string TM{ U("TM") }; // see sdp::tranmission_model
+
+        // See VSF TR-10-1:2024 Internet Protocol Media Experience (IPMX): System Timing and Definitions
+        // at https://static.vsf.tv/download/technical_recommendations/VSF_TR-10-1_2024-02-23.pdf
+
+        // TR-10-1:2024 Section 10.1 IPMX Sender Signaling
+        // "IPMX Senders shall include the "IPMX" declaration in the a=fmtp clause of the SDP file."
+        const web::json::field_as_bool_or IPMX{ U("IPMX"), false };
+
+        // TR-10-1:2024 Section 10.2 Baseband Video IPMX Sender Signaling
+        // "When a video IPMX Sender's output is based upon the conversion of a Baseband signal, the sender shall include
+        // the measuredpixclk, vtotal and htotal parameters in the a=fmtp clause of the SDP file [...]"
+        // The IPMX Info Block in VSF TR-10-2:2024 carries the measured pixel clock in 64 bits, and vtotal and htotal in 16 bits each
+        const web::json::field<uint64_t> measuredpixclk{ U("measuredpixclk") }; // Hz, used for ST 2110-20 and ST 2110-22
+        const web::json::field<uint32_t> vtotal{ U("vtotal") }; // used for ST 2110-20 and ST 2110-22
+        const web::json::field<uint32_t> htotal{ U("htotal") }; // used for ST 2110-20 and ST 2110-22
+
+        // TR-10-1:2024 Section 10.3 Baseband Audio Sender Signaling
+        // "An audio IPMX Sender that is converting from a Baseband signal shall include the measuredsamplerate parameters in the a=fmtp clause [...]"
+        // The IPMX Info Block in VSF TR-10-3:2024 carries the measured sample rate in 32 bits
+        const web::json::field<uint32_t> measuredsamplerate{ U("measuredsamplerate") }; // Hz, used for ST 2110-30
     }
 }
 
