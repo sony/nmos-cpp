@@ -57,7 +57,7 @@ fi
 
 common_params=",\
   \"logging_level\":-40,\
-  \"discovery_backoff_max\":10,\
+  \"discovery_backoff_max\":5,\
   \"registration_request_max\":5,\
   \"system_request_max\":5,\
   \"domain\":\"${domain}\",\
@@ -128,7 +128,7 @@ if [[ "${config_auth}" == "True" ]]; then
   auth=true
   common_params+=",\
   \"server_authorization\":true,\
-  \"service_unavailable_retry_after\":25\
+  \"service_unavailable_retry_after\":1\
   "
   node_params+=",\
   \"client_authorization\":true,\

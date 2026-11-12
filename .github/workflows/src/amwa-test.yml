@@ -20,7 +20,7 @@
     cd nmos-testing
 
     # Configure the Testing Tool so all APIs are tested with TLS and authorization
-    printf "from . import Config as CONFIG\nCONFIG.ENABLE_HTTPS = True\nCONFIG.MOCK_SERVICES_WARM_UP_DELAY = 30\nCONFIG.HTTP_TIMEOUT = 2\n" > nmostesting/UserConfig.py
+    printf "from . import Config as CONFIG\nCONFIG.ENABLE_HTTPS = True\nCONFIG.MOCK_SERVICES_WARM_UP_DELAY = 10\nCONFIG.HTTP_TIMEOUT = 2\n" > nmostesting/UserConfig.py
     # Set the DNS-SD mode
     printf 'CONFIG.DNS_SD_MODE = "'${{ matrix.dns_sd_mode }}'"\n' >> nmostesting/UserConfig.py
     # Set the client JWKS_URI for mock Authorization Server to obtain the client JSON Web Key Set (public keys) to verify the client_assertion, when the client is requesting the access token
@@ -67,7 +67,7 @@
       sudo pip install --upgrade -r requirements.txt
       # install SDPoker
       npm install -g git+https://git@github.com/AMWA-TV/sdpoker.git
-      run_python="sudo python"
+      run_python="sudo --preserve-env=NODNS python"
     else
       # run test suite directly
       pip install -r requirements.txt
@@ -156,6 +156,13 @@
     if [[ "${{ runner.os }}" == "Linux" && "${{ matrix.install_mdns }}" == "false" ]]; then
       # nmos-cpp-node doesn't currently support advertising hostnames to Avahi
       avahi-publish -a -R nmos-api.local ${{ env.HOST_IP_ADDRESS }} &
+    fi
+
+    # the testing tool gives testssl.sh the IP address, so it needs no DNS queries
+    export NODNS=none
+    if [[ "${{ runner.os }}" == "Windows" ]]; then
+      # testssl.sh runs in WSL
+      export WSLENV="${WSLENV:+$WSLENV:}NODNS"
     fi
     
     ${{ env.GITHUB_WORKSPACE_BASH }}/Sandbox/run_nmos_testing.sh "$run_python" ${domain} ${root_dir}/build/nmos-cpp-node ${root_dir}/build/nmos-cpp-registry results badges $GITHUB_STEP_SUMMARY ${{ env.HOST_IP_ADDRESS }} "${{ env.GITHUB_COMMIT }}-${{ env.BUILD_NAME }}-"

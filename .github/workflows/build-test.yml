@@ -215,6 +215,29 @@ jobs:
         echo "DOCKER_HOST=$DOCKER_HOST" >> $GITHUB_ENV
         echo "DOCKER_CERT_PATH=$DOCKER_CERT_PATH" >> $GITHUB_ENV
 
+    # the Ubuntu package mirror is sometimes slow or unreachable, so keep the downloaded packages
+    - name: ubuntu package cache setup
+      if: runner.os == 'Linux'
+      id: debs-key
+      run: |
+        # the key changes each week, so that the cache picks up package updates
+        # (kojo formats this file, so each literal percent sign is doubled)
+        echo "week=$(date -u +%G-W%V)" >> "$GITHUB_OUTPUT"
+        mkdir -p "$RUNNER_TEMP/debs/partial"
+        # make every later apt-get install keep its packages there
+        echo "Dir::Cache::Archives \"$RUNNER_TEMP/debs\";" | sudo tee /etc/apt/apt.conf.d/90ci-debs > /dev/null
+
+    - name: restore ubuntu packages
+      if: runner.os == 'Linux'
+      id: debs-cache
+      uses: actions/cache/restore@v6
+      with:
+        path: ${{ runner.temp }}/debs
+        key: debs-${{ matrix.os }}-mdns-${{ matrix.install_mdns }}-${{ hashFiles('.github/workflows/build-test.yml') }}-${{ steps.debs-key.outputs.week }}
+        restore-keys: |
+          debs-${{ matrix.os }}-mdns-${{ matrix.install_mdns }}-${{ hashFiles('.github/workflows/build-test.yml') }}-
+          debs-${{ matrix.os }}-mdns-${{ matrix.install_mdns }}-
+
     - name: ubuntu setup
       if: runner.os == 'Linux'
       run: |
@@ -330,6 +353,21 @@ jobs:
         # force dependency on avahi
         echo "CMAKE_EXTRA_ARGS=${{ env.CMAKE_EXTRA_ARGS }} -DNMOS_CPP_USE_AVAHI:BOOL=\"1\"" >> $GITHUB_ENV
 
+    # save the packages when this key is not already stored
+    - name: clean ubuntu packages
+      if: runner.os == 'Linux' && steps.debs-cache.outputs.cache-hit != 'true'
+      run: |
+        # autoclean removes the packages that have been superseded, so that the cache does not keep growing
+        sudo apt-get autoclean
+        sudo chown -R "$(id -u):$(id -g)" "$RUNNER_TEMP/debs"
+
+    - name: save ubuntu packages
+      if: runner.os == 'Linux' && steps.debs-cache.outputs.cache-hit != 'true'
+      uses: actions/cache/save@v6
+      with:
+        path: ${{ runner.temp }}/debs
+        key: ${{ steps.debs-cache.outputs.cache-primary-key }}
+
     - name: force cpprest asio
       if: matrix.force_cpprest_asio == true && matrix.use_conan == true
       shell: bash
@@ -350,6 +388,31 @@ jobs:
       if: runner.os == 'Windows'
       uses: ilammy/msvc-dev-cmd@v1
 
+    - name: conan cache key
+      if: matrix.use_conan == true
+      id: conan-cache-key
+      shell: bash
+      run: |
+        # the compiler version as the CMake provider records it in the Conan host profile
+        if [[ "${{ runner.os }}" == "Windows" ]]; then
+          compiler=$( (cl 2>&1 >/dev/null || true) | sed -n 's/.*Version \([0-9]*\)\.\([0-9]\).*/\1\2/p' | head -1)
+        else
+          compiler=$(c++ -dumpfullversion | cut -d. -f1)
+        fi
+        test -n "$compiler"
+        echo "compiler=$compiler" >> "$GITHUB_OUTPUT"
+
+    # package binaries only, so that the profiles the CMake provider writes are not restored
+    - name: restore conan cache
+      if: matrix.use_conan == true
+      id: conan-cache
+      uses: actions/cache/restore@v6
+      with:
+        path: ~/.conan2/p
+        key: conan-${{ matrix.os }}-${{ steps.conan-cache-key.outputs.compiler }}-asio-${{ matrix.force_cpprest_asio }}-${{ hashFiles('Development/conanfile.txt', 'Development/third_party/cmake/conan_provider.cmake') }}
+        restore-keys: |
+          conan-${{ matrix.os }}-${{ steps.conan-cache-key.outputs.compiler }}-asio-${{ matrix.force_cpprest_asio }}-
+
     - name: build
       uses: lukka/run-cmake@v3.4
       with:
@@ -357,6 +420,20 @@ jobs:
         cmakeListsTxtPath: '${{ env.GITHUB_WORKSPACE }}/Development/CMakeLists.txt'
         buildDirectory: '${{ env.RUNNER_WORKSPACE }}/build/'
         cmakeAppendedArgs: '-GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_COMPILE_WARNING_AS_ERROR=ON -DCMAKE_INSTALL_PREFIX="${{ env.RUNNER_WORKSPACE }}/install" ${{ env.CMAKE_COMPILER_ARGS }} ${{ env.CMAKE_EXTRA_ARGS }}'
+
+    # save the cleaned cache when this key is not already stored
+    - name: clean conan cache
+      if: matrix.use_conan == true && steps.conan-cache.outputs.cache-hit != 'true'
+      shell: bash
+      run: |
+        conan cache clean "*" --source --build --temp
+
+    - name: save conan cache
+      if: matrix.use_conan == true && steps.conan-cache.outputs.cache-hit != 'true'
+      uses: actions/cache/save@v6
+      with:
+        path: ~/.conan2/p
+        key: ${{ steps.conan-cache.outputs.cache-primary-key }}
 
     - name: dump conan lockfile
       if: matrix.use_conan == true
@@ -432,7 +509,7 @@ jobs:
         cd nmos-testing
 
         # Configure the Testing Tool so all APIs are tested with TLS and authorization
-        printf "from . import Config as CONFIG\nCONFIG.ENABLE_HTTPS = True\nCONFIG.MOCK_SERVICES_WARM_UP_DELAY = 30\nCONFIG.HTTP_TIMEOUT = 2\n" > nmostesting/UserConfig.py
+        printf "from . import Config as CONFIG\nCONFIG.ENABLE_HTTPS = True\nCONFIG.MOCK_SERVICES_WARM_UP_DELAY = 10\nCONFIG.HTTP_TIMEOUT = 2\n" > nmostesting/UserConfig.py
         # Set the DNS-SD mode
         printf 'CONFIG.DNS_SD_MODE = "'${{ matrix.dns_sd_mode }}'"\n' >> nmostesting/UserConfig.py
         # Set the client JWKS_URI for mock Authorization Server to obtain the client JSON Web Key Set (public keys) to verify the client_assertion, when the client is requesting the access token
@@ -479,7 +556,7 @@ jobs:
           sudo pip install --upgrade -r requirements.txt
           # install SDPoker
           npm install -g git+https://git@github.com/AMWA-TV/sdpoker.git
-          run_python="sudo python"
+          run_python="sudo --preserve-env=NODNS python"
         else
           # run test suite directly
           pip install -r requirements.txt
@@ -568,6 +645,13 @@ jobs:
         if [[ "${{ runner.os }}" == "Linux" && "${{ matrix.install_mdns }}" == "false" ]]; then
           # nmos-cpp-node doesn't currently support advertising hostnames to Avahi
           avahi-publish -a -R nmos-api.local ${{ env.HOST_IP_ADDRESS }} &
+        fi
+
+        # the testing tool gives testssl.sh the IP address, so it needs no DNS queries
+        export NODNS=none
+        if [[ "${{ runner.os }}" == "Windows" ]]; then
+          # testssl.sh runs in WSL
+          export WSLENV="${WSLENV:+$WSLENV:}NODNS"
         fi
 
         ${{ env.GITHUB_WORKSPACE_BASH }}/Sandbox/run_nmos_testing.sh "$run_python" ${domain} ${root_dir}/build/nmos-cpp-node ${root_dir}/build/nmos-cpp-registry results badges $GITHUB_STEP_SUMMARY ${{ env.HOST_IP_ADDRESS }} "${{ env.GITHUB_COMMIT }}-${{ env.BUILD_NAME }}-"
