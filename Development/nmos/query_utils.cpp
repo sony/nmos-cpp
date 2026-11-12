@@ -58,7 +58,7 @@ namespace nmos
                 {
                     rql_query = rql::parse_query(field.second.as_string());
                     // validate against call-operators used in nmos::match_rql
-                    rql::validate_query(rql_query, make_rql_operators({}));
+                    rql::validate_query(rql_query, make_rql_operators(nmos::resources()));
                 }
                 // extract the experimental flag, used to override the default behaviour that resources
                 // "must have all [higher-versioned] keys stripped by the Query API before they are returned"
