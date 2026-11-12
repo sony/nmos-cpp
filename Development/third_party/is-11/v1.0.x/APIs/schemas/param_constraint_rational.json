@@ -1,0 +1,39 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "description": "Describes a Rational Parameter Constraint",
+  "title": "Rational Parameter Constraint",
+  "type": "object",
+  "properties": {
+    "enum": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/definitions/rational"
+      }
+    },
+    "minimum": {
+      "$ref": "#/definitions/rational"
+    },
+    "maximum": {
+      "$ref": "#/definitions/rational"
+    }
+  },
+  "definitions": {
+    "rational": {
+      "type": "object",
+      "required": [
+        "numerator"
+      ],
+      "properties": {
+        "numerator": {
+          "type": "integer"
+        },
+        "denominator": {
+          "type": "integer",
+          "default": 1
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}
