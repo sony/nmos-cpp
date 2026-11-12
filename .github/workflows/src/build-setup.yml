@@ -216,8 +216,10 @@
     sudo apt-get install -f nscd
     echo "CTEST_EXTRA_ARGS=$CTEST_EXTRA_ARGS -E testMdnsAdvertiseAddress" >> $GITHUB_ENV
     echo "CTEST_EXPECTED_FAILURES=$CTEST_EXPECTED_FAILURES -R testMdnsAdvertiseAddress" >> $GITHUB_ENV
-    # make avahi only respond on the "eth0" interface
-    sudo sed -i 's/#*allow-interfaces=.*/allow-interfaces=eth0/g' /etc/avahi/avahi-daemon.conf
+    # make avahi only respond on the interface of the default route
+    # (runner images name it differently, e.g. "eth0" or "enp39s0")
+    default_interface=$(ip route show default | awk '{print $5; exit}')
+    sudo sed -i "s/#*allow-interfaces=.*/allow-interfaces=$default_interface/g" /etc/avahi/avahi-daemon.conf
     sudo systemctl restart avahi-daemon
     # verify local publish/browse works before spending time on the build
     avahi-publish -s ci-selftest _nmos-test._tcp 8080 &
