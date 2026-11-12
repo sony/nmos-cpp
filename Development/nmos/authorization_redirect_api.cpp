@@ -44,7 +44,8 @@ namespace nmos
 
             inline authorization_flow_response make_authorization_flow_error_response(web::http::status_code code, const std::exception& debug)
             {
-                return make_authorization_flow_error_response(code, {}, utility::s2us(debug.what()));
+                // what() is a narrow platform string with no UTF-8 guarantee
+                return make_authorization_flow_error_response(code, {}, utility::s2us_lenient(debug.what()));
             }
 
             void process_error_response(const web::uri& redirected_uri, const utility::string_t& response_type, const utility::string_t& state)

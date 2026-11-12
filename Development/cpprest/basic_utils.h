@@ -1,6 +1,7 @@
 #ifndef CPPREST_BASIC_UTILS_H
 #define CPPREST_BASIC_UTILS_H
 
+#include <stdexcept> // for std::range_error
 #include "cpprest/asyncrt_utils.h" // for cpprest/details/basic_types.h and utility::conversions
 
 namespace utility
@@ -80,6 +81,40 @@ namespace utility
 
     inline string_t s2us(const std::string& s)
     {
+        return conversions::to_string_t(s);
+    }
+
+    namespace details
+    {
+        // Decode a narrow string that is not valid UTF-8, using the system narrow encoding
+        // (the Windows ANSI code page) where there is one, and Latin-1 otherwise
+        // Latin-1 cannot fail, so neither can this; no input is rejected and nothing is discarded
+        string_t system_narrow_to_us(const std::string& s);
+    }
+
+    // Convert a narrow string of uncertain encoding to string_t
+    // s2us requires valid UTF-8 and throws std::range_error otherwise; use this instead at
+    // boundaries where the narrow string comes from the platform rather than from this codebase,
+    // e.g. std::exception::what(), system error messages, or __FILE__, none of which are
+    // guaranteed to be UTF-8 - on Windows they are typically in the ANSI code page
+    // Never throws, and never discards a message
+    inline string_t s2us_lenient(const std::string& s)
+    {
+        if (s.empty()) return{};
+        try
+        {
+            // conversions::to_utf16string is the same decoder that s2us itself uses on a wide
+            // build, on every platform, so this accepts exactly what s2us accepts and the
+            // fallback handles exactly what it would have rejected
+            // note this deliberately discards the result and converts s below, rather than
+            // converting the decoded value, so that whenever s2us would have succeeded this
+            // returns precisely what s2us returns, on a narrow build as well as a wide one
+            (void)conversions::to_utf16string(s);
+        }
+        catch (const std::range_error&)
+        {
+            return details::system_narrow_to_us(s);
+        }
         return conversions::to_string_t(s);
     }
 
