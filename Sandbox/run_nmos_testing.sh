@@ -57,7 +57,7 @@ fi
 
 common_params=",\
   \"logging_level\":-40,\
-  \"discovery_backoff_max\":10,\
+  \"discovery_backoff_max\":5,\
   \"registration_request_max\":5,\
   \"system_request_max\":5,\
   \"domain\":\"${domain}\",\
