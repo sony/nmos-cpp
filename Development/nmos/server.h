@@ -26,8 +26,12 @@ namespace nmos
         std::vector<web::http::experimental::listener::http_listener> http_listeners;
 
         // WebSocket APIs
-        std::map<host_port, std::pair<web::websockets::experimental::listener::websocket_listener_handlers, nmos::websockets>> ws_handlers;
-        std::vector<web::websockets::experimental::listener::websocket_listener> ws_listeners;
+        // each port may be shared by multiple APIs, each identified by a path prefix (e.g. "/x-nmos/events/")
+        // in order to maintain a separate set of connections (nmos::websockets) per API, even when a port is shared
+        typedef std::map<utility::string_t, std::pair<web::websockets::experimental::listener::websocket_listener_handlers, nmos::websockets>> ws_api_handlers;
+        std::map<host_port, ws_api_handlers> ws_handlers;
+        std::deque<web::websockets::experimental::listener::websocket_listener_handlers> combined_ws_handlers; // for APIs sharing a port, the handlers are combined into one set of handlers
+        std::map<host_port, web::websockets::experimental::listener::websocket_listener> ws_listeners;
 
         // Server behaviours
         std::vector<std::function<void()>> thread_functions;

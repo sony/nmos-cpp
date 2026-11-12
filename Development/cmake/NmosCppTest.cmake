@@ -61,6 +61,7 @@ set(NMOS_CPP_TEST_NMOS_TEST_SOURCES
     nmos/test/log_gate_test.cpp
     nmos/test/mdns_test.cpp
     nmos/test/node_interfaces_test.cpp
+    nmos/test/node_server_test.cpp
     nmos/test/paging_utils_test.cpp
     nmos/test/query_api_test.cpp
     nmos/test/resources_test.cpp

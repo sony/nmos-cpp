@@ -1,5 +1,6 @@
 #include "nmos/api_utils.h"
 
+#include <cstddef>
 #include <boost/algorithm/cxx11/any_of.hpp>
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/algorithm/string/trim.hpp>
@@ -762,6 +763,32 @@ namespace nmos
             std::ref(handlers.message_handler)
         });
         return ws_listener;
+    }
+
+    web::websockets::experimental::listener::websocket_listener_handlers make_ws_api_router(std::map<utility::string_t, web::websockets::experimental::listener::websocket_listener_handlers> handlers)
+    {
+        const auto find_handlers = [handlers](const web::uri& uri) -> const web::websockets::experimental::listener::websocket_listener_handlers*
+        {
+            const auto& path = uri.path();
+            const web::websockets::experimental::listener::websocket_listener_handlers* result{};
+            std::size_t longest_path{};
+            for (const auto& handler : handlers)
+            {
+                if (boost::starts_with(path, handler.first) && longest_path < handler.first.size())
+                {
+                    result = &handler.second;
+                    longest_path = handler.first.size();
+                }
+            }
+            return result;
+        };
+
+        return {
+            [find_handlers](web::http::http_request req) { const auto handlers = find_handlers(req.request_uri()); return handlers && handlers->validate_handler(req); },
+            [find_handlers](const web::uri& uri, const web::websockets::experimental::listener::connection_id& id) { if (const auto handlers = find_handlers(uri)) handlers->open_handler(uri, id); },
+            [find_handlers](const web::uri& uri, const web::websockets::experimental::listener::connection_id& id, web::websockets::websocket_close_status status, const utility::string_t& reason) { if (const auto handlers = find_handlers(uri)) handlers->close_handler(uri, id, status, reason); },
+            [find_handlers](const web::uri& uri, const web::websockets::experimental::listener::connection_id& id, const web::websockets::websocket_incoming_message& message) { if (const auto handlers = find_handlers(uri)) handlers->message_handler(uri, id, message); }
+        };
     }
 
     // returns "http" or "https" depending on settings

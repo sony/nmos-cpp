@@ -62,7 +62,7 @@ namespace nmos
 
             for (auto& ws_listener : ws_listeners)
             {
-                if (0 <= ws_listener.uri().port()) tasks.push_back(ws_listener.open());
+                if (0 <= ws_listener.second.uri().port()) tasks.push_back(ws_listener.second.open());
             }
 
             return pplx::ranges::when_all(tasks).then(pplx::observe_exceptions(tasks));
@@ -83,7 +83,7 @@ namespace nmos
             }
             for (auto& ws_listener : ws_listeners)
             {
-                if (0 <= ws_listener.uri().port()) tasks.push_back(ws_listener.close());
+                if (0 <= ws_listener.second.uri().port()) tasks.push_back(ws_listener.second.close());
             }
 
             return pplx::ranges::when_all(tasks).then(pplx::observe_exceptions(tasks));
