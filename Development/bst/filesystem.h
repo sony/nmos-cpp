@@ -15,24 +15,22 @@
 
 #elif defined(_MSC_VER)
 
-#if _MSC_VER >= 1951
-// From VS2026, or more precisely, MSVC Build Tools v14.51, <experimental/filesystem> is finally removed
+// From VS2017, /std:c++17 switch is introduced, but this is only indicated in __cplusplus if /Zc:__cplusplus is also specified
+// so use _MSVC_LANG instead
+#if defined(_MSVC_LANG) && _MSVC_LANG >= 201703L
+// C++17
+#define BST_FILESYSTEM_STD
+#elif _MSC_VER >= 1951
+// From VS2026 / MSVC Build Tools v14.51, <experimental/filesystem> is removed
 // See https://learn.microsoft.com/en-us/visualstudio/releases/2026/release-notes
 // and https://github.com/microsoft/STL/pull/5765
-#define BST_FILESYSTEM_STD
-#elif _MSC_VER >= 1910
-// From VS2017, /std:c++17 switch is introduced, but this is only indicated in __cplusplus if /Zc:__cplusplus is also specified
-#if __cplusplus >= 201703L
-#define BST_FILESYSTEM_STD
-#else
+#define BST_FILESYSTEM_BOOST
+#elif _MSC_VER >= 1900
+// VS2015
 #define BST_FILESYSTEM_STD_EXPERIMENTAL
 #if _MSC_VER >= 1920
 #define _SILENCE_EXPERIMENTAL_FILESYSTEM_DEPRECATION_WARNING
 #endif
-#endif
-#elif _MSC_VER >= 1900
-// VS2015
-#define BST_FILESYSTEM_STD_EXPERIMENTAL
 #else
 // Earlier
 #define BST_FILESYSTEM_MICROSOFT_TR2
