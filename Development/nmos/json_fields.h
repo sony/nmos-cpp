@@ -210,6 +210,12 @@ namespace nmos
         const web::json::field_as_value_or ext_is_07_source_id{ U("ext_is_07_source_id"), {} }; // string or null
         const web::json::field_as_value_or ext_is_07_rest_api_url{ U("ext_is_07_rest_api_url"), {} }; // string or null
 
+        // IPMX
+
+        // for connection_api
+        // see VSF TR-10-8:2026 Section 8
+        const web::json::field_as_value_or ext_link_offset_delay{ U("ext_link_offset_delay"), {} }; // integer (microseconds) or "auto"
+
         // IS-08 Audio Channel Mapping
 
         // for channelmapping_api

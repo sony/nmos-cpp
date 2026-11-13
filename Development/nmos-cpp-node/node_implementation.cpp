@@ -36,6 +36,7 @@
 #include "nmos/format.h"
 #include "nmos/group_hint.h"
 #include "nmos/interlace_mode.h"
+#include "nmos/ipmx.h"
 #include "nmos/is12_versions.h"  // for IS-12 gain control
 #ifdef HAVE_LLDP
 #include "nmos/lldp_manager.h"
@@ -132,6 +133,10 @@ namespace impl
         // smpte2022_7: controls whether senders and receivers have one leg (false) or two legs (true, default)
         const web::json::field_as_bool_or smpte2022_7{ U("smpte2022_7"), true };
 
+        // ipmx: controls whether the node demonstrates IPMX behaviour (true) or not (false, default)
+        // see VSF TR-10
+        const web::json::field_as_bool_or ipmx{ U("ipmx"), false };
+
         // simulate_status_monitor_activity: when true status monitor statuses will change randomly after activation
         const web::json::field_as_bool_or simulate_status_monitor_activity{U("simulate_status_monitor_activity"), true};
 
@@ -140,6 +145,13 @@ namespace impl
     }
 
     nmos::interlace_mode get_interlace_mode(const nmos::settings& settings);
+
+    // add the IPMX declaration and the parameters for a sender whose output is based upon the conversion of a Baseband signal
+    // see VSF TR-10-1:2024 Section 10
+    void set_ipmx_parameters(nmos::video_raw_parameters& params);
+    void set_ipmx_parameters(nmos::video_jxsv_parameters& params);
+    void set_ipmx_parameters(nmos::audio_L_parameters& params);
+    void set_ipmx_parameters(nmos::video_smpte291_parameters& params);
 
     // the different kinds of 'port' (standing for the format/media type/event type) implemented by the example node
     // each 'port' of the example node has a source, flow, sender and/or compatible receiver
@@ -209,6 +221,13 @@ namespace impl
 
     // add an example "natural grouping" hint to a sender or receiver
     void insert_group_hint(nmos::resource& resource, const port& port, int index);
+
+    // example range of the IPMX Link Offset Delay (microseconds) while a receiver is active, based on VSF TR-10-8:2026 Section 8
+    const int link_offset_delay_minimum = 15;
+    const int link_offset_delay_maximum = 52;
+
+    // update the IPMX Link Offset Delay constraints and values of a receiver after it is activated or deactivated
+    void update_link_offset_delay(nmos::resource& connection_receiver);
 
     // specific event types used by the example node
     const auto temperature_Celsius = nmos::event_types::measurement(U("temperature"), U("C"));
@@ -444,6 +463,7 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
     const auto mxl_video_type = nmos::media_type{ impl::fields::mxl_video_type(model.settings) };
     const auto channel_count = impl::fields::channel_count(model.settings);
     const auto smpte2022_7 = impl::fields::smpte2022_7(model.settings);
+    const auto ipmx = impl::fields::ipmx(model.settings);
 
     // for now, some typical values for video/jxsv, based on VSF TR-08:2022
     // see https://vsf.tv/download/technical_recommendations/VSF_TR-08_2022-04-20.pdf
@@ -801,6 +821,19 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
             if (smpte2022_7) connection_receiver.data[nmos::fields::endpoint_constraints][1][nmos::fields::interface_ip] = value_of({
                 { nmos::fields::constraint_enum, value_from_elements(secondary_interface.addresses) }
             });
+            if (ipmx)
+            {
+                // an inactive IPMX receiver has no constraints on the Link Offset Delay, see impl::update_link_offset_delay
+                for (auto& constraints : connection_receiver.data[nmos::fields::endpoint_constraints].as_array())
+                {
+                    constraints[nmos::fields::ext_link_offset_delay] = value::object();
+                }
+                for (auto& params : connection_receiver.data[nmos::fields::endpoint_staged][nmos::fields::transport_params].as_array())
+                {
+                    params[nmos::fields::ext_link_offset_delay] = value::string(U("auto"));
+                }
+                connection_receiver.data[nmos::fields::endpoint_active][nmos::fields::transport_params] = connection_receiver.data[nmos::fields::endpoint_staged][nmos::fields::transport_params];
+            }
 
             resolve_auto(receiver, connection_receiver, connection_receiver.data[nmos::fields::endpoint_active][nmos::fields::transport_params]);
 
@@ -2081,10 +2114,11 @@ nmos::connection_resource_auto_resolver make_node_implementation_auto_resolver(c
     const auto ws_receiver_ids = impl::make_ids(seed_id, nmos::types::receiver, ws_receiver_ports, how_many);
     const auto mxl_receiver_ports = boost::copy_range<std::vector<impl::port>>(receiver_ports | boost::adaptors::filtered(impl::is_mxl_port));
     const auto mxl_receiver_ids = impl::make_ids(seed_id, nmos::types::receiver, mxl_receiver_ports, how_many);
+    const auto ipmx = impl::fields::ipmx(settings);
 
     // although which properties may need to be defaulted depends on the resource type,
     // the default value will almost always be different for each resource
-    return [rtp_sender_ids, rtp_receiver_ids, ws_sender_ids, ws_sender_uri, ws_receiver_ids, mxl_sender_ids, mxl_receiver_ids](const nmos::resource& resource, const nmos::resource& connection_resource, value& transport_params)
+    return [rtp_sender_ids, rtp_receiver_ids, ws_sender_ids, ws_sender_uri, ws_receiver_ids, mxl_sender_ids, mxl_receiver_ids, ipmx](const nmos::resource& resource, const nmos::resource& connection_resource, value& transport_params)
     {
         const std::pair<nmos::id, nmos::type> id_type{ connection_resource.id, connection_resource.type };
         // this code relies on the specific constraints added by node_implementation_thread
@@ -2097,8 +2131,19 @@ nmos::connection_resource_auto_resolver make_node_implementation_auto_resolver(c
             const bool smpte2022_7 = 1 < transport_params.size();
             nmos::details::resolve_auto(transport_params[0], nmos::fields::source_ip, [&] { return web::json::front(nmos::fields::constraint_enum(constraints.at(0).at(nmos::fields::source_ip))); });
             if (smpte2022_7) nmos::details::resolve_auto(transport_params[1], nmos::fields::source_ip, [&] { return web::json::back(nmos::fields::constraint_enum(constraints.at(1).at(nmos::fields::source_ip))); });
-            nmos::details::resolve_auto(transport_params[0], nmos::fields::destination_ip, [&] { return value::string(impl::make_source_specific_multicast_address_v4(id_type.first, 0)); });
-            if (smpte2022_7) nmos::details::resolve_auto(transport_params[1], nmos::fields::destination_ip, [&] { return value::string(impl::make_source_specific_multicast_address_v4(id_type.first, 1)); });
+            if (ipmx)
+            {
+                // each RTP sender is a separate IPMX media stream, numbered from 1, on each of its interfaces
+                // see VSF TR-10-9:2025 Section 17.1
+                const int stream_number = int(boost::range::find(rtp_sender_ids, id_type.first) - rtp_sender_ids.begin()) + 1;
+                nmos::details::resolve_auto(transport_params[0], nmos::fields::destination_ip, [&] { return value::string(nmos::ipmx::make_default_multicast_address_v4(nmos::fields::source_ip(transport_params[0]).as_string(), stream_number)); });
+                if (smpte2022_7) nmos::details::resolve_auto(transport_params[1], nmos::fields::destination_ip, [&] { return value::string(nmos::ipmx::make_default_multicast_address_v4(nmos::fields::source_ip(transport_params[1]).as_string(), stream_number)); });
+            }
+            else
+            {
+                nmos::details::resolve_auto(transport_params[0], nmos::fields::destination_ip, [&] { return value::string(impl::make_source_specific_multicast_address_v4(id_type.first, 0)); });
+                if (smpte2022_7) nmos::details::resolve_auto(transport_params[1], nmos::fields::destination_ip, [&] { return value::string(impl::make_source_specific_multicast_address_v4(id_type.first, 1)); });
+            }
             // lastly, apply the specification defaults for any properties not handled above
             nmos::resolve_rtp_auto(id_type.second, transport_params);
         }
@@ -2124,6 +2169,12 @@ nmos::connection_resource_auto_resolver make_node_implementation_auto_resolver(c
                     }
                     // unconstrained: highest available in the schema
                     return value::string(U("2D"));
+                });
+                // VSF TR-10-8:2026 Section 8 defines "auto" as the minimum constraint, and the value of an inactive receiver as 0
+                // see impl::update_link_offset_delay
+                nmos::details::resolve_auto(params, nmos::fields::ext_link_offset_delay, [&] {
+                    const auto& constraint = constraints.at(leg).at(nmos::fields::ext_link_offset_delay);
+                    return constraint.has_field(nmos::fields::constraint_minimum) ? nmos::fields::constraint_minimum(constraint) : value(0);
                 });
             }
             // lastly, apply the specification defaults for any properties not handled above
@@ -2164,9 +2215,10 @@ nmos::connection_sender_transportfile_setter make_node_implementation_transportf
     const auto rtp_source_ids = impl::make_ids(seed_id, nmos::types::source, rtp_sender_ports, how_many);
     const auto rtp_flow_ids = impl::make_ids(seed_id, nmos::types::flow, rtp_sender_ports, how_many);
     const auto rtp_sender_ids = impl::make_ids(seed_id, nmos::types::sender, rtp_sender_ports, how_many);
+    const auto ipmx = impl::fields::ipmx(settings);
 
     // as part of activation, the example sender /transportfile should be updated based on the active transport parameters
-    return [&node_resources, node_id, rtp_source_ids, rtp_flow_ids, rtp_sender_ids](const nmos::resource& sender, const nmos::resource& connection_sender, value& endpoint_transportfile)
+    return [&node_resources, node_id, rtp_source_ids, rtp_flow_ids, rtp_sender_ids, ipmx](const nmos::resource& sender, const nmos::resource& connection_sender, value& endpoint_transportfile)
     {
         const auto found = boost::range::find(rtp_sender_ids, connection_sender.id);
         if (rtp_sender_ids.end() != found)
@@ -2200,11 +2252,15 @@ nmos::connection_sender_transportfile_setter make_node_implementation_transportf
                     const nmos::media_type video_type{ nmos::fields::media_type(flow->data) };
                     if (nmos::media_types::video_raw == video_type)
                     {
-                        return nmos::make_video_sdp_parameters(node->data, source->data, flow->data, sender.data, nmos::details::payload_type_video_default, mids, {}, sdp::type_parameters::type_N);
+                        auto params = nmos::make_video_raw_parameters(node->data, source->data, flow->data, sender.data, sdp::type_parameters::type_N);
+                        if (ipmx) impl::set_ipmx_parameters(params);
+                        const auto ts_refclk = nmos::details::make_ts_refclk(node->data, source->data, sender.data, {});
+                        return nmos::make_sdp_parameters(nmos::fields::label(sender.data), params, nmos::details::payload_type_video_default, mids, ts_refclk);
                     }
                     else if (nmos::media_types::video_jxsv == video_type)
                     {
-                        const auto params = nmos::make_video_jxsv_parameters(node->data, source->data, flow->data, sender.data);
+                        auto params = nmos::make_video_jxsv_parameters(node->data, source->data, flow->data, sender.data);
+                        if (ipmx) impl::set_ipmx_parameters(params);
                         const auto ts_refclk = nmos::details::make_ts_refclk(node->data, source->data, sender.data, {});
                         return nmos::make_sdp_parameters(nmos::fields::label(sender.data), params, nmos::details::payload_type_video_default, mids, ts_refclk);
                     }
@@ -2217,11 +2273,17 @@ nmos::connection_sender_transportfile_setter make_node_implementation_transportf
                 {
                     // this example application doesn't actually stream, so just indicate a sensible value for packet time
                     const double packet_time = nmos::fields::channels(source->data).size() > 8 ? 0.125 : 1;
-                    return nmos::make_audio_sdp_parameters(node->data, source->data, flow->data, sender.data, nmos::details::payload_type_audio_default, mids, {}, packet_time);
+                    auto params = nmos::make_audio_L_parameters(node->data, source->data, flow->data, sender.data, packet_time);
+                    if (ipmx) impl::set_ipmx_parameters(params);
+                    const auto ts_refclk = nmos::details::make_ts_refclk(node->data, source->data, sender.data, {});
+                    return nmos::make_sdp_parameters(nmos::fields::label(sender.data), params, nmos::details::payload_type_audio_default, mids, ts_refclk);
                 }
                 else if (nmos::formats::data == format)
                 {
-                    return nmos::make_data_sdp_parameters(node->data, source->data, flow->data, sender.data, nmos::details::payload_type_data_default, mids, {}, {});
+                    auto params = nmos::make_video_smpte291_parameters(node->data, source->data, flow->data, sender.data, {});
+                    if (ipmx) impl::set_ipmx_parameters(params);
+                    const auto ts_refclk = nmos::details::make_ts_refclk(node->data, source->data, sender.data, {});
+                    return nmos::make_sdp_parameters(nmos::fields::label(sender.data), params, nmos::details::payload_type_data_default, mids, ts_refclk);
                 }
                 else if (nmos::formats::mux == format)
                 {
@@ -2289,12 +2351,19 @@ nmos::connection_activation_handler make_node_implementation_connection_activati
     auto handle_close = nmos::experimental::make_events_ws_close_handler(model, gate);
     auto connection_events_activation_handler = nmos::make_connection_events_websocket_activation_handler(handle_load_ca_certificates, handle_events_ws_message, handle_close, model.settings, gate);
 
-    return [connection_events_activation_handler, &gate](const nmos::resource& resource, const nmos::resource& connection_resource)
+    return [connection_events_activation_handler, &model, &gate](const nmos::resource& resource, const nmos::resource& connection_resource)
     {
         const std::pair<nmos::id, nmos::type> id_type{ resource.id, resource.type };
         slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::stash_category(impl::categories::node_implementation) << "Activating " << id_type;
 
         connection_events_activation_handler(resource, connection_resource);
+
+        // this callback is called with the model write lock held, so the connection resource can be modified directly
+        // and the model is notified after it returns
+        if (nmos::types::receiver == connection_resource.type && nmos::fields::endpoint_constraints(connection_resource.data).at(0).has_field(nmos::fields::ext_link_offset_delay))
+        {
+            nmos::modify_resource(model.connection_resources, connection_resource.id, impl::update_link_offset_delay);
+        }
     };
 }
 
@@ -2481,6 +2550,63 @@ nmos::create_device_model_object_handler make_create_device_model_object_handler
 
 namespace impl
 {
+    // nominal total (active and blanking) pixels per line and lines per frame of common Baseband video formats
+    // see SMPTE ST 296 (720-line), SMPTE ST 274 (1080-line) and SMPTE ST 2036-1/CTA-861 (2160-line) raster timings
+    static std::pair<uint32_t, uint32_t> get_baseband_htotal_vtotal(uint32_t width, uint32_t height, const nmos::rational& frame_rate)
+    {
+        // the 1/1.001 variants have the same raster as the integer frame rates
+        const auto rate = 0 != frame_rate.denominator() ? (frame_rate.numerator() + frame_rate.denominator() / 2) / frame_rate.denominator() : 0;
+        const auto index = 24 == rate ? 0 : 25 == rate ? 1 : 30 == rate ? 2 : 50 == rate ? 3 : 60 == rate ? 4 : -1;
+        if (0 > index) return{};
+
+        //                             24     25     30     50     60
+        const uint32_t htotal_720[]  { 4125,  3960,  3300,  1980,  1650 };
+        const uint32_t htotal_1080[] { 2750,  2640,  2200,  2640,  2200 };
+        const uint32_t htotal_2160[] { 5500,  5280,  4400,  5280,  4400 };
+
+        if (1280 == width && 720 == height) return{ htotal_720[index], 750 };
+        if (1920 == width && 1080 == height) return{ htotal_1080[index], 1125 };
+        if (3840 == width && 2160 == height) return{ htotal_2160[index], 2250 };
+        return{};
+    }
+
+    template <typename VideoParameters>
+    static void set_ipmx_video_parameters(VideoParameters& params)
+    {
+        params.ipmx = true;
+
+        // this example application doesn't actually convert a Baseband signal, so indicate the nominal values for common formats
+        // rather than measured values; the frame rate is used for interlaced formats too because vtotal includes both fields
+        const auto totals = get_baseband_htotal_vtotal(params.width, params.height, params.exactframerate);
+        if (0 == totals.first) return;
+        params.htotal = totals.first;
+        params.vtotal = totals.second;
+        params.measuredpixclk = (uint64_t(params.htotal) * params.vtotal * params.exactframerate.numerator() + params.exactframerate.denominator() / 2) / params.exactframerate.denominator();
+    }
+
+    void set_ipmx_parameters(nmos::video_raw_parameters& params)
+    {
+        set_ipmx_video_parameters(params);
+    }
+
+    void set_ipmx_parameters(nmos::video_jxsv_parameters& params)
+    {
+        set_ipmx_video_parameters(params);
+    }
+
+    void set_ipmx_parameters(nmos::audio_L_parameters& params)
+    {
+        params.ipmx = true;
+
+        // this example application doesn't actually convert a Baseband signal, so indicate the nominal sample rate
+        params.measuredsamplerate = (uint32_t)params.sample_rate;
+    }
+
+    void set_ipmx_parameters(nmos::video_smpte291_parameters& params)
+    {
+        params.ipmx = true;
+    }
+
     nmos::interlace_mode get_interlace_mode(const nmos::settings& settings)
     {
         if (settings.has_field(impl::fields::interlace_mode))
@@ -2620,6 +2746,42 @@ namespace impl
         web::json::push_back(resource.data[nmos::fields::tags][nmos::fields::group_hint], nmos::make_group_hint({ U("example"), resource.type.name + U(' ') + port.name + utility::conversions::details::to_string_t(index) }));
     }
 
+    // update the IPMX Link Offset Delay constraints and values of a receiver after it is activated or deactivated
+    // see VSF TR-10-8:2026 Section 8
+    // a real receiver would only know the range once it is receiving the stream, and would then make these changes itself
+    void update_link_offset_delay(nmos::resource& connection_receiver)
+    {
+        using web::json::value;
+        using web::json::value_of;
+
+        auto& constraints = connection_receiver.data[nmos::fields::endpoint_constraints];
+        auto& staged = connection_receiver.data[nmos::fields::endpoint_staged][nmos::fields::transport_params];
+        auto& active = connection_receiver.data[nmos::fields::endpoint_active];
+        const bool receiving = nmos::fields::master_enable(active);
+
+        for (size_t leg = 0; leg < constraints.size(); ++leg)
+        {
+            auto& staged_delay = staged[leg][nmos::fields::ext_link_offset_delay];
+            auto& active_delay = active[nmos::fields::transport_params][leg][nmos::fields::ext_link_offset_delay];
+            if (receiving)
+            {
+                // an active receiver specifies a minimum and maximum, and a value outside these is changed to the closest of them
+                constraints[leg][nmos::fields::ext_link_offset_delay] = value_of({
+                    { nmos::fields::constraint_minimum, link_offset_delay_minimum },
+                    { nmos::fields::constraint_maximum, link_offset_delay_maximum }
+                });
+                if (staged_delay.is_integer()) staged_delay = (std::min)((std::max)(staged_delay.as_integer(), link_offset_delay_minimum), link_offset_delay_maximum);
+                active_delay = staged_delay.is_integer() ? staged_delay : value(link_offset_delay_minimum);
+            }
+            else
+            {
+                // an inactive receiver does not specify constraints, and has a value of 0
+                constraints[leg][nmos::fields::ext_link_offset_delay] = value::object();
+                active_delay = 0;
+            }
+        }
+    }
+
     // JSON schema covering the example-node-specific impl::fields::* settings; combined with
     // nmos::validate_node_settings, this covers all the properties this example reads from the
     // settings JSON. additionalProperties is not set to false, so all other (standard) settings
@@ -2667,6 +2829,7 @@ namespace impl
         "channel_count": { "$ref": "#/definitions/positiveInteger" },
 
         "smpte2022_7":                      { "type": "boolean" },
+        "ipmx":                             { "type": "boolean" },
         "simulate_status_monitor_activity": { "type": "boolean" },
 
         "mxl_domain_id": { "$ref": "#/definitions/uuid" }

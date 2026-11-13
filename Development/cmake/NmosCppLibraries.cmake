@@ -1036,6 +1036,73 @@ target_include_directories(nmos_is14_schemas PUBLIC
 list(APPEND NMOS_CPP_TARGETS nmos_is14_schemas)
 add_library(nmos-cpp::nmos_is14_schemas ALIAS nmos_is14_schemas)
 
+# nmos_parameter_registers_schemas library
+
+set(NMOS_PARAMETER_REGISTERS_SCHEMAS_HEADERS
+    nmos/parameter_registers_schemas/parameter_registers_schemas.h
+    )
+
+set(NMOS_PARAMETER_REGISTERS_TAG main)
+
+set(NMOS_PARAMETER_REGISTERS_SCHEMAS_JSON
+    third_party/nmos-parameter-registers/${NMOS_PARAMETER_REGISTERS_TAG}/transport-parameters/receiver_transport_params_ext_register.json
+    third_party/nmos-parameter-registers/${NMOS_PARAMETER_REGISTERS_TAG}/transport-parameters/sender_transport_params_ext_register.json
+    )
+
+set(NMOS_PARAMETER_REGISTERS_SCHEMAS_JSON_MATCH "third_party/nmos-parameter-registers/([^/]+)/([^/]+)/([^;]+)\\.json")
+set(NMOS_PARAMETER_REGISTERS_SCHEMAS_SOURCE_REPLACE "${CMAKE_CURRENT_BINARY_DIR_REPLACE}/nmos/parameter_registers_schemas/\\1/\\2/\\3.cpp")
+string(REGEX REPLACE "${NMOS_PARAMETER_REGISTERS_SCHEMAS_JSON_MATCH}(;|$)" "${NMOS_PARAMETER_REGISTERS_SCHEMAS_SOURCE_REPLACE}\\4" NMOS_PARAMETER_REGISTERS_SCHEMAS_SOURCES "${NMOS_PARAMETER_REGISTERS_SCHEMAS_JSON}")
+
+foreach(JSON ${NMOS_PARAMETER_REGISTERS_SCHEMAS_JSON})
+    string(REGEX REPLACE "${NMOS_PARAMETER_REGISTERS_SCHEMAS_JSON_MATCH}" "${NMOS_PARAMETER_REGISTERS_SCHEMAS_SOURCE_REPLACE}" SOURCE "${JSON}")
+    string(REGEX REPLACE "${NMOS_PARAMETER_REGISTERS_SCHEMAS_JSON_MATCH}" "\\1" NS "${JSON}")
+    string(REGEX REPLACE "${NMOS_PARAMETER_REGISTERS_SCHEMAS_JSON_MATCH}" "\\3" VAR "${JSON}")
+    string(MAKE_C_IDENTIFIER "${NS}" NS)
+    string(MAKE_C_IDENTIFIER "${VAR}" VAR)
+
+    file(WRITE "${SOURCE}.in" "\
+// Auto-generated from: ${JSON}\n\
+\n\
+namespace nmos\n\
+{\n\
+    namespace parameter_registers_schemas\n\
+    {\n\
+        namespace ${NS}\n\
+        {\n\
+            const char* ${VAR} = R\"-auto-generated-(")
+
+    file(READ "${JSON}" RAW)
+    file(APPEND "${SOURCE}.in" "${RAW}")
+
+    file(APPEND "${SOURCE}.in" ")-auto-generated-\";\n\
+        }\n\
+    }\n\
+}\n")
+
+    configure_file("${SOURCE}.in" "${SOURCE}" COPYONLY)
+endforeach()
+
+add_library(
+    nmos_parameter_registers_schemas STATIC
+    ${NMOS_PARAMETER_REGISTERS_SCHEMAS_HEADERS}
+    ${NMOS_PARAMETER_REGISTERS_SCHEMAS_SOURCES}
+    )
+
+source_group("nmos\\parameter_registers_schemas\\Header Files" FILES ${NMOS_PARAMETER_REGISTERS_SCHEMAS_HEADERS})
+source_group("nmos\\parameter_registers_schemas\\${NMOS_PARAMETER_REGISTERS_TAG}\\Source Files" FILES ${NMOS_PARAMETER_REGISTERS_SCHEMAS_SOURCES})
+
+target_link_libraries(
+    nmos_parameter_registers_schemas PRIVATE
+    nmos-cpp::compile-settings
+    )
+target_include_directories(nmos_parameter_registers_schemas PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+    $<INSTALL_INTERFACE:${NMOS_CPP_INSTALL_INCLUDEDIR}>
+    )
+
+list(APPEND NMOS_CPP_TARGETS nmos_parameter_registers_schemas)
+add_library(nmos-cpp::nmos_parameter_registers_schemas ALIAS nmos_parameter_registers_schemas)
+
 # nmos-cpp library
 
 if(${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
@@ -1154,6 +1221,7 @@ set(NMOS_CPP_NMOS_SOURCES
     nmos/filesystem_route.cpp
     nmos/group_hint.cpp
     nmos/id.cpp
+    nmos/ipmx.cpp
     nmos/lldp_handler.cpp
     nmos/lldp_manager.cpp
     nmos/json_schema.cpp
@@ -1263,6 +1331,7 @@ set(NMOS_CPP_NMOS_HEADERS
     nmos/health.h
     nmos/id.h
     nmos/interlace_mode.h
+    nmos/ipmx.h
     nmos/is04_versions.h
     nmos/is05_versions.h
     nmos/is07_versions.h
@@ -1425,6 +1494,7 @@ target_link_libraries(
     nmos-cpp::nmos_is12_schemas
     nmos-cpp::nmos_is13_schemas
     nmos-cpp::nmos_is14_schemas
+    nmos-cpp::nmos_parameter_registers_schemas
     nmos-cpp::mdns
     nmos-cpp::slog
     nmos-cpp::OpenSSL
