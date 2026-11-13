@@ -233,7 +233,6 @@ namespace nmos
         // See https://github.com/AMWA-TV/nmos-parameter-registers/tree/main
         namespace main
         {
-            using namespace nmos::parameter_registers_schemas::main;
             const utility::string_t tag(_XPLATSTR("main"));
 
             const web::uri sender_transport_params_ext_register_uri = make_schema_uri(tag, _XPLATSTR("transport-parameters/sender_transport_params_ext_register.json"));
@@ -513,8 +512,8 @@ namespace nmos
             return
             {
                 // main
-                { main::sender_transport_params_ext_register_uri, make_schema(main::sender_transport_params_ext_register) },
-                { main::receiver_transport_params_ext_register_uri, make_schema(main::receiver_transport_params_ext_register) }
+                { main::sender_transport_params_ext_register_uri, make_schema(nmos::parameter_registers_schemas::main::sender_transport_params_ext_register) },
+                { main::receiver_transport_params_ext_register_uri, make_schema(nmos::parameter_registers_schemas::main::receiver_transport_params_ext_register) }
             };
         }
 
