@@ -2,7 +2,7 @@
 
 The following instructions describe how to set up and build this software.
 
-The test platforms include Windows with Visual Studio 2017, 2019 and 2022, and Linux with GCC 4.8, GCC 7.5, GCC 11.2.0 and GCC 13.2.0.
+The test platforms include Windows with Visual Studio 2022 and 2026, and Linux with GCC 11.4.0 and GCC 13.3.0 (see [Build Status](../README.md#build-status)).
 Specific instructions for [cross-compiling for Raspberry Pi](Raspberry-Pi.md) are also provided.
 
 Notes:
