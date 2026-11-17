@@ -146,9 +146,16 @@ The implementation is designed to be extended. Development is ongoing, following
 
 Recent activity on the project (newest first):
 
+- Added Visual Studio 2026 and Boost 1.65.1 builds to CI, and updated dependencies
+- Added support for VSF TR-10-8 IPMX Link Offset Delay, and the TR-10-9 default IPMX multicast addresses and DNS-SD browse strategy
+- Added validation of registered `ext_` transport parameters against the NMOS Parameter Registers
 - Added support for the VSF TR-10-1 IPMX SDP format-specific parameters (`IPMX`, `measuredpixclk`, `vtotal`, `htotal` and `measuredsamplerate`), which can be demonstrated with **nmos-cpp-node** by using `"ipmx": true`
+- Added SDP support for SMPTE ST 2022-5 FEC, SMPTE ST 2022-7 temporal redundancy, RTP parameter sets and RTCP
 - Added support for IS-13 NMOS Annotation
+- Added extension points for application-defined SDP attributes and BCP-008 status monitors
+- Fixed a path traversal vulnerability in the Registry Admin UI on Windows
 - Added support for BCP-007-03 NMOS With MXL
+- Added support for the IS-04 `attached_network_device` Node interface attribute
 - Added support for IS-14 NMOS Device Configuration
 - Added support for BCP-008-01 Receiver Status Monitoring
 - Added support for BCP-008-02 Sender Status Monitoring
