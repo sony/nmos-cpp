@@ -156,11 +156,6 @@ jobs:
       run: |
         # set compiler to cl.exe to avoid building with gcc.
         echo "CMAKE_COMPILER_ARGS=-DCMAKE_C_COMPILER=cl.exe -DCMAKE_CXX_COMPILER=cl.exe" >> $env:GITHUB_ENV
-        # disable unused network interface (may not exist on Windows runners)
-        $nat = Get-NetAdapter -Name 'vEthernet (nat)' -ErrorAction SilentlyContinue
-        if ($nat) {
-          netsh interface set interface name="vEthernet (nat)" admin=DISABLED
-        }
         # get host IP address (avoid Get-NetIPConfiguration which fails when multiple adapters map to one interface)
         $ifIndex = (
           Get-NetRoute -DestinationPrefix '0.0.0.0/0' |
