@@ -67,18 +67,19 @@ Several vendors have deployed JT-NM Tested badged products, using nmos-cpp, to t
 
 The following configurations, defined by the [build-test](.github/workflows/src/build-test.yml) jobs, are built and unit tested automatically via continuous integration.
 
-| Platform | Version                   | Build Options                      | Test Options                                                       |
-|----------|---------------------------|------------------------------------|--------------------------------------------------------------------|
-| Linux    | Ubuntu 24.04 (GCC 13.2.0) | Avahi                              | Secure Communications<br/>Multicast DNS-SD                         |
-| Linux    | Ubuntu 24.04 (GCC 13.2.0) | Avahi                              | Secure Communications<br/>IS-10 Authorization<br/>Multicast DNS-SD |
-| Linux    | Ubuntu 22.04 (GCC 11.2.0) | Avahi                              | Secure Communications<br/>IS-10 Authorization<br/>Multicast DNS-SD |
-| Linux    | Ubuntu 22.04 (GCC 11.2.0) | Avahi                              | Secure Communications<br/>IS-10 Authorization<br/>Unicast DNS-SD   |
-| Linux    | Ubuntu 22.04 (GCC 11.2.0) | mDNSResponder                      | Secure Communications<br/>IS-10 Authorization<br/>Multicast DNS-SD |
-| Windows  | Server 2025 (VS 2026)     | Bonjour (mDNSResponder), ASIO      | Secure Communications<br/>Multicast DNS-SD                         |
-| Windows  | Server 2025 (VS 2026)     | Bonjour (mDNSResponder), ASIO      | Secure Communications<br/>IS-10 Authorization<br/>Multicast DNS-SD |
-| Windows  | Server 2025 (VS 2026)     | Bonjour (mDNSResponder), WinHTTP   | Secure Communications<br/>Multicast DNS-SD                         |
-| Windows  | Server 2025 (VS 2026)     | Bonjour (mDNSResponder), WinHTTP   | Secure Communications<br/>IS-10 Authorization<br/>Multicast DNS-SD |
-| Windows  | Server 2022 (VS 2022)     | Bonjour (mDNSResponder), WinHTTP   | Secure Communications<br/>IS-10 Authorization<br/>Multicast DNS-SD |
+| Platform | Version                   | Build Options                           | Test Options                                                       |
+|----------|---------------------------|-----------------------------------------|--------------------------------------------------------------------|
+| Linux    | Ubuntu 24.04 (GCC 13.3.0) | Avahi                                   | Secure Communications<br/>Multicast DNS-SD                         |
+| Linux    | Ubuntu 24.04 (GCC 13.3.0) | Avahi                                   | Secure Communications<br/>IS-10 Authorization<br/>Multicast DNS-SD |
+| Linux    | Ubuntu 24.04 (GCC 13.3.0) | Avahi, Boost 1.65.1 (without Conan)     | Secure Communications<br/>IS-10 Authorization<br/>Multicast DNS-SD |
+| Linux    | Ubuntu 22.04 (GCC 11.4.0) | Avahi                                   | Secure Communications<br/>IS-10 Authorization<br/>Multicast DNS-SD |
+| Linux    | Ubuntu 22.04 (GCC 11.4.0) | Avahi                                   | Secure Communications<br/>IS-10 Authorization<br/>Unicast DNS-SD   |
+| Linux    | Ubuntu 22.04 (GCC 11.4.0) | mDNSResponder                           | Secure Communications<br/>IS-10 Authorization<br/>Multicast DNS-SD |
+| Windows  | Server 2025 (VS 2026)     | Bonjour (mDNSResponder), ASIO           | Secure Communications<br/>Multicast DNS-SD                         |
+| Windows  | Server 2025 (VS 2026)     | Bonjour (mDNSResponder), ASIO           | Secure Communications<br/>IS-10 Authorization<br/>Multicast DNS-SD |
+| Windows  | Server 2025 (VS 2026)     | Bonjour (mDNSResponder), WinHTTP        | Secure Communications<br/>Multicast DNS-SD                         |
+| Windows  | Server 2025 (VS 2026)     | Bonjour (mDNSResponder), WinHTTP, C++17 | Secure Communications<br/>IS-10 Authorization<br/>Multicast DNS-SD |
+| Windows  | Server 2022 (VS 2022)     | Bonjour (mDNSResponder), WinHTTP        | Secure Communications<br/>IS-10 Authorization<br/>Multicast DNS-SD |
 
 The [AMWA NMOS API Testing Tool](https://github.com/AMWA-TV/nmos-testing) is automatically run against the APIs of the **nmos-cpp-node** and **nmos-cpp-registry** applications.
 
