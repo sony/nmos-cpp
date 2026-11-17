@@ -154,7 +154,7 @@ If using Conan, this section can be skipped.
    - Due to interactions with other dependencies, it may also be necessary to explicitly set ``WERROR`` (BOOL) to ``0`` so that compiler warnings are not treated as errors
    - To speed up the build by omitting the C++ REST SDK sample apps and test suite, set ``BUILD_SAMPLES`` and ``BUILD_TESTS`` (BOOL) to ``0`` (false)
 3. Use CMake to generate build/project files, and then build *and* install
-   "Visual Studio 14 2015 Win64" and more recent Visual Studio generators have been tested
+   The Ninja generator and the Visual Studio generators can be used
 
 **Windows**
 

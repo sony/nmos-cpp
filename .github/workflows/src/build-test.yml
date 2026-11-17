@@ -12,7 +12,7 @@ env:
   SECRET_RESULTS_SHEET_ID: ${{ secrets.RESULTS_SHEET_ID }}
 jobs:
   build_and_test:
-    name: "${{ matrix.os }}: build and test (C++ standard: ${{ matrix.cxx_standard || 'minimum' }}, install mdns: ${{ matrix.install_mdns }}, use conan: ${{ matrix.use_conan }}, force cpprest asio: ${{ matrix.force_cpprest_asio }}, dns-sd mode: ${{ matrix.dns_sd_mode}}, enable_authorization: ${{ matrix.enable_authorization }}${{ matrix.boost_version && format(', boost version: {0}', matrix.boost_version) || '' }})"
+    name: "${{ matrix.os }}: build and test (C++ standard: ${{ matrix.cxx_standard || 'minimum' }}, install mdns: ${{ matrix.install_mdns }}, use conan: ${{ matrix.use_conan }}, force cpprest asio: ${{ matrix.force_cpprest_asio }}, dns-sd mode: ${{ matrix.dns_sd_mode}}, enable_authorization: ${{ matrix.enable_authorization }}${{ matrix.boost_version && format(', boost version: {0}', matrix.boost_version) || '' }}${{ matrix.vs_generator && format(', vs generator: {0}', matrix.vs_generator) || '' }})"
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -57,13 +57,15 @@ jobs:
             dns_sd_mode: multicast
             enable_authorization: true
             cxx_standard: 17
-          # keep one VS 2022 job while validating VS 2026 on windows-2025
+          # keep one VS 2022 job while validating VS 2026 on windows-2025, and use it to exercise
+          # the Visual Studio generator in the documented command lines; other jobs use Ninja
           - os: windows-2022
             install_mdns: false
             use_conan: true
             force_cpprest_asio: false
             dns_sd_mode: multicast
             enable_authorization: true
+            vs_generator: 'Visual Studio 17 2022'
           # additional build to test against an older Boost release (1.65) that is no longer
           # packaged by Ubuntu 24.04, so it is built from source instead of using conan
           - os: ubuntu-24.04
@@ -104,6 +106,9 @@ jobs:
         fi
         if [[ -n "${{ matrix.boost_version }}" ]]; then
           build_name="${build_name}_boost${{ matrix.boost_version }}"
+        fi
+        if [[ -n "${{ matrix.vs_generator }}" ]]; then
+          build_name="${build_name}_vs"
         fi
         echo "BUILD_NAME=$build_name" >> $GITHUB_ENV
         GITHUB_COMMIT=`echo "${{ github.sha }}" | cut -c1-7`

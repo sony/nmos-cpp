@@ -8,16 +8,20 @@
   if: runner.os != 'macOS'
   shell: bash
   run: |
+    # a Visual Studio generator selects the compiler itself, and is multi-config, so the build selects Release
+    if [[ -n "${{ matrix.vs_generator }}" ]]; then
+      generator_args=(-G "${{ matrix.vs_generator }}")
+    else
+      generator_args=(-GNinja -DCMAKE_BUILD_TYPE=Release ${{ env.CMAKE_COMPILER_ARGS }})
+    fi
     cmake -S "${{ env.GITHUB_WORKSPACE }}/Sandbox/my-nmos-node" \
       -B "${{ env.RUNNER_WORKSPACE }}/build-my-nmos-node" \
-      -GNinja \
-      -DCMAKE_BUILD_TYPE=Release \
+      "${generator_args[@]}" \
       -DCMAKE_FIND_PACKAGE_PREFER_CONFIG=1 \
       -DCMAKE_MODULE_PATH="${{ env.CMAKE_WORKSPACE }}/build/conan" \
       -DCMAKE_PREFIX_PATH="${{ env.CMAKE_WORKSPACE }}/install" \
-      -DCMAKE_INSTALL_PREFIX="${{ env.CMAKE_WORKSPACE }}/build/conan" \
-      ${{ env.CMAKE_COMPILER_ARGS }}
-    cmake --build "${{ env.RUNNER_WORKSPACE }}/build-my-nmos-node"
+      -DCMAKE_INSTALL_PREFIX="${{ env.CMAKE_WORKSPACE }}/build/conan"
+    cmake --build "${{ env.RUNNER_WORKSPACE }}/build-my-nmos-node"${{ matrix.vs_generator && ' --config Release' || '' }}
 
 - name: install test log
   if: runner.os != 'macOS'

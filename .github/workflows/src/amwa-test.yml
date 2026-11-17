@@ -165,7 +165,9 @@
       export WSLENV="${WSLENV:+$WSLENV:}NODNS"
     fi
     
-    ${{ env.GITHUB_WORKSPACE_BASH }}/Sandbox/run_nmos_testing.sh "$run_python" ${domain} ${root_dir}/build/nmos-cpp-node ${root_dir}/build/nmos-cpp-registry results badges $GITHUB_STEP_SUMMARY ${{ env.HOST_IP_ADDRESS }} "${{ env.GITHUB_COMMIT }}-${{ env.BUILD_NAME }}-"
+    # a Visual Studio generator puts the executables in a directory per configuration
+    bin_dir=${root_dir}/build${{ matrix.vs_generator && '/Release' || '' }}
+    ${{ env.GITHUB_WORKSPACE_BASH }}/Sandbox/run_nmos_testing.sh "$run_python" ${domain} ${bin_dir}/nmos-cpp-node ${bin_dir}/nmos-cpp-registry results badges $GITHUB_STEP_SUMMARY ${{ env.HOST_IP_ADDRESS }} "${{ env.GITHUB_COMMIT }}-${{ env.BUILD_NAME }}-"
 
     if [[ "${{ runner.os }}" == "Linux" ]]; then
       if [[ "${{ matrix.install_mdns }}" == "true" ]]; then

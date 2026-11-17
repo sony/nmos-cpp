@@ -17,28 +17,33 @@
     echo "compiler=$compiler" >> "$GITHUB_OUTPUT"
 
 # package binaries only, so that the profiles the CMake provider writes are not restored
+# a Visual Studio generator also needs the Debug packages, which the CMake provider installs for a multi-config generator
 - name: restore conan cache
   if: matrix.use_conan == true
   id: conan-cache
   uses: actions/cache/restore@v6
   with:
     path: ~/.conan2/p
-    key: conan-${{ matrix.os }}-${{ steps.conan-cache-key.outputs.compiler }}-asio-${{ matrix.force_cpprest_asio }}-${{ hashFiles('Development/conanfile.py', 'Development/third_party/cmake/conan_provider.cmake') }}
+    key: conan-${{ matrix.os }}-${{ steps.conan-cache-key.outputs.compiler }}-asio-${{ matrix.force_cpprest_asio }}-${{ matrix.vs_generator && 'vs-' || '' }}${{ hashFiles('Development/conanfile.py', 'Development/third_party/cmake/conan_provider.cmake') }}
     restore-keys: |
-      conan-${{ matrix.os }}-${{ steps.conan-cache-key.outputs.compiler }}-asio-${{ matrix.force_cpprest_asio }}-
+      conan-${{ matrix.os }}-${{ steps.conan-cache-key.outputs.compiler }}-asio-${{ matrix.force_cpprest_asio }}-${{ matrix.vs_generator && 'vs-' || '' }}
 
 - name: build
   shell: bash
   run: |
+    # a Visual Studio generator selects the compiler itself, and is multi-config, so this and later steps select Release
+    if [[ -n "${{ matrix.vs_generator }}" ]]; then
+      generator_args=(-G "${{ matrix.vs_generator }}")
+    else
+      generator_args=(-GNinja -DCMAKE_BUILD_TYPE=Release ${{ env.CMAKE_COMPILER_ARGS }})
+    fi
     cmake -S "${{ env.GITHUB_WORKSPACE }}/Development" \
       -B "${{ env.RUNNER_WORKSPACE }}/build" \
-      -GNinja \
-      -DCMAKE_BUILD_TYPE=Release \
+      "${generator_args[@]}" \
       -DCMAKE_COMPILE_WARNING_AS_ERROR=ON \
       -DCMAKE_INSTALL_PREFIX="${{ env.RUNNER_WORKSPACE }}/install" \
-      ${{ env.CMAKE_COMPILER_ARGS }} \
       ${{ env.CMAKE_EXTRA_ARGS }}
-    cmake --build "${{ env.RUNNER_WORKSPACE }}/build"
+    cmake --build "${{ env.RUNNER_WORKSPACE }}/build"${{ matrix.vs_generator && ' --config Release' || '' }}
 
 # save the cleaned cache when this key is not already stored
 - name: clean conan cache

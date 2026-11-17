@@ -1,4 +1,4 @@
 - name: install
   shell: bash
   run: |
-    cmake --build "${{ env.RUNNER_WORKSPACE }}/build" --target install
+    cmake --build "${{ env.RUNNER_WORKSPACE }}/build" --target install${{ matrix.vs_generator && ' --config Release' || '' }}

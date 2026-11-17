@@ -44,7 +44,7 @@ Notes:
 
      </details>
 3. Use CMake to generate build/project files, and then build
-   "Visual Studio 14 2015 Win64" and more recent Visual Studio generators have been tested
+   CI builds with the Ninja generator and the "Visual Studio 17 2022" generator; other Visual Studio generators can also be used
 
 **CMake configuration options**
 
