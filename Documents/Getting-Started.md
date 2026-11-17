@@ -2,11 +2,11 @@
 
 The following instructions describe how to set up and build this software.
 
-The test platforms include Windows with Visual Studio 2017, 2019 and 2022, and Linux with GCC 4.8, GCC 7.5, GCC 11.2.0 and GCC 13.2.0.
+The test platforms include Windows with Visual Studio 2022 and 2026, and Linux with GCC 11.4.0 and GCC 13.3.0 (see [Build Status](../README.md#build-status)).
 Specific instructions for [cross-compiling for Raspberry Pi](Raspberry-Pi.md) are also provided.
 
 Notes:
-- **Visual Studio 2013 is not supported**, because it does not implement C++11 [thread-safe function-local static initialization](https://en.cppreference.com/w/cpp/language/storage_duration#Static_local_variables).
+- C++11 [thread-safe function-local static initialization](https://en.cppreference.com/w/cpp/language/storage_duration#Static_local_variables) is required, so **Visual Studio 2013 is not supported**.
 - For the same reason, Visual Studio 2015 onwards with ``/Zc:threadSafeInit-``, and GCC with ``--fno-threadsafe-statics``, are also not supported.
 
 ## Preparation
@@ -32,8 +32,8 @@ Notes:
 
      - If CMake cannot find it automatically, set hints for [finding Boost](https://cmake.org/cmake/help/latest/module/FindBoost.html), for example:
        - *Either* set ``Boost_DIR`` (PATH) to the location of the installed *BoostConfig.cmake* (since Boost 1.70.0)
-       - *Or* set ``BOOST_INCLUDEDIR`` (PATH) and ``BOOST_LIBRARYDIR`` (PATH) to the appropriate full paths, e.g. *``<home-dir>``*``/boost_1_83_0``
-         and *``<home-dir>``*``/boost_1_83_0/x64/lib`` respectively to match the suggested ``b2`` command
+       - *Or* set ``BOOST_INCLUDEDIR`` (PATH) and ``BOOST_LIBRARYDIR`` (PATH) to the appropriate full paths, e.g. *``<home-dir>``*``/boost_1_86_0``
+         and *``<home-dir>``*``/boost_1_86_0/x64/lib`` respectively to match the suggested ``b2`` command
      - If CMake cannot find them automatically, set hints for finding the C++ REST SDK and WebSocket++, for example:
        - Set ``cpprestsdk_DIR`` (PATH) to the location of the installed *cpprestsdk-config.cmake*
        - *Either* set ``websocketpp_DIR`` (PATH) to the location of the installed *websocketpp-config.cmake*
@@ -44,7 +44,7 @@ Notes:
 
      </details>
 3. Use CMake to generate build/project files, and then build
-   "Visual Studio 14 2015 Win64" and more recent Visual Studio generators have been tested
+   CI builds with the Ninja generator and the "Visual Studio 17 2022" generator; other Visual Studio generators can also be used
 
 **CMake configuration options**
 
@@ -80,8 +80,8 @@ cmake .. ^
   -G "Visual Studio 17 2022" ^
   -DCMAKE_CONFIGURATION_TYPES:STRING="Debug;Release" ^
   -DBoost_USE_STATIC_LIBS:BOOL="1" ^
-  -DBOOST_INCLUDEDIR:PATH="<home-dir>/boost_1_83_0" ^
-  -DBOOST_LIBRARYDIR:PATH="<home-dir>/boost_1_83_0/x64/lib" ^
+  -DBOOST_INCLUDEDIR:PATH="<home-dir>/boost_1_86_0" ^
+  -DBOOST_LIBRARYDIR:PATH="<home-dir>/boost_1_86_0/x64/lib" ^
   -DWEBSOCKETPP_INCLUDE_DIR:PATH="<home-dir>/cpprestsdk/Release/libs/websocketpp" ^
   -DNMOS_CPP_USE_SUPPLIED_JSON_SCHEMA_VALIDATOR:BOOL="1" ^
   -DNMOS_CPP_USE_SUPPLIED_JWT_CPP:BOOL="1"

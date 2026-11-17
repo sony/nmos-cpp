@@ -67,17 +67,19 @@ Several vendors have deployed JT-NM Tested badged products, using nmos-cpp, to t
 
 The following configurations, defined by the [build-test](.github/workflows/src/build-test.yml) jobs, are built and unit tested automatically via continuous integration.
 
-| Platform | Version                   | Build Options                      | Test Options                                                       |
-|----------|---------------------------|------------------------------------|--------------------------------------------------------------------|
-| Linux    | Ubuntu 24.04 (GCC 13.2.0) | Avahi                              | Secure Communications<br/>Multicast DNS-SD                         |
-| Linux    | Ubuntu 24.04 (GCC 13.2.0) | Avahi                              | Secure Communications<br/>IS-10 Authorization<br/>Multicast DNS-SD |
-| Linux    | Ubuntu 22.04 (GCC 11.2.0) | Avahi                              | Secure Communications<br/>IS-10 Authorization<br/>Multicast DNS-SD |
-| Linux    | Ubuntu 22.04 (GCC 11.2.0) | Avahi                              | Secure Communications<br/>IS-10 Authorization<br/>Unicast DNS-SD   |
-| Linux    | Ubuntu 22.04 (GCC 11.2.0) | mDNSResponder                      | Secure Communications<br/>IS-10 Authorization<br/>Multicast DNS-SD |
-| Windows  | Server 2022 (VS 2022)     | Bonjour (mDNSResponder), ASIO      | Secure Communications<br/>Multicast DNS-SD                         |
-| Windows  | Server 2022 (VS 2022)     | Bonjour (mDNSResponder), ASIO      | Secure Communications<br/>IS-10 Authorization<br/>Multicast DNS-SD |
-| Windows  | Server 2022 (VS 2022)     | Bonjour (mDNSResponder), WinHTTP   | Secure Communications<br/>Multicast DNS-SD                         |
-| Windows  | Server 2022 (VS 2022)     | Bonjour (mDNSResponder), WinHTTP   | Secure Communications<br/>IS-10 Authorization<br/>Multicast DNS-SD |
+| Platform | Version                   | Build Options                                  | Test Options                                                       |
+|----------|---------------------------|------------------------------------------------|--------------------------------------------------------------------|
+| Linux    | Ubuntu 24.04 (GCC 13.3.0) | Avahi                                          | Secure Communications<br/>Multicast DNS-SD                         |
+| Linux    | Ubuntu 24.04 (GCC 13.3.0) | Avahi                                          | Secure Communications<br/>IS-10 Authorization<br/>Multicast DNS-SD |
+| Linux    | Ubuntu 24.04 (GCC 13.3.0) | Avahi, Boost 1.65.1 (without Conan)            | Secure Communications<br/>IS-10 Authorization<br/>Multicast DNS-SD |
+| Linux    | Ubuntu 22.04 (GCC 11.4.0) | Avahi                                          | Secure Communications<br/>IS-10 Authorization<br/>Multicast DNS-SD |
+| Linux    | Ubuntu 22.04 (GCC 11.4.0) | Avahi                                          | Secure Communications<br/>IS-10 Authorization<br/>Unicast DNS-SD   |
+| Linux    | Ubuntu 22.04 (GCC 11.4.0) | mDNSResponder                                  | Secure Communications<br/>IS-10 Authorization<br/>Multicast DNS-SD |
+| Windows  | Server 2025 (VS 2026)     | Bonjour (mDNSResponder), ASIO                  | Secure Communications<br/>Multicast DNS-SD                         |
+| Windows  | Server 2025 (VS 2026)     | Bonjour (mDNSResponder), ASIO                  | Secure Communications<br/>IS-10 Authorization<br/>Multicast DNS-SD |
+| Windows  | Server 2025 (VS 2026)     | Bonjour (mDNSResponder), WinHTTP               | Secure Communications<br/>Multicast DNS-SD                         |
+| Windows  | Server 2025 (VS 2026)     | Bonjour (mDNSResponder), WinHTTP, C++17        | Secure Communications<br/>IS-10 Authorization<br/>Multicast DNS-SD |
+| Windows  | Server 2022 (VS 2022)     | Bonjour (mDNSResponder), WinHTTP, VS generator | Secure Communications<br/>IS-10 Authorization<br/>Multicast DNS-SD |
 
 The [AMWA NMOS API Testing Tool](https://github.com/AMWA-TV/nmos-testing) is automatically run against the APIs of the **nmos-cpp-node** and **nmos-cpp-registry** applications.
 
@@ -144,9 +146,16 @@ The implementation is designed to be extended. Development is ongoing, following
 
 Recent activity on the project (newest first):
 
+- Added Visual Studio 2026 and Boost 1.65.1 builds to CI, and updated dependencies
+- Added support for VSF TR-10-8 IPMX Link Offset Delay, and the TR-10-9 default IPMX multicast addresses and DNS-SD browse strategy
+- Added validation of registered `ext_` transport parameters against the NMOS Parameter Registers
 - Added support for the VSF TR-10-1 IPMX SDP format-specific parameters (`IPMX`, `measuredpixclk`, `vtotal`, `htotal` and `measuredsamplerate`), which can be demonstrated with **nmos-cpp-node** by using `"ipmx": true`
+- Added SDP support for SMPTE ST 2022-5 FEC, SMPTE ST 2022-7 temporal redundancy, RTP parameter sets and RTCP
 - Added support for IS-13 NMOS Annotation
+- Added extension points for application-defined SDP attributes and BCP-008 status monitors
+- Fixed a path traversal vulnerability in the Registry Admin UI on Windows
 - Added support for BCP-007-03 NMOS With MXL
+- Added support for the IS-04 `attached_network_device` Node interface attribute
 - Added support for IS-14 NMOS Device Configuration
 - Added support for BCP-008-01 Receiver Status Monitoring
 - Added support for BCP-008-02 Sender Status Monitoring

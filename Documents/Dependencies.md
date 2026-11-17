@@ -22,10 +22,10 @@ The following instructions describe how to prepare these external dependencies w
 
 On Windows, Visual Studio 2015 or higher is required.
 
-On Linux, ``g++`` (the GNU project C++ compiler) is supported; the GCC 4.8 release series is tested, although a more recent compiler is to be recommended!
+On Linux, ``g++`` (the GNU project C++ compiler) is supported; GCC 11 and GCC 13 are tested.
 
 Notes:
-- **Visual Studio 2013 is not supported**, because it does not implement C++11 [thread-safe function-local static initialization](https://en.cppreference.com/w/cpp/language/storage_duration#Static_local_variables).
+- C++11 [thread-safe function-local static initialization](https://en.cppreference.com/w/cpp/language/storage_duration#Static_local_variables) is required, so **Visual Studio 2013 is not supported**.
 - For the same reason, Visual Studio 2015 onwards with ``/Zc:threadSafeInit-``, and GCC with ``--fno-threadsafe-statics``, are also not supported.
 
 Specific instructions for [cross-compiling for Raspberry Pi](Raspberry-Pi.md) are also provided.
@@ -34,9 +34,10 @@ Specific instructions for [cross-compiling for Raspberry Pi](Raspberry-Pi.md) ar
 
 1. Download and install a recent [CMake stable release](https://cmake.org/download/#latest) for your platform
    Notes:
-   - Currently, CMake 3.24 or higher is required in order to use the Conan package manager; version 4.1.0 (latest release at the time) has been tested
+   - Currently, CMake 3.24 or higher is required in order to use the Conan package manager; version 4.4.0 has been tested
+     (CMake 4.2 or higher is required for the Visual Studio 18 2026 generator, but is not a hard project requirement)
    - Pre-built binary distributions are available for many platforms
-   - On Linux distributions, e.g. Ubuntu 14.04 LTS (long-term support), the pre-built binary version available via ``apt-get`` may be too out-of-date
+   - On Linux distributions, the pre-built binary version available via ``apt-get`` may be too out-of-date, e.g. Ubuntu 22.04 LTS (long-term support) has CMake 3.22
      Fetch, build and install a suitable version:
      ```sh
      wget "https://cmake.org/files/v3.24/cmake-3.24.2.tar.gz"
@@ -58,7 +59,7 @@ By default nmos-cpp uses [Conan](https://conan.io) to download most of its depen
 2. Install or upgrade Conan using `pip install --upgrade conan~=2.20`
    Notes:
    - On some platforms with Python 2 and Python 3 both installed this may need to be `pip3 install --upgrade conan~=2.20`
-   - Conan 2.2 or higher is required; dependencies may require a higher version; version 2.20.1 (latest release at the time) has been tested
+   - Conan 2.2 or higher is required; dependencies may require a higher version; version 2.34.0 has been tested
    - Conan 1.X is no longer supported
 3. Install a [DNS Service Discovery](#dns-service-discovery) implementation, since this isn't currently handled by Conan
 
@@ -74,9 +75,11 @@ If using Conan, this section can be skipped.
 
 1. Download a [recent release](http://www.boost.org/users/download/)
    Notes:
-   - Several Boost releases have been tested, including Version 1.83.0 (latest release at the time) and Version 1.54.0
-   - On Linux distributions, a Boost libraries package may already be installed, e.g. Ubuntu 14.04 LTS has Version 1.54.0
-2. Expand the archive so that, for example, the boost\_1\_83\_0 directory is at the same level as the nmos-cpp directory
+   - Several Boost releases have been tested, including Version 1.86.0 and Version 1.65.1
+   - Boost 1.87+ is not yet supported: it removes deprecated Asio APIs still required by
+     the C++ REST SDK 2.10.19 and WebSocket++ 0.8.2
+   - On Linux distributions, a Boost libraries package may already be installed, e.g. Ubuntu 24.04 LTS has Version 1.83.0
+2. Expand the archive so that, for example, the boost\_1\_86\_0 directory is at the same level as the nmos-cpp directory
 3. Build and stage (or install) the following Boost libraries for your platform/toolset:
    - atomic
    - chrono
@@ -85,10 +88,10 @@ If using Conan, this section can be skipped.
    - system
    - thread
 
-For example, on Windows, for Visual Studio 2019:
+For example, on Windows, for Visual Studio 2022:
 ```sh
 bootstrap
-b2 toolset=msvc-14.2 ^
+b2 toolset=msvc-14.3 ^
   --prefix=. ^
   --with-atomic ^
   --with-chrono ^
@@ -146,28 +149,28 @@ If using Conan, this section can be skipped.
      - Set ``Boost_USE_STATIC_LIBS`` (BOOL) to ``1`` (true)
    - If CMake cannot find it automatically, set hints for [finding Boost](https://cmake.org/cmake/help/latest/module/FindBoost.html), for example:
      - *Either* set ``Boost_DIR`` (PATH) to the location of the installed BoostConfig.cmake (since Boost 1.70.0)
-     - *Or* set ``BOOST_INCLUDEDIR`` (PATH) and ``BOOST_LIBRARYDIR`` (PATH) to the appropriate full paths, e.g. *``<home-dir>``*``/boost_1_83_0``
-       and *``<home-dir>``*``/boost_1_83_0/x64/lib`` respectively to match the suggested ``b2`` command
+     - *Or* set ``BOOST_INCLUDEDIR`` (PATH) and ``BOOST_LIBRARYDIR`` (PATH) to the appropriate full paths, e.g. *``<home-dir>``*``/boost_1_86_0``
+       and *``<home-dir>``*``/boost_1_86_0/x64/lib`` respectively to match the suggested ``b2`` command
    - Due to interactions with other dependencies, it may also be necessary to explicitly set ``WERROR`` (BOOL) to ``0`` so that compiler warnings are not treated as errors
    - To speed up the build by omitting the C++ REST SDK sample apps and test suite, set ``BUILD_SAMPLES`` and ``BUILD_TESTS`` (BOOL) to ``0`` (false)
 3. Use CMake to generate build/project files, and then build *and* install
-   "Visual Studio 14 2015 Win64" and more recent Visual Studio generators have been tested
+   The Ninja generator and the Visual Studio generators can be used
 
 **Windows**
 
-For example, for Visual Studio 2019:
+For example, for Visual Studio 2022:
 ```
 cd <home-dir>\cpprestsdk\Release
 mkdir build
 cd build
 cmake .. ^
-  -G "Visual Studio 16 2019" ^
+  -G "Visual Studio 17 2022" ^
   -DCPPREST_PPLX_IMPL:STRING="winpplx" ^
   -DCPPREST_EXCLUDE_COMPRESSION:BOOL="1" ^
   -DCMAKE_CONFIGURATION_TYPES:STRING="Debug;Release" ^
   -DBoost_USE_STATIC_LIBS:BOOL="1" ^
-  -DBOOST_INCLUDEDIR:PATH="<home-dir>/boost_1_83_0" ^
-  -DBOOST_LIBRARYDIR:PATH="<home-dir>/boost_1_83_0/x64/lib" ^
+  -DBOOST_INCLUDEDIR:PATH="<home-dir>/boost_1_86_0" ^
+  -DBOOST_LIBRARYDIR:PATH="<home-dir>/boost_1_86_0/x64/lib" ^
   -DWERROR:BOOL="0" ^
   -DBUILD_SAMPLES:BOOL="0" ^
   -DBUILD_TESTS:BOOL="0"
@@ -230,13 +233,13 @@ If using Conan, this section can be skipped.
 The C++ REST SDK depends on [OpenSSL](https://www.openssl.org/) (to implement secure HTTP and/or secure WebSockets).
 The nmos-cpp codebase also uses OpenSSL directly to implement the specific requirements of [AMWA BCP-003-01 Secure Communication in NMOS Systems](https://specs.amwa.tv/bcp-003-01/) and [AMWA BCP-003-02 Authorization in NMOS Systems](https://specs.amwa.tv/bcp-003-02/).
 
-OpenSSL version 3 is recommended, and version 3.5.2 (latest release at the time) has been tested.
+OpenSSL version 3 is recommended, and version 3.5.7 (latest 3.5 LTS release at the time) has been tested.
 It is currently also possible to use OpenSSL v1.1.1, although [this OpenSSL release is now end of life](https://www.openssl.org/blog/blog/2023/09/11/eol-111/index.html).
 
 1. Download and install a recent release
    Notes:
    - On Windows, an installer can be downloaded from [Shining Light Productions - Win32 OpenSSL](https://slproweb.com/products/Win32OpenSSL.html)
-     The Win64 OpenSSL v3.5.2 installer (latest release at the time) has been tested
+     The Win64 OpenSSL v3.5.7 installer (latest 3.5 LTS release at the time) has been tested
    - On Linux distributions, an OpenSSL package may already be available
      For example, Ubuntu 22.04 LTS includes OpenSSL v3.0.2
 
