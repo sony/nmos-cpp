@@ -1,11 +1,16 @@
 - name: install wsl
   if: runner.os == 'Windows'
   run: |
-    & curl -fL https://aka.ms/wsl-ubuntu-1804 -o ubuntu-1804.appx
-    Rename-Item .\ubuntu-1804.appx .\ubuntu-1804.zip
-    Expand-Archive .\ubuntu-1804.zip .\ubuntu-1804
-    cd ubuntu-1804
-    .\ubuntu1804.exe install --root
+    # windows-2022 runners have only the inbox WSL, which has no WSL 2 kernel
+    wsl --update
+    & curl -fL https://cloud-images.ubuntu.com/wsl/releases/24.04/current/ubuntu-noble-wsl-amd64-wsl.rootfs.tar.gz -o ubuntu-24.04.rootfs.tar.gz
+    New-Item -ItemType Directory -Force C:\wsl\ubuntu-24.04 | Out-Null
+    wsl --import Ubuntu-24.04 C:\wsl\ubuntu-24.04 ubuntu-24.04.rootfs.tar.gz --version 2
+    wsl --set-default Ubuntu-24.04
+    # testssl.sh requires dig, host, drill or nslookup, even when it is given the IP address
+    wsl -- sh -c "apt-get update -qq && DEBIAN_FRONTEND=noninteractive apt-get install -y -qq --no-install-recommends bind9-host"
+    # testssl.sh runs in WSL, whose NAT network reaches the Node at the host IP address through Windows Firewall
+    New-NetFirewallRule -DisplayName "testssl.sh in WSL to nmos-cpp-node" -Direction Inbound -Protocol TCP -LocalPort 1080 -Action Allow | Out-Null
 
 - name: AMWA test suite
   shell: bash
