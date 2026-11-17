@@ -536,7 +536,12 @@ namespace nmos
             return result;
         }
 
-        static std::map<web::uri, web::json::value> schemas = make_schemas();
+        // built on first use so that loading the library doesn't parse JSON during static initialization
+        static const std::map<web::uri, web::json::value>& schemas()
+        {
+            static const std::map<web::uri, web::json::value> instance = make_schemas();
+            return instance;
+        }
     }
 
     namespace experimental
@@ -676,9 +681,11 @@ namespace nmos
         // load the json schema for the specified base URI
         web::json::value load_json_schema(const web::uri& id)
         {
-            auto found = nmos::details::schemas.find(id);
+            const auto& schemas = nmos::details::schemas();
 
-            if (nmos::details::schemas.end() == found)
+            auto found = schemas.find(id);
+
+            if (schemas.end() == found)
             {
                 throw web::json::json_exception((_XPLATSTR("schema not found for ") + id.to_string()).c_str());
             }
