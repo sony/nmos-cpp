@@ -1,3 +1,4 @@
+#include <clocale>
 #include <fstream>
 #include <iostream>
 #include "nmos/authorization_behaviour.h"
@@ -19,6 +20,12 @@ int main(int argc, char* argv[])
     nmos::registry_model registry_model;
 
     nmos::experimental::log_model log_model;
+
+#ifdef _WIN32
+    // The logs are written in UTF-8, so use a UTF-8 locale, with which the C runtime converts
+    // the output to the console code page when writing to the console
+    std::setlocale(LC_CTYPE, ".UTF-8");
+#endif
 
     // Streams for logging, initially configured to write errors to stderr and to discard the access log
     std::filebuf error_log_buf;

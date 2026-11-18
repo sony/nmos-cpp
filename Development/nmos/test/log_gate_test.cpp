@@ -125,3 +125,18 @@ BST_TEST_CASE(testInsertLogEventNonUtf8)
     BST_REQUIRE_EQUAL(size_t(2), events.size());
     BST_REQUIRE_EQUAL(utility::s2us("caf\xC3\xA9"), events.front().data.at(U("message")).as_string());
 }
+
+////////////////////////////////////////////////////////////////////////////////////////////
+BST_TEST_CASE(testErrorLogFormatNonUtf8)
+{
+    // 0xFC is u with diaeresis in the Windows Western code page, and is not valid UTF-8
+    const slog::async_log_message message("test.cpp", 42, "test", slog::severities::error, "caf\xFC");
+
+    std::ostringstream error_log;
+    error_log << nmos::experimental::details::error_log_format(message);
+    const auto line = error_log.str();
+
+    // the error log is written in UTF-8, like the log events, whatever the encoding of the message
+    BST_REQUIRE_NO_THROW(utility::conversions::to_utf16string(line));
+    BST_REQUIRE(boost::algorithm::contains(line, utility::us2s(utility::s2us_lenient("caf\xFC"))));
+}

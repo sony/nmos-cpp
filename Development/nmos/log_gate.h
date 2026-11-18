@@ -37,7 +37,8 @@ namespace nmos
                         << slog::put_timestamp(message.timestamp()) << ": "
                         << slog::put_severity_name(message.level()) << ": "
                         << message.thread_id() << ": "
-                        << indent_new_lines(message.str())
+                        // log messages may contain arbitrary narrow text, so convert to UTF-8 like the log events
+                        << indent_new_lines(utility::us2s(utility::s2us_lenient(message.str())))
                         << std::endl;
                 });
             }
