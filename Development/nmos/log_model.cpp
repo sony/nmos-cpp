@@ -47,7 +47,7 @@ namespace nmos
                 const auto route_parameters = nmos::get_route_parameters_stash(message.stream());
                 if (!route_parameters.empty()) json_message[U("route_parameters")] = web::json::value_from_fields(route_parameters);
                 const auto categories = nmos::get_categories_stash(message.stream());
-                if (!categories.empty()) json_message[U("tags")][U("category")] = web::json::value_from_elements(categories | boost::adaptors::transformed(utility::s2us_lenient));
+                if (!categories.empty()) json_message[U("tags")][U("category")] = web::json::value_from_elements(categories | boost::adaptors::transformed(utility::s2us));
 
                 return json_message;
             }

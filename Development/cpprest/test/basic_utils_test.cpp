@@ -2,6 +2,9 @@
 #include "cpprest/basic_utils.h"
 
 #include "bst/test/test.h"
+#ifdef _WIN32
+#include <windows.h> // for GetACP
+#endif
 
 ////////////////////////////////////////////////////////////////////////////////////////////
 BST_TEST_CASE(testBase64Url)
@@ -98,15 +101,40 @@ BST_TEST_CASE(testS2usLenientInvalidUtf8)
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////
-BST_TEST_CASE(testS2usLenientLatin1Fallback)
+BST_TEST_CASE(testS2usLenientAnsiCodePage)
 {
-#ifndef _WIN32
-    // where there is no ANSI code page, the fallback is Latin-1, which maps each byte to the
-    // code point of the same value; the Windows Western code page (1252) agrees over 0xA0-0xFF,
-    // so the accented letters come out the same on either
-    // this is not asserted on Windows, where the ANSI code page is a machine setting and a
-    // double byte code page, e.g. 932, treats 0xFC as a leading byte instead
+#ifdef _WIN32
+    // the ANSI code page is a machine setting, so this is only asserted for the Windows Western
+    // code page (1252), in which 0xFC is u with diaeresis
+    if (1252 != ::GetACP()) return;
+
     BST_REQUIRE_EQUAL(utility::s2us("\xC3\xBC"), utility::s2us_lenient("\xFC"));
     BST_REQUIRE_EQUAL(utility::s2us("M\xC3\xBCller"), utility::s2us_lenient("M\xFCller"));
 #endif
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////
+BST_TEST_CASE(testS2usLenientReplacement)
+{
+#ifdef _WIN32
+    // the ANSI code page is used instead unless it is UTF-8
+    if (CP_UTF8 != ::GetACP()) return;
+#endif
+
+    // each invalid byte is replaced with U+FFFD, and the valid text around it is unchanged
+    const std::pair<std::string, std::string> tests[] = {
+        { "\xFC", "\xEF\xBF\xBD" },
+        { "M\xFCller", "M\xEF\xBF\xBDller" },
+        // valid UTF-8 before the invalid byte
+        { "R\xC3\xA9sum\xC3\xA9 \xFC", "R\xC3\xA9sum\xC3\xA9 \xEF\xBF\xBD" },
+        // 0xE9 starts a three byte sequence, which the space cuts short
+        { "caf\xE9 au lait", "caf\xEF\xBF\xBD au lait" },
+        // a truncated sequence is replaced byte by byte
+        { "\xE2\x82" "A", "\xEF\xBF\xBD\xEF\xBF\xBD" "A" }
+    };
+
+    for (const auto& test : tests)
+    {
+        BST_REQUIRE_EQUAL(utility::s2us(test.second), utility::s2us_lenient(test.first));
+    }
 }
