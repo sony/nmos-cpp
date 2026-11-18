@@ -367,6 +367,9 @@ namespace nmos
                 web::json::insert(settings, std::make_pair(nmos::fields::host_address, nmos::fields::host_addresses(settings)[0]));
             }
 
+            // the registry server does not serve the Annotation API, so its node should not advertise it
+            if (registry) web::json::insert(settings, std::make_pair(nmos::fields::annotation_port, -1));
+
             // if any of the specific "<api>_port" settings were omitted, use "http_port" if present
             if (settings.has_field(nmos::fields::http_port))
             {
