@@ -232,6 +232,16 @@ add_executable(my-nmos-node main.cpp)
 target_link_libraries(my-nmos-node nmos-cpp::nmos-cpp)
 ```
 
+If nmos-cpp was built using Conan, CMake has to find the config files that Conan generated for nmos-cpp's dependencies when it configures the other project. Add `<home-dir>/nmos-cpp/Development/build/conan` to `CMAKE_PREFIX_PATH`, so that CMake searches it before the system directories, and set `CMAKE_FIND_PACKAGE_PREFER_CONFIG`, so that CMake uses those config files rather than its own find modules.
+
+For example:
+
+```sh
+cmake .. \
+  -DCMAKE_PREFIX_PATH:PATH="<home-dir>/nmos-cpp/Development/build/conan" \
+  -DCMAKE_FIND_PACKAGE_PREFER_CONFIG:BOOL="1"
+```
+
 For a complete example, see [Sandbox/my-nmos-node](../Sandbox/my-nmos-node).
 
 ## What Next?
