@@ -13,7 +13,12 @@
 #include "nmos/server.h"
 #include "registry_implementation.h"
 
+#ifdef _WIN32
+// On Windows, use the wide command-line arguments, since the narrow ones are converted to the ANSI code page, which may lose characters
+int wmain(int argc, wchar_t* argv[])
+#else
 int main(int argc, char* argv[])
+#endif
 {
     // Construct our data models including mutexes to protect them
 
@@ -54,7 +59,7 @@ int main(int argc, char* argv[])
         if (argc > 1)
         {
             std::error_code error;
-            registry_model.settings = web::json::value::parse(utility::s2us(argv[1]), error);
+            registry_model.settings = web::json::value::parse(argv[1], error);
             if (error)
             {
                 std::ifstream file(argv[1]);
