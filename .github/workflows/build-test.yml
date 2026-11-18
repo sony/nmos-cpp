@@ -530,8 +530,13 @@ jobs:
     - name: install wsl
       if: runner.os == 'Windows'
       run: |
-        # windows-2022 runners have only the inbox WSL, which has no WSL 2 kernel
-        wsl --update
+        # by default, the WSL 2 VM may use half the memory and all the processors, which the Node, the Registry and the testing tool also need
+        "[wsl2]`nmemory=2GB`nprocessors=2`n" | Set-Content "$env:USERPROFILE\.wslconfig"
+        # windows-2022 runners have only the inbox WSL, which has no --version option and no WSL 2 kernel
+        wsl --version | Out-Null
+        if ($LASTEXITCODE -ne 0) {
+          wsl --update
+        }
         & curl -fL https://cloud-images.ubuntu.com/wsl/releases/24.04/current/ubuntu-noble-wsl-amd64-wsl.rootfs.tar.gz -o ubuntu-24.04.rootfs.tar.gz
         New-Item -ItemType Directory -Force C:\wsl\ubuntu-24.04 | Out-Null
         wsl --import Ubuntu-24.04 C:\wsl\ubuntu-24.04 ubuntu-24.04.rootfs.tar.gz --version 2
