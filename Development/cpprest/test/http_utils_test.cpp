@@ -218,6 +218,5 @@ BST_TEST_CASE(testMakeHSTSHeaderParseHSTSHeader)
     BST_REQUIRE_THROW(web::http::experimental::parse_hsts_header(U("max-age=\"31536000")), std::invalid_argument);
     // missing max-age which is required
     BST_REQUIRE_THROW(web::http::experimental::parse_hsts_header(U("includeSubDomains")), std::invalid_argument);
-    // hm, invalid max-age
-    //BST_REQUIRE_THROW(web::http::experimental::parse_hsts_header(U("max-age=meow")), std::invalid_argument);
+    BST_REQUIRE_THROW(web::http::experimental::parse_hsts_header(U("max-age=meow")), std::invalid_argument);
 }
