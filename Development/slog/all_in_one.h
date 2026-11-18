@@ -3888,13 +3888,13 @@ namespace slog
 
         explicit async_log_service(service_function service_fun = service_function())
             : discarded(0)
-            , worker([=](){ service.run(service_fun); })
+            , worker([this, service_fun](){ service.run(service_fun); })
         {}
 
         explicit async_log_service(size_type capacity, service_function service_fun = service_function())
             : service(capacity)
             , discarded(0)
-            , worker([=](){ service.run(service_fun); })
+            , worker([this, service_fun](){ service.run(service_fun); })
         {}
 
         ~async_log_service()
