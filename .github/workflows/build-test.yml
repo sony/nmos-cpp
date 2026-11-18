@@ -14,6 +14,9 @@ jobs:
   build_and_test:
     name: "${{ matrix.os }}: build and test (C++ standard: ${{ matrix.cxx_standard || 'minimum' }}, install mdns: ${{ matrix.install_mdns }}, use conan: ${{ matrix.use_conan }}, force cpprest asio: ${{ matrix.force_cpprest_asio }}, dns-sd mode: ${{ matrix.dns_sd_mode}}, enable_authorization: ${{ matrix.enable_authorization }}${{ matrix.boost_version && format(', boost version: {0}', matrix.boost_version) || '' }}${{ matrix.vs_generator && format(', vs generator: {0}', matrix.vs_generator) || '' }})"
     runs-on: ${{ matrix.os }}
+    # a Windows runner can freeze while the WSL 2 VM runs (https://github.com/actions/runner-images/issues/14938),
+    # and step timeouts never fire then; the slowest job, with an empty Conan cache, takes about an hour
+    timeout-minutes: 90
     strategy:
       fail-fast: false
       matrix:
