@@ -14,6 +14,9 @@ jobs:
   build_and_test:
     name: "${{ matrix.os }}: build and test (C++ standard: ${{ matrix.cxx_standard || 'minimum' }}, install mdns: ${{ matrix.install_mdns }}, use conan: ${{ matrix.use_conan }}, force cpprest asio: ${{ matrix.force_cpprest_asio }}, dns-sd mode: ${{ matrix.dns_sd_mode}}, enable_authorization: ${{ matrix.enable_authorization }}${{ matrix.boost_version && format(', boost version: {0}', matrix.boost_version) || '' }}${{ matrix.vs_generator && format(', vs generator: {0}', matrix.vs_generator) || '' }})"
     runs-on: ${{ matrix.os }}
+    # a Windows runner can freeze while the WSL 2 VM runs (https://github.com/actions/runner-images/issues/14938),
+    # and step timeouts never fire then; the slowest job, with an empty Conan cache, takes about an hour
+    timeout-minutes: 90
     strategy:
       fail-fast: false
       matrix:
@@ -530,8 +533,6 @@ jobs:
     - name: install wsl
       if: runner.os == 'Windows'
       run: |
-        # by default, the WSL 2 VM may use half the memory and all the processors, which the Node, the Registry and the testing tool also need
-        "[wsl2]`nmemory=2GB`nprocessors=2`n" | Set-Content "$env:USERPROFILE\.wslconfig"
         # windows-2022 runners have only the inbox WSL, which has no --version option and no WSL 2 kernel
         wsl --version | Out-Null
         if ($LASTEXITCODE -ne 0) {

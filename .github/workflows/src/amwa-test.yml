@@ -1,8 +1,6 @@
 - name: install wsl
   if: runner.os == 'Windows'
   run: |
-    # by default, the WSL 2 VM may use half the memory and all the processors, which the Node, the Registry and the testing tool also need
-    "[wsl2]`nmemory=2GB`nprocessors=2`n" | Set-Content "$env:USERPROFILE\.wslconfig"
     # windows-2022 runners have only the inbox WSL, which has no --version option and no WSL 2 kernel
     wsl --version | Out-Null
     if ($LASTEXITCODE -ne 0) {
