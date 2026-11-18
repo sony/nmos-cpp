@@ -297,33 +297,36 @@ namespace mdns
 
             pplx::task<bool> register_address(const std::string& host_name, const std::string& ip_address, const std::string& domain, std::uint32_t interface_id) override
             {
+                auto impl = this;
                 return pplx::create_task([=]
                 {
                     // "Note: client is responsible for serializing access to these structures if
                     // they are shared between concurrent threads."
                     // See dns_sd.h
-                    std::lock_guard<std::mutex> lock(mutex);
-                    return mdns_details::register_address(client, host_name, ip_address, domain, interface_id, gate);
+                    std::lock_guard<std::mutex> lock(impl->mutex);
+                    return mdns_details::register_address(impl->client, host_name, ip_address, domain, interface_id, impl->gate);
                 });
             }
 
             pplx::task<bool> register_service(const std::string& name, const std::string& type, std::uint16_t port, const std::string& domain, const std::string& host_name, const txt_records& txt_records) override
             {
+                auto impl = this;
                 return pplx::create_task([=]
                 {
                     // Lock also required here, for services
-                    std::lock_guard<std::mutex> lock(mutex);
-                    return mdns_details::register_service(services, name, type, port, domain, host_name, txt_records, gate);
+                    std::lock_guard<std::mutex> lock(impl->mutex);
+                    return mdns_details::register_service(impl->services, name, type, port, domain, host_name, txt_records, impl->gate);
                 });
             }
 
             pplx::task<bool> update_record(const std::string& name, const std::string& type, const std::string& domain, const txt_records& txt_records) override
             {
+                auto impl = this;
                 return pplx::create_task([=]
                 {
                     // Lock also required here, for services
-                    std::lock_guard<std::mutex> lock(mutex);
-                    return mdns_details::update_record(services, name, type, domain, txt_records, gate);
+                    std::lock_guard<std::mutex> lock(impl->mutex);
+                    return mdns_details::update_record(impl->services, name, type, domain, txt_records, impl->gate);
                 });
             }
 
