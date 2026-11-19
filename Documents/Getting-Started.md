@@ -133,11 +133,27 @@ The AMWA NMOS API Testing Tool may be used to test the REST APIs and behaviour o
 
 ### Unit tests
 
-The unit tests are currently packaged into a single test suite, as the **nmos-cpp-test** application.
-This may be run automatically by building RUN_TESTS, but note that to see the output of any failed tests,
-it is necessary to set ``CTEST_OUTPUT_ON_FAILURE`` to ``1`` in the environment first.
+When you build this repository with ``NMOS_CPP_BUILD_TESTS`` enabled (the default), CMake builds
+the **nmos-cpp-test** application and registers its tests with CTest. CTest does not rebuild
+**nmos-cpp-test**, so build the project before running the tests.
 
-The build output should conclude something like this:
+From your CMake build directory, run:
+
+```sh
+ctest --output-on-failure
+```
+
+If you used a multi-configuration generator such as Visual Studio, specify the configuration you built:
+
+```sh
+ctest -C Release --output-on-failure
+```
+
+Replace ``Release`` with ``Debug`` if you built the Debug configuration.
+In the Visual Studio IDE, building the **RUN_TESTS** target runs the same tests; set ``CTEST_OUTPUT_ON_FAILURE``
+to ``1`` in the environment first to see the output of any failed tests.
+
+CTest prints the output of any failing tests and ends with a summary like this:
 
 ```
 100% tests passed, 0 tests failed out of 52
