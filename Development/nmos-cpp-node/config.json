@@ -56,6 +56,7 @@
     //"video_type": "video/raw",
 
     // mxl_video_type: media type of MXL video flows and receivers, e.g. "video/v210" or "video/v210a", see nmos/mxl.h
+    // those media types determine the components, so color_sampling and component_depth do not apply
     //"mxl_video_type": "video/v210",
 
     // channel_count: controls the number of channels in audio sources
