@@ -83,6 +83,13 @@ namespace utility
         return conversions::to_string_t(s);
     }
 
+    // convert a narrow string of uncertain encoding to string_t; never throws
+    // on a wide build, s2us requires valid UTF-8 and throws std::range_error otherwise, so use
+    // this instead at boundaries where the narrow string comes from the platform rather than from
+    // this codebase, e.g. std::exception::what(), system error messages, or __FILE__, none of
+    // which are guaranteed to be UTF-8 - on Windows they are typically in the ANSI code page
+    string_t s2us_lenient(const std::string& s);
+
     template <typename T>
     inline string_t ostringstreamed(const T& value)
     {

@@ -27,11 +27,15 @@ namespace nmos
                     // hmm, could be good to provide a log/settings option to redact thread_id and/or source_location?
                     { U("thread_id"), ostringstreamed(message.thread_id()) },
                     { U("source_location"), web::json::value_of({
-                        { U("file"), utility::s2us(message.file()) },
+                        // __FILE__ and __FUNCTION__ are narrow platform strings, so may not be UTF-8
+                        { U("file"), utility::s2us_lenient(message.file()) },
                         { U("line"), message.line() },
-                        { U("function"), utility::s2us(message.function()) }
+                        { U("function"), utility::s2us_lenient(message.function()) }
                     }, true) },
-                    { U("message"), utility::s2us(message.str()) },
+                    // log messages may contain arbitrary narrow text, e.g. from std::exception::what(),
+                    // which carries no UTF-8 guarantee; s2us would throw std::range_error on such bytes,
+                    // and this runs on the async logging worker thread where that would terminate the app
+                    { U("message"), utility::s2us_lenient(message.str()) },
                     { U("id"), id }
                 }, true);
 
