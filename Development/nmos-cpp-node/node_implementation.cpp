@@ -22,6 +22,7 @@
 #include "nmos/channelmapping_resources.h"
 #include "nmos/clock_name.h"
 #include "nmos/colorspace.h"
+#include "nmos/components.h"
 #include "nmos/configuration_handlers.h"
 #include "nmos/configuration_methods.h"
 #include "nmos/configuration_resources.h"
@@ -125,6 +126,7 @@ namespace impl
         const web::json::field_as_string_or video_type{ U("video_type"), U("video/raw") };
 
         // mxl_video_type: media type of MXL video flows and receivers, e.g. "video/v210" or "video/v210a", see nmos/mxl.h
+        // those media types determine the components, so color_sampling and component_depth do not apply
         const web::json::field_as_string_or mxl_video_type{ U("mxl_video_type"), U("video/v210") };
 
         // channel_count: controls the number of channels in audio sources
@@ -997,14 +999,20 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
 
             if (impl::ports::mxl_video == port)
             {
+                // video/v210 and video/v210a determine the components, so color_sampling and component_depth do not apply
                 flow = nmos::make_coded_video_flow(
                     flow_id, source_id, device_id,
                     frame_rate,
                     frame_width, frame_height, interlace_mode,
-                    colorspace, transfer_characteristic, sampling, bit_depth,
+                    colorspace, transfer_characteristic, sdp::samplings::YCbCr_4_2_2, 10,
                     mxl_video_type,
                     model.settings
                 );
+                // video/v210a adds a full-size 10-bit alpha (key) component to the video/v210 components
+                if (nmos::media_types::video_v210a == mxl_video_type)
+                {
+                    web::json::push_back(flow.data[nmos::fields::components], nmos::make_component(nmos::component_names::A, frame_width, frame_height, 10));
+                }
             }
             else if (impl::ports::mxl_audio == port)
             {
@@ -1067,9 +1075,7 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
                         { nmos::caps::format::grain_rate, nmos::make_caps_rational_constraint({ frame_rate }) },
                         { nmos::caps::format::frame_width, nmos::make_caps_integer_constraint({ frame_width }) },
                         { nmos::caps::format::frame_height, nmos::make_caps_integer_constraint({ frame_height }) },
-                        { nmos::caps::format::interlace_mode, nmos::make_caps_string_constraint(interlace_modes) },
-                        { nmos::caps::format::color_sampling, nmos::make_caps_string_constraint({ sampling.name }) },
-                        { nmos::caps::format::component_depth, nmos::make_caps_integer_constraint({ bit_depth }) }
+                        { nmos::caps::format::interlace_mode, nmos::make_caps_string_constraint(interlace_modes) }
                     })
                 });
                 receiver.data[nmos::fields::version] = receiver.data[nmos::fields::caps][nmos::fields::version] = value(nmos::make_version());
