@@ -242,7 +242,11 @@ REGISTRY_PID=$!
 # short delay to give the Registry a chance to start up and the Node a chance to register before running the Registry test suite
 sleep 2
 # add a persistent Query WebSocket API subscription before running the Registry test suite
-curl --cacert test_data/BCP00301/ca/certs/ca.cert.pem "${registry_url}/x-nmos/query/v1.3/subscriptions" -H "Content-Type: application/json" -d "{\"max_update_rate_ms\": 100, \"resource_path\": \"/nodes\", \"params\": {\"label\": \"host1\"}, \"persist\": true, \"secure\": ${secure}}" -s > /dev/null || echo "failed to add subscription"
+# (--fail-with-body makes an HTTP error status fail the request too; the output is only shown on failure)
+if ! subscription_output=$(curl --cacert test_data/BCP00301/ca/certs/ca.cert.pem "${registry_url}/x-nmos/query/v1.3/subscriptions" -H "Content-Type: application/json" -d "{\"max_update_rate_ms\": 100, \"resource_path\": \"/nodes\", \"params\": {\"label\": \"host1\"}, \"persist\": true, \"secure\": ${secure}}" -sS --fail-with-body 2>&1); then
+  echo "${subscription_output}"
+  echo "::warning::failed to add subscription"
+fi
 
 do_run_test IS-04-02 $expected_disabled_IS_04_02 --host "${host}" "${host}" --port 8088 8088 --version v1.3 v1.3
 
