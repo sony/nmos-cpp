@@ -84,8 +84,9 @@ namespace nmos
 
     namespace details
     {
-        // carefully ordered 'largest' to 'smallest'
-        static const std::vector<std::pair<std::vector<channel_symbol>, channel_group_symbol>> channel_groups{
+        // groups that make_fmtp_channel_order produces, carefully ordered 'largest' to 'smallest'
+        // 22.2 Surround and SDI audio group are excluded because some or all of their channels can only be indicated as Undefined
+        static const std::vector<std::pair<std::vector<channel_symbol>, channel_group_symbol>> channel_groups_make{
             { channel_symbols::S71, channel_group_symbols::S71 },
             { channel_symbols::S51, channel_group_symbols::S51 },
             { channel_symbols::LtRt, channel_group_symbols::LtRt },
@@ -93,6 +94,28 @@ namespace nmos
             { channel_symbols::DM, channel_group_symbols::DM },
             { channel_symbols::M, channel_group_symbols::M }
         };
+
+        // groups that parse_fmtp_channel_order recognises, other than Undefined groups
+        static const std::vector<std::pair<std::vector<channel_symbol>, channel_group_symbol>> channel_groups_parse{
+            { channel_symbols::M, channel_group_symbols::M },
+            { channel_symbols::DM, channel_group_symbols::DM },
+            { channel_symbols::ST, channel_group_symbols::ST },
+            { channel_symbols::LtRt, channel_group_symbols::LtRt },
+            { channel_symbols::S51, channel_group_symbols::S51 },
+            { channel_symbols::S71, channel_group_symbols::S71 },
+            { channel_symbols::S222, channel_group_symbols::S222 },
+            { channel_symbols::SGRP, channel_group_symbols::SGRP }
+        };
+
+        // the number of channels in an Undefined group ('U01' to 'U64'), or zero for any other symbol
+        unsigned int get_undefined_channel_count(const channel_group_symbol& symbol)
+        {
+            const auto& name = symbol.name;
+            const auto is_digit = [](utility::char_t c) { return U('0') <= c && c <= U('9'); };
+            if (3 != name.size() || U('U') != name[0] || !is_digit(name[1]) || !is_digit(name[2])) return 0;
+            const unsigned int channel_count = 10 * (name[1] - U('0')) + (name[2] - U('0'));
+            return 64 >= channel_count ? channel_count : 0;
+        }
 
         std::vector<channel_group_symbol> make_channel_group_symbols(const std::vector<channel_symbol>& channels)
         {
@@ -102,8 +125,8 @@ namespace nmos
             auto channel = channels.begin();
             while (channels.end() != channel)
             {
-                auto group = channel_groups.begin();
-                while (channel_groups.end() != group)
+                auto group = channel_groups_make.begin();
+                while (channel_groups_make.end() != group)
                 {
                     auto ch = channel;
                     auto group_ch = group->first.begin();
@@ -119,7 +142,7 @@ namespace nmos
                     }
                     ++group;
                 }
-                if (channel_groups.end() != group)
+                if (channel_groups_make.end() != group)
                 {
                     if (0 != undefined_count)
                     {
@@ -182,14 +205,24 @@ namespace nmos
 
             const channel_group_symbol symbol(utility::string_t(git, it));
 
-            // hm, does not handle 22.2 Surround ('222'), SDI audio group ('SGRP') or Undefined ('U01' to 'U64')
-            auto group = std::find_if(details::channel_groups.begin(), details::channel_groups.end(),
+            auto group = std::find_if(details::channel_groups_parse.begin(), details::channel_groups_parse.end(),
                 [&](const std::pair<std::vector<channel_symbol>, channel_group_symbol>& group)
             {
                 return symbol == group.second;
             });
-            if (details::channel_groups.end() == group) return {};
-            channels.insert(channels.end(), group->first.begin(), group->first.end());
+            if (details::channel_groups_parse.end() != group)
+            {
+                channels.insert(channels.end(), group->first.begin(), group->first.end());
+            }
+            else
+            {
+                const auto channel_count = details::get_undefined_channel_count(symbol);
+                if (0 == channel_count) return {};
+                for (unsigned int channel_number = 1; channel_number <= channel_count; ++channel_number)
+                {
+                    channels.push_back(channel_symbols::Undefined(channel_number));
+                }
+            }
 
             if (*it == U(')')) break;
             ++it;
