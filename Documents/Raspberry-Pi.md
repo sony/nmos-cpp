@@ -1,5 +1,7 @@
 # Cross-compiling for Raspberry Pi
 
+**Caution:** These instructions are not regularly tested, and the tool and dependency versions they use are out of date.
+
 The following instructions have been used to cross-compile nmos-cpp and all its dependencies for the Raspberry Pi, from a Linux (Ubuntu 14.04 LTS) box.
 
 ## Set up Raspberry Pi Tools

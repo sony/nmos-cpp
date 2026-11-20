@@ -148,6 +148,11 @@ namespace sdp
         const utility::string_t ssrc_group{ U("ssrc-group") };
         const utility::string_t duplication_delay{ U("duplication-delay") };
 
+        // See https://tools.ietf.org/html/rfc6364
+        const utility::string_t fec_source_flow{ U("fec-source-flow") };
+        const utility::string_t fec_repair_flow{ U("fec-repair-flow") };
+        const utility::string_t repair_window{ U("repair-window") };
+
         // See https://tools.ietf.org/html/rfc7273
         const utility::string_t ts_refclk{ U("ts-refclk") };
         const utility::string_t mediaclk{ U("mediaclk") };
@@ -188,6 +193,19 @@ namespace sdp
         const web::json::field_as_value attribute{ U("attribute") };
         const web::json::field_as_array ssrc_ids{ U("ssrc_ids") };
         const web::json::field<uint64_t> duplication_delay{ U("duplication_delay") };
+
+        // a=fec-source-flow: id=<source id>[; tag-len=<tag length>]
+        // a=fec-repair-flow: encoding-id=<encoding id>[; preference-lvl=<preference>][; ss-fssi=<elements>][; fssi=<elements>]
+        // a=repair-window:<window size><unit>
+        // See https://tools.ietf.org/html/rfc6364
+        const web::json::field<uint64_t> source_id{ U("source_id") };
+        const web::json::field<uint64_t> tag_length{ U("tag_length") };
+        const web::json::field<uint64_t> encoding_id{ U("encoding_id") };
+        const web::json::field<uint64_t> preference_level{ U("preference_level") };
+        const web::json::field_as_array sender_side_scheme_specific{ U("sender_side_scheme_specific") };
+        const web::json::field_as_array scheme_specific{ U("scheme_specific") };
+        const web::json::field<uint64_t> window_size{ U("window_size") };
+        const web::json::field_as_string window_unit{ U("window_unit") }; // see sdp::repair_window_units
 
         // a=source-filter: <filter-mode> <nettype> <address-types> <dest-address> <src-list>
         // See https://tools.ietf.org/html/rfc4570
@@ -299,6 +317,10 @@ namespace sdp
         const protocol RTP_SAVP{ U("RTP/SAVP") };
         // unspecified protocol running over UDP
         const protocol udp{ U("udp") };
+        // FEC Framework input and repair packet formats
+        // See https://tools.ietf.org/html/rfc6364#section-4.1
+        const protocol FEC_UDP{ U("FEC/UDP") };
+        const protocol UDP_FEC{ U("UDP/FEC") };
     }
 
     // Bandwidth Specifiers
@@ -380,6 +402,20 @@ namespace sdp
     {
         // See https://tools.ietf.org/html/rfc7104
         const group_semantics_type duplication{ U("DUP") };
+        // See https://tools.ietf.org/html/rfc5956 and https://tools.ietf.org/html/rfc6364
+        const group_semantics_type fec_fr{ U("FEC-FR") };
+    }
+}
+
+// Forward Error Correction (FEC) Framework Repair Window Units
+// See https://tools.ietf.org/html/rfc6364#section-4.6
+namespace sdp
+{
+    DEFINE_STRING_ENUM(repair_window_unit)
+    namespace repair_window_units
+    {
+        const repair_window_unit milliseconds{ U("ms") };
+        const repair_window_unit microseconds{ U("us") };
     }
 }
 
@@ -518,6 +554,26 @@ namespace sdp
         const web::json::field_as_string DID_SDID{ U("DID_SDID") }; // e.g. "{0x41,0x01}", see nmos::did_sdid
         const web::json::field<uint32_t> VPID_Code{ U("VPID_Code") }; // 1..255, see nmos::vpid_code
         const web::json::field_as_string TM{ U("TM") }; // see sdp::tranmission_model
+
+        // See VSF TR-10-1:2024 Internet Protocol Media Experience (IPMX): System Timing and Definitions
+        // at https://static.vsf.tv/download/technical_recommendations/VSF_TR-10-1_2024-02-23.pdf
+
+        // TR-10-1:2024 Section 10.1 IPMX Sender Signaling
+        // "IPMX Senders shall include the "IPMX" declaration in the a=fmtp clause of the SDP file."
+        const web::json::field_as_bool_or IPMX{ U("IPMX"), false };
+
+        // TR-10-1:2024 Section 10.2 Baseband Video IPMX Sender Signaling
+        // "When a video IPMX Sender's output is based upon the conversion of a Baseband signal, the sender shall include
+        // the measuredpixclk, vtotal and htotal parameters in the a=fmtp clause of the SDP file [...]"
+        // The IPMX Info Block in VSF TR-10-2:2024 carries the measured pixel clock in 64 bits, and vtotal and htotal in 16 bits each
+        const web::json::field<uint64_t> measuredpixclk{ U("measuredpixclk") }; // Hz, used for ST 2110-20 and ST 2110-22
+        const web::json::field<uint32_t> vtotal{ U("vtotal") }; // used for ST 2110-20 and ST 2110-22
+        const web::json::field<uint32_t> htotal{ U("htotal") }; // used for ST 2110-20 and ST 2110-22
+
+        // TR-10-1:2024 Section 10.3 Baseband Audio Sender Signaling
+        // "An audio IPMX Sender that is converting from a Baseband signal shall include the measuredsamplerate parameters in the a=fmtp clause [...]"
+        // The IPMX Info Block in VSF TR-10-3:2024 carries the measured sample rate in 32 bits
+        const web::json::field<uint32_t> measuredsamplerate{ U("measuredsamplerate") }; // Hz, used for ST 2110-30
     }
 }
 

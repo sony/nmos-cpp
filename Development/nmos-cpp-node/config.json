@@ -56,6 +56,7 @@
     //"video_type": "video/raw",
 
     // mxl_video_type: media type of MXL video flows and receivers, e.g. "video/v210" or "video/v210a", see nmos/mxl.h
+    // those media types determine the components, so color_sampling and component_depth do not apply
     //"mxl_video_type": "video/v210",
 
     // channel_count: controls the number of channels in audio sources
@@ -63,6 +64,10 @@
 
     // smpte2022_7: controls whether senders and receivers have one leg (false) or two legs (true, default)
     //"smpte2022_7": false,
+
+    // ipmx: controls whether the node demonstrates IPMX behaviour (true) or not (false, default)
+    // see VSF TR-10
+    //"ipmx": true,
 
     // simulate_status_monitor_activity: when true status monitor statuses will change randomly after activation
     //"simulate_status_monitor_activity": true,

@@ -58,8 +58,7 @@ The provided [nmos-cpp-node/config.json](../Development/nmos-cpp-node/config.jso
 Note: C++/JavaScript-style single and multi-line comments are permitted and ignored in nmos-cpp config files.
 
 When running more than one nmos-cpp application on the same host, configuration parameters **must** be used to make the port numbers of each instance unique.
-There are several APIs to consider, so for brevity, the default port for _all_ the APIs can be overridden by using the ``"http_port"`` parameter.
-(WebSocket APIs are served separately so ``"events_ws_port"`` must also be specified when running multiple nmos-cpp-node instances.)
+Set `"http_port"` to choose the default port for the Node's HTTP APIs. Unless explicitly overridden, the Events WebSocket (`"events_ws_port"`) uses `http_port + 1` and the Control Protocol WebSocket (`"control_protocol_ws_port"`) uses `http_port + 2`.
 
 For example, for the first Node, try ``nmos-cpp-node config.json`` with a file *config.json* like:
 
@@ -67,12 +66,13 @@ For example, for the first Node, try ``nmos-cpp-node config.json`` with a file *
 {
     "logging_level": 0,
     "domain": "local.",
-    "http_port": 8080,
-    "events_ws_port": 8081
+    "http_port": 8080
 }
 ```
 
-Each additional Node should be configured with different values of `"http_port"` and `"events_ws_port"`.
+This Node uses ports 8080, 8081 and 8082.
+For example, use `"http_port": 8083` for a second Node to use ports 8083, 8084 and 8085.
+If you override any API ports, check those for conflicts too.
 
 Note that some optional APIs can be disabled by specifying port -1, including ``"system_port": -1`` on the Registry and ``"events_port": -1`` on the Nodes.
 

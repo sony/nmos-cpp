@@ -18,7 +18,7 @@ Vagrant.configure("2") do |config|
     && apt-get install -y g++ libffi-dev nodejs npm python3-pip avahi-daemon\
     && pip3 install -r requirements.txt \
     && cd testssl \
-    && wget https://github.com/drwetter/testssl.sh/archive/3.0rc5.tar.gz \
+    && wget https://github.com/testssl/testssl.sh/archive/3.0rc5.tar.gz \
     && tar -xvzf 3.0rc5.tar.gz --strip-components=1 \
     && rm 3.0rc5.tar.gz \
     && npm config set unsafe-perm true \

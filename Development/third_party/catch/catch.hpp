@@ -4794,7 +4794,7 @@ namespace Clara {
         class OptBuilder : public ArgBuilder {
         public:
             OptBuilder( Arg* arg ) : ArgBuilder( arg ) {}
-            OptBuilder( OptBuilder& other ) : ArgBuilder( other ) {}
+            OptBuilder( OptBuilder const& other ) : ArgBuilder( other ) {}
 
             OptBuilder& operator[]( std::string const& optName ) {
                 addOptName( *ArgBuilder::m_arg, optName );
@@ -8429,11 +8429,18 @@ namespace Catch {
     : m_info( other.m_info )
     {}
 
+#if defined(_MSC_VER)
+#pragma warning(push)
+#pragma warning(disable:4996) // std::uncaught_exception is deprecated in C++17
+#endif
     ScopedMessage::~ScopedMessage() {
         if ( !std::uncaught_exception() ){
             getResultCapture().popScopedMessage(m_info);
         }
     }
+#if defined(_MSC_VER)
+#pragma warning(pop)
+#endif
 
 } // end namespace Catch
 

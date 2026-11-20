@@ -63,6 +63,11 @@ namespace sdp
 
         // a delimited sequence of values, represented as a json object with the specified field names
         // an empty field name indicates the values of the converted json object are merged into the result
+        // Unlike each entry in field_converters, which consumes one delimiter-separated value,
+        // trailing_field_converter receives the remainder of the input (which may itself contain
+        // delimiters). Omitted when absent or empty. Pass {} for none.
+        converter object_converter(const std::vector<std::pair<utility::string_t, converter>>& field_converters, const std::pair<utility::string_t, converter>& trailing_field_converter, const std::string& delimiter = " ");
+
         converter object_converter(const std::vector<std::pair<utility::string_t, converter>>& field_converters, const std::string& delimiter = " ");
 
         // "An SDP session description consists of a number of lines of text of

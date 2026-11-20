@@ -1,3 +1,4 @@
+#include <clocale>
 #include <fstream>
 #include <iostream>
 #include "cpprest/grant_type.h"
@@ -20,13 +21,24 @@
 #include "nmos/server_utils.h" // for make_http_listener_config
 #include "node_implementation.h"
 
+#ifdef _WIN32
+// On Windows, use the wide command-line arguments, since the narrow ones are converted to the ANSI code page, which may lose characters
+int wmain(int argc, wchar_t* argv[])
+#else
 int main(int argc, char* argv[])
+#endif
 {
     // Construct our data models including mutexes to protect them
 
     nmos::node_model node_model;
 
     nmos::experimental::log_model log_model;
+
+#ifdef _WIN32
+    // The logs are written in UTF-8, so use a UTF-8 locale, with which the C runtime converts
+    // the output to the console code page when writing to the console
+    std::setlocale(LC_CTYPE, ".UTF-8");
+#endif
 
     // Streams for logging, initially configured to write errors to stderr and to discard the access log
     std::filebuf error_log_buf;
@@ -56,7 +68,7 @@ int main(int argc, char* argv[])
         if (argc > 1)
         {
             std::error_code error;
-            node_model.settings = web::json::value::parse(utility::s2us(argv[1]), error);
+            node_model.settings = web::json::value::parse(argv[1], error);
             if (error)
             {
                 std::ifstream file(argv[1]);

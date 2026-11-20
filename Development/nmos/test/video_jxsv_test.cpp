@@ -243,3 +243,47 @@ BST_TEST_CASE(testSdpParametersVideoJpegXs)
         nmos::check_sdp_parameters(test.first, roundtripped);
     }
 }
+
+////////////////////////////////////////////////////////////////////////////////////////////
+// See VSF TR-10-1:2024 Section 10.1 and Section 10.2
+BST_TEST_CASE(testSdpParametersVideoJpegXsIpmx)
+{
+    nmos::video_jxsv_parameters params;
+    params.packetmode = sdp::video_jxsv::codestream;
+    params.transmode = sdp::video_jxsv::sequential;
+    params.bit_rate = 0;
+    params.width = 1920;
+    params.height = 1080;
+    params.exactframerate = nmos::rates::rate59_94;
+    params.ipmx = true;
+    params.measuredpixclk = 148550104;
+    params.vtotal = 1125;
+    params.htotal = 2200;
+
+    const auto made = nmos::make_video_jxsv_sdp_parameters(U("ipmx"), params, 112);
+    nmos::check_sdp_parameters({ U("ipmx"), sdp::media_types::video, { 112, U("jxsv"), 90000 }, {
+        { U("packetmode"), U("0") },
+        { U("width"), U("1920") },
+        { U("height"), U("1080") },
+        { U("exactframerate"), U("60000/1001") },
+        { U("IPMX"), {} },
+        { U("measuredpixclk"), U("148550104") },
+        { U("vtotal"), U("1125") },
+        { U("htotal"), U("2200") }
+    } }, made);
+
+    const auto parsed = nmos::get_video_jxsv_parameters_or_defaults(made);
+    BST_REQUIRE(parsed.ipmx);
+    BST_REQUIRE_EQUAL(148550104U, parsed.measuredpixclk);
+    BST_REQUIRE_EQUAL(1125U, parsed.vtotal);
+    BST_REQUIRE_EQUAL(2200U, parsed.htotal);
+
+    // not an IPMX Sender
+    params.ipmx = false;
+    params.measuredpixclk = 0;
+    params.vtotal = 0;
+    params.htotal = 0;
+    const auto st2110 = nmos::get_video_jxsv_parameters_or_defaults(nmos::make_video_jxsv_sdp_parameters(U("st2110"), params, 112));
+    BST_REQUIRE(!st2110.ipmx);
+    BST_REQUIRE_EQUAL(0U, st2110.measuredpixclk);
+}

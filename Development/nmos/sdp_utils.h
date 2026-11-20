@@ -196,6 +196,70 @@ namespace nmos
             {}
         } temporal_redundancy;
 
+        // Forward Error Correction (FEC) Framework parameters for the IS-05-compatible
+        // topology of one source flow and one or two repair flows per RTP leg.
+        // RFC-only values are explicit because they cannot be derived from IS-05 transport parameters.
+        // See https://tools.ietf.org/html/rfc6364
+        struct fec_t
+        {
+            typedef std::vector<std::pair<utility::string_t, utility::string_t>> scheme_specific_t;
+
+            struct repair_window_t
+            {
+                uint32_t size;
+                sdp::repair_window_unit unit;
+
+                repair_window_t() : size() {}
+                repair_window_t(uint32_t size, const sdp::repair_window_unit& unit) : size(size), unit(unit) {}
+            };
+
+            struct repair_flow_t
+            {
+                uint64_t encoding_id;
+                bst::optional<uint64_t> preference_level;
+                scheme_specific_t sender_side_scheme_specific;
+                scheme_specific_t scheme_specific;
+                bst::optional<repair_window_t> repair_window;
+                utility::string_t media_stream_id;
+
+                repair_flow_t() : encoding_id() {}
+                repair_flow_t(uint64_t encoding_id, const utility::string_t& media_stream_id)
+                    : encoding_id(encoding_id)
+                    , media_stream_id(media_stream_id)
+                {}
+                repair_flow_t(uint64_t encoding_id, bst::optional<uint64_t> preference_level,
+                    const scheme_specific_t& sender_side_scheme_specific, const scheme_specific_t& scheme_specific,
+                    bst::optional<repair_window_t> repair_window, const utility::string_t& media_stream_id)
+                    : encoding_id(encoding_id)
+                    , preference_level(preference_level)
+                    , sender_side_scheme_specific(sender_side_scheme_specific)
+                    , scheme_specific(scheme_specific)
+                    , repair_window(repair_window)
+                    , media_stream_id(media_stream_id)
+                {}
+            };
+
+            uint32_t source_id;
+            bst::optional<uint64_t> tag_length;
+            utility::string_t media_stream_id;
+            std::vector<repair_flow_t> repair_flows;
+
+            fec_t() : source_id() {}
+            fec_t(uint32_t source_id, const utility::string_t& media_stream_id, const std::vector<repair_flow_t>& repair_flows)
+                : source_id(source_id)
+                , media_stream_id(media_stream_id)
+                , repair_flows(repair_flows)
+            {}
+            fec_t(uint32_t source_id, bst::optional<uint64_t> tag_length, const utility::string_t& media_stream_id,
+                const std::vector<repair_flow_t>& repair_flows)
+                : source_id(source_id)
+                , tag_length(tag_length)
+                , media_stream_id(media_stream_id)
+                , repair_flows(repair_flows)
+            {}
+        };
+        std::vector<fec_t> fec;
+
         // Media ("m=")
         // See https://tools.ietf.org/html/rfc4566#section-5.14
         sdp::media_type media_type;
@@ -386,8 +450,67 @@ namespace nmos
         sdp::timestamp_mode tsmode; // if omitted (empty), assume sdp::timestamp_modes::NEW
         bst::optional<uint32_t> tsdelay;
 
-        video_raw_parameters() : depth(), width(), height(), interlace(), segmented(), troff(), cmax(), maxudp(), tsdelay() {}
+        // additional fmtp parameters from VSF TR-10-1:2024 (IPMX)
+        bool ipmx;
+        uint64_t measuredpixclk; // if omitted (zero), not compliant with IPMX, see VSF TR-10-1:2024 Section 10.2 and VSF TR-10-9:2025 Section 10
+        uint32_t vtotal; // if omitted (zero), as above
+        uint32_t htotal; // if omitted (zero), as above
 
+        video_raw_parameters() : depth(), width(), height(), interlace(), segmented(), troff(), cmax(), maxudp(), tsdelay(), ipmx(), measuredpixclk(), vtotal(), htotal() {}
+
+        // for IPMX, see VSF TR-10-1:2024
+        // or ST 2110-20
+        video_raw_parameters(
+            sdp::sampling sampling,
+            uint32_t depth,
+            uint32_t width,
+            uint32_t height,
+            nmos::rational exactframerate,
+            bool interlace,
+            bool segmented,
+            sdp::transfer_characteristic_system tcs,
+            sdp::colorimetry colorimetry,
+            sdp::range range,
+            nmos::rational par,
+            sdp::packing_mode pm,
+            sdp::smpte_standard_number ssn,
+            sdp::type_parameter tp,
+            bst::optional<uint32_t> troff,
+            uint32_t cmax,
+            uint32_t maxudp,
+            sdp::timestamp_mode tsmode,
+            bst::optional<uint32_t> tsdelay,
+            bool ipmx,
+            uint64_t measuredpixclk,
+            uint32_t vtotal,
+            uint32_t htotal
+        )
+            : sampling(std::move(sampling))
+            , depth(depth)
+            , width(width)
+            , height(height)
+            , exactframerate(exactframerate)
+            , interlace(interlace)
+            , segmented(segmented)
+            , tcs(std::move(tcs))
+            , colorimetry(std::move(colorimetry))
+            , range(std::move(range))
+            , par(par)
+            , pm(std::move(pm))
+            , ssn(std::move(ssn))
+            , tp(std::move(tp))
+            , troff(troff)
+            , cmax(cmax)
+            , maxudp(maxudp)
+            , tsmode(tsmode)
+            , tsdelay(tsdelay)
+            , ipmx(ipmx)
+            , measuredpixclk(measuredpixclk)
+            , vtotal(vtotal)
+            , htotal(htotal)
+        {}
+
+        // for ST 2110-20
         video_raw_parameters(
             sdp::sampling sampling,
             uint32_t depth,
@@ -409,25 +532,7 @@ namespace nmos
             sdp::timestamp_mode tsmode,
             bst::optional<uint32_t> tsdelay
         )
-            : sampling(std::move(sampling))
-            , depth(depth)
-            , width(width)
-            , height(height)
-            , exactframerate(exactframerate)
-            , interlace(interlace)
-            , segmented(segmented)
-            , tcs(std::move(tcs))
-            , colorimetry(std::move(colorimetry))
-            , range(std::move(range))
-            , par(par)
-            , pm(std::move(pm))
-            , ssn(std::move(ssn))
-            , tp(std::move(tp))
-            , troff(troff)
-            , cmax(cmax)
-            , maxudp(maxudp)
-            , tsmode(tsmode)
-            , tsdelay(tsdelay)
+            : video_raw_parameters(std::move(sampling), depth, width, height, exactframerate, interlace, segmented, std::move(tcs), std::move(colorimetry), std::move(range), par, std::move(pm), std::move(ssn), std::move(tp), troff, cmax, maxudp, std::move(tsmode), tsdelay, {}, {}, {}, {})
         {}
 
         // deprecated
@@ -460,8 +565,37 @@ namespace nmos
         // ptime
         double packet_time;
 
-        audio_L_parameters() : channel_count(), bit_depth(), sample_rate(), tsdelay(), packet_time() {}
+        // additional fmtp parameters from VSF TR-10-1:2024 (IPMX)
+        bool ipmx;
+        uint32_t measuredsamplerate; // if omitted (zero), not compliant with IPMX, see VSF TR-10-1:2024 Section 10.3 and VSF TR-10-9:2025 Section 10
 
+        audio_L_parameters() : channel_count(), bit_depth(), sample_rate(), tsdelay(), packet_time(), ipmx(), measuredsamplerate() {}
+
+        // for IPMX, see VSF TR-10-1:2024
+        // or ST 2110-30
+        audio_L_parameters(
+            uint32_t channel_count,
+            uint32_t bit_depth,
+            uint64_t sample_rate,
+            utility::string_t channel_order,
+            sdp::timestamp_mode tsmode,
+            bst::optional<uint32_t> tsdelay,
+            double packet_time,
+            bool ipmx,
+            uint32_t measuredsamplerate
+        )
+            : channel_count(channel_count)
+            , bit_depth(bit_depth)
+            , sample_rate(sample_rate)
+            , channel_order(std::move(channel_order))
+            , tsmode(std::move(tsmode))
+            , tsdelay(tsdelay)
+            , packet_time(packet_time)
+            , ipmx(ipmx)
+            , measuredsamplerate(measuredsamplerate)
+        {}
+
+        // for ST 2110-30
         audio_L_parameters(
             uint32_t channel_count,
             uint32_t bit_depth,
@@ -471,13 +605,7 @@ namespace nmos
             bst::optional<uint32_t> tsdelay,
             double packet_time
         )
-            : channel_count(channel_count)
-            , bit_depth(bit_depth)
-            , sample_rate(sample_rate)
-            , channel_order(std::move(channel_order))
-            , tsmode(std::move(tsmode))
-            , tsdelay(tsdelay)
-            , packet_time(packet_time)
+            : audio_L_parameters(channel_count, bit_depth, sample_rate, std::move(channel_order), std::move(tsmode), tsdelay, packet_time, {}, {})
         {}
 
         // deprecated
@@ -510,8 +638,36 @@ namespace nmos
         sdp::timestamp_mode tsmode; // if omitted (empty), assume sdp::timestamp_modes::NEW
         bst::optional<uint32_t> tsdelay;
 
-        video_smpte291_parameters() : vpid_code(), troff(), tsdelay() {}
+        // additional fmtp parameters from VSF TR-10-1:2024 (IPMX)
+        bool ipmx;
 
+        video_smpte291_parameters() : vpid_code(), troff(), tsdelay(), ipmx() {}
+
+        // for IPMX, see VSF TR-10-1:2024
+        // or ST 2110-40
+        video_smpte291_parameters(
+            std::vector<nmos::did_sdid> did_sdids,
+            nmos::vpid_code vpid_code,
+            nmos::rational exactframerate,
+            sdp::transmission_model tm,
+            sdp::smpte_standard_number ssn,
+            bst::optional<uint32_t> troff,
+            sdp::timestamp_mode tsmode,
+            bst::optional<uint32_t> tsdelay,
+            bool ipmx
+        )
+            : did_sdids(std::move(did_sdids))
+            , vpid_code(vpid_code)
+            , exactframerate(exactframerate)
+            , tm(std::move(tm))
+            , ssn(std::move(ssn))
+            , troff(troff)
+            , tsmode(std::move(tsmode))
+            , tsdelay(tsdelay)
+            , ipmx(ipmx)
+        {}
+
+        // for ST 2110-40
         video_smpte291_parameters(
             std::vector<nmos::did_sdid> did_sdids,
             nmos::vpid_code vpid_code,
@@ -522,14 +678,7 @@ namespace nmos
             sdp::timestamp_mode tsmode,
             bst::optional<uint32_t> tsdelay
         )
-            : did_sdids(std::move(did_sdids))
-            , vpid_code(vpid_code)
-            , exactframerate(exactframerate)
-            , tm(std::move(tm))
-            , ssn(std::move(ssn))
-            , troff(troff)
-            , tsmode(std::move(tsmode))
-            , tsdelay(tsdelay)
+            : video_smpte291_parameters(std::move(did_sdids), vpid_code, exactframerate, std::move(tm), std::move(ssn), troff, std::move(tsmode), tsdelay, {})
         {}
 
         // deprecated

@@ -1,4 +1,6 @@
 // The first "test" is of course whether the header compiles standalone
+#include "nmos/configuration_methods.h"
+
 #include "nmos/control_protocol_resource.h"
 #include "nmos/control_protocol_resources.h"
 #include "nmos/control_protocol_state.h"
@@ -6,7 +8,6 @@
 #include "nmos/control_protocol_utils.h"
 #include "nmos/configuration_handlers.h"
 #include "nmos/configuration_resources.h"
-#include "nmos/configuration_methods.h"
 #include "nmos/configuration_utils.h"
 
 #include "bst/test/test.h"

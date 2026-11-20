@@ -1,6 +1,7 @@
 #include "nmos/api_utils.h"
 
 #include <cstddef>
+#include <boost/algorithm/cxx11/all_of.hpp>
 #include <boost/algorithm/cxx11/any_of.hpp>
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/algorithm/string/trim.hpp>
@@ -617,7 +618,8 @@ namespace nmos
     // set up a standard NMOS error response, using the default reason phrase and the specified debug information
     void set_error_reply(web::http::http_response& res, web::http::status_code code, const std::exception& debug)
     {
-        set_error_reply(res, code, {}, utility::s2us(debug.what()));
+        // what() is a narrow platform string with no UTF-8 guarantee
+        set_error_reply(res, code, {}, utility::s2us_lenient(debug.what()));
     }
 
     // add handler to set appropriate response headers, and error response body if indicated - call this only after adding all others!
@@ -876,7 +878,6 @@ namespace nmos
                 // WWW-Authenticate Response Header Field definition
                 // see https://tools.ietf.org/html/rfc6750#section-3
                 utility::string_t auth_params{ U("Bearer realm=") + realm };
-                utility::string_t error_description{};
                 // If the request lacks any authentication information (e.g., the client
                 // was unaware that authentication is necessary or attempted using an
                 // unsupported authentication method), the resource server SHOULD NOT
@@ -890,8 +891,14 @@ namespace nmos
                 if (error.value != nmos::experimental::authorization_error::without_authentication)
                 {
                     utility::string_t error_string = { (error.value == nmos::experimental::authorization_error::insufficient_scope) ? web::http::oauth2::experimental::resource_server_errors::insufficient_scope.name : web::http::oauth2::experimental::resource_server_errors::invalid_token.name };
-                    error_description = utility::s2us(error.message);
-                    auth_params += U(",error=") + error_string + U(",error_description=") + error_description;
+                    auth_params += U(",error=") + error_string;
+                    // the message often originates from std::exception::what(), so may contain any bytes,
+                    // but error_description is limited to printable ASCII other than '"' and '\'
+                    // see https://tools.ietf.org/html/rfc6749#section-5.2
+                    if (boost::algorithm::all_of(error.message, [](char c) { return 0x20 <= c && c <= 0x7E && '"' != c && '\\' != c; }))
+                    {
+                        auth_params += U(",error_description=") + utility::s2us(error.message);
+                    }
                 }
 
                 res.headers().add(web::http::header_names::www_authenticate, auth_params);
@@ -907,7 +914,7 @@ namespace nmos
                     res.headers().add(web::http::header_names::retry_after, retry_after);
                 }
 
-                nmos::set_error_reply(res, status_code, utility::s2us(error.message));
+                nmos::set_error_reply(res, status_code, utility::s2us_lenient(error.message));
             }
         }
     }

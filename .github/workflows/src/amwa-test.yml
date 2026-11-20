@@ -1,11 +1,19 @@
 - name: install wsl
   if: runner.os == 'Windows'
   run: |
-    & curl -L https://aka.ms/wsl-ubuntu-1804 -o ubuntu-1804.appx
-    Rename-Item .\ubuntu-1804.appx .\ubuntu-1804.zip
-    Expand-Archive .\ubuntu-1804.zip .\ubuntu-1804
-    cd ubuntu-1804
-    .\ubuntu1804.exe install --root
+    # windows-2022 runners have only the inbox WSL, which has no --version option and no WSL 2 kernel
+    wsl --version | Out-Null
+    if ($LASTEXITCODE -ne 0) {
+      wsl --update
+    }
+    & curl -fL https://cloud-images.ubuntu.com/wsl/releases/24.04/current/ubuntu-noble-wsl-amd64-wsl.rootfs.tar.gz -o ubuntu-24.04.rootfs.tar.gz
+    New-Item -ItemType Directory -Force C:\wsl\ubuntu-24.04 | Out-Null
+    wsl --import Ubuntu-24.04 C:\wsl\ubuntu-24.04 ubuntu-24.04.rootfs.tar.gz --version 2
+    wsl --set-default Ubuntu-24.04
+    # testssl.sh requires dig, host, drill or nslookup, even when it is given the IP address
+    wsl -- sh -c "apt-get update -qq && DEBIAN_FRONTEND=noninteractive apt-get install -y -qq --no-install-recommends bind9-host"
+    # testssl.sh runs in WSL, whose NAT network reaches the Node at the host IP address through Windows Firewall
+    New-NetFirewallRule -DisplayName "testssl.sh in WSL to nmos-cpp-node" -Direction Inbound -Protocol TCP -LocalPort 1080 -Action Allow | Out-Null
 
 - name: AMWA test suite
   shell: bash
@@ -20,7 +28,7 @@
     cd nmos-testing
 
     # Configure the Testing Tool so all APIs are tested with TLS and authorization
-    printf "from . import Config as CONFIG\nCONFIG.ENABLE_HTTPS = True\nCONFIG.MOCK_SERVICES_WARM_UP_DELAY = 30\nCONFIG.HTTP_TIMEOUT = 2\n" > nmostesting/UserConfig.py
+    printf "from . import Config as CONFIG\nCONFIG.ENABLE_HTTPS = True\nCONFIG.MOCK_SERVICES_WARM_UP_DELAY = 10\nCONFIG.HTTP_TIMEOUT = 2\n" > nmostesting/UserConfig.py
     # Set the DNS-SD mode
     printf 'CONFIG.DNS_SD_MODE = "'${{ matrix.dns_sd_mode }}'"\n' >> nmostesting/UserConfig.py
     # Set the client JWKS_URI for mock Authorization Server to obtain the client JSON Web Key Set (public keys) to verify the client_assertion, when the client is requesting the access token
@@ -43,7 +51,7 @@
 
     # Download testssl
     cd testssl
-    curl -L https://github.com/drwetter/testssl.sh/archive/v3.0.7.tar.gz -s | tar -xvzf - --strip-components=1 > /dev/null
+    curl -fL https://github.com/testssl/testssl.sh/archive/v3.0.7.tar.gz -s | tar -xvzf - --strip-components=1 > /dev/null
     cd ..
 
     # Create output directories
@@ -67,7 +75,7 @@
       sudo pip install --upgrade -r requirements.txt
       # install SDPoker
       npm install -g git+https://git@github.com/AMWA-TV/sdpoker.git
-      run_python="sudo python"
+      run_python="sudo --preserve-env=NODNS python"
     else
       # run test suite directly
       pip install -r requirements.txt
@@ -100,13 +108,6 @@
       mv nmostesting/GenericTest.py nmostesting/GenericTest.py.old
       printf 'import socket\nold_getaddrinfo = socket.getaddrinfo\ndef new_getaddrinfo(host, port, family=0, type=0, proto=0, flags=0):\n    return old_getaddrinfo(host, port, socket.AF_INET, type, proto, flags)\nsocket.getaddrinfo = new_getaddrinfo\n' > nmostesting/GenericTest.py
       cat nmostesting/GenericTest.py.old >> nmostesting/GenericTest.py
-    fi
-
-    if [[ "${{ runner.os }}" == "Linux" && "${{ matrix.use_conan }}" == "false" ]]; then
-      # ubuntu 14 non-conan build uses boost 1.54.0 which doesn't support disabling TLS 1.1
-      mkdir -p ${{ env.GITHUB_WORKSPACE_BASH }}/Sandbox/nmos-testing-options/
-      echo "--ignore test_01" > ${{ env.GITHUB_WORKSPACE_BASH }}/Sandbox/nmos-testing-options/BCP-003-01.txt
-      echo "1" > ${{ env.GITHUB_WORKSPACE_BASH }}/Sandbox/nmos-testing-options/BCP-003-01_max_disabled.txt
     fi
 
     if [[ "${{ runner.os }}" == "Linux" ]]; then
@@ -164,8 +165,17 @@
       # nmos-cpp-node doesn't currently support advertising hostnames to Avahi
       avahi-publish -a -R nmos-api.local ${{ env.HOST_IP_ADDRESS }} &
     fi
+
+    # the testing tool gives testssl.sh the IP address, so it needs no DNS queries
+    export NODNS=none
+    if [[ "${{ runner.os }}" == "Windows" ]]; then
+      # testssl.sh runs in WSL
+      export WSLENV="${WSLENV:+$WSLENV:}NODNS"
+    fi
     
-    ${{ env.GITHUB_WORKSPACE_BASH }}/Sandbox/run_nmos_testing.sh "$run_python" ${domain} ${root_dir}/build/nmos-cpp-node ${root_dir}/build/nmos-cpp-registry results badges $GITHUB_STEP_SUMMARY ${{ env.HOST_IP_ADDRESS }} "${{ env.GITHUB_COMMIT }}-${{ env.BUILD_NAME }}-"
+    # a Visual Studio generator puts the executables in a directory per configuration
+    bin_dir=${root_dir}/build${{ matrix.vs_generator && '/Release' || '' }}
+    ${{ env.GITHUB_WORKSPACE_BASH }}/Sandbox/run_nmos_testing.sh "$run_python" ${domain} ${bin_dir}/nmos-cpp-node ${bin_dir}/nmos-cpp-registry results badges $GITHUB_STEP_SUMMARY ${{ env.HOST_IP_ADDRESS }} "${{ env.GITHUB_COMMIT }}-${{ env.BUILD_NAME }}-"
 
     if [[ "${{ runner.os }}" == "Linux" ]]; then
       if [[ "${{ matrix.install_mdns }}" == "true" ]]; then
