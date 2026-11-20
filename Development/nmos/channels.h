@@ -107,8 +107,27 @@ namespace nmos
         const std::vector<channel_symbol> S51{ L, R, C, LFE, Ls, Rs };
         // 7.1 Surround
         const std::vector<channel_symbol> S71{ L, R, C, LFE, Lss, Rss, Lrs, Rrs };
-        // 22.2 Surround ('222') cannot be indicated using the channel symbols defined in NMOS
-        // SDI audio group ('SGRP') cannot be indicated using the channel symbols defined in NMOS
+
+        // 22.2 Surround ('222') and SDI audio group ('SGRP') cannot be indicated exactly using the channel symbols defined in NMOS
+        // so these are the closest representation, using the channel symbol for the same loudspeaker position where there is one,
+        // and otherwise the Undefined channel symbol numbered by the channel's position in the group
+
+        // 22.2 Surround
+        // See https://pub.smpte.org/pub/st2036-2/st2036-2-2008.pdf
+        // and https://pub.smpte.org/pub/st428-12/st0428-12-2013.pdf
+        // and https://static.vsf.tv/download/technical_recommendations/VSF_TR-03_2015-11-12.pdf
+        const std::vector<channel_symbol> S222{
+            // FL, FR, FC, LFE1, BL, BR
+            L, R, C, LFE, Lrs, Rrs,
+            // FLc, FRc, BC, LFE2, SiL, SiR
+            Lc, Rc, Cs, Undefined(10), Lss, Rss,
+            // TpFL, TpFR, TpFC, TpC, TpBL, TpBR
+            Undefined(13), Undefined(14), Undefined(15), Undefined(16), Undefined(17), Undefined(18),
+            // TpSiL, TpSiR, TpBC, BtFC, BtFL, BtFR
+            Undefined(19), Undefined(20), Undefined(21), Undefined(22), Undefined(23), Undefined(24)
+        };
+        // One SDI audio group
+        const std::vector<channel_symbol> SGRP{ Undefined(1), Undefined(2), Undefined(3), Undefined(4) };
     }
 
     // See SMPTE ST 2110-30:2017 Section 6.2.2 Channel Order Convention
