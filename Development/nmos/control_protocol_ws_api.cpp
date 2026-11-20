@@ -68,7 +68,7 @@ namespace nmos
 
             const auto& ws_ncp_path = req.request_uri().path();
             slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Validating websocket connection to: " << ws_ncp_path;
-            const auto is12_versions = nmos::is12_versions::from_settings(model.settings);
+            const auto is12_versions = with_read_lock(model.mutex, [&model] { return nmos::is12_versions::from_settings(model.settings); });
             return std::any_of(is12_versions.begin(), is12_versions.end(), [&ws_ncp_path](const nmos::api_version& version)
             {
                 return ws_ncp_path == U("/x-nmos/ncp/") + nmos::make_api_version(version);
