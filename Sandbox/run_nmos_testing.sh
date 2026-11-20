@@ -224,7 +224,7 @@ do_run_test IS-08-02 $expected_disabled_IS_08_02 --host "${host}" "${host}" --po
 
 do_run_test IS-09-02 $expected_disabled_IS_09_02 --host "${host}" null --port 0 0 --version null v1.0
 
-do_run_test IS-12-01 $expected_disabled_IS_12_01 --host "${host}" "${host}" null null --port 1080 1082 0 0 --version v1.3 v1.0 v1.0 v1.0 --urlpath null x-nmos/ncp/v1.0 null null
+do_run_test IS-12-01 $expected_disabled_IS_12_01 --host "${host}" "${host}" null null --port 1080 1081 0 0 --version v1.3 v1.0 v1.0 v1.0 --urlpath null x-nmos/ncp/v1.0 null null
 
 do_run_test IS-14-01 $expected_disabled_IS_14_01 --host "${host}" "${host}" null null --port 1080 1080 0 0 --version v1.3 v1.0 v1.0 v1.0 --selector null null null null --ignore test_ms05_05
 
