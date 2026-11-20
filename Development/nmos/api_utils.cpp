@@ -769,8 +769,7 @@ namespace nmos
 
     web::websockets::experimental::listener::websocket_listener_handlers make_ws_api_router(std::map<utility::string_t, web::websockets::experimental::listener::websocket_listener_handlers> handlers)
     {
-        auto find_handlers = std::make_shared<std::function<const web::websockets::experimental::listener::websocket_listener_handlers*(const web::uri&)>>();
-        *find_handlers = [handlers](const web::uri& uri)
+        const auto find_handlers = [handlers](const web::uri& uri) -> const web::websockets::experimental::listener::websocket_listener_handlers*
         {
             const auto& path = uri.path();
             const web::websockets::experimental::listener::websocket_listener_handlers* result{};
@@ -787,10 +786,10 @@ namespace nmos
         };
 
         return {
-            [find_handlers](web::http::http_request req) { const auto handlers = (*find_handlers)(req.request_uri()); return handlers && handlers->validate_handler(req); },
-            [find_handlers](const web::uri& uri, const web::websockets::experimental::listener::connection_id& id) { if (const auto handlers = (*find_handlers)(uri)) handlers->open_handler(uri, id); },
-            [find_handlers](const web::uri& uri, const web::websockets::experimental::listener::connection_id& id, web::websockets::websocket_close_status status, const utility::string_t& reason) { if (const auto handlers = (*find_handlers)(uri)) handlers->close_handler(uri, id, status, reason); },
-            [find_handlers](const web::uri& uri, const web::websockets::experimental::listener::connection_id& id, const web::websockets::websocket_incoming_message& message) { if (const auto handlers = (*find_handlers)(uri)) handlers->message_handler(uri, id, message); }
+            [find_handlers](web::http::http_request req) { const auto handlers = find_handlers(req.request_uri()); return handlers && handlers->validate_handler(req); },
+            [find_handlers](const web::uri& uri, const web::websockets::experimental::listener::connection_id& id) { if (const auto handlers = find_handlers(uri)) handlers->open_handler(uri, id); },
+            [find_handlers](const web::uri& uri, const web::websockets::experimental::listener::connection_id& id, web::websockets::websocket_close_status status, const utility::string_t& reason) { if (const auto handlers = find_handlers(uri)) handlers->close_handler(uri, id, status, reason); },
+            [find_handlers](const web::uri& uri, const web::websockets::experimental::listener::connection_id& id, const web::websockets::websocket_incoming_message& message) { if (const auto handlers = find_handlers(uri)) handlers->message_handler(uri, id, message); }
         };
     }
 
