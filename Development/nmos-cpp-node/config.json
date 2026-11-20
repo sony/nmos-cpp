@@ -180,7 +180,7 @@
     // system_port [node]: used to construct request URLs for the System API (if not discovered via DNS-SD)
     //"system_port": 10641,
     // control_protocol_ws_port [node]: used to construct request URLs for the Control Protocol websocket, or negative to disable the control protocol features
-    //"control_protocol_ws_port": 3218,
+    //"control_protocol_ws_port": 3217,
     //"annotation_port": 3212,
     //"configuration_port": 3219,
 

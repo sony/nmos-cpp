@@ -58,7 +58,7 @@ The provided [nmos-cpp-node/config.json](../Development/nmos-cpp-node/config.jso
 Note: C++/JavaScript-style single and multi-line comments are permitted and ignored in nmos-cpp config files.
 
 When running more than one nmos-cpp application on the same host, configuration parameters **must** be used to make the port numbers of each instance unique.
-Set `"http_port"` to choose the default port for the Node's HTTP APIs. Unless explicitly overridden, the Events WebSocket (`"events_ws_port"`) uses `http_port + 1` and the Control Protocol WebSocket (`"control_protocol_ws_port"`) uses `http_port + 2`.
+Set `"http_port"` to choose the default port for the Node's HTTP APIs. Unless explicitly overridden, the Events WebSocket (`"events_ws_port"`) and the Control Protocol WebSocket (`"control_protocol_ws_port"`) use `http_port + 1`.
 
 For example, for the first Node, try ``nmos-cpp-node config.json`` with a file *config.json* like:
 

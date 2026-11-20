@@ -201,7 +201,7 @@ namespace nmos
         // system_port [node]: used to construct request URLs for the System API (if not discovered via DNS-SD)
         const web::json::field_as_integer_or system_port{ U("system_port"), 10641 };
         // control_protocol_ws_port [node]: used to construct request URLs for the Control Protocol websocket, or negative to disable the control protocol features
-        const web::json::field_as_integer_or control_protocol_ws_port{ U("control_protocol_ws_port"), 3218 };
+        const web::json::field_as_integer_or control_protocol_ws_port{ U("control_protocol_ws_port"), 3217 };
         const web::json::field_as_integer_or annotation_port{ U("annotation_port"), 3212 };
         const web::json::field_as_integer_or configuration_port{ U("configuration_port"), 3219 };
 

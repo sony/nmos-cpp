@@ -146,6 +146,7 @@ The implementation is designed to be extended. Development is ongoing, following
 
 Recent activity on the project (newest first):
 
+- Improvements to WebSocket handling to support port sharing
 - Added Visual Studio 2026 and Boost 1.65.1 builds to CI, and updated dependencies
 - Added support for VSF TR-10-8 IPMX Link Offset Delay, and the TR-10-9 default IPMX multicast addresses and DNS-SD browse strategy
 - Added validation of registered `ext_` transport parameters against the NMOS Parameter Registers

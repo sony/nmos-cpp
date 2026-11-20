@@ -89,8 +89,13 @@ namespace nmos
             // See https://specs.amwa.tv/is-04/releases/v1.2.0/APIs/schemas/with-refs/queryapi-subscriptions-websocket.html
             const nmos::id query_id = nmos::make_repeatable_id(nmos::experimental::fields::seed_id(registry_model.settings), U("/x-nmos/query"));
 
-            auto& query_ws_api = registry_server.ws_handlers[{ {}, nmos::fields::query_ws_port(registry_model.settings) }];
-            query_ws_api.first = nmos::make_query_ws_api(query_id, registry_model, query_ws_api.second, registry_implementation.ws_validate_authorization, gate);
+            static const utility::string_t query_ws_path_prefix{ U("/x-nmos/query/") };
+
+            // query ws handlers
+            {
+                auto& query_ws_entry = registry_server.ws_handlers[{ {}, nmos::fields::query_ws_port(registry_model.settings) }][query_ws_path_prefix];
+                query_ws_entry.first = nmos::make_query_ws_api(query_id, registry_model, query_ws_entry.second, registry_implementation.ws_validate_authorization, gate);
+            }
 
             // Configure the Registration API
 
@@ -146,19 +151,29 @@ namespace nmos
 
             for (auto& ws_handler : registry_server.ws_handlers)
             {
+                // combine the handlers for each API sharing this WebSocket port into one set of handlers
+                auto& api_handlers = ws_handler.second;
+                std::map<utility::string_t, web::websockets::experimental::listener::websocket_listener_handlers> path_handlers;
+                for (auto& api_handler : api_handlers)
+                {
+                    path_handlers[api_handler.first] = api_handler.second.first;
+                }
+                registry_server.combined_ws_handlers.push_back(nmos::make_ws_api_router(path_handlers));
+
                 // if IP address isn't specified for this router, use default server address or wildcard address
                 const auto& host = !ws_handler.first.first.empty() ? ws_handler.first.first : !server_address.empty() ? server_address : web::websockets::experimental::listener::host_wildcard;
                 // map the configured client port to the server port on which to listen
                 // hmm, this should probably also take account of the address
-                registry_server.ws_listeners.push_back(nmos::make_ws_api_listener(server_secure, host, nmos::experimental::server_port(ws_handler.first.second, registry_model.settings), ws_handler.second.first, websocket_config, gate));
+                registry_server.ws_listeners.insert({ ws_handler.first, nmos::make_ws_api_listener(server_secure, host, nmos::experimental::server_port(ws_handler.first.second, registry_model.settings), registry_server.combined_ws_handlers.back(), websocket_config, gate) });
             }
 
-            auto& query_ws_listener = registry_server.ws_listeners.back();
+            auto& query_ws_listener = registry_server.ws_listeners.at({ {}, nmos::fields::query_ws_port(registry_model.settings) });
 
             // Set up registry management (including the DNS-SD advertisements)
 
+            auto& query_ws = registry_server.ws_handlers.at({ {}, nmos::fields::query_ws_port(registry_model.settings) }).at(query_ws_path_prefix).second;
             registry_server.thread_functions.assign({
-                [&] { nmos::send_query_ws_events_thread(query_ws_listener, registry_model, query_ws_api.second, gate); },
+                [&] { nmos::send_query_ws_events_thread(query_ws_listener, registry_model, query_ws, gate); },
                 [&] { nmos::erase_expired_resources_thread(registry_model, gate); },
                 [&] { nmos::advertise_registry_thread(registry_model, gate); }
             });
