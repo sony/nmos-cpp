@@ -2293,7 +2293,7 @@ nmos::connection_sender_transportfile_setter make_node_implementation_transportf
                 }
                 else if (nmos::formats::mux == format)
                 {
-                    return nmos::make_mux_sdp_parameters(node->data, source->data, flow->data, sender.data, nmos::details::payload_type_mux_default, mids, {}, sdp::type_parameters::type_N);
+                    return nmos::make_mux_sdp_parameters(node->data, source->data, flow->data, sender.data, nmos::details::payload_type_mux_default, mids, {}, sdp::type_parameters::type_NL);
                 }
                 else
                 {
