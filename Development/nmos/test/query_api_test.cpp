@@ -1,12 +1,12 @@
 // The first "test" is of course whether the header compiles standalone
-#include "cpprest/json_validator.h"
+#include "nmos/json_schema.h"
 
 #include <boost/range/adaptor/filtered.hpp>
 #include <boost/range/adaptor/transformed.hpp>
 #include <vector>
 #include "bst/test/test.h"
+#include "cpprest/json_validator.h"
 #include "nmos/is04_versions.h"
-#include "nmos/json_schema.h"
 
 ////////////////////////////////////////////////////////////////////////////////////////////
 BST_TEST_CASE(testQueryAPISubscriptionsExtensionSchema)

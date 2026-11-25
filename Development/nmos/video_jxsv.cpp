@@ -182,6 +182,12 @@ namespace nmos
         if (!params.tsmode.empty()) fmtp.push_back({ sdp::fields::timestamp_mode, params.tsmode.name });
         if (params.tsdelay) fmtp.push_back({ sdp::fields::timestamp_delay, utility::ostringstreamed(*params.tsdelay) });
 
+        // additional parameters for IPMX, see VSF TR-10-1:2024 Section 10.1 and Section 10.2
+        if (params.ipmx) fmtp.push_back({ sdp::fields::IPMX, {} });
+        if (0 != params.measuredpixclk) fmtp.push_back({ sdp::fields::measuredpixclk, utility::ostringstreamed(params.measuredpixclk) });
+        if (0 != params.vtotal) fmtp.push_back({ sdp::fields::vtotal, utility::ostringstreamed(params.vtotal) });
+        if (0 != params.htotal) fmtp.push_back({ sdp::fields::htotal, utility::ostringstreamed(params.htotal) });
+
         return{ session_name, sdp::media_types::video, rtpmap, fmtp, params.bit_rate, {}, {}, {}, media_stream_ids, ts_refclk };
     }
 
@@ -283,6 +289,25 @@ namespace nmos
 
         // optional
         if (sdp::bandwidth_types::application_specific == sdp_params.bandwidth.bandwidth_type) params.bit_rate = sdp_params.bandwidth.bandwidth;
+
+        // See VSF TR-10-1:2024 Section 10.1 IPMX Sender Signaling
+        // and Section 10.2 Baseband Video IPMX Sender Signaling
+
+        // optional
+        const auto ipmx = details::find_fmtp(sdp_params.fmtp, sdp::fields::IPMX);
+        params.ipmx = sdp_params.fmtp.end() != ipmx;
+
+        // optional
+        const auto measuredpixclk = details::find_fmtp(sdp_params.fmtp, sdp::fields::measuredpixclk);
+        if (sdp_params.fmtp.end() != measuredpixclk) params.measuredpixclk = utility::istringstreamed<uint64_t>(measuredpixclk->second);
+
+        // optional
+        const auto vtotal = details::find_fmtp(sdp_params.fmtp, sdp::fields::vtotal);
+        if (sdp_params.fmtp.end() != vtotal) params.vtotal = utility::istringstreamed<uint32_t>(vtotal->second);
+
+        // optional
+        const auto htotal = details::find_fmtp(sdp_params.fmtp, sdp::fields::htotal);
+        if (sdp_params.fmtp.end() != htotal) params.htotal = utility::istringstreamed<uint32_t>(htotal->second);
 
         return params;
     }

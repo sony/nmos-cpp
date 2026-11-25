@@ -12,12 +12,15 @@ env:
   SECRET_RESULTS_SHEET_ID: ${{ secrets.RESULTS_SHEET_ID }}
 jobs:
   build_and_test:
-    name: '${{ matrix.os }}: build and test (install mdns: ${{ matrix.install_mdns }}, use conan: ${{ matrix.use_conan }}, force cpprest asio: ${{ matrix.force_cpprest_asio }}, dns-sd mode: ${{ matrix.dns_sd_mode}}, enable_authorization: ${{ matrix.enable_authorization }})'
+    name: "${{ matrix.os }}: build and test (C++ standard: ${{ matrix.cxx_standard || 'minimum' }}, install mdns: ${{ matrix.install_mdns }}, use conan: ${{ matrix.use_conan }}, force cpprest asio: ${{ matrix.force_cpprest_asio }}, dns-sd mode: ${{ matrix.dns_sd_mode}}, enable_authorization: ${{ matrix.enable_authorization }}${{ matrix.boost_version && format(', boost version: {0}', matrix.boost_version) || '' }}${{ matrix.vs_generator && format(', vs generator: {0}', matrix.vs_generator) || '' }})"
     runs-on: ${{ matrix.os }}
+    # a Windows runner can freeze while the WSL 2 VM runs (https://github.com/actions/runner-images/issues/14938),
+    # and step timeouts never fire then; the slowest job, with an empty Conan cache, takes about an hour
+    timeout-minutes: 90
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-22.04, ubuntu-24.04, windows-2022]
+        os: [ubuntu-22.04, ubuntu-24.04, windows-2025]
         install_mdns: [false, true]
         use_conan: [true]
         force_cpprest_asio: [false, true]
@@ -25,10 +28,10 @@ jobs:
         enable_authorization: [false, true]
         exclude:
           # install_mdns is only meaningful on Linux
-          - os: windows-2022
+          - os: windows-2025
             install_mdns: true
           # for now, unicast DNS-SD tests are only implemented on Linux
-          - os: windows-2022
+          - os: windows-2025
             dns_sd_mode: unicast
           - os: ubuntu-22.04
             enable_authorization: false
@@ -45,12 +48,39 @@ jobs:
             install_mdns: true
           - os: ubuntu-24.04
             dns_sd_mode: unicast
-            # don't force ASIO for ubuntu platforms
+          # don't force ASIO for ubuntu platforms
           - os: ubuntu-24.04
             force_cpprest_asio: true
-          
+        include:
+          # exercise std::filesystem on VS 2026; regular windows-2025 jobs use the minimum standard
+          - os: windows-2025
+            install_mdns: false
+            use_conan: true
+            force_cpprest_asio: false
+            dns_sd_mode: multicast
+            enable_authorization: true
+            cxx_standard: 17
+          # keep one VS 2022 job while validating VS 2026 on windows-2025, and use it to exercise
+          # the Visual Studio generator in the documented command lines; other jobs use Ninja
+          - os: windows-2022
+            install_mdns: false
+            use_conan: true
+            force_cpprest_asio: false
+            dns_sd_mode: multicast
+            enable_authorization: true
+            vs_generator: 'Visual Studio 17 2022'
+          # additional build to test against an older Boost release (1.65) that is no longer
+          # packaged by Ubuntu 24.04, so it is built from source instead of using conan
+          - os: ubuntu-24.04
+            install_mdns: false
+            use_conan: false
+            force_cpprest_asio: false
+            dns_sd_mode: multicast
+            enable_authorization: true
+            boost_version: '1.65.1'
+
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v5
 
     - name: set environment variables
       shell: bash
@@ -61,17 +91,29 @@ jobs:
           authorization_mode=noauth
         fi
 
+        if [[ -n "${{ matrix.cxx_standard }}" ]]; then
+          cxx_standard_suffix="_cxx${{ matrix.cxx_standard }}"
+          echo "CMAKE_EXTRA_ARGS=${{ env.CMAKE_EXTRA_ARGS }} -DCMAKE_CXX_STANDARD=${{ matrix.cxx_standard }}" >> $GITHUB_ENV
+        fi
+
         if [[ "${{ runner.os }}"  == "Linux" ]]; then
           if [[ "${{ matrix.install_mdns }}" == "true" ]]; then
-            echo "BUILD_NAME=${{ matrix.os }}_mdns_${{ matrix.dns_sd_mode }}_$authorization_mode" >> $GITHUB_ENV
+            build_name="${{ matrix.os }}_mdns_${{ matrix.dns_sd_mode }}_$authorization_mode$cxx_standard_suffix"
           else
-            echo "BUILD_NAME=${{ matrix.os }}_avahi_${{ matrix.dns_sd_mode }}_$authorization_mode" >> $GITHUB_ENV
+            build_name="${{ matrix.os }}_avahi_${{ matrix.dns_sd_mode }}_$authorization_mode$cxx_standard_suffix"
           fi
         elif [[ "${{ matrix.force_cpprest_asio }}" == "true" ]]; then
-          echo "BUILD_NAME=${{ matrix.os }}_asio_$authorization_mode" >> $GITHUB_ENV
+          build_name="${{ matrix.os }}_asio_$authorization_mode$cxx_standard_suffix"
         else
-          echo "BUILD_NAME=${{ matrix.os }}_$authorization_mode" >> $GITHUB_ENV
+          build_name="${{ matrix.os }}_$authorization_mode$cxx_standard_suffix"
         fi
+        if [[ -n "${{ matrix.boost_version }}" ]]; then
+          build_name="${build_name}_boost${{ matrix.boost_version }}"
+        fi
+        if [[ -n "${{ matrix.vs_generator }}" ]]; then
+          build_name="${build_name}_vs"
+        fi
+        echo "BUILD_NAME=$build_name" >> $GITHUB_ENV
         GITHUB_COMMIT=`echo "${{ github.sha }}" | cut -c1-7`
         echo "GITHUB_COMMIT=$GITHUB_COMMIT" >> $GITHUB_ENV
         echo "GITHUB_WORKSPACE=${{ github.workspace }}" >> $GITHUB_ENV
@@ -101,13 +143,8 @@ jobs:
       run: |
         pip install conan~=2.20
 
-    - name: 'ubuntu-14.04: install cmake'
-      if: matrix.os == 'ubuntu-14.04'
-      uses: lukka/get-cmake@v3.24.2
-
     - name: install cmake
-      if: matrix.os != 'ubuntu-14.04'
-      uses: lukka/get-cmake@v3.28.3
+      uses: lukka/get-cmake@v4.4.0
 
     - name: setup bash path
       working-directory: ${{ env.GITHUB_WORKSPACE }}
@@ -122,11 +159,6 @@ jobs:
       run: |
         # set compiler to cl.exe to avoid building with gcc.
         echo "CMAKE_COMPILER_ARGS=-DCMAKE_C_COMPILER=cl.exe -DCMAKE_CXX_COMPILER=cl.exe" >> $env:GITHUB_ENV
-        # disable unused network interface (may not exist on windows-2022 runners)
-        $nat = Get-NetAdapter -Name 'vEthernet (nat)' -ErrorAction SilentlyContinue
-        if ($nat) {
-          netsh interface set interface name="vEthernet (nat)" admin=DISABLED
-        }
         # get host IP address (avoid Get-NetIPConfiguration which fails when multiple adapters map to one interface)
         $ifIndex = (
           Get-NetRoute -DestinationPrefix '0.0.0.0/0' |
@@ -156,7 +188,7 @@ jobs:
       if: runner.os == 'Windows'
       run: |
         # download bonjour installer
-        curl -L https://download.info.apple.com/Mac_OS_X/061-8098.20100603.gthyu/BonjourPSSetup.exe -o BonjourPSSetup.exe -q
+        curl -fL https://download.info.apple.com/Mac_OS_X/061-8098.20100603.gthyu/BonjourPSSetup.exe -o BonjourPSSetup.exe -q
         & 7z.exe e BonjourPSSetup.exe Bonjour64.msi -y
         msiexec /i ${{ env.GITHUB_WORKSPACE }}\Bonjour64.msi /qn /norestart
 
@@ -185,7 +217,7 @@ jobs:
         sudo chmod u+s $(brew --prefix)/opt/docker-machine-driver-xhyve/bin/docker-machine-driver-xhyve
         mkdir -p /Users/runner/.docker/machine/cache/
         # workaround "docker-machine" failing to download boot2docker.iso
-        curl -Lo ~/.docker/machine/cache/boot2docker.iso https://github.com/boot2docker/boot2docker/releases/download/v19.03.5/boot2docker.iso
+        curl -fLo ~/.docker/machine/cache/boot2docker.iso https://github.com/boot2docker/boot2docker/releases/download/v19.03.5/boot2docker.iso
         i=0
         while ! docker-machine "--github-api-token=${{ secrets.GITHUB_TOKEN }}" create default --driver xhyve; do
           docker-machine rm -f default
@@ -200,6 +232,29 @@ jobs:
         echo "DOCKER_TLS_VERIFY=$DOCKER_TLS_VERIFY" >> $GITHUB_ENV
         echo "DOCKER_HOST=$DOCKER_HOST" >> $GITHUB_ENV
         echo "DOCKER_CERT_PATH=$DOCKER_CERT_PATH" >> $GITHUB_ENV
+
+    # the Ubuntu package mirror is sometimes slow or unreachable, so keep the downloaded packages
+    - name: ubuntu package cache setup
+      if: runner.os == 'Linux'
+      id: debs-key
+      run: |
+        # the key changes each week, so that the cache picks up package updates
+        # (kojo formats this file, so each literal percent sign is doubled)
+        echo "week=$(date -u +%G-W%V)" >> "$GITHUB_OUTPUT"
+        mkdir -p "$RUNNER_TEMP/debs/partial"
+        # make every later apt-get install keep its packages there
+        echo "Dir::Cache::Archives \"$RUNNER_TEMP/debs\";" | sudo tee /etc/apt/apt.conf.d/90ci-debs > /dev/null
+
+    - name: restore ubuntu packages
+      if: runner.os == 'Linux'
+      id: debs-cache
+      uses: actions/cache/restore@v6
+      with:
+        path: ${{ runner.temp }}/debs
+        key: debs-${{ matrix.os }}-mdns-${{ matrix.install_mdns }}-${{ hashFiles('.github/workflows/build-test.yml') }}-${{ steps.debs-key.outputs.week }}
+        restore-keys: |
+          debs-${{ matrix.os }}-mdns-${{ matrix.install_mdns }}-${{ hashFiles('.github/workflows/build-test.yml') }}-
+          debs-${{ matrix.os }}-mdns-${{ matrix.install_mdns }}-
 
     - name: ubuntu setup
       if: runner.os == 'Linux'
@@ -223,7 +278,7 @@ jobs:
         cd ${{ env.GITHUB_WORKSPACE }}
         mkdir mDNSResponder
         cd mDNSResponder
-        curl -L https://github.com/apple-oss-distributions/mDNSResponder/archive/mDNSResponder-878.200.35.tar.gz -s | tar -xvzf - --strip-components=1 > /dev/null
+        curl -fL https://github.com/apple-oss-distributions/mDNSResponder/archive/mDNSResponder-878.200.35.tar.gz -s | tar -xvzf - --strip-components=1 > /dev/null
         patch -p1 < ${{ env.GITHUB_WORKSPACE }}/Development/third_party/mDNSResponder/unicast.patch
         patch -p1 < ${{ env.GITHUB_WORKSPACE }}/Development/third_party/mDNSResponder/permit-over-long-service-types.patch
         patch -p1 < ${{ env.GITHUB_WORKSPACE }}/Development/third_party/mDNSResponder/poll-rather-than-select.patch
@@ -243,15 +298,30 @@ jobs:
       if: runner.os == 'Linux' && matrix.use_conan == false
       run: |
         sudo apt-get install -y \
-          libboost-chrono-dev \
-          libboost-date-time-dev \
-          libboost-regex-dev \
-          libboost-system-dev \
-          libboost-thread-dev \
-          libboost-random-dev \
-          libboost-filesystem-dev \
           openssl \
           libssl-dev
+
+        if [[ -n "${{ matrix.boost_version }}" ]]; then
+          # the requested Boost release is no longer packaged for this Ubuntu version, so build it from source
+          boost_version="${{ matrix.boost_version }}"
+          boost_version_underscored="${boost_version//./_}"
+          cd ${{ env.RUNNER_WORKSPACE }}
+          curl -fL "https://archives.boost.io/release/${boost_version}/source/boost_${boost_version_underscored}.tar.gz" -o boost.tar.gz
+          mkdir boost && tar xzf boost.tar.gz -C boost --strip-components=1
+          cd boost
+          ./bootstrap.sh --with-libraries=atomic,chrono,date_time,regex,system,thread,random,filesystem
+          sudo ./b2 install -j 2
+          sudo ldconfig
+        else
+          sudo apt-get install -y \
+            libboost-chrono-dev \
+            libboost-date-time-dev \
+            libboost-regex-dev \
+            libboost-system-dev \
+            libboost-thread-dev \
+            libboost-random-dev \
+            libboost-filesystem-dev
+        fi
 
         cd ${{ env.RUNNER_WORKSPACE }}
         git clone --recurse-submodules --branch v2.10.19 https://github.com/Microsoft/cpprestsdk
@@ -276,8 +346,10 @@ jobs:
         sudo apt-get install -f nscd
         echo "CTEST_EXTRA_ARGS=$CTEST_EXTRA_ARGS -E testMdnsAdvertiseAddress" >> $GITHUB_ENV
         echo "CTEST_EXPECTED_FAILURES=$CTEST_EXPECTED_FAILURES -R testMdnsAdvertiseAddress" >> $GITHUB_ENV
-        # make avahi only respond on the "eth0" interface
-        sudo sed -i 's/#*allow-interfaces=.*/allow-interfaces=eth0/g' /etc/avahi/avahi-daemon.conf
+        # make avahi only respond on the interface of the default route
+        # (runner images name it differently, e.g. "eth0" or "enp39s0")
+        default_interface=$(ip route show default | awk '{print $5; exit}')
+        sudo sed -i "s/#*allow-interfaces=.*/allow-interfaces=$default_interface/g" /etc/avahi/avahi-daemon.conf
         sudo systemctl restart avahi-daemon
         # verify local publish/browse works before spending time on the build
         avahi-publish -s ci-selftest _nmos-test._tcp 8080 &
@@ -301,11 +373,38 @@ jobs:
         # force dependency on avahi
         echo "CMAKE_EXTRA_ARGS=${{ env.CMAKE_EXTRA_ARGS }} -DNMOS_CPP_USE_AVAHI:BOOL=\"1\"" >> $GITHUB_ENV
 
+    # save the packages when this key is not already stored
+    - name: clean ubuntu packages
+      if: runner.os == 'Linux' && steps.debs-cache.outputs.cache-hit != 'true'
+      run: |
+        # autoclean removes the packages that have been superseded, so that the cache does not keep growing
+        sudo apt-get autoclean
+        sudo chown -R "$(id -u):$(id -g)" "$RUNNER_TEMP/debs"
+
+    - name: save ubuntu packages
+      if: runner.os == 'Linux' && steps.debs-cache.outputs.cache-hit != 'true'
+      uses: actions/cache/save@v6
+      with:
+        path: ${{ runner.temp }}/debs
+        key: ${{ steps.debs-cache.outputs.cache-primary-key }}
+
     - name: force cpprest asio
       if: matrix.force_cpprest_asio == true && matrix.use_conan == true
       shell: bash
       run: |
         echo "CONAN_INSTALL_EXTRA_ARGS=--options\;cpprestsdk/*:http_client_impl=asio\;--options\;cpprestsdk/*:http_listener_impl=asio" >> $GITHUB_ENV
+
+    # windows-2025 uses VS 2026 (MSVC 195). Conan Center prebuilts are built for
+    # MSVC 193/194; pin 194 so conan install downloads packages instead of building
+    # from source. Command-line -s overrides cmake-conan's auto-cmake profile (which
+    # would otherwise report 195). vs_version=18 is required when a package still
+    # builds from source: Conan maps compiler.version=194 → VS 17, which is not
+    # installed on this image. See actions/runner-images#14017.
+    - name: pin conan msvc 194 (windows-2025)
+      if: matrix.os == 'windows-2025' && matrix.use_conan == true
+      shell: bash
+      run: |
+        echo "CONAN_INSTALL_EXTRA_ARGS=${CONAN_INSTALL_EXTRA_ARGS:+$CONAN_INSTALL_EXTRA_ARGS\;}-s\;compiler.version=194\;-c\;tools.microsoft.msbuild:vs_version=18" >> $GITHUB_ENV
 
     - name: enable conan
       if: matrix.use_conan == true
@@ -321,13 +420,62 @@ jobs:
       if: runner.os == 'Windows'
       uses: ilammy/msvc-dev-cmd@v1
 
-    - name: build
-      uses: lukka/run-cmake@v3.4
+    - name: conan cache key
+      if: matrix.use_conan == true
+      id: conan-cache-key
+      shell: bash
+      run: |
+        # the compiler version as the CMake provider records it in the Conan host profile
+        if [[ "${{ runner.os }}" == "Windows" ]]; then
+          compiler=$( (cl 2>&1 >/dev/null || true) | sed -n 's/.*Version \([0-9]*\)\.\([0-9]\).*/\1\2/p' | head -1)
+        else
+          compiler=$(c++ -dumpfullversion | cut -d. -f1)
+        fi
+        test -n "$compiler"
+        echo "compiler=$compiler" >> "$GITHUB_OUTPUT"
+
+    # package binaries only, so that the profiles the CMake provider writes are not restored
+    # a Visual Studio generator also needs the Debug packages, which the CMake provider installs for a multi-config generator
+    - name: restore conan cache
+      if: matrix.use_conan == true
+      id: conan-cache
+      uses: actions/cache/restore@v6
       with:
-        cmakeListsOrSettingsJson: CMakeListsTxtAdvanced
-        cmakeListsTxtPath: '${{ env.GITHUB_WORKSPACE }}/Development/CMakeLists.txt'
-        buildDirectory: '${{ env.RUNNER_WORKSPACE }}/build/'
-        cmakeAppendedArgs: '-GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="${{ env.RUNNER_WORKSPACE }}/install" ${{ env.CMAKE_COMPILER_ARGS }} ${{ env.CMAKE_EXTRA_ARGS }}'
+        path: ~/.conan2/p
+        key: conan-${{ matrix.os }}-${{ steps.conan-cache-key.outputs.compiler }}-asio-${{ matrix.force_cpprest_asio }}-${{ matrix.vs_generator && 'vs-' || '' }}${{ hashFiles('Development/conanfile.py', 'Development/third_party/cmake/conan_provider.cmake') }}
+        restore-keys: |
+          conan-${{ matrix.os }}-${{ steps.conan-cache-key.outputs.compiler }}-asio-${{ matrix.force_cpprest_asio }}-${{ matrix.vs_generator && 'vs-' || '' }}
+
+    - name: build
+      shell: bash
+      run: |
+        # a Visual Studio generator selects the compiler itself, and is multi-config, so this and later steps select Release
+        if [[ -n "${{ matrix.vs_generator }}" ]]; then
+          generator_args=(-G "${{ matrix.vs_generator }}")
+        else
+          generator_args=(-GNinja -DCMAKE_BUILD_TYPE=Release ${{ env.CMAKE_COMPILER_ARGS }})
+        fi
+        cmake -S "${{ env.GITHUB_WORKSPACE }}/Development" \
+          -B "${{ env.RUNNER_WORKSPACE }}/build" \
+          "${generator_args[@]}" \
+          -DCMAKE_COMPILE_WARNING_AS_ERROR=ON \
+          -DCMAKE_INSTALL_PREFIX="${{ env.RUNNER_WORKSPACE }}/install" \
+          ${{ env.CMAKE_EXTRA_ARGS }}
+        cmake --build "${{ env.RUNNER_WORKSPACE }}/build"${{ matrix.vs_generator && ' --config Release' || '' }}
+
+    # save the cleaned cache when this key is not already stored
+    - name: clean conan cache
+      if: matrix.use_conan == true && steps.conan-cache.outputs.cache-hit != 'true'
+      shell: bash
+      run: |
+        conan cache clean "*" --source --build --temp
+
+    - name: save conan cache
+      if: matrix.use_conan == true && steps.conan-cache.outputs.cache-hit != 'true'
+      uses: actions/cache/save@v6
+      with:
+        path: ~/.conan2/p
+        key: ${{ steps.conan-cache.outputs.cache-primary-key }}
 
     - name: dump conan lockfile
       if: matrix.use_conan == true
@@ -337,22 +485,19 @@ jobs:
     - name: unit test
       run: |
         cd ${{ env.RUNNER_WORKSPACE }}/build/
-        ctest --output-on-failure ${{ env.CTEST_EXTRA_ARGS }}
+        ctest --output-on-failure${{ matrix.vs_generator && ' -C Release' || '' }} ${{ env.CTEST_EXTRA_ARGS }}
 
     - name: expected unit test failures
       if: env.CTEST_EXPECTED_FAILURES != null
       continue-on-error: true
       run: |
         cd ${{ env.RUNNER_WORKSPACE }}/build/
-        ctest --output-on-failure ${{ env.CTEST_EXPECTED_FAILURES }}
+        ctest --output-on-failure${{ matrix.vs_generator && ' -C Release' || '' }} ${{ env.CTEST_EXPECTED_FAILURES }}
 
     - name: install
-      uses: lukka/run-cmake@v3.4
-      with:
-        cmakeListsOrSettingsJson: CMakeListsTxtAdvanced
-        cmakeListsTxtPath: '${{ env.GITHUB_WORKSPACE }}/Development/CMakeLists.txt'
-        buildDirectory: '${{ env.RUNNER_WORKSPACE }}/build/'
-        buildWithCMakeArgs: '--target install'
+      shell: bash
+      run: |
+        cmake --build "${{ env.RUNNER_WORKSPACE }}/build" --target install${{ matrix.vs_generator && ' --config Release' || '' }}
 
     - name: set install test environment variable
       shell: bash
@@ -362,18 +507,20 @@ jobs:
 
     - name: install test
       if: runner.os != 'macOS'
-      uses: lukka/run-cmake@v3.4
-      with:
-        cmakeListsOrSettingsJson: CMakeListsTxtAdvanced
-        cmakeListsTxtPath: '${{ env.GITHUB_WORKSPACE }}/Sandbox/my-nmos-node/CMakeLists.txt'
-        buildDirectory: '${{ env.RUNNER_WORKSPACE }}/build-my-nmos-node/'
-        cmakeAppendedArgs: '-GNinja
-            -DCMAKE_BUILD_TYPE=Release
-            -DCMAKE_FIND_PACKAGE_PREFER_CONFIG="1"
-            -DCMAKE_MODULE_PATH="${{ env.CMAKE_WORKSPACE }}/build/conan"
-            -DCMAKE_PREFIX_PATH="${{ env.CMAKE_WORKSPACE }}/install"
-            -DCMAKE_INSTALL_PREFIX="${{ env.CMAKE_WORKSPACE }}/build/conan"
-            ${{ env.CMAKE_COMPILER_ARGS }}'
+      shell: bash
+      run: |
+        # a Visual Studio generator selects the compiler itself, and is multi-config, so the build selects Release
+        if [[ -n "${{ matrix.vs_generator }}" ]]; then
+          generator_args=(-G "${{ matrix.vs_generator }}")
+        else
+          generator_args=(-GNinja -DCMAKE_BUILD_TYPE=Release ${{ env.CMAKE_COMPILER_ARGS }})
+        fi
+        cmake -S "${{ env.GITHUB_WORKSPACE }}/Sandbox/my-nmos-node" \
+          -B "${{ env.RUNNER_WORKSPACE }}/build-my-nmos-node" \
+          "${generator_args[@]}" \
+          -DCMAKE_FIND_PACKAGE_PREFER_CONFIG=1 \
+          -DCMAKE_PREFIX_PATH="${{ env.CMAKE_WORKSPACE }}/install;${{ env.CMAKE_WORKSPACE }}/build/conan"
+        cmake --build "${{ env.RUNNER_WORKSPACE }}/build-my-nmos-node"${{ matrix.vs_generator && ' --config Release' || '' }}
 
     - name: install test log
       if: runner.os != 'macOS'
@@ -384,11 +531,19 @@ jobs:
     - name: install wsl
       if: runner.os == 'Windows'
       run: |
-        & curl -L https://aka.ms/wsl-ubuntu-1804 -o ubuntu-1804.appx
-        Rename-Item .\ubuntu-1804.appx .\ubuntu-1804.zip
-        Expand-Archive .\ubuntu-1804.zip .\ubuntu-1804
-        cd ubuntu-1804
-        .\ubuntu1804.exe install --root
+        # windows-2022 runners have only the inbox WSL, which has no --version option and no WSL 2 kernel
+        wsl --version | Out-Null
+        if ($LASTEXITCODE -ne 0) {
+          wsl --update
+        }
+        & curl -fL https://cloud-images.ubuntu.com/wsl/releases/24.04/current/ubuntu-noble-wsl-amd64-wsl.rootfs.tar.gz -o ubuntu-24.04.rootfs.tar.gz
+        New-Item -ItemType Directory -Force C:\wsl\ubuntu-24.04 | Out-Null
+        wsl --import Ubuntu-24.04 C:\wsl\ubuntu-24.04 ubuntu-24.04.rootfs.tar.gz --version 2
+        wsl --set-default Ubuntu-24.04
+        # testssl.sh requires dig, host, drill or nslookup, even when it is given the IP address
+        wsl -- sh -c "apt-get update -qq && DEBIAN_FRONTEND=noninteractive apt-get install -y -qq --no-install-recommends bind9-host"
+        # testssl.sh runs in WSL, whose NAT network reaches the Node at the host IP address through Windows Firewall
+        New-NetFirewallRule -DisplayName "testssl.sh in WSL to nmos-cpp-node" -Direction Inbound -Protocol TCP -LocalPort 1080 -Action Allow | Out-Null
 
     - name: AMWA test suite
       shell: bash
@@ -403,7 +558,7 @@ jobs:
         cd nmos-testing
 
         # Configure the Testing Tool so all APIs are tested with TLS and authorization
-        printf "from . import Config as CONFIG\nCONFIG.ENABLE_HTTPS = True\nCONFIG.MOCK_SERVICES_WARM_UP_DELAY = 30\nCONFIG.HTTP_TIMEOUT = 2\n" > nmostesting/UserConfig.py
+        printf "from . import Config as CONFIG\nCONFIG.ENABLE_HTTPS = True\nCONFIG.MOCK_SERVICES_WARM_UP_DELAY = 10\nCONFIG.HTTP_TIMEOUT = 2\n" > nmostesting/UserConfig.py
         # Set the DNS-SD mode
         printf 'CONFIG.DNS_SD_MODE = "'${{ matrix.dns_sd_mode }}'"\n' >> nmostesting/UserConfig.py
         # Set the client JWKS_URI for mock Authorization Server to obtain the client JSON Web Key Set (public keys) to verify the client_assertion, when the client is requesting the access token
@@ -426,7 +581,7 @@ jobs:
 
         # Download testssl
         cd testssl
-        curl -L https://github.com/testssl/testssl.sh/archive/v3.0.7.tar.gz -s | tar -xvzf - --strip-components=1 > /dev/null
+        curl -fL https://github.com/testssl/testssl.sh/archive/v3.0.7.tar.gz -s | tar -xvzf - --strip-components=1 > /dev/null
         cd ..
 
         # Create output directories
@@ -450,7 +605,7 @@ jobs:
           sudo pip install --upgrade -r requirements.txt
           # install SDPoker
           npm install -g git+https://git@github.com/AMWA-TV/sdpoker.git
-          run_python="sudo python"
+          run_python="sudo --preserve-env=NODNS python"
         else
           # run test suite directly
           pip install -r requirements.txt
@@ -483,13 +638,6 @@ jobs:
           mv nmostesting/GenericTest.py nmostesting/GenericTest.py.old
           printf 'import socket\nold_getaddrinfo = socket.getaddrinfo\ndef new_getaddrinfo(host, port, family=0, type=0, proto=0, flags=0):\n    return old_getaddrinfo(host, port, socket.AF_INET, type, proto, flags)\nsocket.getaddrinfo = new_getaddrinfo\n' > nmostesting/GenericTest.py
           cat nmostesting/GenericTest.py.old >> nmostesting/GenericTest.py
-        fi
-
-        if [[ "${{ runner.os }}" == "Linux" && "${{ matrix.use_conan }}" == "false" ]]; then
-          # ubuntu 14 non-conan build uses boost 1.54.0 which doesn't support disabling TLS 1.1
-          mkdir -p ${{ env.GITHUB_WORKSPACE_BASH }}/Sandbox/nmos-testing-options/
-          echo "--ignore test_01" > ${{ env.GITHUB_WORKSPACE_BASH }}/Sandbox/nmos-testing-options/BCP-003-01.txt
-          echo "1" > ${{ env.GITHUB_WORKSPACE_BASH }}/Sandbox/nmos-testing-options/BCP-003-01_max_disabled.txt
         fi
 
         if [[ "${{ runner.os }}" == "Linux" ]]; then
@@ -548,7 +696,16 @@ jobs:
           avahi-publish -a -R nmos-api.local ${{ env.HOST_IP_ADDRESS }} &
         fi
 
-        ${{ env.GITHUB_WORKSPACE_BASH }}/Sandbox/run_nmos_testing.sh "$run_python" ${domain} ${root_dir}/build/nmos-cpp-node ${root_dir}/build/nmos-cpp-registry results badges $GITHUB_STEP_SUMMARY ${{ env.HOST_IP_ADDRESS }} "${{ env.GITHUB_COMMIT }}-${{ env.BUILD_NAME }}-"
+        # the testing tool gives testssl.sh the IP address, so it needs no DNS queries
+        export NODNS=none
+        if [[ "${{ runner.os }}" == "Windows" ]]; then
+          # testssl.sh runs in WSL
+          export WSLENV="${WSLENV:+$WSLENV:}NODNS"
+        fi
+
+        # a Visual Studio generator puts the executables in a directory per configuration
+        bin_dir=${root_dir}/build${{ matrix.vs_generator && '/Release' || '' }}
+        ${{ env.GITHUB_WORKSPACE_BASH }}/Sandbox/run_nmos_testing.sh "$run_python" ${domain} ${bin_dir}/nmos-cpp-node ${bin_dir}/nmos-cpp-registry results badges $GITHUB_STEP_SUMMARY ${{ env.HOST_IP_ADDRESS }} "${{ env.GITHUB_COMMIT }}-${{ env.BUILD_NAME }}-"
 
         if [[ "${{ runner.os }}" == "Linux" ]]; then
           if [[ "${{ matrix.install_mdns }}" == "true" ]]; then
@@ -598,23 +755,22 @@ jobs:
         export SHEET=https://docs.google.com/spreadsheets/d/${{ env.SECRET_RESULTS_SHEET_ID }}
         python nmos-testing/utilities/run-test-suites/gsheetsImport/resultsImporter.py --credentials ${{ env.GDRIVE_CREDENTIALS }} --sheet "$SHEET" --insert --json nmos-testing/results/${{ env.GITHUB_COMMIT }}-*.json || echo "upload failed"
 
-    - uses: actions/upload-artifact@v4
+    - uses: actions/upload-artifact@v6
       with:
         name: ${{ env.BUILD_NAME }}_badges
         path: ${{ runner.workspace }}/nmos-testing/badges
 
-    - uses: actions/upload-artifact@v4
+    - uses: actions/upload-artifact@v6
       with:
         name: ${{ env.BUILD_NAME }}_results
         path: ${{ runner.workspace }}/nmos-testing/results
-
 
   make_badges:
     if: github.ref == 'refs/heads/master' && github.event_name == 'push'
     needs: [build_and_test]
     runs-on: ubuntu-22.04
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v5
 
     - name: set environment variables
       shell: bash
@@ -624,7 +780,7 @@ jobs:
         echo "GITHUB_WORKSPACE=${{ github.workspace }}" >> $GITHUB_ENV
         echo "RUNNER_WORKSPACE=${{ runner.workspace }}" >> $GITHUB_ENV
 
-    - uses: actions/download-artifact@v4
+    - uses: actions/download-artifact@v7
       with:
         path: ${{ runner.workspace }}/artifacts
 

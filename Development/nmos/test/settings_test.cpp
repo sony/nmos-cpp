@@ -35,6 +35,35 @@ BST_TEST_CASE(testValidateRegistrySettingsAfterDefaults)
     BST_CHECK_NO_THROW(nmos::validate_registry_settings(settings));
 }
 
+BST_TEST_CASE(testAnnotationPortDefaults)
+{
+    using web::json::value_of;
+
+    // the registry server does not serve the Annotation API, so it is disabled by default
+    {
+        nmos::settings settings;
+        nmos::insert_registry_default_settings(settings);
+        BST_CHECK_EQUAL(-1, nmos::fields::annotation_port(settings));
+    }
+    {
+        nmos::settings settings = value_of({ { U("http_port"), 8010 } });
+        nmos::insert_registry_default_settings(settings);
+        BST_CHECK_EQUAL(-1, nmos::fields::annotation_port(settings));
+    }
+    // but a registry that does serve it can specify the port
+    {
+        nmos::settings settings = value_of({ { U("http_port"), 8010 }, { U("annotation_port"), 8020 } });
+        nmos::insert_registry_default_settings(settings);
+        BST_CHECK_EQUAL(8020, nmos::fields::annotation_port(settings));
+    }
+    // a node serves it on the http_port by default
+    {
+        nmos::settings settings = value_of({ { U("http_port"), 8010 } });
+        nmos::insert_node_default_settings(settings);
+        BST_CHECK_EQUAL(8010, nmos::fields::annotation_port(settings));
+    }
+}
+
 BST_TEST_CASE(testValidateNodeSettingsWrongType)
 {
     using web::json::value_of;

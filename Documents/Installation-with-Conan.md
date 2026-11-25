@@ -31,7 +31,7 @@ For many platforms, a binary package is available from Conan Center Index so it 
    compiler=msvc
    compiler.cppstd=14
    compiler.runtime=dynamic
-   compiler.version=193
+   compiler.version=194
    os=Windows
    ```
    Linux
@@ -47,7 +47,7 @@ For many platforms, a binary package is available from Conan Center Index so it 
 
 3. Install nmos-cpp:
    ```sh
-   conan install --tool-requires=nmos-cpp/cci.20240223
+   conan install --tool-requires=nmos-cpp/cci.20261005
    ```
    This installs the **nmos-cpp-registry** and **nmos-cpp-node** applications in the Conan cache, and generates a script to make these executables available in the current session.
    On Windows, run `.\conanbuild.bat` to add the install directory to the PATH.
@@ -55,7 +55,7 @@ For many platforms, a binary package is available from Conan Center Index so it 
 
    Alternatively the nmos-cpp installation can be copied to the current working directory using a Conan deployer:
    ```sh
-   conan install --requires=nmos-cpp/cci.20240223 --deployer=direct_deploy
+   conan install --requires=nmos-cpp/cci.20261005 --deployer=direct_deploy
    ```
 
    On Windows, the executables are then found in the _.\direct_deploy\nmos-cpp\bin\Release_ directory.

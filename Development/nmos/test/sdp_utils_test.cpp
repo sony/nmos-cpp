@@ -1467,3 +1467,358 @@ BST_TEST_CASE(testSdpParametersVideoSmpte2022_6)
         nmos::check_sdp_parameters(test.first, roundtripped);
     }
 }
+
+////////////////////////////////////////////////////////////////////////////////////////////
+// See VSF TR-10-1:2024 Section 10 SDP Signaling General Provision
+BST_TEST_CASE(testSdpParametersVideoRawIpmx)
+{
+    // based on the Baseband video IPMX Sender example in VSF TR-10-1:2024 Section 10.2
+    std::pair<nmos::sdp_parameters, nmos::video_raw_parameters> baseband{
+        {
+            U("baseband"),
+            sdp::media_types::video,
+            {
+                96,
+                U("raw"),
+                90000
+            },
+            {
+                { U("sampling"), U("YCbCr-4:2:2") },
+                { U("width"), U("1920") },
+                { U("height"), U("1080") },
+                { U("exactframerate"), U("60000/1001") },
+                { U("depth"), U("10") },
+                { U("TCS"), U("SDR") },
+                { U("colorimetry"), U("BT709") },
+                { U("PM"), U("2110GPM") },
+                { U("SSN"), U("ST2110-20:2017") },
+                { U("TP"), U("2110TPN") },
+                { U("IPMX"), {} },
+                { U("measuredpixclk"), U("148550104") },
+                { U("vtotal"), U("1125") },
+                { U("htotal"), U("2200") }
+            }
+        },
+        {
+            sdp::samplings::YCbCr_4_2_2,
+            10,
+            1920,
+            1080,
+            nmos::rates::rate59_94,
+            false,
+            false,
+            sdp::transfer_characteristic_systems::SDR,
+            sdp::colorimetries::BT709,
+            {},
+            {},
+            sdp::packing_modes::general,
+            sdp::smpte_standard_numbers::ST2110_20_2017,
+            sdp::type_parameters::type_N,
+            {},
+            {},
+            {},
+            {},
+            {},
+            true,
+            148550104,
+            1125,
+            2200
+        }
+    };
+
+    // an IPMX Sender whose output is not based upon the conversion of a Baseband signal uses the values in VSF TR-10-9:2025 Section 10
+    std::pair<nmos::sdp_parameters, nmos::video_raw_parameters> not_baseband{
+        {
+            U("not_baseband"),
+            sdp::media_types::video,
+            {
+                96,
+                U("raw"),
+                90000
+            },
+            {
+                { U("sampling"), U("RGB") },
+                { U("width"), U("3840") },
+                { U("height"), U("2160") },
+                { U("exactframerate"), U("60") },
+                { U("depth"), U("8") },
+                { U("colorimetry"), U("BT709") },
+                { U("PM"), U("2110GPM") },
+                { U("SSN"), U("ST2110-20:2017") },
+                { U("TP"), U("2110TPW") },
+                { U("IPMX"), {} },
+                { U("measuredpixclk"), U("497664000") },
+                { U("vtotal"), U("2160") },
+                { U("htotal"), U("3840") }
+            }
+        },
+        {
+            sdp::samplings::RGB,
+            8,
+            3840,
+            2160,
+            nmos::rates::rate60,
+            false,
+            false,
+            {},
+            sdp::colorimetries::BT709,
+            {},
+            {},
+            sdp::packing_modes::general,
+            sdp::smpte_standard_numbers::ST2110_20_2017,
+            sdp::type_parameters::type_W,
+            {},
+            {},
+            {},
+            {},
+            {},
+            true,
+            3840 * 2160 * 60,
+            2160,
+            3840
+        }
+    };
+
+    // the measured pixel clock is carried in 64 bits in the IPMX Info Block (VSF TR-10-2:2024), so must not be truncated to 32 bits
+    std::pair<nmos::sdp_parameters, nmos::video_raw_parameters> high_pixclk{
+        {
+            U("high_pixclk"),
+            sdp::media_types::video,
+            {
+                96,
+                U("raw"),
+                90000
+            },
+            {
+                { U("sampling"), U("YCbCr-4:2:2") },
+                { U("width"), U("7680") },
+                { U("height"), U("4320") },
+                { U("exactframerate"), U("120") },
+                { U("depth"), U("10") },
+                { U("colorimetry"), U("BT2020") },
+                { U("PM"), U("2110GPM") },
+                { U("SSN"), U("ST2110-20:2017") },
+                { U("TP"), U("2110TPW") },
+                { U("IPMX"), {} },
+                { U("measuredpixclk"), U("4752000000") },
+                { U("vtotal"), U("4500") },
+                { U("htotal"), U("8800") }
+            }
+        },
+        {
+            sdp::samplings::YCbCr_4_2_2,
+            10,
+            7680,
+            4320,
+            { 120, 1 },
+            false,
+            false,
+            {},
+            sdp::colorimetries::BT2020,
+            {},
+            {},
+            sdp::packing_modes::general,
+            sdp::smpte_standard_numbers::ST2110_20_2017,
+            sdp::type_parameters::type_W,
+            {},
+            {},
+            {},
+            {},
+            {},
+            true,
+            4752000000ULL,
+            4500,
+            8800
+        }
+    };
+
+    for (auto& test : { baseband, not_baseband, high_pixclk })
+    {
+        auto made = nmos::make_video_raw_sdp_parameters(test.first.session_name, test.second, test.first.rtpmap.payload_type);
+        nmos::check_sdp_parameters(test.first, made);
+        const auto parsed = nmos::get_video_raw_parameters(made);
+        BST_REQUIRE_EQUAL(test.second.ipmx, parsed.ipmx);
+        BST_REQUIRE_EQUAL(test.second.measuredpixclk, parsed.measuredpixclk);
+        BST_REQUIRE_EQUAL(test.second.vtotal, parsed.vtotal);
+        BST_REQUIRE_EQUAL(test.second.htotal, parsed.htotal);
+        auto roundtripped = nmos::make_video_raw_sdp_parameters(made.session_name, parsed, made.rtpmap.payload_type);
+        nmos::check_sdp_parameters(test.first, roundtripped);
+    }
+
+    // a ST 2110-20 Sender without the IPMX declaration
+    {
+        nmos::sdp_parameters st2110{ U("st2110"), sdp::media_types::video, { 96, U("raw"), 90000 }, {
+            { U("sampling"), U("YCbCr-4:2:2") },
+            { U("width"), U("1920") },
+            { U("height"), U("1080") },
+            { U("exactframerate"), U("25") },
+            { U("depth"), U("10") },
+            { U("colorimetry"), U("BT709") },
+            { U("PM"), U("2110GPM") },
+            { U("SSN"), U("ST2110-20:2017") },
+            { U("TP"), U("2110TPN") }
+        } };
+        const auto parsed = nmos::get_video_raw_parameters(st2110);
+        BST_REQUIRE(!parsed.ipmx);
+        BST_REQUIRE_EQUAL(0U, parsed.measuredpixclk);
+        BST_REQUIRE_EQUAL(0U, parsed.vtotal);
+        BST_REQUIRE_EQUAL(0U, parsed.htotal);
+        nmos::check_sdp_parameters(st2110, nmos::make_video_raw_sdp_parameters(st2110.session_name, parsed, st2110.rtpmap.payload_type));
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////
+// See VSF TR-10-1:2024 Section 10.1 and Section 10.3
+BST_TEST_CASE(testSdpParametersAudioLIpmx)
+{
+    // the audio IPMX Sender example in VSF TR-10-1:2024 Section 10.3
+    std::pair<nmos::sdp_parameters, nmos::audio_L_parameters> baseband{
+        {
+            U("baseband"),
+            sdp::media_types::audio,
+            {
+                97,
+                U("L24"),
+                48000,
+                8
+            },
+            {
+                { U("channel-order"), U("SMPTE2110.(U08)") },
+                { U("IPMX"), {} },
+                { U("measuredsamplerate"), U("47952") }
+            },
+            {},
+            0.12
+        },
+        {
+            8,
+            24,
+            48000,
+            U("SMPTE2110.(U08)"),
+            {},
+            {},
+            0.12,
+            true,
+            47952
+        }
+    };
+
+    // an IPMX Sender whose output is not based upon the conversion of a Baseband signal uses the values in VSF TR-10-9:2025 Section 10
+    std::pair<nmos::sdp_parameters, nmos::audio_L_parameters> not_baseband{
+        {
+            U("not_baseband"),
+            sdp::media_types::audio,
+            {
+                97,
+                U("L24"),
+                96000,
+                2
+            },
+            {
+                { U("channel-order"), U("SMPTE2110.(ST)") },
+                { U("IPMX"), {} },
+                { U("measuredsamplerate"), U("96000") }
+            },
+            {},
+            1
+        },
+        {
+            2,
+            24,
+            96000,
+            U("SMPTE2110.(ST)"),
+            {},
+            {},
+            1,
+            true,
+            96000
+        }
+    };
+
+    for (auto& test : { baseband, not_baseband })
+    {
+        auto made = nmos::make_audio_L_sdp_parameters(test.first.session_name, test.second, test.first.rtpmap.payload_type);
+        nmos::check_sdp_parameters(test.first, made);
+        const auto parsed = nmos::get_audio_L_parameters(made);
+        BST_REQUIRE_EQUAL(test.second.ipmx, parsed.ipmx);
+        BST_REQUIRE_EQUAL(test.second.measuredsamplerate, parsed.measuredsamplerate);
+        auto roundtripped = nmos::make_audio_L_sdp_parameters(made.session_name, parsed, made.rtpmap.payload_type);
+        nmos::check_sdp_parameters(test.first, roundtripped);
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////
+// See VSF TR-10-1:2024 Section 10.1
+BST_TEST_CASE(testSdpParametersVideoSmpte291Ipmx)
+{
+    nmos::video_smpte291_parameters params{ { { 0x41, 0x01 } }, {}, nmos::rates::rate59_94, {}, sdp::smpte_standard_numbers::ST2110_40_2018, {}, {}, {}, true };
+    auto made = nmos::make_video_smpte291_sdp_parameters(U("ipmx"), params, 100);
+    nmos::check_sdp_parameters({ U("ipmx"), sdp::media_types::video, { 100, U("smpte291"), 90000 }, {
+        { U("DID_SDID"), U("{0x41,0x01}") },
+        { U("exactframerate"), U("60000/1001") },
+        { U("SSN"), U("ST2110-40:2018") },
+        { U("IPMX"), {} }
+    } }, made);
+    BST_REQUIRE(nmos::get_video_smpte291_parameters(made).ipmx);
+    params.ipmx = false;
+    BST_REQUIRE(!nmos::get_video_smpte291_parameters(nmos::make_video_smpte291_sdp_parameters(U("st2110"), params, 100)).ipmx);
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////
+// See VSF TR-10-1:2024 Section 10.2
+BST_TEST_CASE(testSdpRoundtripVideoRawIpmx)
+{
+    using web::json::value;
+
+    // based on the Baseband video IPMX Sender example in VSF TR-10-1:2024 Section 10.2,
+    // with the fmtp parameters in the order generated by nmos::make_video_raw_sdp_parameters
+    const std::string test_sdp = R"(v=0
+o=- 1618351493884125000 1618351539175204201 IN IP4 25.25.30.151
+s=IP video OUT 1
+t=0 0
+m=video 10000 RTP/AVP 96
+c=IN IP4 239.20.0.1/128
+a=ts-refclk:localmac=00-20-FC-32-2F-40
+a=mediaclk:sender
+a=source-filter: incl IN IP4 239.20.0.1 25.25.30.151
+a=rtpmap:96 raw/90000
+a=fmtp:96 width=1920; height=1080; exactframerate=60000/1001; sampling=YCbCr-4:2:2; depth=10; colorimetry=BT709; TCS=SDR; PM=2110GPM; SSN=ST2110-20:2017; TP=2110TPN; IPMX; measuredpixclk=148550104; vtotal=1125; htotal=2200
+)";
+
+    auto test_description = sdp::parse_session_description(test_sdp);
+    const auto test_params = nmos::parse_session_description(test_description);
+
+    auto& s = test_params.first;
+    auto& t = test_params.second;
+
+    const auto params = nmos::get_video_raw_parameters(s);
+    BST_REQUIRE(params.ipmx);
+    BST_REQUIRE_EQUAL(148550104U, params.measuredpixclk);
+    BST_REQUIRE_EQUAL(1125U, params.vtotal);
+    BST_REQUIRE_EQUAL(2200U, params.htotal);
+
+    auto s2 = nmos::make_sdp_parameters(s.session_name, params, s.rtpmap.payload_type, s.group.media_stream_ids, s.ts_refclk);
+    // nmos::make_sdp_parameters always generates a new origin (o=) line and the connection data (c=) ttl value is hard-coded
+    s2.origin = s.origin;
+    s2.connection_data.ttl = s.connection_data.ttl;
+    // IPMX Senders signal an asynchronous media clock when their Media Clock is not directly derived from their Internal Clock
+    // See VSF TR-10-1:2024 Section 10.5
+    s2.mediaclk = { sdp::mediaclk_sources::sender };
+
+    auto t2 = t;
+    t2[0][nmos::fields::interface_ip] = value::string(U("25.25.30.151"));
+
+    auto session_description = nmos::make_session_description(s2, t2);
+
+    auto test_sdp2 = sdp::make_session_description(session_description);
+    std::istringstream expected(test_sdp), actual(test_sdp2);
+    do
+    {
+        std::string expected_line, actual_line;
+        std::getline(expected, expected_line);
+        std::getline(actual, actual_line);
+        // CR cannot appear in a raw string literal, so remove it from the actual line
+        if (!actual_line.empty() && '\r' == actual_line.back()) actual_line.pop_back();
+        BST_CHECK_EQUAL(expected_line, actual_line);
+    } while (!expected.fail() && !actual.fail());
+}

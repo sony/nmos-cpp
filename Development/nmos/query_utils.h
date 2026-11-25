@@ -1,6 +1,7 @@
 #ifndef NMOS_QUERY_UTILS_H
 #define NMOS_QUERY_UTILS_H
 
+#include <boost/type_traits/add_const.hpp> // needed by <boost/range/any_range.hpp> in Boost 1.90.0
 #include <boost/range/any_range.hpp>
 #include "nmos/paging_utils.h"
 #include "nmos/resources.h"
