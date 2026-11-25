@@ -10,9 +10,9 @@
 #include "nmos/json_schema.h"
 #include "nmos/json_fields.h"
 #include "nmos/slog.h"
-#if defined(_WIN32) && !defined(__cplusplus_winrt)
-#include <Windows.h>
-#include <shellapi.h>
+#if defined(__APPLE__) || defined(__linux__)
+#include <spawn.h> // for posix_spawnp
+extern char** environ; // for posix_spawnp
 #endif
 
 namespace nmos
@@ -30,6 +30,77 @@ namespace nmos
                 };
 
                 return validator;
+            }
+
+            bool launch_browser(const std::string& uri) {
+#if defined(_WIN32)
+                // Convert URI to wide string for Windows APIs
+                // Determine the required buffer size for the wide string
+                auto wlen = ::MultiByteToWideChar(CP_UTF8, 0, uri.c_str(), -1, nullptr, 0);
+                std::wstring wUri(wlen, 0);
+                // Convert the URI to a wide string
+                ::MultiByteToWideChar(CP_UTF8, 0, uri.c_str(), -1, &wUri[0], wlen);
+                // Remove any trailing null character that MultiByteToWideChar may have added
+                if (!wUri.empty() && wUri.back() == L'\0') wUri.pop_back();
+
+                // Fixed system binary path
+                std::wstring exePath = L"C:\\Windows\\System32\\rundll32.exe";
+
+                // Construct the command line to launch the default browser with the URI
+                // Arguments: rundll32.exe url.dll,FileProtocolHandler <uri>
+                //
+                // Note: Since authorization_code_uri ultimately originates from a URI we construct (or receive), it's worth asserting
+                // it's http/https and doesn't contain unexpected characters (like ") before passing it anywhere - this closes off
+                // both the Windows argument-injection edge case and guards against unexpected input even if the URI-building logic
+                // changes later
+                //
+                // Escape embedded double quotes before building the command line
+                std::wstring escapedUri;
+                escapedUri.reserve(wUri.size());
+                for (wchar_t ch : wUri)
+                {
+                    if (ch == L'"') escapedUri += L'\\';
+                    escapedUri += ch;
+                }
+                std::wstring cmdLine = L"\"" + exePath + L"\" url.dll,FileProtocolHandler \"" + escapedUri + L"\"";
+
+                STARTUPINFOW si = { sizeof(si) };
+                PROCESS_INFORMATION pi = {};
+
+                // Create the process without invoking a shell, which completely bypassing any command shell (cmd.exe) injection vulnerabilities
+                if(::CreateProcessW(
+                    exePath.c_str(),
+                    const_cast<LPWSTR>(cmdLine.c_str()),
+                    nullptr, nullptr, FALSE, 0, nullptr, nullptr, &si, &pi))
+                {
+                    ::CloseHandle(pi.hProcess);
+                    ::CloseHandle(pi.hThread);
+                    return true;
+                }
+                return false;
+
+#elif defined(__APPLE__) || defined(__linux__)
+                // macOS uses the built-in 'open' tool, Linux uses 'xdg-open', to route to
+                // the user's default browser safely without invoking a shell
+#if defined(__APPLE__)
+                const char* executable = "open";
+#else
+                const char* executable = "xdg-open";
+#endif
+                char* const argv[] = {
+                    const_cast<char*>(executable),
+                    const_cast<char*>(uri.c_str()),
+                    nullptr
+                };
+
+                pid_t pid;
+                // posix_spawnp searches the PATH variable without invoking a shell
+                int status = posix_spawnp(&pid, executable, nullptr, nullptr, argv, environ);
+                return (0 == status);
+
+#else
+                return false; // Unsupported platform
+#endif
             }
         }
 
@@ -194,13 +265,10 @@ namespace nmos
             {
                 slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Open a browser to start the authorization code flow: " << authorization_code_uri.to_string();
 
-                std::string browser_cmd;
-#if defined(_WIN32) && !defined(__cplusplus_winrt)
-                browser_cmd = "start \"\" \"" + utility::us2s(authorization_code_uri.to_string()) + "\"";
-#else
-                browser_cmd = "xdg-open \"" + utility::us2s(authorization_code_uri.to_string()) + "\"";
-#endif
-                std::ignore = system(browser_cmd.c_str());
+                if(!details::launch_browser(utility::us2s(authorization_code_uri.to_string())))
+                {
+                    slog::log<slog::severities::error>(gate, SLOG_FLF) << "Failed to launch browser";
+                }
 
                 // hmm, notify authorization_code_flow in the authorization_behaviour thread
                 // in the event of user cancels the authorization code flow process
