@@ -48,7 +48,21 @@ namespace nmos
 
                 // Construct the command line to launch the default browser with the URI
                 // Arguments: rundll32.exe url.dll,FileProtocolHandler <uri>
-                std::wstring cmdLine = L"\"" + exePath + L"\" url.dll,FileProtocolHandler \"" + wUri + L"\"";
+                //
+                // Note: Since authorization_code_uri ultimately originates from a URI we construct (or receive), it's worth asserting
+                // it's http/https and doesn't contain unexpected characters (like ") before passing it anywhere - this closes off
+                // both the Windows argument-injection edge case and guards against unexpected input even if the URI-building logic
+                // changes later
+                //
+                // Escape embedded double quotes before building the command line
+                std::wstring escapedUri;
+                escapedUri.reserve(wUri.size());
+                for (wchar_t ch : wUri)
+                {
+                    if (ch == L'"') escapedUri += L'\\';
+                    escapedUri += ch;
+                }
+                std::wstring cmdLine = L"\"" + exePath + L"\" url.dll,FileProtocolHandler \"" + escapedUri + L"\"";
 
                 STARTUPINFOW si = { sizeof(si) };
                 PROCESS_INFORMATION pi = {};
