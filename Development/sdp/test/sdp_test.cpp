@@ -19,8 +19,8 @@ a=extmap:1 http://example.com/082005/ext.htm#ttime
 a=extmap:2/sendrecv http://example.com/082005/ext.htm#xmeta short
 a=extmap:3/sendonly http://example.com/082005/ext.htm#xmeta
 a=extmap:4 http://example.com/082005/ext.htm#ttime SHORT
-a=hkep:9000 IN IP4 192.168.9.142 db31de40-19ad-450a-afb9-f4105be7b564 01-02-03-04-05-06
-a=hkep:9001 IN IP4 192.168.9.142 db31de40-19ad-450a-afb9-f4105be7b564 01-02-03-04-05-06
+a=hkep:9000 IN IP4 192.168.9.142 db31de40-19ad-450a-afb9-f4105be7b564 01-02-03-04-05
+a=hkep:9001 IN IP4 192.168.9.142 db31de40-19ad-450a-afb9-f4105be7b564 01-02-03-04-05
 m=video 50020 RTP/AVP 96
 c=IN IP4 239.22.142.1/32
 a=ts-refclk:ptp=IEEE1588-2008:traceable
@@ -167,7 +167,7 @@ a=mid:SECONDARY
                     { sdp::fields::address_type, sdp::address_types::IP4.name },
                     { sdp::fields::unicast_address, U("192.168.9.142") },
                     { sdp::fields::node_id, U("db31de40-19ad-450a-afb9-f4105be7b564") },
-                    { sdp::fields::port_id, U("01-02-03-04-05-06") }
+                    { sdp::fields::port_id, U("01-02-03-04-05") }
                 }, keep_order) },
             }, keep_order),
             web::json::value_of({
@@ -178,7 +178,7 @@ a=mid:SECONDARY
                     { sdp::fields::address_type, sdp::address_types::IP4.name },
                     { sdp::fields::unicast_address, U("192.168.9.142") },
                     { sdp::fields::node_id, U("db31de40-19ad-450a-afb9-f4105be7b564") },
-                    { sdp::fields::port_id, U("01-02-03-04-05-06") }
+                    { sdp::fields::port_id, U("01-02-03-04-05") }
                 }, keep_order) },
             }, keep_order)
         }) },
@@ -770,8 +770,8 @@ a=extmap:1 http://example.com/082005/ext.htm#ttime
 a=extmap:2/sendrecv http://example.com/082005/ext.htm#xmeta short
 a=extmap:3/sendonly http://example.com/082005/ext.htm#xmeta
 a=extmap:4 http://example.com/082005/ext.htm#ttime SHORT
-a=hkep:9000 IN IP4 192.168.9.142 db31de40-19ad-450a-afb9-f4105be7b564 01-02-03-04-05-06
-a=hkep:9001 IN IP4 192.168.9.142 db31de40-19ad-450a-afb9-f4105be7b564 01-02-03-04-05-06
+a=hkep:9000 IN IP4 192.168.9.142 db31de40-19ad-450a-afb9-f4105be7b564 01-02-03-04-05
+a=hkep:9001 IN IP4 192.168.9.142 db31de40-19ad-450a-afb9-f4105be7b564 01-02-03-04-05
 m=video 50020 RTP/AVP 96
 c=IN IP4 239.22.142.1/32
 a=ts-refclk:ptp=IEEE1588-2008:traceable
@@ -879,7 +879,7 @@ a=mid:SECONDARY
                     { sdp::fields::address_type, sdp::address_types::IP4.name },
                     { sdp::fields::unicast_address, U("192.168.9.142") },
                     { sdp::fields::node_id, U("db31de40-19ad-450a-afb9-f4105be7b564") },
-                    { sdp::fields::port_id, U("01-02-03-04-05-06") }
+                    { sdp::fields::port_id, U("01-02-03-04-05") }
                 }, keep_order) },
             }, keep_order),
             web::json::value_of({
@@ -890,7 +890,7 @@ a=mid:SECONDARY
                     { sdp::fields::address_type, sdp::address_types::IP4.name },
                     { sdp::fields::unicast_address, U("192.168.9.142") },
                     { sdp::fields::node_id, U("db31de40-19ad-450a-afb9-f4105be7b564") },
-                    { sdp::fields::port_id, U("01-02-03-04-05-06") }
+                    { sdp::fields::port_id, U("01-02-03-04-05") }
                 }, keep_order) },
             }, keep_order)
         }) },
@@ -1092,7 +1092,7 @@ a=mid:SECONDARY
                     { sdp::fields::address_type, sdp::address_types::IP4.name },
                     { sdp::fields::unicast_address, U("192.168.9.142") },
                     { sdp::fields::node_id, U("db31de40-19ad-450a-afb9-f4105be7b564") },
-                    { sdp::fields::port_id, U("01-02-03-04-05-06") }
+                    { sdp::fields::port_id, U("01-02-03-04-05") }
                 }, keep_order) },
             }, keep_order),
             web::json::value_of({
@@ -1103,7 +1103,7 @@ a=mid:SECONDARY
                     { sdp::fields::address_type, sdp::address_types::IP4.name },
                     { sdp::fields::unicast_address, U("192.168.9.142") },
                     { sdp::fields::node_id, U("db31de40-19ad-450a-afb9-f4105be7b564") },
-                    { sdp::fields::port_id, U("01-02-03-04-05-06") }
+                    { sdp::fields::port_id, U("01-02-03-04-05") }
                 }, keep_order) },
             }, keep_order)
         }) },
